@@ -1,0 +1,1 @@
+// Standalone example file (deprecated)

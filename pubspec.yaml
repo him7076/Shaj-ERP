@@ -1,0 +1,83 @@
+name: business_sahaj_erp
+description: "A professional, offline-first Clean Architecture ERP application for Business Sahaj ERP."
+version: 1.0.0+1
+
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+
+  # Navigation
+  go_router: ^14.2.0
+
+  # Local Storage (Isar Database)
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  path_provider: ^2.1.3
+
+  # Firebase Services
+  firebase_core: ^3.1.1
+  firebase_auth: ^5.1.1
+  cloud_firestore: ^5.0.2
+  firebase_storage: ^12.0.1
+
+  # Model Generation Annotations
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # HTTP Client
+  dio: ^5.5.0+1
+
+  # Local Key-Value Storage
+  shared_preferences: ^2.2.3
+
+  # PDF Generation and Printing
+  pdf: ^3.10.8
+  printing: ^5.11.1
+
+  # Media & Location Pickers
+  image_picker: ^1.1.2
+  geolocator: ^12.0.0
+  google_maps_flutter: ^2.7.0
+
+  # Network Status Monitoring
+  connectivity_plus: ^6.0.3
+
+  # Utility logging
+  logger: ^2.3.0
+
+  # Backup & Restore dependencies
+  archive: ^3.6.1
+  encrypt: ^5.0.3
+  crypto: ^3.0.3
+  google_sign_in: ^7.0.0
+  googleapis: ^13.1.0
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
+  file_picker: ^8.0.5
+
+  # Reports & Analytics dependencies
+  fl_chart: ^0.68.0
+  excel: ^4.0.2
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+  # Code Generators
+  build_runner: ^2.4.11
+  isar_generator: ^3.1.0+1
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,83 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/network_service.dart';
+import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_service.dart';
+import 'package:business_sahaj_erp/core/services/firebase_service.dart';
+import 'package:business_sahaj_erp/core/services/storage_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+
+// Repositories
+import 'package:business_sahaj_erp/domain/repositories/sync_queue_repository.dart';
+import 'package:business_sahaj_erp/data/repositories/sync_queue_repository_impl.dart';
+import 'package:business_sahaj_erp/domain/repositories/item_repository.dart';
+import 'package:business_sahaj_erp/data/repositories/item_repository_impl.dart';
+
+// Logger provider
+final loggerProvider = Provider<LoggerService>((ref) {
+  return logger;
+});
+
+// Network Service provider (Dio wrapper)
+final networkServiceProvider = Provider<NetworkService>((ref) {
+  return NetworkService();
+});
+
+// Database Service provider (Isar DB wrapper)
+final databaseServiceProvider = Provider<DatabaseService>((ref) {
+  return DatabaseService();
+});
+
+// Firebase Service Provider
+final firebaseServiceProvider = Provider<FirebaseService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return FirebaseService(prefs);
+});
+
+// Storage Service Provider
+final storageServiceProvider = Provider<StorageService>((ref) {
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  return StorageService(firebaseService);
+});
+
+// Sync Queue Service Provider
+final syncQueueServiceProvider = Provider<SyncQueueService>((ref) {
+  final dbService = ref.watch(databaseServiceProvider);
+  return SyncQueueService(dbService);
+});
+
+// Sync Service provider
+final syncServiceProvider = Provider<SyncService>((ref) {
+  final firebaseService = ref.watch(firebaseServiceProvider);
+  final queueService = ref.watch(syncQueueServiceProvider);
+  final dbService = ref.watch(databaseServiceProvider);
+  final prefs = ref.watch(sharedPreferencesProvider);
+
+  final syncService = SyncService(firebaseService, queueService, dbService, prefs);
+  ref.onDispose(() => syncService.dispose());
+  return syncService;
+});
+
+// Sync Manager Provider
+final syncManagerProvider = Provider<SyncManager>((ref) {
+  final syncService = ref.watch(syncServiceProvider);
+  final queueService = ref.watch(syncQueueServiceProvider);
+
+  final manager = SyncManager(syncService, queueService);
+  ref.onDispose(() => manager.dispose());
+  return manager;
+});
+
+// Sync Queue Repository Provider
+final syncQueueRepositoryProvider = Provider<SyncQueueRepository>((ref) {
+  final dbService = ref.watch(databaseServiceProvider);
+  return SyncQueueRepositoryImpl(dbService.isar);
+});
+
+// Item Repository Provider
+final itemRepositoryProvider = Provider<ItemRepository>((ref) {
+  final dbService = ref.watch(databaseServiceProvider);
+  return ItemRepositoryImpl(dbService.isar);
+});
