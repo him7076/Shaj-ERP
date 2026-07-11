@@ -38,11 +38,30 @@ subprojects {
         }
     }
 
+    val cleanAndroidManifest = {
+        val manifestFile = file("src/main/AndroidManifest.xml")
+        if (manifestFile.exists()) {
+            try {
+                var content = manifestFile.readText(Charsets.UTF_8)
+                if (content.contains("package=")) {
+                    val regex = Regex("""package="[^"]*"""")
+                    content = content.replace(regex, "")
+                    manifestFile.writeText(content, Charsets.UTF_8)
+                    project.logger.quiet("Stripped package attribute from: ${manifestFile.absolutePath}")
+                }
+            } catch (e: Exception) {
+                // Ignore
+            }
+        }
+    }
+
     if (state.executed) {
         configureNamespace()
+        cleanAndroidManifest()
     } else {
         afterEvaluate {
             configureNamespace()
+            cleanAndroidManifest()
         }
     }
 }
