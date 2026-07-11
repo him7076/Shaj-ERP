@@ -20,7 +20,7 @@ subprojects {
 }
 
 subprojects {
-    afterEvaluate {
+    val configureNamespace = {
         if (plugins.hasPlugin("com.android.library") || plugins.hasPlugin("com.android.application")) {
             val android = extensions.findByName("android")
             if (android != null) {
@@ -35,6 +35,14 @@ subprojects {
                     // Ignore reflection errors if properties differ
                 }
             }
+        }
+    }
+
+    if (state.executed) {
+        configureNamespace()
+    } else {
+        afterEvaluate {
+            configureNamespace()
         }
     }
 }
