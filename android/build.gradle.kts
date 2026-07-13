@@ -24,6 +24,7 @@ subprojects {
         if (plugins.hasPlugin("com.android.library") || plugins.hasPlugin("com.android.application")) {
             val android = extensions.findByName("android")
             if (android != null) {
+                // Resolve missing namespaces
                 try {
                     val getNamespace = android.javaClass.getMethod("getNamespace")
                     val setNamespace = android.javaClass.getMethod("setNamespace", String::class.java)
@@ -33,6 +34,19 @@ subprojects {
                     }
                 } catch (e: Exception) {
                     // Ignore reflection errors if properties differ
+                }
+
+                // Dynamically align compileSdk to 36 for all dependencies to support latest lifecycle/geolocator libs
+                try {
+                    val compileSdkMethod = android.javaClass.getMethod("setCompileSdk", Int::class.javaPrimitiveType)
+                    compileSdkMethod.invoke(android, 36)
+                } catch (e: Exception) {
+                    try {
+                        val compileSdkVersionMethod = android.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType)
+                        compileSdkVersionMethod.invoke(android, 36)
+                    } catch (ex: Exception) {
+                        // Ignore
+                    }
                 }
             }
         }
@@ -62,12 +76,6 @@ subprojects {
         afterEvaluate {
             configureNamespace()
             cleanAndroidManifest()
-        }
-    }
-
-    tasks.whenTaskAdded {
-        if (name.contains("checkReleaseAarMetadata") || name.contains("checkDebugAarMetadata")) {
-            enabled = false
         }
     }
 }
