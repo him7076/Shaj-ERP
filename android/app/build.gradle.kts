@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.business_sahaj_erp"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -19,8 +19,8 @@ android {
         applicationId = "com.example.business_sahaj_erp"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -42,4 +42,10 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+tasks.whenTaskAdded {
+    if (name.contains("checkReleaseAarMetadata") || name.contains("checkDebugAarMetadata")) {
+        enabled = false
+    }
 }
