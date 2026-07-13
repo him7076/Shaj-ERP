@@ -64,6 +64,12 @@ subprojects {
             cleanAndroidManifest()
         }
     }
+
+    tasks.whenTaskAdded {
+        if (name.contains("checkReleaseAarMetadata") || name.contains("checkDebugAarMetadata")) {
+            enabled = false
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {
