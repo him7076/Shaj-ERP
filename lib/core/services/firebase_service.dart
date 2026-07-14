@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -12,9 +13,43 @@ class FirebaseService {
     _initDeviceId();
   }
 
-  FirebaseAuth get auth => FirebaseAuth.instance;
-  FirebaseFirestore get firestore => FirebaseFirestore.instance;
-  FirebaseStorage get storage => FirebaseStorage.instance;
+  bool get _isFirebaseReady {
+    try {
+      // Check if any FirebaseApp is initialized
+      return _hasFirebaseApp();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool _hasFirebaseApp() {
+    try {
+      return Firebase.apps.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  FirebaseAuth get auth {
+    if (!_isFirebaseReady) {
+      throw StateError('Firebase is not initialized.');
+    }
+    return FirebaseAuth.instance;
+  }
+
+  FirebaseFirestore get firestore {
+    if (!_isFirebaseReady) {
+      throw StateError('Firebase is not initialized.');
+    }
+    return FirebaseFirestore.instance;
+  }
+
+  FirebaseStorage get storage {
+    if (!_isFirebaseReady) {
+      throw StateError('Firebase is not initialized.');
+    }
+    return FirebaseStorage.instance;
+  }
 
   String? _deviceId;
   String get deviceId => _deviceId ?? 'unknown_device';
@@ -32,7 +67,7 @@ class FirebaseService {
   }
 
   /// Get current user email
-  String? get currentUserEmail => auth.currentUser?.email;
+  String? get currentUserEmail => _isFirebaseReady ? auth.currentUser?.email : null;
 
   /// Get company context for document security isolation
   String get companyId {
@@ -44,7 +79,7 @@ class FirebaseService {
   }
 
   /// Check if the user is authenticated
-  bool get isAuthenticated => auth.currentUser != null;
+  bool get isAuthenticated => _isFirebaseReady && auth.currentUser != null;
 }
 
 // Simple Platform checking helper
