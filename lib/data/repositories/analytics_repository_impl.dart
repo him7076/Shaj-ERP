@@ -7,7 +7,7 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_item_collectio
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
-
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 class AnalyticsRepositoryImpl implements AnalyticsRepository {
   final DatabaseService _dbService;
 
