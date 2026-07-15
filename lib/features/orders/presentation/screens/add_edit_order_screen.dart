@@ -19,6 +19,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 
 class AddEditOrderScreen extends ConsumerStatefulWidget {
   final String? orderUuid;
@@ -195,9 +196,10 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
           ..rate = cartItem.rate
-          ..discount = cartItem.discountAmount
+          ..discountAmount = cartItem.discountAmount
+          ..discountPercent = cartItem.discountPercent
           ..taxableAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
-          ..gstRate = cartItem.gstPercent
+          ..gstPercent = cartItem.gstPercent
           ..gstAmount = cartItem.gstPercent * cartItem.rate * 0.01
           ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount;
 
@@ -531,7 +533,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     );
   }
 
-  Widget _buildCartItemsTable(ThemeData theme, CartState cart) {
+  Widget _buildCartItemsTable(ThemeData theme, OrderCart cart) {
     if (cart.items.isEmpty) {
       return Card(
         elevation: 0,
