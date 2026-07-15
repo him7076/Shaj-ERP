@@ -447,37 +447,52 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen>
                     orElse: () => CartItemState(item: item, rate: 0, gstPercent: 0, quantity: 0),
                   );
 
-                  return Row(
-                    children: [
-                      // Image thumbnail
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          color: theme.colorScheme.surfaceVariant,
-                          child: item.imagePaths != null && item.imagePaths!.isNotEmpty
-                              ? Image.file(File(item.imagePaths!.first), fit: BoxFit.cover)
-                              : const Icon(Icons.inventory),
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Row(
+                      children: [
+                        // Left-side status indicator bullet
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: (item.currentStock ?? 0.0) <= 0
+                                ? Colors.red
+                                : ((item.currentStock ?? 0.0) <= (item.reorderLevel ?? 0.0)
+                                    ? Colors.orange
+                                    : Colors.green),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
+                        const SizedBox(width: 12),
 
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            Text('Rate: ₹${item.sellRate?.toStringAsFixed(2)} | Stock: ${item.currentStock?.toInt()}'),
-                            Text('GST: ${item.gstRate?.toInt()}%', style: theme.textTheme.bodySmall),
-                          ],
+                        // Item Info (Expanded to take full remaining width)
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.itemName ?? '',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Rate: ₹${item.sellRate?.toStringAsFixed(2)}  •  Stock: ${item.currentStock?.toInt()}  •  GST: ${item.gstRate?.toInt()}%',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 16),
 
-                      // +/- controls
-                      _buildQuantityAdjuster(item, cartItem),
-                    ],
+                        // +/- quantity controller
+                        _buildQuantityAdjuster(item, cartItem),
+                      ],
+                    ),
                   );
                 },
               );

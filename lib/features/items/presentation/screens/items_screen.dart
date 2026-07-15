@@ -450,12 +450,12 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
     return Card(
       key: ValueKey(item.uuid),
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      elevation: 0.5,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isLow ? stockColor.withOpacity(0.3) : theme.colorScheme.outlineVariant.withOpacity(0.4),
+          color: isLow ? stockColor.withOpacity(0.5) : theme.colorScheme.outlineVariant.withOpacity(0.4),
           width: isLow ? 1.5 : 1.0,
         ),
       ),
@@ -469,96 +469,47 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             ),
           ).then((_) => ref.invalidate(filteredItemsProvider));
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Product Image
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: hasImage
-                      ? Image.file(
-                          File(item.imagePaths!.first),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: theme.colorScheme.surfaceVariant,
-                              child: const Icon(Icons.image_not_supported),
-                            );
-                          },
-                        )
-                      : Container(
-                          color: theme.colorScheme.surfaceVariant,
-                          child: Icon(Icons.inventory, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-                        ),
+              // Stock status colored bullet indicator
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: stockColor,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
-              // Product Info Column
+              // Product Basic Info Column (Spanned to maximize width)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       item.itemName ?? '',
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
-                      'Code: ${item.itemCode ?? "N/A"} | HSN: ${item.hsnCode ?? "N/A"}',
+                      'Code: ${item.itemCode ?? "N/A"}  •  Price: ₹${item.sellRate?.toStringAsFixed(2)}  •  Stock: ${stockVal.toInt()}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        // Stock warning label
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: stockColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: stockColor.withOpacity(0.2)),
-                          ),
-                          child: Text(
-                            stockLabel,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: stockColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (item.brand.value?.brandName != null)
-                          Text(
-                            '•  ${item.brand.value!.brandName}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '₹${item.sellRate?.toStringAsFixed(2) ?? "0.00"}',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 16),
 
               // Quantity trigger buttons (+ / -)
               _buildAmazonQuantityController(item, quantity, theme),
