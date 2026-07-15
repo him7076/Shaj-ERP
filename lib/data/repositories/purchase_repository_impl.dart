@@ -69,9 +69,10 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         try { await purchase.party.load(); } catch (_) {}
         final party = purchase.party.value;
 
-        // 2. Adjust Party Outstanding Balance (For supplier purchase, outstanding balance reduces if paid or is tracked separately,
-        // but for simplicity we keep it tracked if needed or just save party relation)
+        // 2. Adjust Party Outstanding Balance for supplier purchase (Payable increases by pendingAmount)
         if (party != null) {
+          party.outstandingBalance = (party.outstandingBalance ?? 0.0) + (purchase.pendingAmount ?? 0.0);
+          party.updatedAt = DateTime.now();
           await isar.partys.put(party);
         }
 

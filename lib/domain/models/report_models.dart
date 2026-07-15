@@ -341,8 +341,10 @@ class ProfitLineItem {
 class DashboardAnalyticsSummary {
   final double todaySales;
   final double monthlySales;
+  final double monthlyPurchases;
   final int pendingOrdersCount;
-  final double totalOutstanding;
+  final double totalOutstanding; // Receivable
+  final double totalPayable;     // Payable
   final int lowStockCount;
   final List<TopCustomerEntry> topCustomers;
   final List<TopProductEntry> topProducts;
@@ -351,8 +353,10 @@ class DashboardAnalyticsSummary {
   DashboardAnalyticsSummary({
     required this.todaySales,
     required this.monthlySales,
+    required this.monthlyPurchases,
     required this.pendingOrdersCount,
     required this.totalOutstanding,
+    required this.totalPayable,
     required this.lowStockCount,
     required this.topCustomers,
     required this.topProducts,

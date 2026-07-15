@@ -2,11 +2,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/web_mock_isar.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 
-// Import all 15 collections (including Purchases and Expenses)
+// Import all collections
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
@@ -22,6 +23,7 @@ import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -34,22 +36,29 @@ class DatabaseService {
     return _isar!;
   }
 
-  Future<void> init() async {
+  Future<void> init([SharedPreferences? prefs]) async {
     if (_isar != null) {
       logger.warning('DatabaseService has already been initialized.');
       return;
     }
 
+    final activeFirmId = prefs?.getString('active_firm_id') ?? 'firm_default';
+
     try {
       if (kIsWeb) {
-        _isar = WebMockIsar();
-        logger.info('Initialized WebMockIsar Database successfully.');
-        // Auto-seed demo data on web startup so the registers are filled by default for testing
-        try {
-          await DemoDataSeeder.seedDemoData(this);
-          logger.info('Auto-seeded demo data on web startup.');
-        } catch (e) {
-          logger.error('Failed to auto-seed demo data on web startup', e);
+        _isar = WebMockIsar(firmId: activeFirmId);
+        logger.info('Initialized WebMockIsar Database for firm: $activeFirmId');
+        
+        final key = 'demo_seeded_$activeFirmId';
+        final alreadySeeded = prefs?.getBool(key) ?? false;
+        if (!alreadySeeded && activeFirmId == 'firm_default') {
+          try {
+            await DemoDataSeeder.seedDemoData(this);
+            await prefs?.setBool(key, true);
+            logger.info('Auto-seeded demo data on web startup for default firm.');
+          } catch (e) {
+            logger.error('Failed to auto-seed demo data on web startup', e);
+          }
         }
         return;
       }
@@ -77,12 +86,14 @@ class DatabaseService {
           PurchaseSchema,
           PurchaseItemSchema,
           ExpenseSchema,
+          TransactionSchema,
         ],
+        name: activeFirmId,
         directory: dirPath ?? '',
-        inspector: !kIsWeb, // Enables Isar database inspector in debug builds on native platforms only
+        inspector: !kIsWeb,
       );
 
-      logger.info('Isar Database v$currentDatabaseVersion initialized successfully.');
+      logger.info('Isar Database ($activeFirmId) v$currentDatabaseVersion initialized successfully.');
 
       // Run Schema Migrations if required
       await _checkAndRunMigrations();
@@ -95,10 +106,19 @@ class DatabaseService {
   /// Close database connection
   Future<void> close() async {
     if (_isar != null) {
-      await _isar!.close();
+      if (!kIsWeb) {
+        await _isar!.close();
+      }
       _isar = null;
       logger.info('Isar Database connection closed.');
     }
+  }
+
+  /// Switch active firm database
+  Future<void> switchFirm(String newFirmId, SharedPreferences prefs) async {
+    await close();
+    await prefs.setString('active_firm_id', newFirmId);
+    await init(prefs);
   }
 
   /// Purges all data in all collections

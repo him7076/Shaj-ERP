@@ -61,7 +61,7 @@ void main() async {
   // 3. Initialize Isar database storage
   final dbService = DatabaseService();
   try {
-    await dbService.init();
+    await dbService.init(sharedPrefs);
   } catch (e) {
     logger.error('Database initialization failed.', e);
   }

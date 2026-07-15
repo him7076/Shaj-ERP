@@ -116,6 +116,13 @@ class CustomDrawer extends StatelessWidget {
                     routePath: '/expenses',
                     currentPath: location,
                   ),
+                  _buildDrawerItem(
+                    context: context,
+                    icon: Icons.payment_rounded,
+                    label: 'Payments & Receipts',
+                    routePath: '/transactions',
+                    currentPath: location,
+                  ),
                   _buildDrawerHeader('MANAGEMENT'),
                   _buildDrawerItem(
                     context: context,

@@ -15,9 +15,15 @@ import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 
 class WebMockIsar implements Isar {
-  static final Map<String, List<dynamic>> _db = {};
+  final String firmId;
+  static final Map<String, Map<String, List<dynamic>>> _dbs = {};
+
+  WebMockIsar({this.firmId = 'firm_default'});
+
+  Map<String, List<dynamic>> get _db => _dbs[firmId] ??= {};
 
   // Forces dart2js compilation to keep the Query inheritance relation
   static void _dummyKeep() {
@@ -51,6 +57,8 @@ class WebMockIsar implements Isar {
     print(_pi);
     final Query<Expense> _e = WebMockQuery<Expense>([], WebMockCollection<Expense>('', {}, WebMockIsar()));
     print(_e);
+    final Query<Transaction> _txn = WebMockQuery<Transaction>([], WebMockCollection<Transaction>('', {}, WebMockIsar()));
+    print(_txn);
   }
 
   @override
@@ -74,6 +82,7 @@ class WebMockIsar implements Isar {
     if (T == Purchase) return 'purchases';
     if (T == PurchaseItem) return 'purchaseItems';
     if (T == Expense) return 'expenses';
+    if (T == Transaction) return 'transactions';
     return 'dynamics';
   }
 
@@ -109,6 +118,7 @@ class WebMockIsar implements Isar {
     if (name == 'purchases') return WebMockCollection<Purchase>('purchases', _db, this);
     if (name == 'purchaseItems') return WebMockCollection<PurchaseItem>('purchaseItems', _db, this);
     if (name == 'expenses') return WebMockCollection<Expense>('expenses', _db, this);
+    if (name == 'transactions') return WebMockCollection<Transaction>('transactions', _db, this);
     return WebMockCollection<dynamic>(name, _db, this);
   }
 }
@@ -142,6 +152,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (T == Purchase) return PurchaseSchema as CollectionSchema<T>;
     if (T == PurchaseItem) return PurchaseItemSchema as CollectionSchema<T>;
     if (T == Expense) return ExpenseSchema as CollectionSchema<T>;
+    if (T == Transaction) return TransactionSchema as CollectionSchema<T>;
     throw UnimplementedError('No schema defined for type $T');
   }
 
@@ -198,6 +209,11 @@ class WebMockCollection<T> extends IsarCollection<T> {
           final items = isarInstance.collection<Item>() as WebMockCollection<Item>;
           entity.item.value = items._list.firstWhere((i) => i.id == entity.itemId, orElse: () => null) as Item?;
         }
+      } else if (entity is Transaction) {
+        if (entity.party.value == null && entity.partyUuid != null) {
+          final parties = isarInstance.collection<Party>() as WebMockCollection<Party>;
+          entity.party.value = parties._list.firstWhere((p) => p.uuid == entity.partyUuid, orElse: () => null) as Party?;
+        }
       }
     } catch (_) {}
   }
@@ -218,6 +234,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (type == Purchase) return WebMockQuery<Purchase>(list, isarInstance.collection<Purchase>() as WebMockCollection<Purchase>);
     if (type == PurchaseItem) return WebMockQuery<PurchaseItem>(list, isarInstance.collection<PurchaseItem>() as WebMockCollection<PurchaseItem>);
     if (type == Expense) return WebMockQuery<Expense>(list, isarInstance.collection<Expense>() as WebMockCollection<Expense>);
+    if (type == Transaction) return WebMockQuery<Transaction>(list, isarInstance.collection<Transaction>() as WebMockCollection<Transaction>);
     return WebMockQuery<T>(list, this);
   }
 
@@ -444,6 +461,14 @@ class WebMockCollection<T> extends IsarCollection<T> {
     }
     if (item is Expense) {
       if (prop == 'category') return item.category;
+      if (prop == 'amount') return item.amount;
+    }
+    if (item is Transaction) {
+      if (prop == 'transactionnumber') return item.transactionNumber;
+      if (prop == 'transactiontype') return item.transactionType;
+      if (prop == 'partyuuid') return item.partyUuid;
+      if (prop == 'targetpartyuuid') return item.targetPartyUuid;
+      if (prop == 'linkedbilluuid') return item.linkedBillUuid;
       if (prop == 'amount') return item.amount;
     }
     

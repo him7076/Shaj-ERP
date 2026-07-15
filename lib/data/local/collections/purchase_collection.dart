@@ -36,6 +36,12 @@ class Purchase implements IsarModel {
   double? roundOff;
   double? grandTotal;
 
+  // Payment Tracking
+  @Index()
+  String? paymentStatus; // Unpaid, Partially Paid, Paid
+  double? paidAmount;
+  double? pendingAmount;
+
   // Notes
   String? remarks;
 

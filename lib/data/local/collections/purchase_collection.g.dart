@@ -15,7 +15,7 @@ extension GetPurchaseCollection on Isar {
 
 const PurchaseSchema = CollectionSchema(
   name: r'Purchase',
-  id: -2376489861051,
+  id: -2376489861051921561,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -62,68 +62,83 @@ const PurchaseSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'partyId': PropertySchema(
+    r'paidAmount': PropertySchema(
       id: 9,
+      name: r'paidAmount',
+      type: IsarType.double,
+    ),
+    r'partyId': PropertySchema(
+      id: 10,
       name: r'partyId',
       type: IsarType.long,
     ),
     r'partyName': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'partyName',
       type: IsarType.string,
     ),
+    r'paymentStatus': PropertySchema(
+      id: 12,
+      name: r'paymentStatus',
+      type: IsarType.string,
+    ),
+    r'pendingAmount': PropertySchema(
+      id: 13,
+      name: r'pendingAmount',
+      type: IsarType.double,
+    ),
     r'purchaseDate': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'purchaseDate',
       type: IsarType.dateTime,
     ),
     r'purchaseNumber': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'purchaseNumber',
       type: IsarType.string,
     ),
     r'remarks': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'remarks',
       type: IsarType.string,
     ),
     r'roundOff': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'roundOff',
       type: IsarType.double,
     ),
     r'sgstAmount': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'sgstAmount',
       type: IsarType.double,
     ),
     r'subtotal': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'taxableAmount': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalGST': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'totalGST',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'version',
       type: IsarType.long,
     )
@@ -135,7 +150,7 @@ const PurchaseSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -148,7 +163,7 @@ const PurchaseSchema = CollectionSchema(
       ],
     ),
     r'purchaseNumber': IndexSchema(
-      id: 8689101207271,
+      id: 8689101207271201480,
       name: r'purchaseNumber',
       unique: true,
       replace: false,
@@ -159,17 +174,30 @@ const PurchaseSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'paymentStatus': IndexSchema(
+      id: 7011973130100993011,
+      name: r'paymentStatus',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'paymentStatus',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {
     r'party': LinkSchema(
-      id: 4001614793129,
+      id: 4001614793129909608,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'purchaseItems': LinkSchema(
-      id: 3471249955400,
+      id: 3471249955400913843,
       name: r'purchaseItems',
       target: r'PurchaseItem',
       single: false,
@@ -203,6 +231,12 @@ int _purchaseEstimateSize(
   }
   {
     final value = object.partyName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.paymentStatus;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -243,19 +277,22 @@ void _purchaseSerialize(
   writer.writeDouble(offsets[6], object.igstAmount);
   writer.writeBool(offsets[7], object.isDeleted);
   writer.writeBool(offsets[8], object.isSynced);
-  writer.writeLong(offsets[9], object.partyId);
-  writer.writeString(offsets[10], object.partyName);
-  writer.writeDateTime(offsets[11], object.purchaseDate);
-  writer.writeString(offsets[12], object.purchaseNumber);
-  writer.writeString(offsets[13], object.remarks);
-  writer.writeDouble(offsets[14], object.roundOff);
-  writer.writeDouble(offsets[15], object.sgstAmount);
-  writer.writeDouble(offsets[16], object.subtotal);
-  writer.writeDouble(offsets[17], object.taxableAmount);
-  writer.writeDouble(offsets[18], object.totalGST);
-  writer.writeDateTime(offsets[19], object.updatedAt);
-  writer.writeString(offsets[20], object.uuid);
-  writer.writeLong(offsets[21], object.version);
+  writer.writeDouble(offsets[9], object.paidAmount);
+  writer.writeLong(offsets[10], object.partyId);
+  writer.writeString(offsets[11], object.partyName);
+  writer.writeString(offsets[12], object.paymentStatus);
+  writer.writeDouble(offsets[13], object.pendingAmount);
+  writer.writeDateTime(offsets[14], object.purchaseDate);
+  writer.writeString(offsets[15], object.purchaseNumber);
+  writer.writeString(offsets[16], object.remarks);
+  writer.writeDouble(offsets[17], object.roundOff);
+  writer.writeDouble(offsets[18], object.sgstAmount);
+  writer.writeDouble(offsets[19], object.subtotal);
+  writer.writeDouble(offsets[20], object.taxableAmount);
+  writer.writeDouble(offsets[21], object.totalGST);
+  writer.writeDateTime(offsets[22], object.updatedAt);
+  writer.writeString(offsets[23], object.uuid);
+  writer.writeLong(offsets[24], object.version);
 }
 
 Purchase _purchaseDeserialize(
@@ -275,19 +312,22 @@ Purchase _purchaseDeserialize(
   object.igstAmount = reader.readDoubleOrNull(offsets[6]);
   object.isDeleted = reader.readBool(offsets[7]);
   object.isSynced = reader.readBool(offsets[8]);
-  object.partyId = reader.readLongOrNull(offsets[9]);
-  object.partyName = reader.readStringOrNull(offsets[10]);
-  object.purchaseDate = reader.readDateTimeOrNull(offsets[11]);
-  object.purchaseNumber = reader.readStringOrNull(offsets[12]);
-  object.remarks = reader.readStringOrNull(offsets[13]);
-  object.roundOff = reader.readDoubleOrNull(offsets[14]);
-  object.sgstAmount = reader.readDoubleOrNull(offsets[15]);
-  object.subtotal = reader.readDoubleOrNull(offsets[16]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[17]);
-  object.totalGST = reader.readDoubleOrNull(offsets[18]);
-  object.updatedAt = reader.readDateTime(offsets[19]);
-  object.uuid = reader.readStringOrNull(offsets[20]);
-  object.version = reader.readLong(offsets[21]);
+  object.paidAmount = reader.readDoubleOrNull(offsets[9]);
+  object.partyId = reader.readLongOrNull(offsets[10]);
+  object.partyName = reader.readStringOrNull(offsets[11]);
+  object.paymentStatus = reader.readStringOrNull(offsets[12]);
+  object.pendingAmount = reader.readDoubleOrNull(offsets[13]);
+  object.purchaseDate = reader.readDateTimeOrNull(offsets[14]);
+  object.purchaseNumber = reader.readStringOrNull(offsets[15]);
+  object.remarks = reader.readStringOrNull(offsets[16]);
+  object.roundOff = reader.readDoubleOrNull(offsets[17]);
+  object.sgstAmount = reader.readDoubleOrNull(offsets[18]);
+  object.subtotal = reader.readDoubleOrNull(offsets[19]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[20]);
+  object.totalGST = reader.readDoubleOrNull(offsets[21]);
+  object.updatedAt = reader.readDateTime(offsets[22]);
+  object.uuid = reader.readStringOrNull(offsets[23]);
+  object.version = reader.readLong(offsets[24]);
   return object;
 }
 
@@ -317,30 +357,36 @@ P _purchaseDeserializeProp<P>(
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 10:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 11:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
       return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 14:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 15:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
       return (reader.readDoubleOrNull(offset)) as P;
     case 18:
       return (reader.readDoubleOrNull(offset)) as P;
     case 19:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 21:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 22:
+      return (reader.readDateTime(offset)) as P;
+    case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -670,6 +716,71 @@ extension PurchaseQueryWhere on QueryBuilder<Purchase, Purchase, QWhereClause> {
               indexName: r'purchaseNumber',
               lower: [],
               upper: [purchaseNumber],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterWhereClause> paymentStatusIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'paymentStatus',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterWhereClause> paymentStatusIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'paymentStatus',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterWhereClause> paymentStatusEqualTo(
+      String? paymentStatus) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'paymentStatus',
+        value: [paymentStatus],
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterWhereClause> paymentStatusNotEqualTo(
+      String? paymentStatus) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'paymentStatus',
+              lower: [],
+              upper: [paymentStatus],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'paymentStatus',
+              lower: [paymentStatus],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'paymentStatus',
+              lower: [paymentStatus],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'paymentStatus',
+              lower: [],
+              upper: [paymentStatus],
               includeUpper: false,
             ));
       }
@@ -1416,6 +1527,85 @@ extension PurchaseQueryFilter
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paidAmountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'paidAmount',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paidAmountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'paidAmount',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paidAmountEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paidAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paidAmountGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'paidAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paidAmountLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'paidAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paidAmountBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'paidAmount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QAfterFilterCondition> partyIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1628,6 +1818,239 @@ extension PurchaseQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'partyName',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paymentStatusIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'paymentStatus',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paymentStatusIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'paymentStatus',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paymentStatusEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paymentStatusGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paymentStatusLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paymentStatusBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'paymentStatus',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paymentStatusStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paymentStatusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paymentStatusContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> paymentStatusMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'paymentStatus',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paymentStatusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paymentStatus',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      paymentStatusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'paymentStatus',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      pendingAmountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'pendingAmount',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      pendingAmountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'pendingAmount',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> pendingAmountEqualTo(
+    double? value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'pendingAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      pendingAmountGreaterThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'pendingAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> pendingAmountLessThan(
+    double? value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'pendingAmount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition> pendingAmountBetween(
+    double? lower,
+    double? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'pendingAmount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
       ));
     });
   }
@@ -2838,6 +3261,18 @@ extension PurchaseQuerySortBy on QueryBuilder<Purchase, Purchase, QSortBy> {
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPaidAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paidAmount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPaidAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paidAmount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPartyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyId', Sort.asc);
@@ -2859,6 +3294,30 @@ extension PurchaseQuerySortBy on QueryBuilder<Purchase, Purchase, QSortBy> {
   QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPartyNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPaymentStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPaymentStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPendingAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pendingAmount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByPendingAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pendingAmount', Sort.desc);
     });
   }
 
@@ -3117,6 +3576,18 @@ extension PurchaseQuerySortThenBy
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPaidAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paidAmount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPaidAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paidAmount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPartyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyId', Sort.asc);
@@ -3138,6 +3609,30 @@ extension PurchaseQuerySortThenBy
   QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPartyNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'partyName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPaymentStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPaymentStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPendingAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pendingAmount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByPendingAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'pendingAmount', Sort.desc);
     });
   }
 
@@ -3332,6 +3827,12 @@ extension PurchaseQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QDistinct> distinctByPaidAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'paidAmount');
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QDistinct> distinctByPartyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'partyId');
@@ -3342,6 +3843,20 @@ extension PurchaseQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'partyName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QDistinct> distinctByPaymentStatus(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'paymentStatus',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QDistinct> distinctByPendingAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'pendingAmount');
     });
   }
 
@@ -3478,6 +3993,12 @@ extension PurchaseQueryProperty
     });
   }
 
+  QueryBuilder<Purchase, double?, QQueryOperations> paidAmountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'paidAmount');
+    });
+  }
+
   QueryBuilder<Purchase, int?, QQueryOperations> partyIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'partyId');
@@ -3487,6 +4008,18 @@ extension PurchaseQueryProperty
   QueryBuilder<Purchase, String?, QQueryOperations> partyNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'partyName');
+    });
+  }
+
+  QueryBuilder<Purchase, String?, QQueryOperations> paymentStatusProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'paymentStatus');
+    });
+  }
+
+  QueryBuilder<Purchase, double?, QQueryOperations> pendingAmountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'pendingAmount');
     });
   }
 

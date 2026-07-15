@@ -450,7 +450,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
     return Card(
       key: ValueKey(item.uuid),
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -459,7 +459,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           width: isLow ? 1.5 : 1.0,
         ),
       ),
-      child: InkWell(
+      child: ListTile(
         onTap: () {
           // Open Details Screen
           Navigator.push(
@@ -469,53 +469,39 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             ),
           ).then((_) => ref.invalidate(filteredItemsProvider));
         },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              // Stock status colored bullet indicator
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: stockColor,
-                ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: stockColor,
               ),
-              const SizedBox(width: 12),
-
-              // Product Basic Info Column (Spanned to maximize width)
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.itemName ?? '',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Code: ${item.itemCode ?? "N/A"}  •  Price: ₹${item.sellRate?.toStringAsFixed(2)}  •  Stock: ${stockVal.toInt()}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Quantity trigger buttons (+ / -)
-              _buildAmazonQuantityController(item, quantity, theme),
-            ],
+            ),
+          ],
+        ),
+        title: Text(
+          item.itemName ?? '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
           ),
         ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            'Code: ${item.itemCode ?? "N/A"}  •  Price: ₹${item.sellRate?.toStringAsFixed(2)}  •  Stock: ${stockVal.toInt()}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        trailing: _buildAmazonQuantityController(item, quantity, theme),
       ),
     );
   }

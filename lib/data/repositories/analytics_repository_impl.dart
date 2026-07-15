@@ -46,6 +46,15 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .findAll();
     final monthlySales = monthlyInvoices.fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
 
+    // Monthly Purchases
+    final monthlyPurchasesInvoices = await isar.purchases
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .purchaseDateBetween(startOfMonth, endOfMonth)
+        .findAll();
+    final monthlyPurchases = monthlyPurchasesInvoices.fold(0.0, (sum, p) => sum + (p.grandTotal ?? 0.0));
+
     // 3. Pending Orders Count
     final pendingOrdersCount = await isar.orders
         .filter()
@@ -54,9 +63,18 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .statusEqualTo('Pending')
         .count();
 
-    // 4. Total Outstanding Amount
+    // 4. Receivables and Payables outstanding
     final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
-    final totalOutstanding = parties.fold(0.0, (sum, p) => sum + (p.outstandingBalance ?? 0.0));
+    double totalOutstanding = 0.0;
+    double totalPayable = 0.0;
+    for (var p in parties) {
+      final bal = p.outstandingBalance ?? 0.0;
+      if (p.partyType == 'Supplier') {
+        totalPayable += bal;
+      } else {
+        totalOutstanding += bal;
+      }
+    }
 
     // 5. Low Stock Items Count
     final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
@@ -158,8 +176,10 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     return DashboardAnalyticsSummary(
       todaySales: todaySales,
       monthlySales: monthlySales,
+      monthlyPurchases: monthlyPurchases,
       pendingOrdersCount: pendingOrdersCount,
       totalOutstanding: totalOutstanding,
+      totalPayable: totalPayable,
       lowStockCount: lowStockCount,
       topCustomers: topCustomers.take(5).toList(),
       topProducts: topProducts.take(5).toList(),

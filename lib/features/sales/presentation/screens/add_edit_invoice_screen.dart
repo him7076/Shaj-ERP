@@ -16,6 +16,7 @@ import 'package:business_sahaj_erp/features/orders/presentation/providers/order_
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
   const AddEditInvoiceScreen({Key? key}) : super(key: key);
@@ -24,26 +25,23 @@ class AddEditInvoiceScreen extends ConsumerStatefulWidget {
   ConsumerState<AddEditInvoiceScreen> createState() => _AddEditInvoiceScreenState();
 }
 
-class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   final _formKey = GlobalKey<FormState>();
-
   bool _isSaving = false;
 
   final TextEditingController _remarksController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
   final TextEditingController _discountPercentController = TextEditingController();
   final TextEditingController _paidAmountController = TextEditingController(text: '0.0');
+  final TextEditingController _productSearchController = TextEditingController();
 
   String _invoiceType = 'Tax Invoice';
   DateTime _dueDate = DateTime.now().add(const Duration(days: 15));
+  DateTime _invoiceDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(invoiceCartProvider.notifier).clear();
     });
@@ -51,11 +49,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _remarksController.dispose();
     _discountController.dispose();
     _discountPercentController.dispose();
     _paidAmountController.dispose();
+    _productSearchController.dispose();
     super.dispose();
   }
 
@@ -65,7 +63,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a customer first.')),
       );
-      _tabController.animateTo(0);
       return;
     }
 
@@ -73,7 +70,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cart is empty. Add at least one item.')),
       );
-      _tabController.animateTo(1);
       return;
     }
 
@@ -87,13 +83,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
       final companyGst = companySettings?.companyGST;
 
       final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(companyGst);
-
-      // Generate invoice number
       final nextInvNum = await repo.generateNextInvoiceNumber();
 
       final invoice = Invoice()
         ..invoiceNumber = nextInvNum
-        ..invoiceDate = DateTime.now()
+        ..invoiceDate = _invoiceDate
         ..invoiceType = _invoiceType
         ..partyId = cart.selectedParty!.id
         ..partyName = cart.selectedParty!.partyName
@@ -101,7 +95,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
         ..address = cart.selectedParty!.city
         ..subtotal = totals['subtotal']
         ..discountAmount = totals['discountAmount']
-        ..taxableAmount = totals['subtotal'] // base taxable
+        ..taxableAmount = totals['subtotal']
         ..totalGST = totals['totalGST']
         ..roundOff = totals['roundOff']
         ..grandTotal = totals['grandTotal']
@@ -116,7 +110,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
         ..isSynced = false
         ..version = 1;
 
-      // GST splits
       final cleanCompany = companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
       final cleanParty = cart.selectedParty!.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
       final isLocal = cleanCompany.length >= 2 && cleanParty.length >= 2 && cleanCompany.substring(0, 2) == cleanParty.substring(0, 2);
@@ -133,7 +126,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
 
       invoice.party.value = cart.selectedParty;
 
-      // Map cart items to InvoiceItems
       final List<InvoiceItem> invoiceItems = cart.items.map((cartItem) {
         final invItem = InvoiceItem()
           ..itemId = cartItem.item.id
@@ -154,8 +146,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
 
       await repo.saveInvoice(invoice, invoiceItems);
 
-      // Refresh lists
       ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
 
       if (mounted) {
         Navigator.pop(context);
@@ -183,512 +175,508 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final cart = ref.watch(invoiceCartProvider);
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    if (_isSaving) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final mainContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPartyAndHeaderCard(theme),
+        const SizedBox(height: 16),
+        _buildProductSearchAndCatalog(theme),
+        const SizedBox(height: 16),
+        _buildCartItemsTable(theme, cart),
+      ],
+    );
+
+    final summaryContent = Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Invoice Settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _invoiceType,
+              decoration: const InputDecoration(labelText: 'Billing Type', border: OutlineInputBorder()),
+              items: const [
+                DropdownMenuItem(value: 'Tax Invoice', child: Text('Tax Invoice')),
+                DropdownMenuItem(value: 'Retail Invoice', child: Text('Retail Invoice')),
+                DropdownMenuItem(value: 'Cash Invoice', child: Text('Cash Invoice')),
+                DropdownMenuItem(value: 'Credit Invoice', child: Text('Credit Invoice')),
+              ],
+              onChanged: (val) {
+                if (val != null) setState(() => _invoiceType = val);
+              },
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('GST Inclusive Pricing'),
+              value: cart.isGstInclusive,
+              onChanged: (val) {
+                ref.read(invoiceCartProvider.notifier).toggleGstInclusive(val);
+              },
+            ),
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _paidAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Paid Amount (₹)', border: OutlineInputBorder()),
+                    onChanged: (val) {
+                      final double? amt = double.tryParse(val);
+                      if (amt != null) {
+                        ref.read(invoiceCartProvider.notifier).setPaidAmount(amt);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _dueDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (selected != null) {
+                        setState(() => _dueDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(labelText: 'Due Date', border: OutlineInputBorder()),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_dueDate)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _discountPercentController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Disc %', border: OutlineInputBorder()),
+                    onChanged: (val) {
+                      final double? pct = double.tryParse(val);
+                      ref.read(invoiceCartProvider.notifier).setDiscounts(pct, null);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _discountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Disc Amt (₹)', border: OutlineInputBorder()),
+                    onChanged: (val) {
+                      final double? amt = double.tryParse(val);
+                      ref.read(invoiceCartProvider.notifier).setDiscounts(null, amt);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _remarksController,
+              decoration: const InputDecoration(labelText: 'Remarks / Terms', border: OutlineInputBorder()),
+            ),
+            const Divider(height: 32),
+            _buildTotalsSummaryPanel(theme),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Save & Print Invoice'),
+              onPressed: _saveInvoice,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(55),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Direct Tax Invoice'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: '1. Customer', icon: Icon(Icons.person_outline)),
-            Tab(text: '2. Select Items', icon: Icon(Icons.shopping_bag_outlined)),
-            Tab(text: '3. Billing Review', icon: Icon(Icons.shopping_cart_outlined)),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: isDesktop
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: mainContent),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 2, child: summaryContent),
+                ],
+              )
+            : Column(
+                children: [
+                  mainContent,
+                  const SizedBox(height: 16),
+                  summaryContent,
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPartyAndHeaderCard(ThemeData theme) {
+    final partiesAsync = ref.watch(partiesListProvider);
+    final cart = ref.watch(invoiceCartProvider);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Billing Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: partiesAsync.when(
+                    data: (parties) {
+                      final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
+                      return DropdownButtonFormField<Party>(
+                        value: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
+                            ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
+                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Customer Account',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_pin),
+                        ),
+                        items: customerParties.map((p) {
+                          return DropdownMenuItem<Party>(value: p, child: Text(p.partyName ?? ''));
+                        }).toList(),
+                        onChanged: (party) {
+                          ref.read(invoiceCartProvider.notifier).setParty(party);
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error loading customers: $e'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.person_add),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
+                    ).then((_) => ref.invalidate(partiesListProvider));
+                  },
+                ),
+              ],
+            ),
+            if (cart.selectedParty != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info, color: Colors.blue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'GST: ${cart.selectedParty!.gstNumber ?? "Unregistered"} | Address: ${cart.selectedParty!.city ?? "N/A"} | Current Outstanding: ₹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _invoiceDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _invoiceDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(labelText: 'Invoice Date', border: OutlineInputBorder()),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_invoiceDate)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
-      body: _isSaving
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
+    );
+  }
+
+  Widget _buildProductSearchAndCatalog(ThemeData theme) {
+    final itemsAsync = ref.watch(filteredItemsProvider);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
               children: [
-                _buildPartySelectionTab(),
-                _buildProductCatalogTab(),
-                _buildCartTab(),
+                Expanded(
+                  child: itemsAsync.when(
+                    data: (items) {
+                      return Autocomplete<Item>(
+                        displayStringForOption: (item) => '${item.itemName} (Stock: ${item.currentStock?.toInt() ?? 0})',
+                        optionsBuilder: (textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<Item>.empty();
+                          }
+                          return items.where((item) =>
+                              item.itemName!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                        },
+                        onSelected: (item) {
+                          ref.read(invoiceCartProvider.notifier).addItem(item);
+                          _productSearchController.clear();
+                          FocusScope.of(context).unfocus();
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Type product name to add...',
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error loading products: $e'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.add),
+                  onPressed: () async {
+                    final newlyCreated = await AddItemSheet.show(context);
+                    if (newlyCreated != null) {
+                      ref.read(invoiceCartProvider.notifier).addItem(newlyCreated);
+                      ref.invalidate(filteredItemsProvider);
+                    }
+                  },
+                ),
               ],
             ),
-    );
-  }
-
-  Widget _buildPartySelectionTab() {
-    final theme = Theme.of(context);
-    final partiesAsync = ref.watch(partiesListProvider);
-
-    return partiesAsync.when(
-      data: (parties) {
-        return Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Select Billing Customer Account',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.separated(
-                itemCount: parties.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final party = parties[index];
-                  final isSelected = ref.watch(invoiceCartProvider).selectedParty?.uuid == party.uuid;
-
-                  return ListTile(
-                    selected: isSelected,
-                    selectedColor: theme.colorScheme.primary,
-                    selectedTileColor: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                    title: Text(party.partyName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('GST: ${party.gstNumber ?? "Unregistered"} | City: ${party.city ?? "N/A"}'),
-                    leading: CircleAvatar(
-                      child: Text(party.partyName?.substring(0, 1).toUpperCase() ?? ''),
-                    ),
-                    trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
-                    onTap: () {
-                      ref.read(invoiceCartProvider.notifier).setParty(party);
-                      _tabController.animateTo(1);
-                    },
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.person_add_outlined),
-                label: const Text('Add New Customer Account'),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AddEditPartyScreen(),
-                    ),
-                  ).then((_) => ref.invalidate(partiesListProvider));
-                },
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
           ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load customers: $e')),
+        ),
+      ),
     );
   }
 
-  Widget _buildProductCatalogTab() {
-    final theme = Theme.of(context);
-    final itemsAsync = ref.watch(filteredItemsProvider);
-    final cart = ref.watch(invoiceCartProvider);
-
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
-          child: Row(
-            children: [
-              const Icon(Icons.info_outline),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Cart Basket contains: ${cart.items.length} product lines.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
-              TextButton(
-                onPressed: () => _tabController.animateTo(2),
-                child: const Text('Review Cart'),
-              ),
-            ],
-          ),
+  Widget _buildCartItemsTable(ThemeData theme, InvoiceCart cart) {
+    if (cart.items.isEmpty) {
+      return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
         ),
-        Expanded(
-          child: itemsAsync.when(
-            data: (items) {
-              return ListView.separated(
-                padding: const EdgeInsets.all(12),
-                itemCount: items.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final cartItem = cart.items.firstWhere(
-                    (element) => element.item.uuid == item.uuid,
-                    orElse: () => CartItemState(item: item, rate: 0, gstPercent: 0, quantity: 0),
-                  );
-
-                  return Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          color: theme.colorScheme.surfaceVariant,
-                          child: item.imagePaths != null && item.imagePaths!.isNotEmpty
-                              ? Image.file(File(item.imagePaths!.first), fit: BoxFit.cover)
-                              : const Icon(Icons.inventory),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            Text('Rate: ₹${item.sellRate?.toStringAsFixed(2)} | Stock: ${item.currentStock?.toInt()}'),
-                            Text('GST: ${item.gstRate?.toInt()}%', style: theme.textTheme.bodySmall),
-                          ],
-                        ),
-                      ),
-                      _buildQuantityAdjuster(item, cartItem),
-                    ],
-                  );
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Failed to load items: $e')),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('Add New Product Master'),
-            onPressed: () async {
-              final newlyCreated = await AddItemSheet.show(context);
-              if (newlyCreated != null) {
-                ref.read(invoiceCartProvider.notifier).addItem(newlyCreated);
-                ref.invalidate(filteredItemsProvider);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40.0),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey),
+                SizedBox(height: 12),
+                Text('No product lines added yet.', style: TextStyle(color: Colors.grey)),
+              ],
             ),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildQuantityAdjuster(Item item, CartItemState cartItem) {
-    final theme = Theme.of(context);
-    if (cartItem.quantity == 0) {
-      return ElevatedButton(
-        onPressed: () {
-          ref.read(invoiceCartProvider.notifier).addItem(item);
-        },
-        child: const Text('ADD'),
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.remove, size: 16),
-            onPressed: () {
-              ref.read(invoiceCartProvider.notifier).updateItem(
-                    item.uuid!,
-                    quantity: cartItem.quantity - 1,
-                  );
-              if (cartItem.quantity <= 1) {
-                ref.read(invoiceCartProvider.notifier).removeItem(item.uuid!);
-              }
-            },
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(6),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '${cartItem.quantity.toInt()}',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 16),
-            onPressed: () {
-              ref.read(invoiceCartProvider.notifier).updateItem(
-                    item.uuid!,
-                    quantity: cartItem.quantity + 1,
-                  );
-            },
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(6),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCartTab() {
-    final theme = Theme.of(context);
-    final cart = ref.watch(invoiceCartProvider);
-
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('Items Review List', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: cart.items.length,
-                  separatorBuilder: (context, index) => const Divider(),
-                  itemBuilder: (context, index) {
-                    final cartItem = cart.items[index];
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: cart.items.length,
+              separatorBuilder: (context, index) => const Divider(height: 24),
+              itemBuilder: (context, index) {
+                final cartItem = cart.items[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(cartItem.item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.red),
-                              onPressed: () {
-                                ref.read(invoiceCartProvider.notifier).removeItem(cartItem.item.uuid!);
-                              },
-                            ),
-                          ],
+                        Expanded(
+                          child: Text(
+                            cartItem.item.itemName ?? '',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
                         ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: cartItem.quantity.toInt().toString(),
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
-                                onChanged: (val) {
-                                  final double? qty = double.tryParse(val);
-                                  if (qty != null && qty > 0) {
-                                    ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, quantity: qty);
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: cartItem.freeQuantity.toInt().toString(),
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
-                                onChanged: (val) {
-                                  final double? qty = double.tryParse(val);
-                                  if (qty != null) {
-                                    ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, freeQuantity: qty);
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: cartItem.rate.toString(),
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: const InputDecoration(labelText: 'Rate (₹)', isDense: true, border: OutlineInputBorder()),
-                                onChanged: (val) {
-                                  final double? rateVal = double.tryParse(val);
-                                  if (rateVal != null) {
-                                    ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, rate: rateVal);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: cartItem.discountPercent.toString(),
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: const InputDecoration(labelText: 'Disc %', isDense: true, border: OutlineInputBorder()),
-                                onChanged: (val) {
-                                  final double? pct = double.tryParse(val);
-                                  if (pct != null) {
-                                    ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, discountPercent: pct);
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                initialValue: cartItem.discountAmount.toString(),
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: const InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: OutlineInputBorder()),
-                                onChanged: (val) {
-                                  final double? amt = double.tryParse(val);
-                                  if (amt != null) {
-                                    ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, discountAmount: amt);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () {
+                            ref.read(invoiceCartProvider.notifier).removeItem(cartItem.item.uuid!);
+                          },
                         ),
                       ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-
-                // Invoice Level Configurations
-                Text('Invoice Settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        value: _invoiceType,
-                        decoration: const InputDecoration(labelText: 'Invoice Billing Type', border: OutlineInputBorder()),
-                        items: const [
-                          DropdownMenuItem(value: 'Tax Invoice', child: Text('Tax Invoice')),
-                          DropdownMenuItem(value: 'Retail Invoice', child: Text('Retail Invoice')),
-                          DropdownMenuItem(value: 'Cash Invoice', child: Text('Cash Invoice')),
-                          DropdownMenuItem(value: 'Credit Invoice', child: Text('Credit Invoice')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _invoiceType = val);
-                          }
-                        },
-                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Inclusive GST', style: TextStyle(fontSize: 12)),
-                        value: cart.isGstInclusive,
-                        onChanged: (val) {
-                          ref.read(invoiceCartProvider.notifier).toggleGstInclusive(val);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _paidAmountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Paid Amount (₹)', border: OutlineInputBorder()),
-                        onChanged: (val) {
-                          final double? amt = double.tryParse(val);
-                          if (amt != null) {
-                            ref.read(invoiceCartProvider.notifier).setPaidAmount(amt);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: theme.colorScheme.outlineVariant),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: cartItem.quantity.toInt().toString(),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? qty = double.tryParse(val);
+                              if (qty != null && qty >= 0) {
+                                ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, quantity: qty);
+                              }
+                            },
+                          ),
                         ),
-                        title: const Text('Due Date', style: TextStyle(fontSize: 11)),
-                        subtitle: Text(_dueDate.toIso8601String().substring(0, 10)),
-                        trailing: const Icon(Icons.calendar_today, size: 16),
-                        onTap: () async {
-                          final selected = await showDatePicker(
-                            context: context,
-                            initialDate: _dueDate,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (selected != null) {
-                            setState(() => _dueDate = selected);
-                          }
-                        },
-                      ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: cartItem.freeQuantity.toInt().toString(),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? qty = double.tryParse(val);
+                              if (qty != null) {
+                                ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, freeQuantity: qty);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: cartItem.rate.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Rate (₹)', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? rateVal = double.tryParse(val);
+                              if (rateVal != null) {
+                                ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, rate: rateVal);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: cartItem.discountPercent.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Disc %', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? pct = double.tryParse(val);
+                              if (pct != null) {
+                                ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, discountPercent: pct);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: cartItem.discountAmount.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? amt = double.tryParse(val);
+                              if (amt != null) {
+                                ref.read(invoiceCartProvider.notifier).updateItem(cartItem.item.uuid!, discountAmount: amt);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InputDecorator(
+                            decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
+                            child: Text('${cartItem.gstPercent.toInt()}%'),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _discountPercentController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Invoice Discount %', border: OutlineInputBorder()),
-                        onChanged: (val) {
-                          final double? pct = double.tryParse(val);
-                          ref.read(invoiceCartProvider.notifier).setDiscounts(pct, null);
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _discountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(labelText: 'Invoice Discount Amt (₹)', border: OutlineInputBorder()),
-                        onChanged: (val) {
-                          final double? amt = double.tryParse(val);
-                          ref.read(invoiceCartProvider.notifier).setDiscounts(null, amt);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _remarksController,
-                  decoration: const InputDecoration(labelText: 'Remarks & Terms', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 24),
-
-                // Grand Totals Summary Card
-                _buildTotalsSummaryPanel(theme),
-              ],
+                );
+              },
             ),
-          ),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton.icon(
-            icon: const Icon(Icons.check),
-            label: const Text('Record Sales Invoice'),
-            onPressed: _saveInvoice,
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(55),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: theme.colorScheme.onPrimary,
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -699,27 +687,16 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
         final companyGst = snapshot.data?.companyGST;
         final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(companyGst);
 
-        return Card(
-          color: theme.colorScheme.primaryContainer.withOpacity(0.2),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildSummaryRow('Subtotal (Taxable Value)', totals['subtotal']!, theme),
-                _buildSummaryRow('Discounts Total', -totals['discountAmount']!, theme),
-                _buildSummaryRow('GST Tax Total', totals['totalGST']!, theme),
-                _buildSummaryRow('Round Off', totals['roundOff']!, theme),
-                const Divider(),
-                _buildSummaryRow('GRAND TOTAL', totals['grandTotal']!, theme, isBold: true),
-                _buildSummaryRow('Pending Outstanding', totals['pendingAmount']!, theme, isPending: true),
-              ],
-            ),
-          ),
+        return Column(
+          children: [
+            _buildSummaryRow('Subtotal (Taxable Value)', totals['subtotal']!, theme),
+            _buildSummaryRow('Discounts Total', -totals['discountAmount']!, theme),
+            _buildSummaryRow('GST Tax Total', totals['totalGST']!, theme),
+            _buildSummaryRow('Round Off', totals['roundOff']!, theme),
+            const Divider(),
+            _buildSummaryRow('GRAND TOTAL', totals['grandTotal']!, theme, isBold: true),
+            _buildSummaryRow('Pending Outstanding', totals['pendingAmount']!, theme, isPending: true),
+          ],
         );
       },
     );
@@ -735,14 +712,14 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen>
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
-              fontSize: (isBold || isPending) ? 16 : 14,
+              fontSize: (isBold || isPending) ? 15 : 13,
             ),
           ),
           Text(
             '₹${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
-              fontSize: (isBold || isPending) ? 16 : 14,
+              fontSize: (isBold || isPending) ? 15 : 13,
               color: isPending
                   ? Colors.red
                   : isBold

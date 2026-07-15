@@ -6,8 +6,12 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_item_collecti
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 
 class AddEditPurchaseScreen extends ConsumerStatefulWidget {
   const AddEditPurchaseScreen({Key? key}) : super(key: key);
@@ -20,16 +24,21 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _remarksController = TextEditingController();
   final _billNumberController = TextEditingController();
-  
+  final _paidAmountController = TextEditingController(text: '0.0');
+  final _discountController = TextEditingController(text: '0.0');
+  final _productSearchController = TextEditingController();
+
   Party? _selectedParty;
   List<PurchaseItem> _draftItems = [];
   DateTime _purchaseDate = DateTime.now();
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 15));
 
   double _subtotal = 0.0;
   double _discountAmount = 0.0;
   double _taxableAmount = 0.0;
   double _totalGST = 0.0;
   double _grandTotal = 0.0;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -38,7 +47,6 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   }
 
   void _initValues() async {
-    // Generate draft purchase number
     final repo = ref.read(purchaseRepositoryProvider);
     final numStr = await repo.generateNextPurchaseNumber();
     setState(() {
@@ -50,6 +58,9 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   void dispose() {
     _remarksController.dispose();
     _billNumberController.dispose();
+    _paidAmountController.dispose();
+    _discountController.dispose();
+    _productSearchController.dispose();
     super.dispose();
   }
 
@@ -74,6 +85,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       tax += lineTax;
     }
 
+    _discountAmount = double.tryParse(_discountController.text) ?? 0.0;
+
     setState(() {
       _subtotal = sub;
       _taxableAmount = sub - _discountAmount;
@@ -82,15 +95,26 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     });
   }
 
-  void _addItemLine(Item item, double qty, double rate, double gstRate) {
+  void _addItemLine(Item item) {
+    // Check if item is already added
+    final exists = _draftItems.any((element) => element.itemId == item.id);
+    if (exists) {
+      final existingIndex = _draftItems.indexWhere((element) => element.itemId == item.id);
+      setState(() {
+        _draftItems[existingIndex].quantity = (_draftItems[existingIndex].quantity ?? 0.0) + 1.0;
+      });
+      _recalculateTotals();
+      return;
+    }
+
     final newItem = PurchaseItem()
       ..itemId = item.id
       ..itemName = item.itemName
       ..hsnCode = item.hsnCode
-      ..quantity = qty
-      ..rate = rate
+      ..quantity = 1.0
+      ..rate = item.buyRate ?? item.sellRate ?? 0.0
       ..discount = 0.0
-      ..gstRate = gstRate;
+      ..gstRate = item.gstRate ?? 18.0;
       
     newItem.item.value = item;
 
@@ -115,368 +139,546 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       return;
     }
 
-    final purchase = Purchase()
-      ..purchaseNumber = _billNumberController.text.trim()
-      ..purchaseDate = _purchaseDate
-      ..partyId = _selectedParty!.id
-      ..partyName = _selectedParty!.partyName
-      ..gstNumber = _selectedParty!.gstNumber
-      ..address = _selectedParty!.addressLine1
-      ..subtotal = _subtotal
-      ..discountAmount = _discountAmount
-      ..taxableAmount = _taxableAmount
-      ..totalGST = _totalGST
-      ..grandTotal = _grandTotal
-      ..remarks = _remarksController.text.trim();
+    setState(() => _isSaving = true);
+    try {
+      final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+      final double pendingAmt = _grandTotal - paidAmt;
+      final String paymentStat = pendingAmt <= 0 ? 'Paid' : (paidAmt > 0 ? 'Partially Paid' : 'Unpaid');
 
-    purchase.party.value = _selectedParty;
+      final purchase = Purchase()
+        ..purchaseNumber = _billNumberController.text.trim()
+        ..purchaseDate = _purchaseDate
+        ..partyId = _selectedParty!.id
+        ..partyName = _selectedParty!.partyName
+        ..gstNumber = _selectedParty!.gstNumber
+        ..address = _selectedParty!.addressLine1
+        ..subtotal = _subtotal
+        ..discountAmount = _discountAmount
+        ..taxableAmount = _taxableAmount
+        ..totalGST = _totalGST
+        ..grandTotal = _grandTotal
+        ..paidAmount = paidAmt
+        ..pendingAmount = pendingAmt
+        ..paymentStatus = paymentStat
+        ..remarks = _remarksController.text.trim();
 
-    final success = await ref
-        .read(purchaseNotifierProvider.notifier)
-        .savePurchase(purchase, _draftItems);
+      purchase.party.value = _selectedParty;
 
-    if (success && mounted) {
+      final success = await ref
+          .read(purchaseNotifierProvider.notifier)
+          .savePurchase(purchase, _draftItems);
+
+      ref.invalidate(dashboardAnalyticsProvider);
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Purchase invoice saved successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Purchase invoice saved successfully!')),
+        SnackBar(content: Text('Failed to save purchase: $e')),
       );
-      Navigator.pop(context);
+    } finally {
+      setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final partiesAsync = ref.watch(filteredPartiesProvider);
-    final itemsAsync = ref.watch(filteredItemsProvider);
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    if (_isSaving) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final mainContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPartyAndHeaderCard(theme),
+        const SizedBox(height: 16),
+        _buildProductSearchAndCatalog(theme),
+        const SizedBox(height: 16),
+        _buildCartItemsTable(theme),
+      ],
+    );
+
+    final summaryContent = Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _billNumberController,
+              decoration: const InputDecoration(labelText: 'Purchase Bill Number', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _paidAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Paid Amount (₹)', border: OutlineInputBorder()),
+                    onChanged: (val) => _recalculateTotals(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _dueDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (selected != null) {
+                        setState(() => _dueDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(labelText: 'Due Date', border: OutlineInputBorder()),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_dueDate)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _discountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Bill Level Discount (₹)', border: OutlineInputBorder()),
+              onChanged: (val) => _recalculateTotals(),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _remarksController,
+              decoration: const InputDecoration(labelText: 'Remarks / Notes', border: OutlineInputBorder()),
+            ),
+            const Divider(height: 32),
+            _buildTotalsSummaryPanel(theme),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Save Purchase Bill'),
+              onPressed: _saveBill,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(55),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
         title: const Text('New Purchase Bill'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: _saveBill,
-            tooltip: 'Save Purchase',
-          ),
-        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Basic Form Fields
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Supplier dropdown
-                      partiesAsync.when(
-                        data: (parties) {
-                          final suppliers = parties.where((p) => p.partyType != 'Retailer').toList();
-                          return DropdownButtonFormField<Party>(
-                            value: _selectedParty,
-                            decoration: const InputDecoration(
-                              labelText: 'Select Supplier Party',
-                              prefixIcon: Icon(Icons.person_outline),
-                            ),
-                            items: suppliers.map((p) {
-                              return DropdownMenuItem<Party>(
-                                value: p,
-                                child: Text('${p.partyName} (${p.partyType ?? "Supplier"})'),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedParty = val;
-                              });
-                            },
-                          );
-                        },
-                        loading: () => const LinearProgressIndicator(),
-                        error: (err, _) => Text('Error loading suppliers: $err'),
-                      ),
-                      const SizedBox(height: 16),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _billNumberController,
-                              decoration: const InputDecoration(
-                                labelText: 'Purchase Bill Number',
-                                prefixIcon: Icon(Icons.receipt_outlined),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () async {
-                                final d = await showDatePicker(
-                                  context: context,
-                                  initialDate: _purchaseDate,
-                                  firstDate: DateTime(2025),
-                                  lastDate: DateTime(2030),
-                                );
-                                if (d != null) {
-                                  setState(() {
-                                    _purchaseDate = d;
-                                  });
-                                }
-                              },
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Bill Date',
-                                  prefixIcon: Icon(Icons.calendar_today_outlined),
-                                ),
-                                child: Text(
-                                  DateFormat('dd MMM yyyy').format(_purchaseDate),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Items Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: const EdgeInsets.all(16.0),
+        child: isDesktop
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Purchase Line Items',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      _showAddItemDialog(theme, itemsAsync);
-                    },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add Item'),
-                  ),
+                  Expanded(flex: 3, child: mainContent),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 2, child: summaryContent),
+                ],
+              )
+            : Column(
+                children: [
+                  mainContent,
+                  const SizedBox(height: 16),
+                  summaryContent,
                 ],
               ),
-              const SizedBox(height: 12),
+      ),
+    );
+  }
 
-              // Items Table Card
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                ),
-                child: _draftItems.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Center(
-                          child: Text(
-                            'No items added to this purchase bill yet.\nClick "Add Item" above to add products.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
-                          ),
+  Widget _buildPartyAndHeaderCard(ThemeData theme) {
+    final partiesAsync = ref.watch(partiesListProvider);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: partiesAsync.when(
+                    data: (parties) {
+                      final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                      return DropdownButtonFormField<Party>(
+                        value: _selectedParty != null && supplierParties.any((p) => p.uuid == _selectedParty!.uuid)
+                            ? supplierParties.firstWhere((p) => p.uuid == _selectedParty!.uuid)
+                            : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Select Supplier Profile',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.person_pin),
                         ),
-                      )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _draftItems.length,
-                        itemBuilder: (context, index) {
-                          final item = _draftItems[index];
-                          return ListTile(
-                            title: Text(item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(
-                              '${item.quantity?.toInt()} Units  x  ₹${item.rate?.toStringAsFixed(2)}  (Tax: ${item.gstRate}%)',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '₹${item.totalAmount?.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                  onPressed: () {
-                                    setState(() {
-                                      _draftItems.removeAt(index);
-                                    });
-                                    _recalculateTotals();
-                                  },
-                                ),
-                              ],
-                            ),
-                          );
+                        items: supplierParties.map((p) {
+                          return DropdownMenuItem<Party>(value: p, child: Text(p.partyName ?? ''));
+                        }).toList(),
+                        onChanged: (party) {
+                          setState(() {
+                            _selectedParty = party;
+                          });
                         },
-                      ),
-              ),
-              const SizedBox(height: 24),
-
-              // Summary Calculations
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      _buildSummaryRow('Subtotal', _subtotal, theme),
-                      const SizedBox(height: 8),
-                      _buildSummaryRow('Discount (Draft)', _discountAmount, theme),
-                      const SizedBox(height: 8),
-                      _buildSummaryRow('GST Input Tax', _totalGST, theme),
-                      const Divider(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Grand Total',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            '₹${_grandTotal.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error loading suppliers: $e'),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-
-              // Remarks
-              TextFormField(
-                controller: _remarksController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Remarks / Internal Notes',
-                  prefixIcon: Icon(Icons.edit_note_rounded),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.person_add),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
+                    ).then((_) => ref.invalidate(partiesListProvider));
+                  },
+                ),
+              ],
+            ),
+            if (_selectedParty != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info, color: Colors.blue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: ₹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 32),
-
-              ElevatedButton(
-                onPressed: _saveBill,
-                child: const Text('SAVE PURCHASE BILL'),
-              ),
             ],
-          ),
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _purchaseDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _purchaseDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(labelText: 'Purchase Date', border: OutlineInputBorder()),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_purchaseDate)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, double amount, ThemeData theme) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildProductSearchAndCatalog(ThemeData theme) {
+    final itemsAsync = ref.watch(filteredItemsProvider);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: itemsAsync.when(
+                    data: (items) {
+                      return Autocomplete<Item>(
+                        displayStringForOption: (item) => '${item.itemName} (Stock: ${item.currentStock?.toInt() ?? 0})',
+                        optionsBuilder: (textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<Item>.empty();
+                          }
+                          return items.where((item) =>
+                              item.itemName!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                        },
+                        onSelected: (item) {
+                          _addItemLine(item);
+                          _productSearchController.clear();
+                          FocusScope.of(context).unfocus();
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Type product name to add...',
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error loading products: $e'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.add),
+                  onPressed: () async {
+                    final newlyCreated = await AddItemSheet.show(context);
+                    if (newlyCreated != null) {
+                      _addItemLine(newlyCreated);
+                      ref.invalidate(filteredItemsProvider);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCartItemsTable(ThemeData theme) {
+    if (_draftItems.isEmpty) {
+      return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40.0),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey),
+                SizedBox(height: 12),
+                Text('No product lines added yet.', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _draftItems.length,
+              separatorBuilder: (context, index) => const Divider(height: 24),
+              itemBuilder: (context, index) {
+                final item = _draftItems[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.itemName ?? '',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              _draftItems.removeAt(index);
+                            });
+                            _recalculateTotals();
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: item.quantity?.toInt().toString(),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? qty = double.tryParse(val);
+                              if (qty != null && qty >= 0) {
+                                setState(() {
+                                  item.quantity = qty;
+                                });
+                                _recalculateTotals();
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: item.rate?.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Buy Rate (₹)', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? rateVal = double.tryParse(val);
+                              if (rateVal != null) {
+                                setState(() {
+                                  item.rate = rateVal;
+                                });
+                                _recalculateTotals();
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: item.discount?.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Disc (₹)', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? disc = double.tryParse(val);
+                              if (disc != null) {
+                                setState(() {
+                                  item.discount = disc;
+                                });
+                                _recalculateTotals();
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: item.gstRate?.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              final double? gst = double.tryParse(val);
+                              if (gst != null) {
+                                setState(() {
+                                  item.gstRate = gst;
+                                });
+                                _recalculateTotals();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTotalsSummaryPanel(ThemeData theme) {
+    final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+    final double pendingAmt = _grandTotal - paidAmt;
+
+    return Column(
       children: [
-        Text(label, style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-        Text('₹${amount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+        _buildSummaryRow('Subtotal (Before Discount)', _subtotal, theme),
+        _buildSummaryRow('Discounts Total', -_discountAmount, theme),
+        _buildSummaryRow('Taxable Value', _taxableAmount, theme),
+        _buildSummaryRow('GST Tax Total', _totalGST, theme),
+        const Divider(),
+        _buildSummaryRow('GRAND TOTAL', _grandTotal, theme, isBold: true),
+        _buildSummaryRow('Pending Outstanding', pendingAmt < 0 ? 0.0 : pendingAmt, theme, isPending: true),
       ],
     );
   }
 
-  void _showAddItemDialog(ThemeData theme, AsyncValue<List<Item>> itemsAsync) {
-    Item? tempItem;
-    final qtyController = TextEditingController(text: '1');
-    final rateController = TextEditingController(text: '0.00');
-    double tempGst = 18.0;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Product to Bill'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              itemsAsync.when(
-                data: (items) {
-                  return DropdownButtonFormField<Item>(
-                    decoration: const InputDecoration(labelText: 'Choose Product'),
-                    items: items.map((i) {
-                      return DropdownMenuItem<Item>(
-                        value: i,
-                        child: Text(i.itemName ?? ''),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      tempItem = val;
-                      if (val != null) {
-                        rateController.text = (val.buyRate ?? 0.0).toStringAsFixed(2);
-                      }
-                    },
-                  );
-                },
-                loading: () => const LinearProgressIndicator(),
-                error: (err, _) => Text('Error loading catalog: $err'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: qtyController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Quantity (Units)'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: rateController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Purchase Rate (₹)'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<double>(
-                value: tempGst,
-                decoration: const InputDecoration(labelText: 'GST Rate (%)'),
-                items: const [
-                  DropdownMenuItem(value: 0.0, child: Text('0% (Exempt)')),
-                  DropdownMenuItem(value: 5.0, child: Text('5%')),
-                  DropdownMenuItem(value: 12.0, child: Text('12%')),
-                  DropdownMenuItem(value: 18.0, child: Text('18%')),
-                  DropdownMenuItem(value: 28.0, child: Text('28%')),
-                ],
-                onChanged: (val) {
-                  if (val != null) tempGst = val;
-                },
-              ),
-            ],
+  Widget _buildSummaryRow(String label, double val, ThemeData theme, {bool isBold = false, bool isPending = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
+              fontSize: (isBold || isPending) ? 15 : 13,
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (tempItem != null) {
-                final qty = double.tryParse(qtyController.text) ?? 1.0;
-                final rate = double.tryParse(rateController.text) ?? 0.0;
-                _addItemLine(tempItem!, qty, rate, tempGst);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Add'),
+          Text(
+            '₹${val.toStringAsFixed(2)}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
+              fontSize: (isBold || isPending) ? 15 : 13,
+              color: isPending
+                  ? Colors.red
+                  : isBold
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface,
+            ),
           ),
         ],
       ),

@@ -16,6 +16,7 @@ import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_s
 import 'package:business_sahaj_erp/features/backup/presentation/screens/sync_center_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
@@ -99,6 +100,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '/transactions',
+            name: 'transactions',
+            builder: (context, state) => const TransactionsScreen(),
           ),
         ],
       ),
