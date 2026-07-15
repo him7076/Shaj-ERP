@@ -442,18 +442,53 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   child: itemsAsync.when(
                     data: (items) {
                       return Autocomplete<Item>(
-                        displayStringForOption: (item) => '${item.itemName} (Stock: ${item.currentStock?.toInt() ?? 0})',
+                        displayStringForOption: (item) => '${item.itemName ?? "Unnamed"} (Stock: ${item.currentStock?.toInt() ?? 0})',
                         optionsBuilder: (textEditingValue) {
                           if (textEditingValue.text.isEmpty) {
-                            return const Iterable<Item>.empty();
+                            return items.take(20);
                           }
-                          return items.where((item) =>
-                              item.itemName!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                          final query = textEditingValue.text.toLowerCase();
+                          return items.where((item) {
+                            final name = item.itemName?.toLowerCase() ?? '';
+                            final code = item.itemCode?.toLowerCase() ?? '';
+                            final hsn = item.hsnCode?.toLowerCase() ?? '';
+                            return name.contains(query) || code.contains(query) || hsn.contains(query);
+                          });
                         },
+                        optionsMaxHeight: 300,
                         onSelected: (item) {
                           _addItemLine(item);
-                          _productSearchController.clear();
                           FocusScope.of(context).unfocus();
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 6,
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final item = options.elementAt(index);
+                                    return ListTile(
+                                      dense: true,
+                                      leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
+                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                      subtitle: Text(
+                                        'Code: ${item.itemCode ?? "N/A"} | Buy: ₹${item.buyRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                      onTap: () => onSelected(item),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
                         },
                         fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
                           return TextField(

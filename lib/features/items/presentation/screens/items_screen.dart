@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/item_deta
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 
 class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class ItemsScreen extends ConsumerStatefulWidget {
 class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
+  final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   @override
   void dispose() {
@@ -32,33 +34,13 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     final barcodeService = ref.read(barcodeServiceProvider);
     final code = await barcodeService.scanBarcode(context);
     if (code != null) {
-      // Set search query to scanned barcode to find it instantly
       _searchController.text = code;
       ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(query: code));
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Scanned Barcode: $code. Showing matches.'),
           backgroundColor: Theme.of(context).colorScheme.primary,
-        ),
-      );
-    }
-  }
-
-  Future<void> _exportCatalogToPdf() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Generating PDF Catalog directory...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-    // Simulating PDF generation delay
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF Catalog Directory generated and printed successfully!'),
-          backgroundColor: Colors.green,
         ),
       );
     }
@@ -72,21 +54,25 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     final lowStockAsync = ref.watch(lowStockAlertProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
     final brandsAsync = ref.watch(brandsListProvider);
-    final cart = ref.watch(itemCartNotifierProvider);
+
+    // Responsive grid columns
+    int crossAxisCount = 1;
+    if (ResponsiveLayout.isDesktop(context)) {
+      crossAxisCount = 4;
+    } else if (ResponsiveLayout.isTablet(context)) {
+      crossAxisCount = 3;
+    } else {
+      crossAxisCount = 2;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Inventory Master'),
+        title: const Text('Product Inventory'),
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner_outlined),
             onPressed: _scanBarcode,
             tooltip: 'Scan Barcode',
-          ),
-          IconButton(
-            icon: const Icon(Icons.print_outlined),
-            onPressed: _exportCatalogToPdf,
-            tooltip: 'Export Catalog PDF',
           ),
           IconButton(
             icon: const Icon(Icons.add_shopping_cart_outlined),
@@ -100,7 +86,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Low stock warning banner if any items are running low
+          // Low stock warning banner
           lowStockAsync.when(
             data: (lowStockItems) {
               if (lowStockItems.isEmpty) return const SizedBox.shrink();
@@ -108,7 +94,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 color: Colors.orange.shade50,
                 child: InkWell(
                   onTap: () {
-                    // Quick filter to low stock items
                     ref.read(itemSearchProvider.notifier).update(
                           (state) => state.copyWith(stockStatus: 'Low Stock'),
                         );
@@ -121,7 +106,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Warning: ${lowStockItems.length} products are running below reorder level!',
+                            '⚠ ${lowStockItems.length} products running below reorder level!',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: Colors.orange.shade900,
                               fontWeight: FontWeight.bold,
@@ -199,7 +184,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           // Horizontal Category Chip Quick Filters
           _buildCategoryChipBar(theme, filter, categoriesAsync),
 
-          // Item List / Grid
+          // Item Grid
           Expanded(
             child: itemsAsync.when(
               data: (list) {
@@ -223,7 +208,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Product Master'),
+                          label: const Text('Add Product'),
                           onPressed: () {
                             Navigator.push(
                               context,
@@ -238,13 +223,18 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                return GridView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: 1.55,
+                  ),
                   itemCount: list.length,
                   itemBuilder: (context, index) {
                     final item = list[index];
-                    final itemQty = cart[item.uuid ?? ''] ?? 0;
-                    return _buildProductCard(item, itemQty, theme);
+                    return _buildProductCard(item, theme);
                   },
                 );
               },
@@ -294,7 +284,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ChoiceChip(
-                  label: Text(isAll ? 'All Categories' : (cat?.categoryName ?? '')),
+                  label: Text(isAll ? 'All' : (cat?.categoryName ?? '')),
                   selected: isSelected,
                   onSelected: (selected) {
                     ref.read(itemSearchProvider.notifier).update(
@@ -333,20 +323,19 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         children: [
           Row(
             children: [
-              // Stock status filter
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: filter.stockStatus,
                   decoration: const InputDecoration(
-                    labelText: 'Stock Level Status',
+                    labelText: 'Stock Level',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     border: OutlineInputBorder(),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'All', child: Text('All Stock Levels')),
+                    DropdownMenuItem(value: 'All', child: Text('All')),
                     DropdownMenuItem(value: 'In Stock', child: Text('In Stock')),
-                    DropdownMenuItem(value: 'Low Stock', child: Text('Low Stock Warning')),
+                    DropdownMenuItem(value: 'Low Stock', child: Text('Low Stock')),
                     DropdownMenuItem(value: 'Out of Stock', child: Text('Out of Stock')),
                   ],
                   onChanged: (v) {
@@ -357,13 +346,11 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Sorting
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: filter.sortBy,
                   decoration: const InputDecoration(
-                    labelText: 'Sort Catalog By',
+                    labelText: 'Sort By',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                     border: OutlineInputBorder(),
@@ -388,14 +375,13 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              // Brand filter
               Expanded(
                 child: brandsAsync.when(
                   data: (brands) {
                     return DropdownButtonFormField<int?>(
                       value: filter.brandId,
                       decoration: const InputDecoration(
-                        labelText: 'Brand Master',
+                        labelText: 'Brand',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         border: OutlineInputBorder(),
@@ -414,11 +400,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-
-              // Reset filters button
               TextButton.icon(
                 icon: const Icon(Icons.refresh),
-                label: const Text('Reset Filters'),
+                label: const Text('Reset'),
                 onPressed: () {
                   _searchController.clear();
                   ref.read(itemSearchProvider.notifier).state = const ItemSearchFilter();
@@ -431,37 +415,41 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     );
   }
 
-  Widget _buildProductCard(Item item, int quantity, ThemeData theme) {
-    final hasImage = item.imagePaths != null && item.imagePaths!.isNotEmpty;
+  Widget _buildProductCard(Item item, ThemeData theme) {
     final stockVal = item.currentStock ?? 0.0;
     final reorderVal = item.reorderLevel ?? 0.0;
     final isOut = stockVal <= 0;
-    final isLow = stockVal <= reorderVal;
+    final isLow = stockVal <= reorderVal && !isOut;
 
     Color stockColor = Colors.green;
-    String stockLabel = 'In Stock (${stockVal.toInt()})';
+    String stockLabel = '${stockVal.toInt()} in stock';
+    IconData stockIcon = Icons.check_circle;
     if (isOut) {
       stockColor = Colors.red;
       stockLabel = 'Out of Stock';
+      stockIcon = Icons.cancel;
     } else if (isLow) {
       stockColor = Colors.orange;
-      stockLabel = 'Low Stock (${stockVal.toInt()})';
+      stockLabel = '${stockVal.toInt()} (Low)';
+      stockIcon = Icons.warning;
     }
 
     return Card(
       key: ValueKey(item.uuid),
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: isLow ? stockColor.withOpacity(0.5) : theme.colorScheme.outlineVariant.withOpacity(0.4),
-          width: isLow ? 1.5 : 1.0,
+          color: isOut
+              ? Colors.red.withOpacity(0.4)
+              : isLow
+                  ? Colors.orange.withOpacity(0.4)
+                  : theme.colorScheme.outlineVariant.withOpacity(0.4),
+          width: 1.0,
         ),
       ),
-      child: ListTile(
+      child: InkWell(
         onTap: () {
-          // Open Details Screen
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -469,100 +457,97 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             ),
           ).then((_) => ref.invalidate(filteredItemsProvider));
         },
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: stockColor,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Top row: Name + Stock indicator
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Item icon
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_outlined,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.itemName ?? 'Unnamed',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.itemCode ?? 'No code',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-        title: Text(
-          item.itemName ?? '',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4.0),
-          child: Text(
-            'Code: ${item.itemCode ?? "N/A"}  •  Price: ₹${item.sellRate?.toStringAsFixed(2)}  •  Stock: ${stockVal.toInt()}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        trailing: _buildAmazonQuantityController(item, quantity, theme),
-      ),
-    );
-  }
 
-  Widget _buildAmazonQuantityController(Item item, int quantity, ThemeData theme) {
-    if (quantity == 0) {
-      return ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          elevation: 1,
-        ),
-        onPressed: () {
-          ref.read(itemCartNotifierProvider.notifier).increment(item.uuid!);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('"${item.itemName}" added to basket.'),
-              duration: const Duration(seconds: 1),
-            ),
-          );
-        },
-        child: const Text('ADD'),
-      );
-    }
+              const Spacer(),
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.remove, size: 16),
-            onPressed: () {
-              ref.read(itemCartNotifierProvider.notifier).decrement(item.uuid!);
-            },
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(8),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              '$quantity',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onPrimaryContainer,
+              // Bottom row: Price + Stock badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    currencyFormat.format(item.sellRate ?? 0.0),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: stockColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(stockIcon, size: 12, color: stockColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          stockLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: stockColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.add, size: 16),
-            onPressed: () {
-              ref.read(itemCartNotifierProvider.notifier).increment(item.uuid!);
-            },
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.all(8),
-          ),
-        ],
+        ),
       ),
     );
   }
