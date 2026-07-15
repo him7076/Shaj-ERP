@@ -8,6 +8,8 @@ import 'package:business_sahaj_erp/features/reports/presentation/screens/gst_rep
 import 'package:business_sahaj_erp/features/reports/presentation/screens/stock_report_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/outstanding_report_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/party_ledger_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({Key? key}) : super(key: key);
@@ -247,6 +249,26 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         context,
                         // Navigates to a helper selector or opens ledger screen
                         MaterialPageRoute(builder: (context) => const PartyLedgerScreen()),
+                      ),
+                    ),
+                    _buildReportMenuCard(
+                      title: 'Purchases Register',
+                      description: 'Inward goods bills and vendor invoices',
+                      icon: Icons.shopping_bag_rounded,
+                      color: Colors.blueGrey,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const PurchasesScreen()),
+                      ),
+                    ),
+                    _buildReportMenuCard(
+                      title: 'Expenses Log',
+                      description: 'Operational outflows, salaries & overheads',
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: Colors.redAccent,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ExpensesScreen()),
                       ),
                     ),
                   ],

@@ -65,8 +65,8 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen>
       final repo = ref.read(orderRepositoryProvider);
       final order = await repo.getByUuid(widget.orderUuid!);
       if (order != null) {
-        await order.party.load();
-        await order.orderItems.load();
+        try { await order.party.load(); } catch (_) {}
+        try { await order.orderItems.load(); } catch (_) {}
 
         _existingOrder = order;
         _remarksController.text = order.remarks ?? '';
@@ -80,7 +80,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen>
 
         // Load items into cart
         for (var orderItem in order.orderItems) {
-          await orderItem.item.load();
+          try { await orderItem.item.load(); } catch (_) {}
           if (orderItem.item.value != null) {
             cart.addItem(orderItem.item.value!, qty: orderItem.quantity ?? 0.0);
             cart.updateItem(

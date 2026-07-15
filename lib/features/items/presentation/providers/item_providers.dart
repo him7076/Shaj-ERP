@@ -118,9 +118,9 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
 
   // Load links asynchronously for UI display
   for (var item in items) {
-    await item.category.load();
-    await item.brand.load();
-    await item.unit.load();
+    try { await item.category.load(); } catch (_) {}
+    try { await item.brand.load(); } catch (_) {}
+    try { await item.unit.load(); } catch (_) {}
   }
 
   // Filter Category

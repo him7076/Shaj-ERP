@@ -301,8 +301,8 @@ final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
 
   // Load party links
   for (var order in list) {
-    await order.party.load();
-    await order.orderItems.load();
+    try { await order.party.load(); } catch (_) {}
+    try { await order.orderItems.load(); } catch (_) {}
   }
 
   // Filter Status

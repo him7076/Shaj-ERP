@@ -28,10 +28,32 @@ void main() async {
 
   // 2. Initialize Firebase (with try-catch to avoid crashes during early setup without google-services config)
   try {
-    // If you compile for web or mobile, uncomment or configure DefaultFirebaseOptions:
-    // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await Firebase.initializeApp();
-    logger.info('Firebase Core initialized successfully.');
+    if (sharedPrefs != null) {
+      final apiKey = sharedPrefs.getString('firebase_api_key');
+      final projectId = sharedPrefs.getString('firebase_project_id');
+      final appId = sharedPrefs.getString('firebase_app_id');
+      final senderId = sharedPrefs.getString('firebase_sender_id');
+      final storageBucket = sharedPrefs.getString('firebase_storage_bucket');
+
+      if (apiKey != null && projectId != null && appId != null) {
+        await Firebase.initializeApp(
+          options: FirebaseOptions(
+            apiKey: apiKey,
+            projectId: projectId,
+            appId: appId,
+            messagingSenderId: senderId ?? '',
+            storageBucket: storageBucket ?? '$projectId.appspot.com',
+          ),
+        );
+        logger.info('Firebase Core dynamically initialized for Project: $projectId');
+      } else {
+        await Firebase.initializeApp();
+        logger.info('Firebase Core initialized with default config.');
+      }
+    } else {
+      await Firebase.initializeApp();
+      logger.info('Firebase Core initialized successfully.');
+    }
   } catch (e) {
     logger.warning('Firebase initialization bypassed: Configuration files might be missing. Details: $e');
   }

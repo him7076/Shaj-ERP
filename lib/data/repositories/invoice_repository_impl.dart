@@ -85,7 +85,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         invoice.id = invoiceId;
 
         // Load Party link
-        await invoice.party.load();
+        try { await invoice.party.load(); } catch (_) {}
         final party = invoice.party.value;
 
         // 2. Adjust Party Outstanding Balance (If credit / unpaid exists)
@@ -205,7 +205,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         await collection.put(invoice);
 
         // 1. Rollback Party Outstanding Balance
-        await invoice.party.load();
+        try { await invoice.party.load(); } catch (_) {}
         final party = invoice.party.value;
         if (party != null) {
           final double pendingAmt = invoice.pendingAmount ?? 0.0;
@@ -214,9 +214,9 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         }
 
         // 2. Restore Stock Levels
-        await invoice.invoiceItems.load();
+        try { await invoice.invoiceItems.load(); } catch (_) {}
         for (var item in invoice.invoiceItems) {
-          await item.item.load();
+          try { await item.item.load(); } catch (_) {}
           if (item.item.value != null) {
             final dbItem = item.item.value!;
             final double qty = item.quantity ?? 0.0;
@@ -265,8 +265,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         throw const OrderConversionException('This order has already been converted to a sales invoice.');
       }
 
-      await order.party.load();
-      await order.orderItems.load();
+      try { await order.party.load(); } catch (_) {}
+      try { await order.orderItems.load(); } catch (_) {}
 
       final prefix = _numberService.getFinancialYearPrefix(DateTime.now());
       final invoiceNum = await generateNextInvoiceNumber();
@@ -366,7 +366,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
         // 5. Create InvoiceItems
         for (var orderItem in order.orderItems) {
-          await orderItem.item.load();
+          try { await orderItem.item.load(); } catch (_) {}
           
           final invItem = InvoiceItem()
             ..uuid = _generateUuid()

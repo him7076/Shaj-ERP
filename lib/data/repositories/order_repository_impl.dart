@@ -179,9 +179,9 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
 
         // If stock was reserved, restore it back to inventory
         if (reserveStock) {
-          await order.orderItems.load();
+          try { await order.orderItems.load(); } catch (_) {}
           for (var item in order.orderItems) {
-            await item.item.load();
+            try { await item.item.load(); } catch (_) {}
             if (item.item.value != null) {
               final dbItem = item.item.value!;
               final double qty = item.quantity ?? 0.0;

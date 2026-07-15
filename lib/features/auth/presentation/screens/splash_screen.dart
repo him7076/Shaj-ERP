@@ -18,9 +18,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    // Wait for splash representation animation
     await Future.delayed(const Duration(seconds: 2));
-    
     if (!mounted) return;
     
     final authState = ref.read(authProvider);
@@ -39,59 +37,104 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
               theme.colorScheme.primary,
-              theme.colorScheme.primary.withRed(30).withBlue(150),
+              theme.colorScheme.primary.withOpacity(0.8),
+              theme.colorScheme.primary.withRed(20).withBlue(160),
             ],
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo Placeholder Icon
-              Container(
-                padding: const EdgeInsets.all(24),
+        child: Stack(
+          children: [
+            // Visual decorative circle elements in background
+            Positioned(
+              top: -100,
+              right: -100,
+              child: Container(
+                width: 300,
+                height: 300,
                 decoration: const BoxDecoration(
-                  color: Colors.white24,
+                  color: Colors.white10,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.business_center_rounded,
-                  size: 80,
-                  color: Colors.white,
+              ),
+            ),
+            Positioned(
+              bottom: -150,
+              left: -50,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: const BoxDecoration(
+                  color: Colors.white10,
+                  shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(height: 24),
-              // App Name
-              const Text(
-                'Business Sahaj ERP',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+            ),
+            
+            // Content
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App Logo Container
+                  Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.business_center_rounded,
+                      size: 72,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // App Name
+                  const Text(
+                    'Sahaj ERP',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 38,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Subtitle
+                  Text(
+                    'ENTERPRISE MANAGER SYSTEM',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.75),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                  const SizedBox(height: 64),
+                  // Modern Loading Indicator
+                  const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                      strokeWidth: 3,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              // Subtitle
-              Text(
-                'Offline-First Enterprise Solution',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 16,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 48),
-              // Loading Indicator
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

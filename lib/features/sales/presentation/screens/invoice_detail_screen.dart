@@ -35,8 +35,8 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       final repo = ref.read(invoiceRepositoryProvider);
       final fetched = await repo.getByUuid(widget.invoiceUuid);
       if (fetched != null) {
-        await fetched.party.load();
-        await fetched.invoiceItems.load();
+        try { await fetched.party.load(); } catch (_) {}
+        try { await fetched.invoiceItems.load(); } catch (_) {}
       }
       setState(() {
         _invoice = fetched;

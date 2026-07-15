@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/web_mock_isar.dart';
+import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 
-// Import all 12 collections
+// Import all 15 collections (including Purchases and Expenses)
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
@@ -16,6 +19,9 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dar
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -35,7 +41,24 @@ class DatabaseService {
     }
 
     try {
-      final dir = await getApplicationDocumentsDirectory();
+      if (kIsWeb) {
+        _isar = WebMockIsar();
+        logger.info('Initialized WebMockIsar Database successfully.');
+        // Auto-seed demo data on web startup so the registers are filled by default for testing
+        try {
+          await DemoDataSeeder.seedDemoData(this);
+          logger.info('Auto-seeded demo data on web startup.');
+        } catch (e) {
+          logger.error('Failed to auto-seed demo data on web startup', e);
+        }
+        return;
+      }
+
+      String? dirPath;
+      if (!kIsWeb) {
+        final dir = await getApplicationDocumentsDirectory();
+        dirPath = dir.path;
+      }
       
       _isar = await Isar.open(
         [
@@ -51,12 +74,15 @@ class DatabaseService {
           SettingsSchema,
           UserSchema,
           SyncQueueSchema,
+          PurchaseSchema,
+          PurchaseItemSchema,
+          ExpenseSchema,
         ],
-        directory: dir.path,
-        inspector: true, // Enables Isar database inspector in debug builds
+        directory: dirPath ?? '',
+        inspector: !kIsWeb, // Enables Isar database inspector in debug builds on native platforms only
       );
 
-      logger.info('Isar Database v$currentDatabaseVersion initialized successfully at: ${dir.path}');
+      logger.info('Isar Database v$currentDatabaseVersion initialized successfully.');
 
       // Run Schema Migrations if required
       await _checkAndRunMigrations();
@@ -91,6 +117,9 @@ class DatabaseService {
 
   /// Creates a backup file of the current .isar database
   Future<void> backupDatabase(String destinationPath) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Database backup is not supported on the web.');
+    }
     logger.info('Backing up local database to: $destinationPath');
     try {
       final file = File(destinationPath);
@@ -114,6 +143,9 @@ class DatabaseService {
 
   /// Restores the database from a backup file
   Future<void> restoreDatabase(String sourcePath) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Database restore is not supported on the web.');
+    }
     logger.warning('Restoring database from backup: $sourcePath');
     try {
       final sourceFile = File(sourcePath);

@@ -4,6 +4,7 @@ import 'package:business_sahaj_erp/domain/models/report_models.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 
 class ProfitService {
   final DatabaseService _dbService;
@@ -75,8 +76,17 @@ class ProfitService {
       }
     }
 
-    final grossProfit = totalRevenue; // Before buying costs
-    final netProfit = totalRevenue - totalCost; // Net sales margin
+    // Fetch operational expenses in date range
+    final expenses = await isar.collection<Expense>()
+        .filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .expenseDateBetween(start, end)
+        .findAll();
+    final double totalExpenses = expenses.fold(0.0, (sum, exp) => sum + (exp.amount ?? 0.0));
+
+    final grossProfit = totalRevenue; 
+    final netProfit = totalRevenue - totalCost - totalExpenses; // Net profit after buying costs & expenses
     final profitPercentage = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0.0;
 
     final profitLines = productAggregates.values.map((agg) {

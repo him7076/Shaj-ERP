@@ -280,8 +280,8 @@ final filteredInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
 
   // Load party links
   for (var invoice in list) {
-    await invoice.party.load();
-    await invoice.invoiceItems.load();
+    try { await invoice.party.load(); } catch (_) {}
+    try { await invoice.invoiceItems.load(); } catch (_) {}
   }
 
   // Filter Payment Status

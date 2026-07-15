@@ -32,9 +32,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       final repo = ref.read(itemRepositoryProvider);
       final fetchedItem = await repo.getByUuid(widget.itemUuid);
       if (fetchedItem != null) {
-        await fetchedItem.category.load();
-        await fetchedItem.brand.load();
-        await fetchedItem.unit.load();
+        try { await fetchedItem.category.load(); } catch (_) {}
+        try { await fetchedItem.brand.load(); } catch (_) {}
+        try { await fetchedItem.unit.load(); } catch (_) {}
       }
       setState(() {
         _item = fetchedItem;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -17,57 +18,82 @@ class DashboardScreen extends StatelessWidget {
     }
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(28.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Welcome to Sahaj ERP',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Here is your business overview for today.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+            // Welcome Header Visual with glassmorphism layout style
+            Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary.withOpacity(0.06),
+                    theme.colorScheme.primary.withOpacity(0.01),
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                // Calendar Date Indicator (Responsive display)
-                if (!ResponsiveLayout.isMobile(context))
-                  Card(
-                    color: theme.colorScheme.secondaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Row(
-                        children: [
-                          Icon(Icons.calendar_month, color: theme.colorScheme.onSecondaryContainer),
-                          const SizedBox(width: 8),
-                          Text(
-                            'June 23, 2026',
-                            style: TextStyle(
-                              color: theme.colorScheme.onSecondaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, Administrator',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: theme.colorScheme.onBackground,
+                            letterSpacing: -0.5,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Sahaj ERP is live. Here is your enterprise summary for today.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
+                  if (!ResponsiveLayout.isMobile(context))
+                    Card(
+                      elevation: 0,
+                      color: theme.colorScheme.primary.withOpacity(0.08),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.15)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded, color: theme.colorScheme.primary, size: 16),
+                            const SizedBox(width: 10),
+                            Text(
+                              'July 15, 2026',
+                              style: TextStyle(
+                                color: theme.colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
             // Responsive Stats Grid
             GridView.count(
@@ -76,20 +102,11 @@ class DashboardScreen extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+              childAspectRatio: 1.6,
               children: [
                 _buildStatCard(
                   context: context,
-                  title: 'Total Orders',
-                  value: '1,248',
-                  trend: '+12.5% vs last week',
-                  trendColor: Colors.green,
-                  icon: Icons.shopping_basket_rounded,
-                  iconColor: Colors.blue,
-                ),
-                _buildStatCard(
-                  context: context,
-                  title: 'Total Sales',
+                  title: 'Sales (Invoices)',
                   value: '₹3,84,900',
                   trend: '+8.3% vs last week',
                   trendColor: Colors.green,
@@ -98,16 +115,25 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 _buildStatCard(
                   context: context,
-                  title: 'Active Parties',
-                  value: '184',
-                  trend: '+3 registered today',
-                  trendColor: Colors.orange,
-                  icon: Icons.people_alt_rounded,
-                  iconColor: Colors.deepPurple,
+                  title: 'Purchases (Bills)',
+                  value: '₹68,440',
+                  trend: '1 bill recorded',
+                  trendColor: Colors.blue,
+                  icon: Icons.shopping_bag_rounded,
+                  iconColor: Colors.blue,
                 ),
                 _buildStatCard(
                   context: context,
-                  title: 'Products Stocked',
+                  title: 'Active Customers',
+                  value: '184 Parties',
+                  trend: '+3 registered today',
+                  trendColor: Colors.orange,
+                  icon: Icons.people_alt_rounded,
+                  iconColor: Colors.purple,
+                ),
+                _buildStatCard(
+                  context: context,
+                  title: 'Stock Ledger',
                   value: '456 Items',
                   trend: '5 Out of Stock',
                   trendColor: Colors.red,
@@ -116,7 +142,7 @@ class DashboardScreen extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
             // Split Section: Recent Activity & Quick Actions
             Row(
@@ -126,20 +152,31 @@ class DashboardScreen extends StatelessWidget {
                 Expanded(
                   flex: 3,
                   child: Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(20.0),
+                      padding: const EdgeInsets.all(24.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Recent Transactions',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Recent Transactions Log',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onBackground,
+                                ),
+                              ),
+                              Icon(Icons.history_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                            ],
                           ),
-                          const Divider(height: 24),
+                          const Divider(height: 32, thickness: 0.5),
                           
-                          // Mock Transaction List
                           _buildActivityItem(
                             theme: theme,
                             title: 'Invoice generated for Krishna Electronics',
@@ -158,18 +195,18 @@ class DashboardScreen extends StatelessWidget {
                           ),
                           _buildActivityItem(
                             theme: theme,
-                            title: 'New purchase order drafted',
+                            title: 'Wholesale Purchase draft saved',
                             time: '3 hours ago',
-                            subtitle: 'Order #ORD-5012 • Vendor: Balaji Wholesalers',
-                            statusIcon: Icons.add_shopping_cart,
+                            subtitle: 'Bill #PUR-2026-0001 • Balaji Wholesalers',
+                            statusIcon: Icons.shopping_bag_outlined,
                             statusColor: Colors.orange,
                           ),
                           _buildActivityItem(
                             theme: theme,
-                            title: 'Inventory stock level warning',
+                            title: 'Office rent payment logged',
                             time: '5 hours ago',
-                            subtitle: 'Item: LED Bulb 9W is below reorder level (Qty: 4)',
-                            statusIcon: Icons.warning_amber_rounded,
+                            subtitle: 'Expense Category: Rent • Amount: ₹12,000',
+                            statusIcon: Icons.account_balance_wallet_outlined,
                             statusColor: Colors.red,
                           ),
                         ],
@@ -178,63 +215,69 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 
-                // Quick Actions Menu (Hidden on narrow mobile layouts for neat scaling)
+                // Quick Actions Menu
                 if (ResponsiveLayout.isDesktop(context) || ResponsiveLayout.isTablet(context)) ...[
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 20),
                   Expanded(
                     flex: 2,
                     child: Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.all(20.0),
+                        padding: const EdgeInsets.all(24.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Quick Actions',
+                              'Quick Actions Shortcuts',
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onBackground,
                               ),
                             ),
-                            const Divider(height: 24),
+                            const Divider(height: 32, thickness: 0.5),
                             
-                            ElevatedButton.icon(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              ),
-                              icon: const Icon(Icons.add_circle_outline_rounded),
-                              label: const Text('Add New Party'),
+                            _buildQuickActionButton(
+                              context: context,
+                              icon: Icons.create_new_folder_outlined,
+                              label: 'Create Sales Invoice',
+                              color: Colors.green,
+                              routePath: '/sales',
                             ),
                             const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              ),
-                              icon: const Icon(Icons.create_new_folder_outlined),
-                              label: const Text('Create New Invoice'),
+                            _buildQuickActionButton(
+                              context: context,
+                              icon: Icons.add_shopping_cart_rounded,
+                              label: 'Log Purchase Bill',
+                              color: Colors.blue,
+                              routePath: '/purchases',
                             ),
                             const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              ),
-                              icon: const Icon(Icons.post_add_outlined),
-                              label: const Text('Receive Goods / Stock'),
+                            _buildQuickActionButton(
+                              context: context,
+                              icon: Icons.account_balance_wallet_outlined,
+                              label: 'Record Expense',
+                              color: Colors.red,
+                              routePath: '/expenses',
                             ),
                             const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              ),
-                              icon: const Icon(Icons.print_outlined),
-                              label: const Text('Export Daybook PDF'),
+                            _buildQuickActionButton(
+                              context: context,
+                              icon: Icons.add_circle_outline_rounded,
+                              label: 'Add New Party Profile',
+                              color: Colors.purple,
+                              routePath: '/parties',
+                            ),
+                            const SizedBox(height: 12),
+                            _buildQuickActionButton(
+                              context: context,
+                              icon: Icons.print_outlined,
+                              label: 'Generate Business Report',
+                              color: Colors.teal,
+                              routePath: '/reports',
                             ),
                           ],
                         ),
@@ -244,6 +287,44 @@ class DashboardScreen extends StatelessWidget {
                 ],
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required String routePath,
+  }) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: () => context.go(routePath),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onBackground.withOpacity(0.9),
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.6), size: 16),
           ],
         ),
       ),
@@ -262,8 +343,24 @@ class DashboardScreen extends StatelessWidget {
     final theme = Theme.of(context);
     
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.surface,
+              iconColor.withOpacity(0.01),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -274,15 +371,15 @@ class DashboardScreen extends StatelessWidget {
                 Text(
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: iconColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
@@ -298,17 +395,29 @@ class DashboardScreen extends StatelessWidget {
                 Text(
                   value,
                   style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
+                    color: theme.colorScheme.onBackground,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  trend,
-                  style: TextStyle(
-                    color: trendColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      trendColor == Colors.red ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                      color: trendColor,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      trend,
+                      style: TextStyle(
+                        color: trendColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -327,20 +436,20 @@ class DashboardScreen extends StatelessWidget {
     required Color statusColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             margin: const EdgeInsets.only(top: 2),
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              shape: BoxShape.circle,
             ),
-            child: Icon(statusIcon, color: statusColor, size: 18),
+            child: Icon(statusIcon, color: statusColor, size: 16),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,21 +460,21 @@ class DashboardScreen extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     Text(
                       time,
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
+                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7), fontSize: 11),
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
+                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8), fontSize: 12),
                 ),
               ],
             ),

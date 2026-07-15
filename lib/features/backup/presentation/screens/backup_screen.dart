@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/providers/backup_providers.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_history_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/restore_screen.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class BackupScreen extends ConsumerStatefulWidget {
   const BackupScreen({Key? key}) : super(key: key);
@@ -18,10 +19,105 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   bool _includeImages = true;
   bool _uploadToCloud = false;
 
+  late final TextEditingController _apiKeyController;
+  late final TextEditingController _projectIdController;
+  late final TextEditingController _appIdController;
+  late final TextEditingController _senderIdController;
+  late final TextEditingController _storageBucketController;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiKeyController = TextEditingController();
+    _projectIdController = TextEditingController();
+    _appIdController = TextEditingController();
+    _senderIdController = TextEditingController();
+    _storageBucketController = TextEditingController();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      setState(() {
+        _apiKeyController.text = prefs.getString('firebase_api_key') ?? '';
+        _projectIdController.text = prefs.getString('firebase_project_id') ?? '';
+        _appIdController.text = prefs.getString('firebase_app_id') ?? '';
+        _senderIdController.text = prefs.getString('firebase_sender_id') ?? '';
+        _storageBucketController.text = prefs.getString('firebase_storage_bucket') ?? '';
+      });
+    });
+  }
+
   @override
   void dispose() {
     _passwordController.dispose();
+    _apiKeyController.dispose();
+    _projectIdController.dispose();
+    _appIdController.dispose();
+    _senderIdController.dispose();
+    _storageBucketController.dispose();
     super.dispose();
+  }
+
+  void _saveFirebaseSettings() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final theme = Theme.of(context);
+    
+    await prefs.setString('firebase_api_key', _apiKeyController.text.trim());
+    await prefs.setString('firebase_project_id', _projectIdController.text.trim());
+    await prefs.setString('firebase_app_id', _appIdController.text.trim());
+    await prefs.setString('firebase_sender_id', _senderIdController.text.trim());
+    await prefs.setString('firebase_storage_bucket', _storageBucketController.text.trim());
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Firebase Database Settings Saved Successfully!'),
+          backgroundColor: theme.colorScheme.primary,
+        ),
+      );
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Reload Required'),
+          content: const Text(
+            'Firebase database settings have been updated.\nPlease reload the web page (F5) or restart the application to connect to the new database.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _clearFirebaseSettings() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    
+    await prefs.remove('firebase_api_key');
+    await prefs.remove('firebase_project_id');
+    await prefs.remove('firebase_app_id');
+    await prefs.remove('firebase_sender_id');
+    await prefs.remove('firebase_storage_bucket');
+    
+    setState(() {
+      _apiKeyController.clear();
+      _projectIdController.clear();
+      _appIdController.clear();
+      _senderIdController.clear();
+      _storageBucketController.clear();
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Firebase Database Settings Cleared. Reverting to default.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   String _formatBytes(int bytes) {
@@ -370,6 +466,112 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 36),
+            const Divider(),
+            const SizedBox(height: 24),
+            
+            // Firebase Config Setup Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.cloud_sync_rounded, color: theme.colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Configure Firebase Cloud Database',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Input your own Firebase connection parameters to link this app instance with your custom data environment.',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    TextFormField(
+                      controller: _projectIdController,
+                      decoration: const InputDecoration(
+                        labelText: 'Firebase Project ID',
+                        hintText: 'e.g. business-sahaj-erp-xxxx',
+                        prefixIcon: Icon(Icons.dns_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: _apiKeyController,
+                      decoration: const InputDecoration(
+                        labelText: 'API Key',
+                        prefixIcon: Icon(Icons.api_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: _appIdController,
+                      decoration: const InputDecoration(
+                        labelText: 'Application ID (App ID)',
+                        hintText: 'e.g. 1:123456789:web:abcdef123456',
+                        prefixIcon: Icon(Icons.phonelink_setup_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: _senderIdController,
+                      decoration: const InputDecoration(
+                        labelText: 'Messaging Sender ID (Optional)',
+                        prefixIcon: Icon(Icons.message_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    TextFormField(
+                      controller: _storageBucketController,
+                      decoration: const InputDecoration(
+                        labelText: 'Storage Bucket (Optional)',
+                        hintText: 'e.g. project-id.appspot.com',
+                        prefixIcon: Icon(Icons.cloud_queue_rounded),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _saveFirebaseSettings,
+                            icon: const Icon(Icons.save_rounded),
+                            label: const Text('Save & Connect'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          onPressed: _clearFirebaseSettings,
+                          icon: const Icon(Icons.clear_all_rounded),
+                          label: const Text('Reset'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

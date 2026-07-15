@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -63,16 +64,53 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen>
   List<String> _localImagePaths = [];
   bool _isLoading = false;
   Item? _existingItem;
+  List<HsnModel> _suggestedHsnCodes = [];
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    _nameController.addListener(_onItemNameChanged);
+    
     if (widget.itemUuid != null) {
       _loadItem();
     } else {
       _loadNextCode();
     }
+
+    // Pre-populate HSN suggestions
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final hsnService = ref.read(hsnServiceProvider);
+      await hsnService.fetchOnlineHsnCodes();
+      if (mounted) {
+        setState(() {
+          _suggestedHsnCodes = hsnService.getCommonHsnCodes();
+        });
+      }
+    });
+  }
+
+  void _onItemNameChanged() {
+    if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      final name = _nameController.text.trim();
+      if (name.isNotEmpty) {
+        final hsnService = ref.read(hsnServiceProvider);
+        final results = await hsnService.searchOnlineHsn(name);
+        if (mounted) {
+          setState(() {
+            _suggestedHsnCodes = results;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _suggestedHsnCodes = ref.read(hsnServiceProvider).getCommonHsnCodes();
+          });
+        }
+      }
+    });
   }
 
   Future<void> _loadNextCode() async {
@@ -93,9 +131,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen>
       final repo = ref.read(itemRepositoryProvider);
       final item = await repo.getByUuid(widget.itemUuid!);
       if (item != null) {
-        await item.category.load();
-        await item.brand.load();
-        await item.unit.load();
+        try { await item.category.load(); } catch (_) {}
+        try { await item.brand.load(); } catch (_) {}
+        try { await item.unit.load(); } catch (_) {}
 
         _existingItem = item;
         _nameController.text = item.itemName ?? '';
@@ -153,6 +191,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen>
 
   @override
   void dispose() {
+    _nameController.removeListener(_onItemNameChanged);
+    _debounceTimer?.cancel();
     _tabController.dispose();
     _nameController.dispose();
     _codeController.dispose();
@@ -686,14 +726,16 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Common HSN Codes Suggestions:',
+                      _nameController.text.trim().isEmpty 
+                          ? 'Common HSN Codes Suggestions:' 
+                          : 'Online HSN Suggestions for "${_nameController.text.trim()}":',
                       style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: hsnService.getCommonHsnCodes().take(6).map((hsn) {
+                      children: _suggestedHsnCodes.take(6).map((hsn) {
                         return ActionChip(
                           avatar: Text('${hsn.gstRate.toInt()}%', style: const TextStyle(fontSize: 9)),
                           label: Text('${hsn.hsnCode} (${hsn.description.split(' ').first})'),

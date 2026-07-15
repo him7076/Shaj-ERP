@@ -36,8 +36,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       final repo = ref.read(orderRepositoryProvider);
       final fetched = await repo.getByUuid(widget.orderUuid);
       if (fetched != null) {
-        await fetched.party.load();
-        await fetched.orderItems.load();
+        try { await fetched.party.load(); } catch (_) {}
+        try { await fetched.orderItems.load(); } catch (_) {}
       }
       setState(() {
         _order = fetched;

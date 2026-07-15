@@ -15,7 +15,7 @@ extension GetInvoiceItemCollection on Isar {
 
 const InvoiceItemSchema = CollectionSchema(
   name: r'InvoiceItem',
-  id: 3489790213250467162,
+  id: 3489790213250,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -110,7 +110,7 @@ const InvoiceItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 2134397340427,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -125,13 +125,13 @@ const InvoiceItemSchema = CollectionSchema(
   },
   links: {
     r'invoice': LinkSchema(
-      id: 9067807999479117358,
+      id: 9067807999479,
       name: r'invoice',
       target: r'Invoice',
       single: true,
     ),
     r'item': LinkSchema(
-      id: -4145695838680310432,
+      id: -4145695838680,
       name: r'item',
       target: r'Item',
       single: true,
