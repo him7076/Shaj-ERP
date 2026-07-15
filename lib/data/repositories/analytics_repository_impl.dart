@@ -47,7 +47,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     final monthlySales = monthlyInvoices.fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
 
     // Monthly Purchases
-    final monthlyPurchasesInvoices = await isar.purchases
+    final monthlyPurchasesInvoices = await isar.collection<Purchase>()
         .filter()
         .isDeletedEqualTo(false)
         .and()
