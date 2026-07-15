@@ -51,7 +51,7 @@ class DatabaseService {
         
         // Prevent generic type parameter tree-shaking on Web
         try {
-          WebMockIsar._dummyKeep();
+          WebMockIsar.dummyKeep();
         } catch (_) {}
 
         final key = 'demo_seeded_$activeFirmId';

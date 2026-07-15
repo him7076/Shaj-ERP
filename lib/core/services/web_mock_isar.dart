@@ -26,7 +26,7 @@ class WebMockIsar implements Isar {
   Map<String, List<dynamic>> get _db => _dbs[firmId] ??= {};
 
   // Forces dart2js compilation to keep the Query inheritance relation
-  static void _dummyKeep() {
+  static void dummyKeep() {
     final Query<Category> _cat = WebMockQuery<Category>([], WebMockCollection<Category>('', {}, WebMockIsar()));
     print(_cat);
     final Query<Unit> _u = WebMockQuery<Unit>([], WebMockCollection<Unit>('', {}, WebMockIsar()));
