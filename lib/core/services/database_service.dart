@@ -49,6 +49,11 @@ class DatabaseService {
         _isar = WebMockIsar(firmId: activeFirmId);
         logger.info('Initialized WebMockIsar Database for firm: $activeFirmId');
         
+        // Prevent generic type parameter tree-shaking on Web
+        try {
+          WebMockIsar._dummyKeep();
+        } catch (_) {}
+
         final key = 'demo_seeded_$activeFirmId';
         final alreadySeeded = prefs?.getBool(key) ?? false;
         if (!alreadySeeded && activeFirmId == 'firm_default') {

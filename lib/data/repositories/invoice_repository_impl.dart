@@ -77,7 +77,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       } else {
         invoice.paymentStatus = 'Partially Paid';
       }
-      invoice.invoiceStatus = invoice.paymentStatus;
+      invoice.invoiceStatus = 'Active';
 
       await isar.writeTxn(() async {
         // 1. Put Invoice
@@ -329,7 +329,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       } else {
         invoice.paymentStatus = 'Partially Paid';
       }
-      invoice.invoiceStatus = invoice.paymentStatus;
+      invoice.invoiceStatus = 'Active';
 
       // Lock Order
       order.status = 'Converted To Sale';

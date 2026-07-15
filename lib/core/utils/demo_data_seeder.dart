@@ -187,6 +187,7 @@ class DemoDataSeeder {
         ..partyId = customer2.id
         ..grandTotal = 12390.0
         ..paymentStatus = 'Paid'
+        ..invoiceStatus = 'Active'
         ..isSynced = false;
       await db.isar.invoices.put(invoice1);
 

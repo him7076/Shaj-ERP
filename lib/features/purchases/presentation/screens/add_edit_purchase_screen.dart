@@ -40,6 +40,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   double _totalGST = 0.0;
   double _grandTotal = 0.0;
   bool _isSaving = false;
+  String? _companyGst;
 
   @override
   void initState() {
@@ -50,8 +51,11 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   void _initValues() async {
     final repo = ref.read(purchaseRepositoryProvider);
     final numStr = await repo.generateNextPurchaseNumber();
+    final isar = ref.read(databaseServiceProvider).isar;
+    final settings = await isar.settings.where().findFirst();
     setState(() {
       _billNumberController.text = numStr;
+      _companyGst = settings?.companyGST;
     });
   }
 
@@ -569,102 +573,23 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
               separatorBuilder: (context, index) => const Divider(height: 24),
               itemBuilder: (context, index) {
                 final item = _draftItems[index];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.itemName ?? '',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              _draftItems.removeAt(index);
-                            });
-                            _recalculateTotals();
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: item.quantity?.toInt().toString(),
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
-                            onChanged: (val) {
-                              final double? qty = double.tryParse(val);
-                              if (qty != null && qty >= 0) {
-                                setState(() {
-                                  item.quantity = qty;
-                                });
-                                _recalculateTotals();
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: item.rate?.toString(),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'Buy Rate (₹)', isDense: true, border: OutlineInputBorder()),
-                            onChanged: (val) {
-                              final double? rateVal = double.tryParse(val);
-                              if (rateVal != null) {
-                                setState(() {
-                                  item.rate = rateVal;
-                                });
-                                _recalculateTotals();
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: item.discount?.toString(),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'Disc (₹)', isDense: true, border: OutlineInputBorder()),
-                            onChanged: (val) {
-                              final double? disc = double.tryParse(val);
-                              if (disc != null) {
-                                setState(() {
-                                  item.discount = disc;
-                                });
-                                _recalculateTotals();
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: item.gstRate?.toString(),
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
-                            onChanged: (val) {
-                              final double? gst = double.tryParse(val);
-                              if (gst != null) {
-                                setState(() {
-                                  item.gstRate = gst;
-                                });
-                                _recalculateTotals();
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                return PurchaseCartItemRow(
+                  item: item,
+                  onDelete: () {
+                    setState(() {
+                      _draftItems.removeAt(index);
+                    });
+                    _recalculateTotals();
+                  },
+                  onChanged: (qty, rate, discount, gstRate) {
+                    setState(() {
+                      item.quantity = qty;
+                      item.rate = rate;
+                      item.discount = discount;
+                      item.gstRate = gstRate;
+                    });
+                    _recalculateTotals();
+                  },
                 );
               },
             ),
@@ -678,12 +603,26 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
     final double pendingAmt = _grandTotal - paidAmt;
 
+    final cleanCompany = _companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+    final cleanParty = _selectedParty?.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+    final isLocal = cleanCompany.length >= 2 && cleanParty.length >= 2 && cleanCompany.substring(0, 2) == cleanParty.substring(0, 2);
+
+    final totalGst = _totalGST;
+    final cgst = isLocal ? totalGst / 2.0 : 0.0;
+    final sgst = isLocal ? totalGst / 2.0 : 0.0;
+    final igst = isLocal ? 0.0 : totalGst;
+
     return Column(
       children: [
         _buildSummaryRow('Subtotal (Before Discount)', _subtotal, theme),
         _buildSummaryRow('Discounts Total', -_discountAmount, theme),
         _buildSummaryRow('Taxable Value', _taxableAmount, theme),
-        _buildSummaryRow('GST Tax Total', _totalGST, theme),
+        if (isLocal) ...[
+          _buildSummaryRow('CGST (9%)', cgst, theme),
+          _buildSummaryRow('SGST (9%)', sgst, theme),
+        ] else ...[
+          _buildSummaryRow('IGST (18%)', igst, theme),
+        ],
         const Divider(),
         _buildSummaryRow('GRAND TOTAL', _grandTotal, theme, isBold: true),
         _buildSummaryRow('Pending Outstanding', pendingAmt < 0 ? 0.0 : pendingAmt, theme, isPending: true),
@@ -721,3 +660,211 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     );
   }
 }
+
+class PurchaseCartItemRow extends StatefulWidget {
+  final PurchaseItem item;
+  final VoidCallback onDelete;
+  final Function(double qty, double rate, double discount, double gstRate) onChanged;
+
+  const PurchaseCartItemRow({
+    Key? key,
+    required this.item,
+    required this.onDelete,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  State<PurchaseCartItemRow> createState() => _PurchaseCartItemRowState();
+}
+
+class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
+  late TextEditingController _qtyController;
+  late TextEditingController _rateExclController;
+  late TextEditingController _rateInclController;
+  late TextEditingController _discController;
+  late TextEditingController _gstController;
+
+  bool _isUpdatingLocally = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.item;
+    final double excl = item.rate ?? 0.0;
+    final double gstPct = item.gstRate ?? 18.0;
+    final double incl = excl * (1 + gstPct / 100.0);
+
+    _qtyController = TextEditingController(text: item.quantity?.toInt().toString() ?? '1');
+    _rateExclController = TextEditingController(text: excl.toStringAsFixed(2));
+    _rateInclController = TextEditingController(text: incl.toStringAsFixed(2));
+    _discController = TextEditingController(text: item.discount?.toString() ?? '0.0');
+    _gstController = TextEditingController(text: gstPct.toString());
+  }
+
+  @override
+  void didUpdateWidget(PurchaseCartItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_isUpdatingLocally) return;
+
+    final item = widget.item;
+    final double excl = item.rate ?? 0.0;
+    final double gstPct = item.gstRate ?? 18.0;
+    final double incl = excl * (1 + gstPct / 100.0);
+
+    _updateIfChanged(_qtyController, item.quantity?.toInt().toString() ?? '1');
+    _updateIfChanged(_rateExclController, excl.toStringAsFixed(2));
+    _updateIfChanged(_rateInclController, incl.toStringAsFixed(2));
+    _updateIfChanged(_discController, item.discount?.toString() ?? '0.0');
+    _updateIfChanged(_gstController, gstPct.toString());
+  }
+
+  void _updateIfChanged(TextEditingController controller, String value) {
+    if (controller.text != value && double.tryParse(controller.text) != double.tryParse(value)) {
+      controller.text = value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _rateExclController.dispose();
+    _rateInclController.dispose();
+    _discController.dispose();
+    _gstController.dispose();
+    super.dispose();
+  }
+
+  void _triggerChanged({double? qty, double? exclRate, double? disc, double? gst}) {
+    final targetQty = qty ?? double.tryParse(_qtyController.text) ?? 1.0;
+    final targetExcl = exclRate ?? double.tryParse(_rateExclController.text) ?? 0.0;
+    final targetDisc = disc ?? double.tryParse(_discController.text) ?? 0.0;
+    final targetGst = gst ?? double.tryParse(_gstController.text) ?? 18.0;
+    
+    widget.onChanged(targetQty, targetExcl, targetDisc, targetGst);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                item.itemName ?? '',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: widget.onDelete,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _qtyController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  final double? qtyVal = double.tryParse(val);
+                  if (qtyVal != null) {
+                    _triggerChanged(qty: qtyVal);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _rateExclController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  final double? excl = double.tryParse(val);
+                  if (excl == null) return;
+                  
+                  final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                  final incl = excl * (1 + gstPct / 100.0);
+                  
+                  _isUpdatingLocally = true;
+                  _rateInclController.text = incl.toStringAsFixed(2);
+                  _isUpdatingLocally = false;
+                  
+                  _triggerChanged(exclRate: excl);
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _rateInclController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  final double? incl = double.tryParse(val);
+                  if (incl == null) return;
+                  
+                  final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                  final excl = incl / (1 + gstPct / 100.0);
+                  
+                  _isUpdatingLocally = true;
+                  _rateExclController.text = excl.toStringAsFixed(2);
+                  _isUpdatingLocally = false;
+                  
+                  _triggerChanged(exclRate: excl);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _discController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Disc (₹)', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  final double? discVal = double.tryParse(val);
+                  if (discVal != null) {
+                    _triggerChanged(disc: discVal);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _gstController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  final double? gstVal = double.tryParse(val);
+                  if (gstVal != null) {
+                    final excl = double.tryParse(_rateExclController.text) ?? 0.0;
+                    final incl = excl * (1 + gstVal / 100.0);
+                    
+                    _isUpdatingLocally = true;
+                    _rateInclController.text = incl.toStringAsFixed(2);
+                    _isUpdatingLocally = false;
+                    
+                    _triggerChanged(gst: gstVal);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
