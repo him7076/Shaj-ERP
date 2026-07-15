@@ -15,7 +15,8 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   @override
   Future<DashboardAnalyticsSummary> getDashboardAnalytics() async {
-    final isar = _dbService.isar;
+    try {
+      final isar = _dbService.isar;
     final now = DateTime.now();
     
     final startOfToday = DateTime(now.year, now.month, now.day);
@@ -102,7 +103,13 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     for (var inv in recentInvoices) {
       final name = inv.partyName ?? 'Unknown Party';
       final total = inv.grandTotal ?? 0.0;
-      final outstanding = inv.party.value?.outstandingBalance ?? 0.0;
+      
+      // Look up party from pre-loaded parties to avoid inv.party.value crashes on minified Web
+      final matchingParty = parties.firstWhere(
+        (p) => p.id == inv.partyId,
+        orElse: () => Party(),
+      );
+      final outstanding = matchingParty.outstandingBalance ?? 0.0;
 
       if (customerMap.containsKey(name)) {
         customerMap[name]!.revenue += total;
@@ -185,6 +192,11 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       topProducts: topProducts.take(5).toList(),
       dailySalesPoints: dailySalesPoints,
     );
+    } catch (e, stackTrace) {
+      print('DASHBOARD METRICS ERROR: $e');
+      print(stackTrace);
+      rethrow;
+    }
   }
 }
 

@@ -278,14 +278,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('Failed to compile business reports: $err'),
-            ],
+        error: (err, stackTrace) => Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text('Failed to compile business reports: $err', style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  ),
+                  child: Text(
+                    stackTrace.toString(),
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
