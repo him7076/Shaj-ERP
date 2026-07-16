@@ -64,22 +64,34 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/orders',
             name: 'orders',
-            builder: (context, state) => const OrdersScreen(),
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return OrdersScreen(createImmediately: create);
+            },
           ),
           GoRoute(
             path: '/sales',
             name: 'sales',
-            builder: (context, state) => const SalesScreen(),
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return SalesScreen(createImmediately: create);
+            },
           ),
           GoRoute(
             path: '/purchases',
             name: 'purchases',
-            builder: (context, state) => const PurchasesScreen(),
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return PurchasesScreen(createImmediately: create);
+            },
           ),
           GoRoute(
             path: '/expenses',
             name: 'expenses',
-            builder: (context, state) => const ExpensesScreen(),
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return ExpensesScreen(createImmediately: create);
+            },
           ),
           GoRoute(
             path: '/reports',
@@ -102,9 +114,52 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
-            path: '/transactions',
-            name: 'transactions',
-            builder: (context, state) => const TransactionsScreen(),
+            path: '/receipts',
+            name: 'receipts',
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return TransactionsScreen(lockedType: 'Receipt', createImmediately: create);
+            },
+          ),
+          GoRoute(
+            path: '/payments',
+            name: 'payments',
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return TransactionsScreen(lockedType: 'Payment', createImmediately: create);
+            },
+          ),
+          GoRoute(
+            path: '/credit-notes',
+            name: 'credit-notes',
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return TransactionsScreen(lockedType: 'Credit Note', createImmediately: create);
+            },
+          ),
+          GoRoute(
+            path: '/debit-notes',
+            name: 'debit-notes',
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return TransactionsScreen(lockedType: 'Debit Note', createImmediately: create);
+            },
+          ),
+          GoRoute(
+            path: '/party-transfers',
+            name: 'party-transfers',
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return TransactionsScreen(lockedType: 'Transfer', createImmediately: create);
+            },
+          ),
+          GoRoute(
+            path: '/other-incomes',
+            name: 'other-incomes',
+            builder: (context, state) {
+              final create = state.uri.queryParameters['create'] == 'true';
+              return TransactionsScreen(lockedType: 'Other Income', createImmediately: create);
+            },
           ),
         ],
       ),

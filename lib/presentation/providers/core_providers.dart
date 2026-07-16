@@ -1,3 +1,4 @@
+import 'package:isar/isar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/network_service.dart';
@@ -28,6 +29,19 @@ final networkServiceProvider = Provider<NetworkService>((ref) {
 // Database Service provider (Isar DB wrapper)
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService();
+});
+
+// Active Firm ID provider
+final activeFirmIdProvider = StateProvider<String>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return prefs.getString('active_firm_id') ?? 'firm_default';
+});
+
+// Isar Provider that reacts to active firm switches
+final isarProvider = Provider<Isar>((ref) {
+  ref.watch(activeFirmIdProvider);
+  final dbService = ref.watch(databaseServiceProvider);
+  return dbService.isar;
 });
 
 // Firebase Service Provider
@@ -72,12 +86,12 @@ final syncManagerProvider = Provider<SyncManager>((ref) {
 
 // Sync Queue Repository Provider
 final syncQueueRepositoryProvider = Provider<SyncQueueRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return SyncQueueRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return SyncQueueRepositoryImpl(isar);
 });
 
 // Item Repository Provider
 final itemRepositoryProvider = Provider<ItemRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return ItemRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return ItemRepositoryImpl(isar);
 });

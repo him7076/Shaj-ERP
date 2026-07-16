@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -82,8 +83,10 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             }
             party.updatedAt = DateTime.now();
             await isar.partys.put(party);
-            transaction.party.value = party;
-            await transaction.party.save();
+            if (!kIsWeb) {
+              transaction.party.value = party;
+              await transaction.party.save();
+            }
           }
         }
 

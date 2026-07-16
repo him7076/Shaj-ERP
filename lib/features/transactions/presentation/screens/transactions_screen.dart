@@ -7,11 +7,41 @@ import 'package:business_sahaj_erp/features/transactions/presentation/screens/ad
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 
-class TransactionsScreen extends ConsumerWidget {
-  const TransactionsScreen({Key? key}) : super(key: key);
+class TransactionsScreen extends ConsumerStatefulWidget {
+  final String? lockedType;
+  final bool createImmediately;
+  const TransactionsScreen({Key? key, this.lockedType, this.createImmediately = false}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransactionsScreen> createState() => _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.lockedType != null) {
+        ref.read(transactionSearchFilterProvider.notifier).state =
+            ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType);
+      }
+      if (widget.createImmediately) {
+        AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant TransactionsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.lockedType != oldWidget.lockedType && widget.lockedType != null) {
+      ref.read(transactionSearchFilterProvider.notifier).state =
+          ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
     final filter = ref.watch(transactionSearchFilterProvider);
@@ -20,108 +50,164 @@ class TransactionsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('Payments & Transactions'),
+        title: Text(widget.lockedType == 'Receipt'
+            ? 'Receipts (Payment In)'
+            : widget.lockedType == 'Payment'
+                ? 'Payments (Payment Out)'
+                : widget.lockedType == 'Credit Note'
+                    ? 'Credit Notes'
+                    : widget.lockedType == 'Debit Note'
+                        ? 'Debit Notes'
+                        : widget.lockedType == 'Transfer'
+                            ? 'Party Transfers'
+                            : widget.lockedType == 'Other Income'
+                                ? 'Other Income'
+                                : 'Payments & Transactions'),
         actions: [
-          PopupMenuButton<String>(
-            tooltip: 'Record new entry',
-            onSelected: (type) {
-              AddEditTransactionDialog.show(context, initialType: type);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.circular(8),
+          if (widget.lockedType != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+                },
+                icon: Icon(
+                  widget.lockedType == 'Receipt'
+                      ? Icons.arrow_downward_rounded
+                      : widget.lockedType == 'Payment'
+                          ? Icons.arrow_upward_rounded
+                          : widget.lockedType == 'Credit Note'
+                              ? Icons.assignment_return_rounded
+                              : widget.lockedType == 'Debit Note'
+                                  ? Icons.assignment_returned_rounded
+                                  : widget.lockedType == 'Transfer'
+                                      ? Icons.swap_horiz_rounded
+                                      : Icons.monetization_on_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                label: Text(
+                  widget.lockedType == 'Receipt'
+                      ? 'Record Receipt'
+                      : widget.lockedType == 'Payment'
+                          ? 'Record Payment'
+                          : widget.lockedType == 'Credit Note'
+                              ? 'New Credit Note'
+                              : widget.lockedType == 'Debit Note'
+                                  ? 'New Debit Note'
+                                  : widget.lockedType == 'Transfer'
+                                      ? 'New Transfer'
+                                      : 'Record Income',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Record Transaction',
-                    style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold),
+            )
+          else
+            PopupMenuButton<String>(
+              tooltip: 'Record new entry',
+              onSelected: (type) {
+                AddEditTransactionDialog.show(context, initialType: type);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Record Transaction',
+                      style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_drop_down, color: Colors.white, size: 18),
+                  ],
+                ),
+              ),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'Receipt',
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_downward_rounded, color: Colors.green[700]),
+                      const SizedBox(width: 12),
+                      const Text('Receipt (Payment In)'),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.arrow_drop_down, color: Colors.white, size: 18),
-                ],
-              ),
+                ),
+                PopupMenuItem(
+                  value: 'Payment',
+                  child: Row(
+                    children: [
+                      Icon(Icons.arrow_upward_rounded, color: Colors.red[700]),
+                      const SizedBox(width: 12),
+                      const Text('Payment (Payment Out)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'Credit Note',
+                  child: Row(
+                    children: [
+                      Icon(Icons.assignment_return_rounded, color: Colors.indigo),
+                      const SizedBox(width: 12),
+                      Text('Credit Note (Sales Return)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'Debit Note',
+                  child: Row(
+                    children: [
+                      Icon(Icons.assignment_returned_rounded, color: Colors.orange),
+                      const SizedBox(width: 12),
+                      Text('Debit Note (Purchase Return)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'Expense',
+                  child: Row(
+                    children: [
+                      Icon(Icons.account_balance_wallet_rounded, color: Colors.redAccent),
+                      const SizedBox(width: 12),
+                      Text('Other Expense'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'Transfer',
+                  child: Row(
+                    children: [
+                      Icon(Icons.swap_horiz_rounded, color: Colors.teal),
+                      const SizedBox(width: 12),
+                      Text('Party to Party Transfer'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'Other Income',
+                  child: Row(
+                    children: [
+                      Icon(Icons.monetization_on_rounded, color: Colors.blue),
+                      const SizedBox(width: 12),
+                      Text('Other Income'),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'Receipt',
-                child: Row(
-                  children: [
-                    Icon(Icons.arrow_downward_rounded, color: Colors.green[700]),
-                    const SizedBox(width: 12),
-                    const Text('Receipt (Payment In)'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'Payment',
-                child: Row(
-                  children: [
-                    Icon(Icons.arrow_upward_rounded, color: Colors.red[700]),
-                    const SizedBox(width: 12),
-                    const Text('Payment (Payment Out)'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'Credit Note',
-                child: Row(
-                  children: [
-                    Icon(Icons.assignment_return_rounded, color: Colors.indigo),
-                    const SizedBox(width: 12),
-                    Text('Credit Note (Sales Return)'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'Debit Note',
-                child: Row(
-                  children: [
-                    Icon(Icons.assignment_returned_rounded, color: Colors.orange),
-                    const SizedBox(width: 12),
-                    Text('Debit Note (Purchase Return)'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'Expense',
-                child: Row(
-                  children: [
-                    Icon(Icons.account_balance_wallet_rounded, color: Colors.redAccent),
-                    const SizedBox(width: 12),
-                    Text('Other Expense'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'Transfer',
-                child: Row(
-                  children: [
-                    Icon(Icons.swap_horiz_rounded, color: Colors.teal),
-                    const SizedBox(width: 12),
-                    Text('Party to Party Transfer'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'Other Income',
-                child: Row(
-                  children: [
-                    Icon(Icons.monetization_on_rounded, color: Colors.blue),
-                    const SizedBox(width: 12),
-                    Text('Other Income'),
-                  ],
-                ),
-              ),
-            ],
-          ),
           const SizedBox(width: 16),
         ],
       ),
@@ -131,6 +217,50 @@ class TransactionsScreen extends ConsumerWidget {
           // Summary Metrics Row
           transactionsAsync.when(
             data: (list) {
+              if (widget.lockedType != null) {
+                final totalAmount = list.fold(0.0, (sum, t) => sum + (t.amount ?? 0.0));
+                Color typeColor = Colors.grey;
+                IconData typeIcon = Icons.info_outline;
+                String metricTitle = '';
+
+                if (widget.lockedType == 'Receipt') {
+                  typeColor = Colors.green;
+                  typeIcon = Icons.arrow_downward;
+                  metricTitle = 'Total Receipts Received';
+                } else if (widget.lockedType == 'Payment') {
+                  typeColor = Colors.red;
+                  typeIcon = Icons.arrow_upward;
+                  metricTitle = 'Total Payments Paid';
+                } else if (widget.lockedType == 'Credit Note') {
+                  typeColor = Colors.indigo;
+                  typeIcon = Icons.assignment_return_rounded;
+                  metricTitle = 'Total Credit Note Amount';
+                } else if (widget.lockedType == 'Debit Note') {
+                  typeColor = Colors.orange;
+                  typeIcon = Icons.assignment_returned_rounded;
+                  metricTitle = 'Total Debit Note Amount';
+                } else if (widget.lockedType == 'Transfer') {
+                  typeColor = Colors.teal;
+                  typeIcon = Icons.swap_horiz;
+                  metricTitle = 'Total Transferred Amount';
+                } else if (widget.lockedType == 'Other Income') {
+                  typeColor = Colors.blue;
+                  typeIcon = Icons.monetization_on;
+                  metricTitle = 'Total Other Income';
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildMetricCard(
+                    theme: theme,
+                    title: metricTitle,
+                    value: currencyFormat.format(totalAmount),
+                    icon: typeIcon,
+                    color: typeColor,
+                  ),
+                );
+              }
+
               double totalIn = 0.0;
               double totalOut = 0.0;
 
@@ -194,72 +324,73 @@ class TransactionsScreen extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
           ),
 
-          // Horizontal Action Buttons Row
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Receipt (Payment In)',
-                    icon: Icons.arrow_downward_rounded,
-                    color: Colors.green,
-                    type: 'Receipt',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Payment (Payment Out)',
-                    icon: Icons.arrow_upward_rounded,
-                    color: Colors.red,
-                    type: 'Payment',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Credit Note',
-                    icon: Icons.assignment_return_rounded,
-                    color: Colors.indigo,
-                    type: 'Credit Note',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Debit Note',
-                    icon: Icons.assignment_returned_rounded,
-                    color: Colors.orange,
-                    type: 'Debit Note',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Other Expense',
-                    icon: Icons.account_balance_wallet_rounded,
-                    color: Colors.redAccent,
-                    type: 'Expense',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Party Transfer',
-                    icon: Icons.swap_horiz_rounded,
-                    color: Colors.teal,
-                    type: 'Transfer',
-                  ),
-                  const SizedBox(width: 8),
-                  _buildQuickActionChip(
-                    context: context,
-                    label: 'Other Income',
-                    icon: Icons.monetization_on_rounded,
-                    color: Colors.blue,
-                    type: 'Other Income',
-                  ),
-                ],
+          // Horizontal Action Buttons Row (Only show if not locked to specific type)
+          if (widget.lockedType == null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Receipt (Payment In)',
+                      icon: Icons.arrow_downward_rounded,
+                      color: Colors.green,
+                      type: 'Receipt',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Payment (Payment Out)',
+                      icon: Icons.arrow_upward_rounded,
+                      color: Colors.red,
+                      type: 'Payment',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Credit Note',
+                      icon: Icons.assignment_return_rounded,
+                      color: Colors.indigo,
+                      type: 'Credit Note',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Debit Note',
+                      icon: Icons.assignment_returned_rounded,
+                      color: Colors.orange,
+                      type: 'Debit Note',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Other Expense',
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: Colors.redAccent,
+                      type: 'Expense',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Party Transfer',
+                      icon: Icons.swap_horiz_rounded,
+                      color: Colors.teal,
+                      type: 'Transfer',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildQuickActionChip(
+                      context: context,
+                      label: 'Other Income',
+                      icon: Icons.monetization_on_rounded,
+                      color: Colors.blue,
+                      type: 'Other Income',
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
 
           // Filters Bar
           Padding(
@@ -289,35 +420,37 @@ class TransactionsScreen extends ConsumerWidget {
                         },
                       ),
                     ),
-                    const VerticalDivider(),
-                    
-                    // Transaction Type filter
-                    Expanded(
-                      flex: 2,
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: filter.transactionType,
-                          items: const [
-                            DropdownMenuItem(value: 'All', child: Text('All Types')),
-                            DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
-                            DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                            DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
-                            DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
-                            DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
-                            DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                            DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                            DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
-                            DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              ref.read(transactionSearchFilterProvider.notifier).state =
-                                  filter.copyWith(transactionType: val);
-                            }
-                          },
+                    if (widget.lockedType == null) ...[
+                      const VerticalDivider(),
+                      
+                      // Transaction Type filter
+                      Expanded(
+                        flex: 2,
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: filter.transactionType,
+                            items: const [
+                              DropdownMenuItem(value: 'All', child: Text('All Types')),
+                              DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
+                              DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
+                              DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                              DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                              DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
+                              DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
+                              DropdownMenuItem(value: 'Expense', child: Text('Expense')),
+                              DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                              DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                ref.read(transactionSearchFilterProvider.notifier).state =
+                                    filter.copyWith(transactionType: val);
+                              }
+                            },
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -372,123 +505,141 @@ class TransactionsScreen extends ConsumerWidget {
                     return Card(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
                       ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: badgeColor.withOpacity(0.1),
-                          child: Icon(
-                            isIncoming ? Icons.arrow_downward : (isOutgoing ? Icons.arrow_upward : Icons.swap_horiz),
-                            color: badgeColor,
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Text(
-                              txn.transactionNumber ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: badgeColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                txn.transactionType ?? '',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: badgeColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text(
-                              txn.partyName ?? (txn.transactionType == 'Expense' ? 'General Expense' : 'Other Income Ledger'),
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            if (txn.remarks != null && txn.remarks!.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(txn.remarks!, style: theme.textTheme.bodySmall),
-                            ],
-                            const SizedBox(height: 4),
-                            Text(
-                              'Date: ${txn.transactionDate != null ? DateFormat('dd MMM yyyy').format(txn.transactionDate!) : "N/A"} | Mode: ${txn.paymentMode ?? "Cash"}',
-                              style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
-                            ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              currencyFormat.format(txn.amount ?? 0.0),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Container(
+                                width: 6,
                                 color: badgeColor,
-                                fontSize: 16,
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            PopupMenuButton<String>(
-                              onSelected: (action) async {
-                                if (action == 'edit') {
-                                  AddEditTransactionDialog.show(context, transaction: txn);
-                                } else if (action == 'delete') {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text('Delete Transaction'),
-                                      content: const Text('Are you sure you want to delete this transaction? This will revert any changes made to the outstanding balances and invoice payments.'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context, false),
-                                          child: const Text('Cancel'),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () => Navigator.pop(context, true),
-                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                          child: const Text('Delete'),
-                                        ),
-                                      ],
+                              Expanded(
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  leading: CircleAvatar(
+                                    backgroundColor: badgeColor.withOpacity(0.08),
+                                    child: Icon(
+                                      isIncoming ? Icons.arrow_downward : (isOutgoing ? Icons.arrow_upward : Icons.swap_horiz),
+                                      color: badgeColor,
+                                      size: 20,
                                     ),
-                                  );
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      Text(
+                                        txn.transactionNumber ?? '',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: badgeColor.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          txn.transactionType ?? '',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: badgeColor,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        txn.partyName ?? (txn.transactionType == 'Expense' ? 'General Expense' : 'Other Income Ledger'),
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                      if (txn.remarks != null && txn.remarks!.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(txn.remarks!, style: theme.textTheme.bodySmall),
+                                      ],
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'Date: ${txn.transactionDate != null ? DateFormat('dd MMM yyyy').format(txn.transactionDate!) : "N/A"} | Mode: ${txn.paymentMode ?? "Cash"}',
+                                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        currencyFormat.format(txn.amount ?? 0.0),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: badgeColor,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      PopupMenuButton<String>(
+                                        onSelected: (action) async {
+                                          if (action == 'edit') {
+                                            AddEditTransactionDialog.show(context, transaction: txn);
+                                          } else if (action == 'delete') {
+                                            final confirm = await showDialog<bool>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text('Delete Transaction'),
+                                                content: const Text('Are you sure you want to delete this transaction? This will revert any changes made to the outstanding balances and invoice payments.'),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    child: const Text('Cancel'),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () => Navigator.pop(context, true),
+                                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                                    child: const Text('Delete'),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
 
-                                  if (confirm == true) {
-                                    await ref.read(transactionRepositoryProvider).deleteTransaction(txn);
-                                    ref.invalidate(filteredTransactionsProvider);
-                                    ref.invalidate(dashboardAnalyticsProvider);
-                                  }
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'edit',
-                                  child: ListTile(
-                                    leading: Icon(Icons.edit, size: 20),
-                                    title: Text('Edit'),
-                                    contentPadding: EdgeInsets.zero,
+                                            if (confirm == true) {
+                                              await ref.read(transactionRepositoryProvider).deleteTransaction(txn);
+                                              ref.invalidate(filteredTransactionsProvider);
+                                              ref.invalidate(dashboardAnalyticsProvider);
+                                            }
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: ListTile(
+                                              leading: Icon(Icons.edit, size: 20),
+                                              title: Text('Edit'),
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: ListTile(
+                                              leading: Icon(Icons.delete, color: Colors.red, size: 20),
+                                              title: Text('Delete', style: TextStyle(color: Colors.red)),
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: ListTile(
-                                    leading: Icon(Icons.delete, color: Colors.red, size: 20),
-                                    title: Text('Delete', style: TextStyle(color: Colors.red)),
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -500,6 +651,25 @@ class TransactionsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+        },
+        icon: const Icon(Icons.add),
+        label: Text(widget.lockedType == 'Receipt'
+            ? 'Record Receipt'
+            : widget.lockedType == 'Payment'
+                ? 'Record Payment'
+                : widget.lockedType == 'Credit Note'
+                    ? 'New Credit Note'
+                    : widget.lockedType == 'Debit Note'
+                        ? 'New Debit Note'
+                        : widget.lockedType == 'Transfer'
+                            ? 'New Transfer'
+                            : widget.lockedType == 'Other Income'
+                                ? 'Record Income'
+                                : 'New Entry'),
       ),
     );
   }

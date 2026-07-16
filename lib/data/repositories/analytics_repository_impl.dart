@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:business_sahaj_erp/domain/models/report_models.dart';
 import 'package:business_sahaj_erp/domain/repositories/analytics_repository.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
@@ -130,12 +131,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     // 7. Top Products (last 30 days)
     final Map<String, _ProductAggregate> productMap = {};
     for (var inv in recentInvoices) {
-      final invoiceItems = await isar.invoiceItems
-          .filter()
-          .invoice((q) => q.idEqualTo(inv.id))
-          .and()
-          .isDeletedEqualTo(false)
-          .findAll();
+      final invoiceItems = kIsWeb
+          ? (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
+              .where((item) => item.parentInvoiceId == inv.id)
+              .toList()
+          : await isar.invoiceItems
+              .filter()
+              .invoice((q) => q.idEqualTo(inv.id))
+              .and()
+              .isDeletedEqualTo(false)
+              .findAll();
 
       for (var item in invoiceItems) {
         final name = item.itemName ?? 'Unknown Product';

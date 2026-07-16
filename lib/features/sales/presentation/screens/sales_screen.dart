@@ -8,7 +8,8 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
-  const SalesScreen({Key? key}) : super(key: key);
+  final bool createImmediately;
+  const SalesScreen({Key? key, this.createImmediately = false}) : super(key: key);
 
   @override
   ConsumerState<SalesScreen> createState() => _SalesScreenState();
@@ -17,6 +18,21 @@ class SalesScreen extends ConsumerStatefulWidget {
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.createImmediately) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddEditInvoiceScreen(),
+          ),
+        ).then((_) => ref.invalidate(filteredInvoicesProvider));
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -312,68 +328,106 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
-      elevation: 0.5,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => InvoiceDetailScreen(invoiceUuid: invoice.uuid!),
-            ),
-          ).then((_) => ref.invalidate(filteredInvoicesProvider));
-        },
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: IntrinsicHeight(
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Leading Status Circle
-              CircleAvatar(
-                backgroundColor: statusColor.withOpacity(0.12),
-                child: Icon(statusIcon, color: statusColor),
+              Container(
+                width: 6,
+                color: statusColor,
               ),
-              const SizedBox(width: 16),
-
-              // Body Details
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => InvoiceDetailScreen(invoiceUuid: invoice.uuid!),
+                      ),
+                    ).then((_) => ref.invalidate(filteredInvoicesProvider));
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
                       children: [
-                        Text(
-                          invoice.invoiceNumber ?? 'N/A',
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        CircleAvatar(
+                          backgroundColor: statusColor.withOpacity(0.08),
+                          child: Icon(statusIcon, color: statusColor, size: 20),
                         ),
-                        Text(
-                          '₹${invoice.grandTotal?.toStringAsFixed(2) ?? "0.00"}',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    invoice.invoiceNumber ?? 'N/A',
+                                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    '₹${invoice.grandTotal?.toStringAsFixed(2) ?? "0.00"}',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                invoice.partyName ?? 'Unknown Party',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today_rounded, size: 12, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Date: $dateStr | Type: ${invoice.invoiceType ?? "Tax Invoice"}',
+                                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      invoice.paymentStatus ?? 'Pending',
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.chevron_right_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      invoice.partyName ?? 'Unknown Party',
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Date: $dateStr | Type: ${invoice.invoiceType ?? "Tax Invoice"}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 14),
             ],
           ),
         ),

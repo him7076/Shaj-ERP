@@ -6,7 +6,8 @@ import 'package:business_sahaj_erp/features/expenses/presentation/providers/expe
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/add_edit_expense_screen.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
-  const ExpensesScreen({Key? key}) : super(key: key);
+  final bool createImmediately;
+  const ExpensesScreen({Key? key, this.createImmediately = false}) : super(key: key);
 
   @override
   ConsumerState<ExpensesScreen> createState() => _ExpensesScreenState();
@@ -16,6 +17,21 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
   String _selectedCategoryFilter = 'All';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.createImmediately) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddEditExpenseScreen(),
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -211,56 +227,61 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
                           return Card(
                             elevation: 0,
-                            margin: const EdgeInsets.only(bottom: 10),
+                            margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
                             ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(14),
-                              leading: Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.error.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.arrow_outward_rounded, color: theme.colorScheme.error, size: 20),
-                              ),
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    expense.category ?? 'Uncategorised',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    currencyFormat.format(expense.amount ?? 0.0),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    Container(
+                                      width: 6,
                                       color: theme.colorScheme.error,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 6.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
                                     Expanded(
-                                      child: Text(
-                                        '${expense.remarks ?? "No remarks"}  •  $dateStr  (${expense.paymentMode})',
-                                        style: TextStyle(
-                                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                                          fontSize: 12,
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.all(16),
+                                        leading: CircleAvatar(
+                                          backgroundColor: theme.colorScheme.error.withOpacity(0.08),
+                                          child: Icon(Icons.arrow_outward_rounded, color: theme.colorScheme.error, size: 20),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                        title: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              expense.category ?? 'Uncategorised',
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                            ),
+                                            Text(
+                                              currencyFormat.format(expense.amount ?? 0.0),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: theme.colorScheme.error,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        subtitle: Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  '${expense.remarks ?? "No remarks"}  •  $dateStr  (${expense.paymentMode})',
+                                                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                               onLongPress: () {
                                 showDialog(
                                   context: context,
@@ -293,8 +314,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                 );
                               },
                             ),
-                          );
-                        },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
                       ),
                     ),
                   ],

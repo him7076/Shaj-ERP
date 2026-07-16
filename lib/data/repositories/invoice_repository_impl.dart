@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
@@ -85,8 +86,12 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         invoice.id = invoiceId;
 
         // Load Party link
-        try { await invoice.party.load(); } catch (_) {}
-        final party = invoice.party.value;
+        if (!kIsWeb) {
+          try { await invoice.party.load(); } catch (_) {}
+        }
+        final party = kIsWeb
+            ? (invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null)
+            : invoice.party.value;
 
         // 2. Adjust Party Outstanding Balance (If credit / unpaid exists)
         if (party != null && isNew) {
@@ -109,8 +114,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             await isar.invoiceItems.put(oldItem);
 
             // Restore stock back before applying new ones
-            if (oldItem.item.value != null) {
-              final dbItem = oldItem.item.value!;
+            final dbItem = kIsWeb
+                ? (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null)
+                : oldItem.item.value;
+            if (dbItem != null) {
               dbItem.currentStock = (dbItem.currentStock ?? 0.0) + (oldItem.quantity ?? 0.0);
               await isar.items.put(dbItem);
             }
@@ -126,13 +133,18 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           item.isSynced = false;
           item.version = isNew ? 1 : item.version + 1;
 
+          item.parentInvoiceId = invoice.id;
           await isar.invoiceItems.put(item);
-          item.invoice.value = invoice;
-          await item.invoice.save();
+          if (!kIsWeb) {
+            item.invoice.value = invoice;
+            await item.invoice.save();
+          }
 
           // Deduct stock levels directly
-          if (item.item.value != null) {
-            final dbItem = item.item.value!;
+          final dbItem = kIsWeb
+              ? (item.itemId != null ? await isar.items.get(item.itemId!) : null)
+              : item.item.value;
+          if (dbItem != null) {
             final double available = dbItem.currentStock ?? 0.0;
             final double requested = item.quantity ?? 0.0;
 

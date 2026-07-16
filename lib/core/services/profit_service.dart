@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/domain/models/report_models.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -33,12 +34,16 @@ class ProfitService {
 
     for (var invoice in invoices) {
       // Fetch associated invoice items
-      final invoiceItems = await isar.invoiceItems
-          .filter()
-          .invoice((q) => q.idEqualTo(invoice.id))
-          .and()
-          .isDeletedEqualTo(false)
-          .findAll();
+      final invoiceItems = kIsWeb
+          ? (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
+              .where((item) => item.parentInvoiceId == invoice.id)
+              .toList()
+          : await isar.invoiceItems
+              .filter()
+              .invoice((q) => q.idEqualTo(invoice.id))
+              .and()
+              .isDeletedEqualTo(false)
+              .findAll();
 
       for (var invoiceItem in invoiceItems) {
         final itemName = invoiceItem.itemName ?? 'Unknown Product';
@@ -48,13 +53,13 @@ class ProfitService {
 
         // Fetch buyRate of item. Fallback to 0.0 if not configured.
         double buyRate = 0.0;
-        if (invoiceItem.item.value != null) {
-          buyRate = invoiceItem.item.value!.buyRate ?? 0.0;
-        } else if (invoiceItem.itemId != null) {
+        if (invoiceItem.itemId != null) {
           final originalItem = await isar.items.get(invoiceItem.itemId!);
           if (originalItem != null) {
             buyRate = originalItem.buyRate ?? 0.0;
           }
+        } else if (!kIsWeb && invoiceItem.item.value != null) {
+          buyRate = invoiceItem.item.value!.buyRate ?? 0.0;
         }
 
         final cost = buyRate * qty;

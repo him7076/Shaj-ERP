@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -76,16 +77,36 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
         }
 
         final cart = ref.read(cartProvider.notifier);
-        cart.setParty(order.party.value);
+        if (kIsWeb) {
+          if (order.partyId != null) {
+            ref.read(partiesListProvider).whenData((parties) {
+              Party? matchingParty;
+              for (var p in parties) {
+                if (p.id == order.partyId) {
+                  matchingParty = p;
+                  break;
+                }
+              }
+              if (matchingParty != null) cart.setParty(matchingParty);
+            });
+          }
+        } else {
+          cart.setParty(order.party.value);
+        }
         cart.toggleGstInclusive(true);
         cart.setOrderDiscounts(order.discountPercent, order.discountAmount);
 
         for (var orderItem in order.orderItems) {
-          try { await orderItem.item.load(); } catch (_) {}
-          if (orderItem.item.value != null) {
-            cart.addItem(orderItem.item.value!, qty: orderItem.quantity ?? 0.0);
+          if (!kIsWeb) {
+            try { await orderItem.item.load(); } catch (_) {}
+          }
+          final itemObj = kIsWeb
+              ? (orderItem.itemId != null ? (await ref.read(databaseServiceProvider).isar.items.get(orderItem.itemId!)) : null)
+              : orderItem.item.value;
+          if (itemObj != null) {
+            cart.addItem(itemObj, qty: orderItem.quantity ?? 0.0);
             cart.updateItem(
-              orderItem.item.value!.uuid!,
+              itemObj.uuid!,
               freeQuantity: orderItem.freeQuantity,
               rate: orderItem.rate,
               discountAmount: orderItem.discountAmount,
@@ -186,7 +207,9 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       order.grandTotal = totals['grandTotal'];
       order.remarks = _remarksController.text.trim();
 
-      order.party.value = cart.selectedParty;
+      if (!kIsWeb) {
+        order.party.value = cart.selectedParty;
+      }
 
       final List<OrderItem> orderItems = cart.items.map((cartItem) {
         final orderItem = OrderItem()
@@ -203,7 +226,9 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ..gstAmount = cartItem.gstPercent * cartItem.rate * 0.01
           ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount;
 
-        orderItem.item.value = cartItem.item;
+        if (!kIsWeb) {
+          orderItem.item.value = cartItem.item;
+        }
         return orderItem;
       }).toList();
 
@@ -259,15 +284,22 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
     final summaryContent = Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFF5E35B1), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
             Text('Order settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             SwitchListTile(
@@ -326,6 +358,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ],
         ),
       ),
+      ),
     );
 
     return Scaffold(
@@ -360,16 +393,23 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Billing Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFF1E88E5), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Billing Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -459,6 +499,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -467,15 +508,22 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFF43A047), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
@@ -564,6 +612,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -592,16 +641,23 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFFFB8C00), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ListView.separated(
               shrinkWrap: true,
@@ -618,6 +674,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

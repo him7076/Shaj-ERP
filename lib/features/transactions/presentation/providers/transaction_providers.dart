@@ -6,8 +6,8 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:flutter/material.dart';
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return TransactionRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return TransactionRepositoryImpl(isar);
 });
 
 class TransactionSearchFilter {

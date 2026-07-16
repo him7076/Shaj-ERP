@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/domain/models/report_models.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -23,23 +24,46 @@ class ReportService {
     int limit = 100,
   }) async {
     final isar = _dbService.isar;
+    List<Invoice> allMatches;
 
-    var query = isar.invoices
-        .filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceDateBetween(start, end);
+    if (kIsWeb) {
+      var list = await isar.invoices
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceDateBetween(start, end)
+          .findAll();
 
-    if (partyUuid != null && partyUuid.isNotEmpty) {
-      query = query.and().party((q) => q.uuidEqualTo(partyUuid));
+      if (partyUuid != null && partyUuid.isNotEmpty) {
+        final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+        if (party != null) {
+          list = list.where((inv) => inv.partyId == party.id).toList();
+        } else {
+          list = [];
+        }
+      }
+
+      if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
+        list = list.where((inv) => inv.paymentStatus == paymentStatus).toList();
+      }
+      allMatches = list;
+    } else {
+      var query = isar.invoices
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceDateBetween(start, end);
+
+      if (partyUuid != null && partyUuid.isNotEmpty) {
+        query = query.and().party((q) => q.uuidEqualTo(partyUuid));
+      }
+
+      if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
+        query = query.and().paymentStatusEqualTo(paymentStatus);
+      }
+
+      allMatches = await query.findAll();
     }
-
-    if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
-      query = query.and().paymentStatusEqualTo(paymentStatus);
-    }
-
-    // Read full match list for totals calculation (to prevent pagination skewing totals)
-    final allMatches = await query.findAll();
 
     double totalSales = 0.0;
     double totalGST = 0.0;
@@ -73,6 +97,30 @@ class ReportService {
     String? partyUuid,
   }) async {
     final isar = _dbService.isar;
+
+    if (kIsWeb) {
+      var list = await isar.orders
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .orderDateBetween(start, end)
+          .findAll();
+
+      if (status != null && status.isNotEmpty && status != 'All') {
+        list = list.where((o) => o.status == status).toList();
+      }
+
+      if (partyUuid != null && partyUuid.isNotEmpty) {
+        final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+        if (party != null) {
+          list = list.where((o) => o.partyId == party.id).toList();
+        } else {
+          list = [];
+        }
+      }
+      return list;
+    }
+
     var query = isar.orders
         .filter()
         .isDeletedEqualTo(false)
@@ -123,12 +171,16 @@ class ReportService {
       totalGST += inv.totalGST ?? 0.0;
 
       // Aggregating HSN details from invoice items
-      final items = await isar.invoiceItems
-          .filter()
-          .invoice((q) => q.idEqualTo(inv.id))
-          .and()
-          .isDeletedEqualTo(false)
-          .findAll();
+      final items = kIsWeb
+          ? (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
+              .where((item) => item.parentInvoiceId == inv.id)
+              .toList()
+          : await isar.invoiceItems
+              .filter()
+              .invoice((q) => q.idEqualTo(inv.id))
+              .and()
+              .isDeletedEqualTo(false)
+              .findAll();
 
       for (var item in items) {
         final hsn = item.hsnCode ?? 'N/A';
@@ -200,18 +252,25 @@ class ReportService {
       if (limitExceeded) limitExceededCount++;
 
       // Evaluate due days based on unpaid invoices
-      final unpaidInvoices = await isar.invoices
-          .filter()
-          .party((q) => q.uuidEqualTo(party.uuid))
-          .and()
-          .isDeletedEqualTo(false)
-          .and()
-          .invoiceStatusEqualTo('Active')
-          .and()
-          .paymentStatusEqualTo('Unpaid')
-          .or()
-          .paymentStatusEqualTo('Partially Paid')
-          .findAll();
+      final unpaidInvoices = kIsWeb
+          ? (await isar.invoices
+              .filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .invoiceStatusEqualTo('Active')
+              .findAll())
+              .where((inv) => inv.partyId == party.id && (inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid'))
+              .toList()
+          : await isar.invoices
+              .filter()
+              .party((q) => q.uuidEqualTo(party.uuid))
+              .and()
+              .isDeletedEqualTo(false)
+              .and()
+              .invoiceStatusEqualTo('Active')
+              .and()
+              .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+              .findAll();
 
       int maxDueDays = 0;
       bool isOverdue = false;
@@ -255,16 +314,55 @@ class ReportService {
     final isar = _dbService.isar;
 
     // 1. Calculate opening balance (invoices before start date minus paid amounts before start date)
-    final preInvoices = await isar.invoices
-        .filter()
-        .party((q) => q.uuidEqualTo(partyUuid))
-        .and()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceStatusEqualTo('Active')
-        .and()
-        .invoiceDateLessThan(start)
-        .findAll();
+    List<Invoice> preInvoices;
+    List<Invoice> rangeInvoices;
+
+    if (kIsWeb) {
+      final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+      final targetPartyId = party?.id;
+
+      final allPreInvoices = await isar.invoices
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceStatusEqualTo('Active')
+          .and()
+          .invoiceDateLessThan(start)
+          .findAll();
+      preInvoices = allPreInvoices.where((inv) => inv.partyId == targetPartyId).toList();
+
+      final allRangeInvoices = await isar.invoices
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceStatusEqualTo('Active')
+          .and()
+          .invoiceDateBetween(start, end)
+          .findAll();
+      rangeInvoices = allRangeInvoices.where((inv) => inv.partyId == targetPartyId).toList();
+    } else {
+      preInvoices = await isar.invoices
+          .filter()
+          .party((q) => q.uuidEqualTo(partyUuid))
+          .and()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceStatusEqualTo('Active')
+          .and()
+          .invoiceDateLessThan(start)
+          .findAll();
+
+      rangeInvoices = await isar.invoices
+          .filter()
+          .party((q) => q.uuidEqualTo(partyUuid))
+          .and()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceStatusEqualTo('Active')
+          .and()
+          .invoiceDateBetween(start, end)
+          .findAll();
+    }
 
     double openingDebit = 0.0;
     double openingCredit = 0.0;
@@ -273,18 +371,6 @@ class ReportService {
       openingCredit += inv.paidAmount ?? 0.0;
     }
     final openingBalance = openingDebit - openingCredit;
-
-    // 2. Fetch invoices in active range
-    final rangeInvoices = await isar.invoices
-        .filter()
-        .party((q) => q.uuidEqualTo(partyUuid))
-        .and()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceStatusEqualTo('Active')
-        .and()
-        .invoiceDateBetween(start, end)
-        .findAll();
 
     final List<LedgerEntry> entries = [];
     double totalDebit = 0.0;

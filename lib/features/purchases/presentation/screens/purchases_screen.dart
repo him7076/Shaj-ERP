@@ -6,7 +6,8 @@ import 'package:business_sahaj_erp/features/purchases/presentation/providers/pur
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {
-  const PurchasesScreen({Key? key}) : super(key: key);
+  final bool createImmediately;
+  const PurchasesScreen({Key? key, this.createImmediately = false}) : super(key: key);
 
   @override
   ConsumerState<PurchasesScreen> createState() => _PurchasesScreenState();
@@ -15,6 +16,21 @@ class PurchasesScreen extends ConsumerStatefulWidget {
 class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.createImmediately) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddEditPurchaseScreen(),
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -201,45 +217,60 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
                             ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              title: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    purchase.partyName ?? 'Unknown Supplier',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                  ),
-                                  Text(
-                                    currencyFormat.format(purchase.grandTotal ?? 0.0),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.primary,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: IntrinsicHeight(
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
-                                    Text(
-                                      'Bill No: ${purchase.purchaseNumber ?? "N/A"}  •  $dateStr',
-                                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                                    Container(
+                                      width: 6,
+                                      color: theme.colorScheme.primary,
                                     ),
-                                    if (purchase.remarks != null && purchase.remarks!.isNotEmpty)
-                                      Icon(
-                                        Icons.comment_outlined,
-                                        size: 14,
-                                        color: theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                  ],
-                                ),
-                              ),
+                                    Expanded(
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.all(16),
+                                        leading: CircleAvatar(
+                                          backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
+                                          child: Icon(Icons.shopping_bag_outlined, color: theme.colorScheme.primary, size: 20),
+                                        ),
+                                        title: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              purchase.partyName ?? 'Unknown Supplier',
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                            ),
+                                            Text(
+                                              currencyFormat.format(purchase.grandTotal ?? 0.0),
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: theme.colorScheme.primary,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        subtitle: Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Bill No: ${purchase.purchaseNumber ?? "N/A"}  •  $dateStr',
+                                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                                              ),
+                                              if (purchase.remarks != null && purchase.remarks!.isNotEmpty)
+                                                Icon(
+                                                  Icons.comment_outlined,
+                                                  size: 14,
+                                                  color: theme.colorScheme.onSurfaceVariant,
+                                                ),
+                                            ],
+                                          ),
+                                        ),
                               onLongPress: () {
                                 // Confirm Delete
                                 showDialog(
@@ -273,8 +304,13 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                 );
                               },
                             ),
-                          );
-                        },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
                       ),
                     ),
                   ],

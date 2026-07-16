@@ -7,8 +7,8 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
 final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return PurchaseRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return PurchaseRepositoryImpl(isar);
 });
 
 final purchaseSearchQueryProvider = StateProvider<String>((ref) => '');

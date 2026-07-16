@@ -60,75 +60,10 @@ class DashboardScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome Header Visual with glassmorphism layout style
-                Container(
-                  padding: const EdgeInsets.all(24.0),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary.withOpacity(0.06),
-                        theme.colorScheme.primary.withOpacity(0.01),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome, Administrator',
-                              style: theme.textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                color: theme.colorScheme.onBackground,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Sahaj ERP is live. Here is your enterprise summary for today.',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!ResponsiveLayout.isMobile(context))
-                        Card(
-                          elevation: 0,
-                          color: theme.colorScheme.primary.withOpacity(0.08),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.15)),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                            child: Row(
-                              children: [
-                                Icon(Icons.calendar_today_rounded, color: theme.colorScheme.primary, size: 16),
-                                const SizedBox(width: 10),
-                                Text(
-                                  todayDateStr,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                // Quick Actions Dashboard Header & Grid
+                _buildQuickActionsHeader(context),
+                const SizedBox(height: 20),
+                _buildQuickActionsGrid(context),
                 const SizedBox(height: 28),
 
                 // Responsive Stats Grid
@@ -180,148 +115,68 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 28),
 
-                // Split Section: Recent Activity & Quick Actions
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Recent Activity Panel
-                    Expanded(
-                      flex: 3,
-                      child: Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Recent Transactions Log',
-                                    style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: theme.colorScheme.onBackground,
-                                    ),
-                                  ),
-                                  Icon(Icons.history_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
-                                ],
+                // Recent Activity Panel taking full width
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Recent Transactions Log',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onBackground,
                               ),
-                              const Divider(height: 32, thickness: 0.5),
-                              
-                              _buildActivityItem(
-                                theme: theme,
-                                title: 'Invoice generated for Krishna Electronics',
-                                time: '10 mins ago',
-                                subtitle: 'Invoice #INV-2026-084 • Amount: ₹14,200',
-                                statusIcon: Icons.receipt_long,
-                                statusColor: Colors.blue,
-                              ),
-                              _buildActivityItem(
-                                theme: theme,
-                                title: 'Payment received from Shiva Traders',
-                                time: '1 hour ago',
-                                subtitle: 'Ref #TXN-90234 • Amount: ₹45,000',
-                                statusIcon: Icons.check_circle_outline,
-                                statusColor: Colors.green,
-                              ),
-                              _buildActivityItem(
-                                theme: theme,
-                                title: 'Wholesale Purchase draft saved',
-                                time: '3 hours ago',
-                                subtitle: 'Bill #PUR-2026-0001 • Balaji Wholesalers',
-                                statusIcon: Icons.shopping_bag_outlined,
-                                statusColor: Colors.orange,
-                              ),
-                              _buildActivityItem(
-                                theme: theme,
-                                title: 'Office rent payment logged',
-                                time: '5 hours ago',
-                                subtitle: 'Expense Category: Rent • Amount: ₹12,000',
-                                statusIcon: Icons.account_balance_wallet_outlined,
-                                statusColor: Colors.red,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    // Quick Actions Menu
-                    if (ResponsiveLayout.isDesktop(context) || ResponsiveLayout.isTablet(context)) ...[
-                      const SizedBox(width: 20),
-                      Expanded(
-                        flex: 2,
-                        child: Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Quick Actions Shortcuts',
-                                  style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.onBackground,
-                                  ),
-                                ),
-                                const Divider(height: 32, thickness: 0.5),
-                                
-                                _buildQuickActionButton(
-                                  context: context,
-                                  icon: Icons.create_new_folder_outlined,
-                                  label: 'Create Sales Invoice',
-                                  color: Colors.green,
-                                  routePath: '/sales',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildQuickActionButton(
-                                  context: context,
-                                  icon: Icons.add_shopping_cart_rounded,
-                                  label: 'Log Purchase Bill',
-                                  color: Colors.blue,
-                                  routePath: '/purchases',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildQuickActionButton(
-                                  context: context,
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  label: 'Record Expense',
-                                  color: Colors.red,
-                                  routePath: '/expenses',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildQuickActionButton(
-                                  context: context,
-                                  icon: Icons.add_circle_outline_rounded,
-                                  label: 'Add New Party Profile',
-                                  color: Colors.purple,
-                                  routePath: '/parties',
-                                ),
-                                const SizedBox(height: 12),
-                                _buildQuickActionButton(
-                                  context: context,
-                                  icon: Icons.print_outlined,
-                                  label: 'Generate Business Report',
-                                  color: Colors.teal,
-                                  routePath: '/reports',
-                                ),
-                              ],
                             ),
-                          ),
+                            Icon(Icons.history_rounded, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                          ],
                         ),
-                      ),
-                    ],
-                  ],
+                        const Divider(height: 32, thickness: 0.5),
+                        
+                        _buildActivityItem(
+                          theme: theme,
+                          title: 'Invoice generated for Krishna Electronics',
+                          time: '10 mins ago',
+                          subtitle: 'Invoice #INV-2026-084 • Amount: ₹14,200',
+                          statusIcon: Icons.receipt_long,
+                          statusColor: Colors.blue,
+                        ),
+                        _buildActivityItem(
+                          theme: theme,
+                          title: 'Payment received from Shiva Traders',
+                          time: '1 hour ago',
+                          subtitle: 'Ref #TXN-90234 • Amount: ₹45,000',
+                          statusIcon: Icons.check_circle_outline,
+                          statusColor: Colors.green,
+                        ),
+                        _buildActivityItem(
+                          theme: theme,
+                          title: 'Wholesale Purchase draft saved',
+                          time: '3 hours ago',
+                          subtitle: 'Bill #PUR-2026-0001 • Balaji Wholesalers',
+                          statusIcon: Icons.shopping_bag_outlined,
+                          statusColor: Colors.orange,
+                        ),
+                        _buildActivityItem(
+                          theme: theme,
+                          title: 'Office rent payment logged',
+                          time: '5 hours ago',
+                          subtitle: 'Expense Category: Rent • Amount: ₹12,000',
+                          statusIcon: Icons.account_balance_wallet_outlined,
+                          statusColor: Colors.red,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -331,41 +186,218 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickActionButton({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required String routePath,
-  }) {
+  Widget _buildQuickActionsHeader(BuildContext context) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: () => context.go(routePath),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.15)),
-        ),
-        child: Row(
+    final todayDateStr = DateFormat('EEEE, MMMM dd, yyyy').format(DateTime.now());
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onBackground.withOpacity(0.9),
-                ),
+            Text(
+              'Quick Create Shortcuts',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onBackground,
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: color.withOpacity(0.6), size: 16),
+            const SizedBox(height: 2),
+            Text(
+              'Record a transaction directly into Shaj ERP',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+              ),
+            ),
           ],
         ),
+        Card(
+          elevation: 0,
+          color: theme.colorScheme.primary.withOpacity(0.08),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.15)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today_rounded, color: theme.colorScheme.primary, size: 14),
+                const SizedBox(width: 8),
+                Text(
+                  todayDateStr,
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    final List<Map<String, dynamic>> actions = [
+      {
+        'title': 'Sales Order',
+        'subtitle': 'Book customer order',
+        'icon': Icons.description_outlined,
+        'color': Colors.indigo,
+        'path': '/orders?create=true',
+      },
+      {
+        'title': 'Sales Invoice',
+        'subtitle': 'Create sales entry',
+        'icon': Icons.receipt_long_outlined,
+        'color': Colors.green,
+        'path': '/sales?create=true',
+      },
+      {
+        'title': 'Purchase Bill',
+        'subtitle': 'Record supplier bill',
+        'icon': Icons.shopping_bag_outlined,
+        'color': Colors.blue,
+        'path': '/purchases?create=true',
+      },
+      {
+        'title': 'Record Expense',
+        'subtitle': 'Log business expense',
+        'icon': Icons.account_balance_wallet_outlined,
+        'color': Colors.red,
+        'path': '/expenses?create=true',
+      },
+      {
+        'title': 'Payment Out',
+        'subtitle': 'Paid to supplier/party',
+        'icon': Icons.arrow_circle_up_outlined,
+        'color': Colors.orange,
+        'path': '/payments?create=true',
+      },
+      {
+        'title': 'Receipt In',
+        'subtitle': 'Received from customer',
+        'icon': Icons.arrow_circle_down_outlined,
+        'color': Colors.teal,
+        'path': '/receipts?create=true',
+      },
+      {
+        'title': 'Credit Note',
+        'subtitle': 'Sales returns / refund',
+        'icon': Icons.assignment_returned_outlined,
+        'color': Colors.purple,
+        'path': '/credit-notes?create=true',
+      },
+      {
+        'title': 'Debit Note',
+        'subtitle': 'Purchase returns / debit',
+        'icon': Icons.assignment_return_outlined,
+        'color': Colors.pink,
+        'path': '/debit-notes?create=true',
+      },
+      {
+        'title': 'Party Transfer',
+        'subtitle': 'Transfer balance',
+        'icon': Icons.swap_horiz_outlined,
+        'color': Colors.teal,
+        'path': '/party-transfers?create=true',
+      },
+      {
+        'title': 'Other Income',
+        'subtitle': 'Non-sales revenue',
+        'icon': Icons.monetization_on_outlined,
+        'color': Colors.amber,
+        'path': '/other-incomes?create=true',
+      },
+    ];
+
+    int gridColumns = 1;
+    if (ResponsiveLayout.isDesktop(context)) {
+      gridColumns = 5;
+    } else if (ResponsiveLayout.isTablet(context)) {
+      gridColumns = 3;
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: actions.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: gridColumns,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: ResponsiveLayout.isMobile(context) ? 3.0 : 2.2,
       ),
+      itemBuilder: (ctx, idx) {
+        final act = actions[idx];
+        final Color col = act['color'] as Color;
+        return Card(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+          ),
+          child: InkWell(
+            onTap: () => context.go(act['path'] as String),
+            borderRadius: BorderRadius.circular(16),
+            hoverColor: col.withOpacity(0.04),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: col.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(act['icon'] as IconData, color: col, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          act['title'] as String,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          act['subtitle'] as String,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: col.withOpacity(0.6),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

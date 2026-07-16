@@ -46,7 +46,7 @@ class DatabaseService {
 
     try {
       if (kIsWeb) {
-        _isar = WebMockIsar(firmId: activeFirmId);
+        _isar = WebMockIsar(firmId: activeFirmId, prefs: prefs);
         logger.info('Initialized WebMockIsar Database for firm: $activeFirmId');
         
         // Prevent generic type parameter tree-shaking on Web

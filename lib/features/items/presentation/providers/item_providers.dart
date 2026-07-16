@@ -38,18 +38,18 @@ final stockServiceProvider = Provider<StockService>((ref) {
 
 // Category, Brand, Unit Repository Providers
 final categoryRepositoryProvider = Provider<CategoryRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return CategoryRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return CategoryRepositoryImpl(isar);
 });
 
 final brandRepositoryProvider = Provider<BrandRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return BrandRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return BrandRepositoryImpl(isar);
 });
 
 final unitRepositoryProvider = Provider<UnitRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return UnitRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return UnitRepositoryImpl(isar);
 });
 
 // Category, Brand, Unit List Providers (helper for dropdowns/filters)

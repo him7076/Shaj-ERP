@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
@@ -14,9 +15,9 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:isar/isar.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
+  final isar = ref.watch(isarProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  return OrderRepositoryImpl(dbService.isar, prefs);
+  return OrderRepositoryImpl(isar, prefs);
 });
 
 // Current User Role Provider
@@ -25,8 +26,8 @@ final currentUserRoleProvider = FutureProvider<String>((ref) async {
   final email = authState.email;
   if (email == null) return 'Salesman'; // Default safety fallback
 
-  final dbService = ref.watch(databaseServiceProvider);
-  final user = await dbService.isar.users.filter().emailEqualTo(email, caseSensitive: false).findFirst();
+  final isar = ref.watch(isarProvider);
+  final user = await isar.users.filter().emailEqualTo(email, caseSensitive: false).findFirst();
   return user?.role ?? 'Owner'; // default to Owner for testing or admin roles
 });
 
@@ -312,7 +313,7 @@ final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
 
   // Filter Party
   if (filter.partyId != null) {
-    list = list.where((o) => o.party.value?.id == filter.partyId).toList();
+    list = list.where((o) => (kIsWeb ? o.partyId : o.party.value?.id) == filter.partyId).toList();
   }
 
   // Filter Date Range

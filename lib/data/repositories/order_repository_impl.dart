@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
@@ -82,8 +83,10 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
             await isar.orderItems.put(oldItem);
 
             // If stock was reserved, release/restore it before applying new reservation
-            if (reserveStock && oldItem.item.value != null) {
-              final dbItem = oldItem.item.value!;
+            final dbItem = kIsWeb
+                ? (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null)
+                : oldItem.item.value;
+            if (reserveStock && dbItem != null) {
               dbItem.currentStock = (dbItem.currentStock ?? 0.0) + (oldItem.quantity ?? 0.0);
               await isar.items.put(dbItem);
             }
@@ -100,12 +103,16 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
           item.version = isNew ? 1 : item.version + 1;
 
           await isar.orderItems.put(item);
-          item.order.value = order;
-          await item.order.save();
+          if (!kIsWeb) {
+            item.order.value = order;
+            await item.order.save();
+          }
 
           // Deduct stock if reservation setting is enabled
-          if (reserveStock && item.item.value != null) {
-            final dbItem = item.item.value!;
+          final dbItem = kIsWeb
+              ? (item.itemId != null ? await isar.items.get(item.itemId!) : null)
+              : item.item.value;
+          if (reserveStock && dbItem != null) {
             final double available = dbItem.currentStock ?? 0.0;
             final double requested = item.quantity ?? 0.0;
 
@@ -123,7 +130,9 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
         }
 
         // 4. Save links association
-        await order.orderItems.save();
+        if (!kIsWeb) {
+          await order.orderItems.save();
+        }
 
         // 5. Add Sync Queue logs for Order
         final orderQueue = SyncQueue()

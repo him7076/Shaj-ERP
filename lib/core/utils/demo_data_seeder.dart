@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
@@ -200,9 +201,14 @@ class DemoDataSeeder {
         ..gstAmount = 1890.0
         ..taxableAmount = 10500.0
         ..totalAmount = 12390.0;
-      invoiceItem1.invoice.value = invoice1;
+      invoiceItem1.parentInvoiceId = invoice1.id;
+      if (!kIsWeb) {
+        invoiceItem1.invoice.value = invoice1;
+      }
       await db.isar.invoiceItems.put(invoiceItem1);
-      await invoiceItem1.invoice.save();
+      if (!kIsWeb) {
+        await invoiceItem1.invoice.save();
+      }
 
       // 8. Purchases
       final purchase1 = Purchase()

@@ -6,8 +6,8 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
-  return ExpenseRepositoryImpl(dbService.isar);
+  final isar = ref.watch(isarProvider);
+  return ExpenseRepositoryImpl(isar);
 });
 
 final expenseSearchQueryProvider = StateProvider<String>((ref) => '');

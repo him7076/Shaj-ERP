@@ -51,33 +51,36 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorConstants.primaryLight,
           foregroundColor: ColorConstants.onPrimaryLight,
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size.fromHeight(50),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+            borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 1,
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          elevation: 0,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: ColorConstants.backgroundLight,
+        fillColor: const Color(0xFFF8F9FA),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.outlineLight),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.surfaceVariantLight),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.primaryLight, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ColorConstants.primaryLight, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.errorLight),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade300, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+        floatingLabelStyle: const TextStyle(color: ColorConstants.primaryLight, fontSize: 13, fontWeight: FontWeight.bold),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
@@ -130,33 +133,36 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: ColorConstants.primaryDark,
           foregroundColor: ColorConstants.onPrimaryDark,
-          minimumSize: const Size.fromHeight(48),
+          minimumSize: const Size.fromHeight(50),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
+            borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 1,
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          elevation: 0,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Color(0xFF1E2025),
+        fillColor: const Color(0xFF1E2025),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.outlineDark),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade800, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.surfaceVariantDark),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade900, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.primaryDark, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ColorConstants.primaryDark, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppConstants.defaultBorderRadius),
-          borderSide: const BorderSide(color: ColorConstants.errorDark),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade900, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.w500),
+        floatingLabelStyle: const TextStyle(color: ColorConstants.primaryDark, fontSize: 13, fontWeight: FontWeight.bold),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }

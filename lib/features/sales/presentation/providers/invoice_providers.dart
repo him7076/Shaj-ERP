@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
@@ -15,9 +16,9 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:isar/isar.dart';
 
 final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
+  final isar = ref.watch(isarProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  return InvoiceRepositoryImpl(dbService.isar, prefs);
+  return InvoiceRepositoryImpl(isar, prefs);
 });
 
 final outstandingServiceProvider = Provider<OutstandingService>((ref) {
@@ -296,7 +297,7 @@ final filteredInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
 
   // Filter Party
   if (filter.partyId != null) {
-    list = list.where((i) => i.party.value?.id == filter.partyId).toList();
+    list = list.where((i) => (kIsWeb ? i.partyId : i.party.value?.id) == filter.partyId).toList();
   }
 
   // Filter Date Range

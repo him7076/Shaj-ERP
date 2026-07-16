@@ -23,10 +23,10 @@ final partyRemoteDataSourceProvider = Provider<PartyRemoteDataSource>((ref) {
 
 // Overriding global PartyRepository Provider
 final partyRepositoryProvider = Provider<PartyRepository>((ref) {
-  final dbService = ref.watch(databaseServiceProvider);
+  final isar = ref.watch(isarProvider);
   final local = ref.watch(partyLocalDataSourceProvider);
   final remote = ref.watch(partyRemoteDataSourceProvider);
-  return PartyRepositoryImpl(dbService.isar, local, remote);
+  return PartyRepositoryImpl(isar, local, remote);
 });
 
 // GPS Service Provider

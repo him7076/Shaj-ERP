@@ -8,7 +8,8 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
-  const OrdersScreen({Key? key}) : super(key: key);
+  final bool createImmediately;
+  const OrdersScreen({Key? key, this.createImmediately = false}) : super(key: key);
 
   @override
   ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
@@ -17,6 +18,21 @@ class OrdersScreen extends ConsumerStatefulWidget {
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.createImmediately) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AddEditOrderScreen(),
+          ),
+        ).then((_) => ref.invalidate(filteredOrdersProvider));
+      });
+    }
+  }
 
   @override
   void dispose() {

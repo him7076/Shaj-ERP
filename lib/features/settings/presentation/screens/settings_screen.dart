@@ -7,11 +7,16 @@ import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final currentThemeMode = ref.watch(themeProvider);
     final theme = Theme.of(context);
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -112,10 +117,14 @@ class SettingsScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.business_center_outlined, color: theme.colorScheme.primary),
                             const SizedBox(width: 12),
@@ -128,7 +137,7 @@ class SettingsScreen extends ConsumerWidget {
                           ],
                         ),
                         ElevatedButton.icon(
-                          onPressed: () => _showCreateFirmDialog(context, ref, prefs, firmsList),
+                          onPressed: () => _showCreateFirmDialog(prefs, firmsList),
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Add Firm'),
                         ),
@@ -167,40 +176,58 @@ class SettingsScreen extends ConsumerWidget {
                               color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          trailing: isActive
-                              ? Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.green),
-                                  ),
-                                  child: const Text(
-                                    'Active',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )
-                              : OutlinedButton(
-                                  onPressed: () async {
-                                    final db = ref.read(databaseServiceProvider);
-                                    await db.switchFirm(firmId, prefs);
-                                    ref.invalidate(dashboardAnalyticsProvider);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Switched to company: $firmName'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                      context.go('/dashboard');
-                                    }
-                                  },
-                                  child: const Text('Switch'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 20),
+                                onPressed: () => _showEditFirmDialog(firmId, firmName),
+                                tooltip: 'Edit Name',
+                              ),
+                              if (firmsList.length > 1)
+                                IconButton(
+                                  icon: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                                  onPressed: () => _showDeleteFirmDialog(firmId, firmName),
+                                  tooltip: 'Delete Company',
                                 ),
+                              const SizedBox(width: 8),
+                              isActive
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.green),
+                                      ),
+                                      child: const Text(
+                                        'Active',
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    )
+                                   : OutlinedButton(
+                                       onPressed: () async {
+                                         final db = ref.read(databaseServiceProvider);
+                                         await db.switchFirm(firmId, prefs);
+                                         ref.read(activeFirmIdProvider.notifier).state = firmId;
+                                         ref.invalidate(dashboardAnalyticsProvider);
+                                         if (context.mounted) {
+                                           ScaffoldMessenger.of(context).showSnackBar(
+                                             SnackBar(
+                                               content: Text('Switched to company: $firmName'),
+                                               backgroundColor: Colors.green,
+                                             ),
+                                           );
+                                           context.go('/dashboard');
+                                         }
+                                       },
+                                       child: const Text('Switch'),
+                                     ),
+                            ],
+                          ),
                         );
                       },
                     ),
@@ -312,7 +339,7 @@ class SettingsScreen extends ConsumerWidget {
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.red),
                       ),
-                      onPressed: () => _showWipeDataDialog(context, ref, prefs, activeFirmId),
+                      onPressed: () => _showWipeDataDialog(prefs, activeFirmId),
                     ),
                   ],
                 ),
@@ -346,7 +373,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showCreateFirmDialog(BuildContext context, WidgetRef ref, dynamic prefs, List<String> firmsList) {
+  void _showCreateFirmDialog(dynamic prefs, List<String> firmsList) {
     final controller = TextEditingController();
     showDialog(
       context: context,
@@ -379,11 +406,15 @@ class SettingsScreen extends ConsumerWidget {
               // Set this firm as demo seeded (so it starts completely empty without re-seeding)
               await prefs.setBool('demo_seeded_$newFirmId', true);
 
-              Navigator.pop(context);
+              if (mounted) {
+                setState(() {});
+                Navigator.pop(context);
+              }
 
               // Switch to the newly created firm
               final db = ref.read(databaseServiceProvider);
               await db.switchFirm(newFirmId, prefs);
+              ref.read(activeFirmIdProvider.notifier).state = newFirmId;
               ref.invalidate(dashboardAnalyticsProvider);
 
               if (context.mounted) {
@@ -403,7 +434,112 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showWipeDataDialog(BuildContext context, WidgetRef ref, dynamic prefs, String activeFirmId) {
+  void _showEditFirmDialog(String firmId, String currentName) {
+    final controller = TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename Company / Firm'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Company / Firm Name',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) return;
+              final prefs = ref.read(sharedPreferencesProvider);
+              await prefs.setString('firm_name_$firmId', newName);
+              if (mounted) {
+                setState(() {});
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteFirmDialog(String firmId, String firmName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete Company / Firm?'),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete the company "$firmName"? This will permanently delete its local database and all of its records.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              final prefs = ref.read(sharedPreferencesProvider);
+              final firmsList = prefs.getStringList('firms_list') ?? ['firm_default'];
+              final activeFirmId = prefs.getString('active_firm_id') ?? 'firm_default';
+
+              if (firmsList.length <= 1) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cannot delete the only remaining company.')),
+                  );
+                  Navigator.pop(context);
+                }
+                return;
+              }
+
+              // Remove from list
+              final updatedFirmsList = List<String>.from(firmsList)..remove(firmId);
+              await prefs.setStringList('firms_list', updatedFirmsList);
+              await prefs.remove('firm_name_$firmId');
+              await prefs.remove('demo_seeded_$firmId');
+
+              // If deleted firm was active, switch to another firm
+              if (firmId == activeFirmId) {
+                final fallbackFirmId = updatedFirmsList.first;
+                final db = ref.read(databaseServiceProvider);
+                await db.switchFirm(fallbackFirmId, prefs);
+                ref.read(activeFirmIdProvider.notifier).state = fallbackFirmId;
+                ref.invalidate(dashboardAnalyticsProvider);
+              }
+
+              if (mounted) {
+                setState(() {});
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Company "$firmName" deleted.'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWipeDataDialog(dynamic prefs, String activeFirmId) {
     final firmName = prefs.getString('firm_name_$activeFirmId') ?? "Default Company";
     showDialog(
       context: context,

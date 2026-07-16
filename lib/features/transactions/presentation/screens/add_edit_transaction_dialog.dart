@@ -287,17 +287,19 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                     DropdownMenuItem(value: 'Transfer', child: Text('Party to Party Transfer')),
                     DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
                   ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _transactionType = val;
-                        _pendingBills = [];
-                        _selectedBillUuid = null;
-                        _selectedBillNumber = null;
-                      });
-                      _fetchPendingBills();
-                    }
-                  },
+                  onChanged: (widget.transaction != null || widget.initialType != null)
+                      ? null
+                      : (val) {
+                          if (val != null) {
+                            setState(() {
+                              _transactionType = val;
+                              _pendingBills = [];
+                              _selectedBillUuid = null;
+                              _selectedBillNumber = null;
+                            });
+                            _fetchPendingBills();
+                          }
+                        },
                 ),
                 const SizedBox(height: 16),
 

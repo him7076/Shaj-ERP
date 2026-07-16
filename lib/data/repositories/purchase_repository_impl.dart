@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:math';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
@@ -66,8 +67,12 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         purchase.id = purchaseId;
 
         // Load Party link
-        try { await purchase.party.load(); } catch (_) {}
-        final party = purchase.party.value;
+        if (!kIsWeb) {
+          try { await purchase.party.load(); } catch (_) {}
+        }
+        final party = kIsWeb
+            ? (purchase.partyId != null ? await isar.partys.get(purchase.partyId!) : null)
+            : purchase.party.value;
 
         // 2. Adjust Party Outstanding Balance for supplier purchase (Payable increases by pendingAmount)
         if (party != null) {
@@ -98,11 +103,15 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         // 4. Save new purchase items & adjust stocks
         for (var item in items) {
           item.uuid ??= _generateUuid();
-          item.purchase.value = purchase;
+          if (!kIsWeb) {
+            item.purchase.value = purchase;
+          }
           
           final itemId = await isar.collection<PurchaseItem>().put(item);
           item.id = itemId;
-          await item.purchase.save();
+          if (!kIsWeb) {
+            await item.purchase.save();
+          }
 
           // Update product stock balance (Stock IN)
           final targetItem = await isar.items.get(item.itemId ?? 0);
