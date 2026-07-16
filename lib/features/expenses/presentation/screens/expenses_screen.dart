@@ -268,15 +268,25 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                         ),
                                         subtitle: Padding(
                                           padding: const EdgeInsets.only(top: 8.0),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          child: Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            alignment: WrapAlignment.spaceBetween,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
                                             children: [
-                                              Expanded(
+                                              Text(
+                                                '${expense.remarks ?? "No remarks"}  •  $dateStr',
+                                                style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
                                                 child: Text(
-                                                  '${expense.remarks ?? "No remarks"}  •  $dateStr  (${expense.paymentMode})',
-                                                  style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  expense.paymentMode ?? 'Cash',
+                                                  style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 11, fontWeight: FontWeight.bold),
                                                 ),
                                               ),
                                             ],

@@ -24,6 +24,11 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_collection.da
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -92,6 +97,11 @@ class DatabaseService {
           PurchaseItemSchema,
           ExpenseSchema,
           TransactionSchema,
+          BankAccountSchema,
+          CreditNoteSchema,
+          CreditNoteItemSchema,
+          DebitNoteSchema,
+          DebitNoteItemSchema,
         ],
         name: activeFirmId,
         directory: dirPath ?? '',

@@ -255,8 +255,11 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                         ),
                                         subtitle: Padding(
                                           padding: const EdgeInsets.only(top: 8.0),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          child: Wrap(
+                                            spacing: 8,
+                                            runSpacing: 4,
+                                            alignment: WrapAlignment.spaceBetween,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
                                             children: [
                                               Text(
                                                 'Bill No: ${purchase.purchaseNumber ?? "N/A"}  •  $dateStr',

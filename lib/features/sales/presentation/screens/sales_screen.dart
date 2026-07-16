@@ -6,6 +6,7 @@ import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -192,6 +193,83 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     InvoiceSearchFilter filter,
     AsyncValue<List<Party>> partiesAsync,
   ) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
+    final paymentStatusDropdown = DropdownButtonFormField<String>(
+      value: filter.paymentStatus,
+      decoration: const InputDecoration(
+        labelText: 'Payment Status',
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(),
+      ),
+      items: const [
+        DropdownMenuItem(value: 'All', child: Text('All Payments')),
+        DropdownMenuItem(value: 'Unpaid', child: Text('Unpaid (Credit)')),
+        DropdownMenuItem(value: 'Partially Paid', child: Text('Partially Paid')),
+        DropdownMenuItem(value: 'Paid', child: Text('Paid (Cash)')),
+        DropdownMenuItem(value: 'Cancelled', child: Text('Cancelled')),
+      ],
+      onChanged: (v) {
+        if (v != null) {
+          ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(paymentStatus: v));
+        }
+      },
+    );
+
+    final sortByDropdown = DropdownButtonFormField<String>(
+      value: filter.sortBy,
+      decoration: const InputDecoration(
+        labelText: 'Sort By',
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        border: OutlineInputBorder(),
+      ),
+      items: const [
+        DropdownMenuItem(value: 'Date', child: Text('Invoice Date')),
+        DropdownMenuItem(value: 'Amount High-Low', child: Text('Amount (High-Low)')),
+        DropdownMenuItem(value: 'Amount Low-High', child: Text('Amount (Low-High)')),
+        DropdownMenuItem(value: 'Due Date', child: Text('Credit Due Date')),
+      ],
+      onChanged: (v) {
+        if (v != null) {
+          ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(sortBy: v));
+        }
+      },
+    );
+
+    final partyDropdown = partiesAsync.when(
+      data: (parties) {
+        return DropdownButtonFormField<int?>(
+          value: filter.partyId,
+          decoration: const InputDecoration(
+            labelText: 'Customer Account',
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            border: OutlineInputBorder(),
+          ),
+          items: [
+            const DropdownMenuItem<int?>(value: null, child: Text('All Customers')),
+            ...parties.map((p) => DropdownMenuItem<int?>(value: p.id, child: Text(p.partyName ?? ''))),
+          ],
+          onChanged: (v) {
+            ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(partyId: v));
+          },
+        );
+      },
+      loading: () => const Center(child: LinearProgressIndicator()),
+      error: (_, __) => const Icon(Icons.error),
+    );
+
+    final resetFiltersButton = TextButton.icon(
+      icon: const Icon(Icons.refresh),
+      label: const Text('Reset'),
+      onPressed: () {
+        _searchController.clear();
+        ref.read(invoiceSearchFilterProvider.notifier).state = const InvoiceSearchFilter();
+      },
+    );
+
     return Container(
       margin: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
       padding: const EdgeInsets.all(16),
@@ -200,104 +278,41 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Payment Status filter
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: filter.paymentStatus,
-                  decoration: const InputDecoration(
-                    labelText: 'Payment Status',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'All', child: Text('All Payments')),
-                    DropdownMenuItem(value: 'Unpaid', child: Text('Unpaid (Credit)')),
-                    DropdownMenuItem(value: 'Partially Paid', child: Text('Partially Paid')),
-                    DropdownMenuItem(value: 'Paid', child: Text('Paid (Cash)')),
-                    DropdownMenuItem(value: 'Cancelled', child: Text('Cancelled')),
+      child: isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                paymentStatusDropdown,
+                const SizedBox(height: 10),
+                sortByDropdown,
+                const SizedBox(height: 10),
+                partyDropdown,
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: resetFiltersButton,
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: paymentStatusDropdown),
+                    const SizedBox(width: 8),
+                    Expanded(child: sortByDropdown),
                   ],
-                  onChanged: (v) {
-                    if (v != null) {
-                      ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(paymentStatus: v));
-                    }
-                  },
                 ),
-              ),
-              const SizedBox(width: 8),
-
-              // Sorting
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: filter.sortBy,
-                  decoration: const InputDecoration(
-                    labelText: 'Sort By',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'Date', child: Text('Invoice Date')),
-                    DropdownMenuItem(value: 'Amount High-Low', child: Text('Amount (High-Low)')),
-                    DropdownMenuItem(value: 'Amount Low-High', child: Text('Amount (Low-High)')),
-                    DropdownMenuItem(value: 'Due Date', child: Text('Credit Due Date')),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(child: partyDropdown),
+                    const SizedBox(width: 8),
+                    resetFiltersButton,
                   ],
-                  onChanged: (v) {
-                    if (v != null) {
-                      ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(sortBy: v));
-                    }
-                  },
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              // Customer Selection
-              Expanded(
-                child: partiesAsync.when(
-                  data: (parties) {
-                    return DropdownButtonFormField<int?>(
-                      value: filter.partyId,
-                      decoration: const InputDecoration(
-                        labelText: 'Customer Account',
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        const DropdownMenuItem<int?>(value: null, child: Text('All Customers')),
-                        ...parties.map((p) => DropdownMenuItem<int?>(value: p.id, child: Text(p.partyName ?? ''))),
-                      ],
-                      onChanged: (v) {
-                        ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(partyId: v));
-                      },
-                    );
-                  },
-                  loading: () => const Center(child: LinearProgressIndicator()),
-                  error: (_, __) => const Icon(Icons.error),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Reset filters button
-              TextButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reset'),
-                onPressed: () {
-                  _searchController.clear();
-                  ref.read(invoiceSearchFilterProvider.notifier).state = const InvoiceSearchFilter();
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
     );
   }
 
@@ -392,15 +407,22 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Icon(Icons.calendar_today_rounded, size: 12, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Date: $dateStr | Type: ${invoice.invoiceType ?? "Tax Invoice"}',
-                                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.calendar_today_rounded, size: 12, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Date: $dateStr | Type: ${invoice.invoiceType ?? "Tax Invoice"}',
+                                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                     decoration: BoxDecoration(

@@ -15,7 +15,7 @@ extension GetInvoiceItemCollection on Isar {
 
 const InvoiceItemSchema = CollectionSchema(
   name: r'InvoiceItem',
-  id: 3489790213250,
+  id: 348979021325046,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -67,38 +67,43 @@ const InvoiceItemSchema = CollectionSchema(
       name: r'itemName',
       type: IsarType.string,
     ),
-    r'quantity': PropertySchema(
+    r'parentInvoiceId': PropertySchema(
       id: 10,
+      name: r'parentInvoiceId',
+      type: IsarType.long,
+    ),
+    r'quantity': PropertySchema(
+      id: 11,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'rate': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'rate',
       type: IsarType.double,
     ),
     r'taxableAmount': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'version',
       type: IsarType.long,
     )
@@ -110,7 +115,7 @@ const InvoiceItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -125,13 +130,13 @@ const InvoiceItemSchema = CollectionSchema(
   },
   links: {
     r'invoice': LinkSchema(
-      id: 9067807999479,
+      id: 906780799947911,
       name: r'invoice',
       target: r'Invoice',
       single: true,
     ),
     r'item': LinkSchema(
-      id: -4145695838680,
+      id: -414569583868031,
       name: r'item',
       target: r'Item',
       single: true,
@@ -187,13 +192,14 @@ void _invoiceItemSerialize(
   writer.writeBool(offsets[7], object.isSynced);
   writer.writeLong(offsets[8], object.itemId);
   writer.writeString(offsets[9], object.itemName);
-  writer.writeDouble(offsets[10], object.quantity);
-  writer.writeDouble(offsets[11], object.rate);
-  writer.writeDouble(offsets[12], object.taxableAmount);
-  writer.writeDouble(offsets[13], object.totalAmount);
-  writer.writeDateTime(offsets[14], object.updatedAt);
-  writer.writeString(offsets[15], object.uuid);
-  writer.writeLong(offsets[16], object.version);
+  writer.writeLong(offsets[10], object.parentInvoiceId);
+  writer.writeDouble(offsets[11], object.quantity);
+  writer.writeDouble(offsets[12], object.rate);
+  writer.writeDouble(offsets[13], object.taxableAmount);
+  writer.writeDouble(offsets[14], object.totalAmount);
+  writer.writeDateTime(offsets[15], object.updatedAt);
+  writer.writeString(offsets[16], object.uuid);
+  writer.writeLong(offsets[17], object.version);
 }
 
 InvoiceItem _invoiceItemDeserialize(
@@ -214,13 +220,14 @@ InvoiceItem _invoiceItemDeserialize(
   object.isSynced = reader.readBool(offsets[7]);
   object.itemId = reader.readLongOrNull(offsets[8]);
   object.itemName = reader.readStringOrNull(offsets[9]);
-  object.quantity = reader.readDoubleOrNull(offsets[10]);
-  object.rate = reader.readDoubleOrNull(offsets[11]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[12]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[13]);
-  object.updatedAt = reader.readDateTime(offsets[14]);
-  object.uuid = reader.readStringOrNull(offsets[15]);
-  object.version = reader.readLong(offsets[16]);
+  object.parentInvoiceId = reader.readLongOrNull(offsets[10]);
+  object.quantity = reader.readDoubleOrNull(offsets[11]);
+  object.rate = reader.readDoubleOrNull(offsets[12]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[13]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[14]);
+  object.updatedAt = reader.readDateTime(offsets[15]);
+  object.uuid = reader.readStringOrNull(offsets[16]);
+  object.version = reader.readLong(offsets[17]);
   return object;
 }
 
@@ -252,7 +259,7 @@ P _invoiceItemDeserializeProp<P>(
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 11:
       return (reader.readDoubleOrNull(offset)) as P;
     case 12:
@@ -260,10 +267,12 @@ P _invoiceItemDeserializeProp<P>(
     case 13:
       return (reader.readDoubleOrNull(offset)) as P;
     case 14:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 16:
+      return (reader.readStringOrNull(offset)) as P;
+    case 17:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1322,6 +1331,80 @@ extension InvoiceItemQueryFilter
   }
 
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'parentInvoiceId',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'parentInvoiceId',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'parentInvoiceId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceIdGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'parentInvoiceId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceIdLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'parentInvoiceId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceIdBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'parentInvoiceId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
       quantityIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2065,6 +2148,19 @@ extension InvoiceItemQuerySortBy
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByParentInvoiceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy>
+      sortByParentInvoiceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByQuantity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'quantity', Sort.asc);
@@ -2286,6 +2382,19 @@ extension InvoiceItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByParentInvoiceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy>
+      thenByParentInvoiceIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceId', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByQuantity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'quantity', Sort.asc);
@@ -2436,6 +2545,13 @@ extension InvoiceItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QDistinct>
+      distinctByParentInvoiceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'parentInvoiceId');
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByQuantity() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'quantity');
@@ -2545,6 +2661,12 @@ extension InvoiceItemQueryProperty
   QueryBuilder<InvoiceItem, String?, QQueryOperations> itemNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'itemName');
+    });
+  }
+
+  QueryBuilder<InvoiceItem, int?, QQueryOperations> parentInvoiceIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'parentInvoiceId');
     });
   }
 

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 
 class AddEditExpenseScreen extends ConsumerStatefulWidget {
   const AddEditExpenseScreen({Key? key}) : super(key: key);
@@ -137,25 +139,62 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       const SizedBox(height: 20),
 
                       // Payment Mode
-                      DropdownButtonFormField<String>(
-                        value: _selectedPaymentMode,
-                        decoration: const InputDecoration(
-                          labelText: 'Payment Method',
-                          prefixIcon: Icon(Icons.payment_rounded),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                          DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
-                          DropdownMenuItem(value: 'Card', child: Text('Card')),
-                          DropdownMenuItem(value: 'UPI', child: Text('UPI')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _selectedPaymentMode = val;
-                            });
+                      ref.watch(bankAccountsListProvider).when(
+                        data: (accounts) {
+                          final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                          final dropdownItems = <DropdownMenuItem<String>>[
+                            const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                            const DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                            const DropdownMenuItem(value: 'Card', child: Text('Card')),
+                            const DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                            ...activeAccounts.map((acc) => DropdownMenuItem(
+                              value: acc.accountName,
+                              child: Text(acc.accountName ?? ''),
+                            )),
+                          ];
+
+                          // Safety fallback check to prevent dropdown value crash
+                          if (_selectedPaymentMode != null && !dropdownItems.any((item) => item.value == _selectedPaymentMode)) {
+                            dropdownItems.add(DropdownMenuItem(value: _selectedPaymentMode, child: Text(_selectedPaymentMode)));
                           }
+
+                          return DropdownButtonFormField<String>(
+                            value: _selectedPaymentMode,
+                            decoration: const InputDecoration(
+                              labelText: 'Payment Method',
+                              prefixIcon: Icon(Icons.payment_rounded),
+                            ),
+                            items: dropdownItems,
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _selectedPaymentMode = val;
+                                });
+                              }
+                            },
+                          );
                         },
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => DropdownButtonFormField<String>(
+                          value: _selectedPaymentMode,
+                          decoration: const InputDecoration(
+                            labelText: 'Payment Method',
+                            prefixIcon: Icon(Icons.payment_rounded),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                            DropdownMenuItem(value: 'Bank Transfer', child: Text('Bank Transfer')),
+                            DropdownMenuItem(value: 'Card', child: Text('Card')),
+                            DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _selectedPaymentMode = val;
+                              });
+                            }
+                          },
+                        ),
                       ),
                       const SizedBox(height: 20),
 

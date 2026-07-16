@@ -15,7 +15,7 @@ extension GetInvoiceCollection on Isar {
 
 const InvoiceSchema = CollectionSchema(
   name: r'Invoice',
-  id: -3413994360176,
+  id: -341399436017629,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -210,7 +210,7 @@ const InvoiceSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -223,7 +223,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceNumber': IndexSchema(
-      id: -6231821761165,
+      id: -623182176116500,
       name: r'invoiceNumber',
       unique: true,
       replace: false,
@@ -236,7 +236,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceType': IndexSchema(
-      id: 3218045535277,
+      id: 321804553527789,
       name: r'invoiceType',
       unique: false,
       replace: false,
@@ -249,7 +249,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceStatus': IndexSchema(
-      id: -1978661240981,
+      id: -197866124098148,
       name: r'invoiceStatus',
       unique: false,
       replace: false,
@@ -262,7 +262,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'paymentStatus': IndexSchema(
-      id: 7011973130100,
+      id: 701197313010099,
       name: r'paymentStatus',
       unique: false,
       replace: false,
@@ -277,19 +277,19 @@ const InvoiceSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: -9135347666935,
+      id: -913534766693513,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'order': LinkSchema(
-      id: 5716072027851,
+      id: 571607202785149,
       name: r'order',
       target: r'Order',
       single: true,
     ),
     r'invoiceItems': LinkSchema(
-      id: 3389505747480,
+      id: 338950574748094,
       name: r'invoiceItems',
       target: r'InvoiceItem',
       single: false,

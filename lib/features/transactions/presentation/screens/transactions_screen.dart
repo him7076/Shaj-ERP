@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 
@@ -46,6 +48,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
     final filter = ref.watch(transactionSearchFilterProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final isMobile = ResponsiveLayout.isMobile(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
@@ -69,7 +72,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+                  if (widget.lockedType == 'Credit Note') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
+                    ).then((_) => ref.invalidate(filteredTransactionsProvider));
+                  } else if (widget.lockedType == 'Debit Note') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+                    ).then((_) => ref.invalidate(filteredTransactionsProvider));
+                  } else {
+                    AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+                  }
                 },
                 icon: Icon(
                   widget.lockedType == 'Receipt'
@@ -403,56 +418,99 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
-                child: Row(
-                  children: [
-                    // Search Query
-                    Expanded(
-                      flex: 3,
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search transaction no, party, remarks...',
-                          prefixIcon: Icon(Icons.search),
-                          border: InputBorder.none,
-                        ),
-                        onChanged: (val) {
-                          ref.read(transactionSearchFilterProvider.notifier).state =
-                              filter.copyWith(query: val);
-                        },
-                      ),
-                    ),
-                    if (widget.lockedType == null) ...[
-                      const VerticalDivider(),
-                      
-                      // Transaction Type filter
-                      Expanded(
-                        flex: 2,
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: filter.transactionType,
-                            items: const [
-                              DropdownMenuItem(value: 'All', child: Text('All Types')),
-                              DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
-                              DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                              DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
-                              DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
-                              DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
-                              DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                              DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                              DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
-                              DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
-                            ],
+                child: isMobile
+                    ? Column(
+                        children: [
+                          TextField(
+                            decoration: const InputDecoration(
+                              hintText: 'Search transaction no, party, remarks...',
+                              prefixIcon: Icon(Icons.search),
+                              border: InputBorder.none,
+                            ),
                             onChanged: (val) {
-                              if (val != null) {
-                                ref.read(transactionSearchFilterProvider.notifier).state =
-                                    filter.copyWith(transactionType: val);
-                              }
+                              ref.read(transactionSearchFilterProvider.notifier).state =
+                                  filter.copyWith(query: val);
                             },
                           ),
-                        ),
+                          if (widget.lockedType == null) ...[
+                            const Divider(height: 1),
+                            DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                isExpanded: true,
+                                value: filter.transactionType,
+                                items: const [
+                                  DropdownMenuItem(value: 'All', child: Text('All Types')),
+                                  DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
+                                  DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
+                                  DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                                  DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                                  DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
+                                  DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
+                                  DropdownMenuItem(value: 'Expense', child: Text('Expense')),
+                                  DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                  DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    ref.read(transactionSearchFilterProvider.notifier).state =
+                                        filter.copyWith(transactionType: val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          // Search Query
+                          Expanded(
+                            flex: 3,
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: 'Search transaction no, party, remarks...',
+                                prefixIcon: Icon(Icons.search),
+                                border: InputBorder.none,
+                              ),
+                              onChanged: (val) {
+                                ref.read(transactionSearchFilterProvider.notifier).state =
+                                    filter.copyWith(query: val);
+                              },
+                            ),
+                          ),
+                          if (widget.lockedType == null) ...[
+                            const VerticalDivider(),
+                            
+                            // Transaction Type filter
+                            Expanded(
+                              flex: 2,
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: filter.transactionType,
+                                  items: const [
+                                    DropdownMenuItem(value: 'All', child: Text('All Types')),
+                                    DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
+                                    DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
+                                    DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                                    DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                                    DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
+                                    DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
+                                    DropdownMenuItem(value: 'Expense', child: Text('Expense')),
+                                    DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                    DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      ref.read(transactionSearchFilterProvider.notifier).state =
+                                          filter.copyWith(transactionType: val);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
-                  ],
-                ),
               ),
             ),
           ),
@@ -566,9 +624,31 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                         Text(txn.remarks!, style: theme.textTheme.bodySmall),
                                       ],
                                       const SizedBox(height: 6),
-                                      Text(
-                                        'Date: ${txn.transactionDate != null ? DateFormat('dd MMM yyyy').format(txn.transactionDate!) : "N/A"} | Mode: ${txn.paymentMode ?? "Cash"}',
-                                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                                      Wrap(
+                                        spacing: 8,
+                                        runSpacing: 4,
+                                        crossAxisAlignment: WrapCrossAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Date: ${txn.transactionDate != null ? DateFormat('dd MMM yyyy').format(txn.transactionDate!) : "N/A"}',
+                                            style: theme.textTheme.bodySmall?.copyWith(fontSize: 11),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: theme.colorScheme.outlineVariant.withOpacity(0.4),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              'Mode: ${txn.paymentMode ?? "Cash"}',
+                                              style: TextStyle(
+                                                color: theme.colorScheme.onSurface,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -654,7 +734,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+          if (widget.lockedType == 'Credit Note') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
+            ).then((_) => ref.invalidate(filteredTransactionsProvider));
+          } else if (widget.lockedType == 'Debit Note') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+            ).then((_) => ref.invalidate(filteredTransactionsProvider));
+          } else {
+            AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+          }
         },
         icon: const Icon(Icons.add),
         label: Text(widget.lockedType == 'Receipt'

@@ -68,6 +68,11 @@ final unitsListProvider = FutureProvider<List<Unit>>((ref) async {
   return await repo.getAll();
 });
 
+final itemsListProvider = FutureProvider<List<Item>>((ref) async {
+  final repo = ref.watch(itemRepositoryProvider);
+  return await repo.getAll();
+});
+
 // Search & Filter State
 class ItemSearchFilter {
   final String query;

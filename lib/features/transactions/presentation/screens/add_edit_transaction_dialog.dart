@@ -477,27 +477,64 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 const SizedBox(height: 16),
 
                 // Payment Mode Selector
-                DropdownButtonFormField<String>(
-                  value: _paymentMode,
-                  decoration: const InputDecoration(
-                    labelText: 'Payment Mode',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.account_balance_wallet),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'Cash', child: Text('Cash')),
-                    DropdownMenuItem(value: 'Bank', child: Text('Bank Transfer')),
-                    DropdownMenuItem(value: 'UPI', child: Text('UPI / GooglePay / PhonePe')),
-                    DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
-                    DropdownMenuItem(value: 'Credit', child: Text('Credit / Ledger Entry')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() {
-                        _paymentMode = val;
-                      });
+                ref.watch(bankAccountsListProvider).when(
+                  data: (accounts) {
+                    final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                    final dropdownItems = <DropdownMenuItem<String>>[
+                      const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                      const DropdownMenuItem(value: 'UPI', child: Text('UPI / GooglePay / PhonePe')),
+                      const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                      const DropdownMenuItem(value: 'Credit', child: Text('Credit / Ledger Entry')),
+                      ...activeAccounts.map((acc) => DropdownMenuItem(
+                        value: acc.accountName,
+                        child: Text(acc.accountName ?? ''),
+                      )),
+                    ];
+
+                    // Safety fallback check to prevent dropdown value crash
+                    if (_paymentMode != null && !dropdownItems.any((item) => item.value == _paymentMode)) {
+                      dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode!)));
                     }
+
+                    return DropdownButtonFormField<String>(
+                      value: _paymentMode,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Mode',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.account_balance_wallet),
+                      ),
+                      items: dropdownItems,
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _paymentMode = val;
+                          });
+                        }
+                      },
+                    );
                   },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => DropdownButtonFormField<String>(
+                    value: _paymentMode,
+                    decoration: const InputDecoration(
+                      labelText: 'Payment Mode',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.account_balance_wallet),
+                    ),
+                    items: [
+                      const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                      const DropdownMenuItem(value: 'UPI', child: Text('UPI / GooglePay / PhonePe')),
+                      const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                      const DropdownMenuItem(value: 'Credit', child: Text('Credit / Ledger Entry')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _paymentMode = val;
+                        });
+                      }
+                    },
+                  ),
                 ),
                 const SizedBox(height: 16),
 

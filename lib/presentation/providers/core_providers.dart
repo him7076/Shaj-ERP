@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/network_service.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
@@ -15,6 +16,12 @@ import 'package:business_sahaj_erp/domain/repositories/sync_queue_repository.dar
 import 'package:business_sahaj_erp/data/repositories/sync_queue_repository_impl.dart';
 import 'package:business_sahaj_erp/domain/repositories/item_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/item_repository_impl.dart';
+import 'package:business_sahaj_erp/domain/repositories/bank_account_repository.dart';
+import 'package:business_sahaj_erp/data/repositories/bank_account_repository_impl.dart';
+import 'package:business_sahaj_erp/domain/repositories/credit_note_repository.dart';
+import 'package:business_sahaj_erp/data/repositories/credit_note_repository_impl.dart';
+import 'package:business_sahaj_erp/domain/repositories/debit_note_repository.dart';
+import 'package:business_sahaj_erp/data/repositories/debit_note_repository_impl.dart';
 
 // Logger provider
 final loggerProvider = Provider<LoggerService>((ref) {
@@ -94,4 +101,28 @@ final syncQueueRepositoryProvider = Provider<SyncQueueRepository>((ref) {
 final itemRepositoryProvider = Provider<ItemRepository>((ref) {
   final isar = ref.watch(isarProvider);
   return ItemRepositoryImpl(isar);
+});
+
+// Bank Account Repository Provider
+final bankAccountRepositoryProvider = Provider<BankAccountRepository>((ref) {
+  final isar = ref.watch(isarProvider);
+  return BankAccountRepositoryImpl(isar);
+});
+
+// Credit Note Repository Provider
+final creditNoteRepositoryProvider = Provider<CreditNoteRepository>((ref) {
+  final isar = ref.watch(isarProvider);
+  return CreditNoteRepositoryImpl(isar);
+});
+
+// Debit Note Repository Provider
+final debitNoteRepositoryProvider = Provider<DebitNoteRepository>((ref) {
+  final isar = ref.watch(isarProvider);
+  return DebitNoteRepositoryImpl(isar);
+});
+
+// Bank Accounts List Provider
+final bankAccountsListProvider = FutureProvider<List<BankAccount>>((ref) async {
+  final repo = ref.watch(bankAccountRepositoryProvider);
+  return await repo.getAll();
 });

@@ -6,6 +6,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -345,8 +346,113 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ),
+            // Bank Accounts Manager Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet_outlined, color: theme.colorScheme.primary),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Bank Accounts Manager',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => _showAddEditBankAccountDialog(),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Add Account'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    ref.watch(bankAccountsListProvider).when(
+                      data: (accounts) {
+                        final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                        if (activeAccounts.isEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              'No bank accounts configured. Add one to enable bank transfers, receipts, and payments.',
+                              style: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7)),
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: activeAccounts.length,
+                          separatorBuilder: (context, index) => const Divider(height: 12),
+                          itemBuilder: (context, index) {
+                            final acc = activeAccounts[index];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                acc.accountName ?? '',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${acc.bankName ?? ""} | A/c: ${acc.accountNumber ?? ""}'),
+                                  Text('IFSC: ${acc.ifscCode ?? ""} | Branch: ${acc.branchName ?? "N/A"}'),
+                                ],
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '₹${(acc.currentBalance ?? 0.0).toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                    onPressed: () => _showAddEditBankAccountDialog(acc),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                                    onPressed: () => _showDeleteBankAccountDialog(acc),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Text('Error loading accounts: $e'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
-            
+
             // App Version Info Card
             Card(
               elevation: 0,
@@ -590,6 +696,139 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }
             },
             child: const Text('Wipe Data', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddEditBankAccountDialog([BankAccount? account]) {
+    final accountNameController = TextEditingController(text: account?.accountName);
+    final bankNameController = TextEditingController(text: account?.bankName);
+    final accountNumberController = TextEditingController(text: account?.accountNumber);
+    final ifscController = TextEditingController(text: account?.ifscCode);
+    final branchController = TextEditingController(text: account?.branchName);
+    final openingController = TextEditingController(
+      text: account == null ? '0' : (account.openingBalance ?? 0.0).toStringAsFixed(2),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(account == null ? 'Add Bank Account' : 'Edit Bank Account'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: accountNameController,
+                decoration: const InputDecoration(labelText: 'Account Display Name *', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: bankNameController,
+                decoration: const InputDecoration(labelText: 'Bank Name *', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: accountNumberController,
+                decoration: const InputDecoration(labelText: 'Account Number *', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ifscController,
+                decoration: const InputDecoration(labelText: 'IFSC Code *', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: branchController,
+                decoration: const InputDecoration(labelText: 'Branch Name', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: openingController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Opening Balance', border: OutlineInputBorder()),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final accName = accountNameController.text.trim();
+              final bankName = bankNameController.text.trim();
+              final accNum = accountNumberController.text.trim();
+              final ifsc = ifscController.text.trim();
+              final branch = branchController.text.trim();
+              final opening = double.tryParse(openingController.text.trim()) ?? 0.0;
+
+              if (accName.isEmpty || bankName.isEmpty || accNum.isEmpty || ifsc.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill all required (*) fields.')),
+                );
+                return;
+              }
+
+              final repo = ref.read(bankAccountRepositoryProvider);
+              if (account == null) {
+                final newAccount = BankAccount()
+                  ..uuid = '${DateTime.now().millisecondsSinceEpoch}'
+                  ..accountName = accName
+                  ..bankName = bankName
+                  ..accountNumber = accNum
+                  ..ifscCode = ifsc
+                  ..branchName = branch
+                  ..currentBalance = opening;
+                await repo.create(newAccount);
+              } else {
+                account.accountName = accName;
+                account.bankName = bankName;
+                account.accountNumber = accNum;
+                account.ifscCode = ifsc;
+                account.branchName = branch;
+                account.openingBalance = opening;
+                account.currentBalance = opening; // simplest update
+                account.updatedAt = DateTime.now();
+                await repo.update(account);
+              }
+
+              ref.invalidate(bankAccountsListProvider);
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteBankAccountDialog(BankAccount account) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Bank Account'),
+        content: Text('Are you sure you want to delete "${account.accountName}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              final repo = ref.read(bankAccountRepositoryProvider);
+              account.isDeleted = true;
+              account.updatedAt = DateTime.now();
+              await repo.update(account);
+              ref.invalidate(bankAccountsListProvider);
+              Navigator.pop(context);
+            },
+            child: const Text('Delete'),
           ),
         ],
       ),

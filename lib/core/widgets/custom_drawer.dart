@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
-class CustomDrawer extends StatelessWidget {
+class CustomDrawer extends ConsumerWidget {
   final bool isPermanent;
 
   const CustomDrawer({
@@ -10,9 +13,12 @@ class CustomDrawer extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final String location = GoRouterState.of(context).matchedLocation;
     final theme = Theme.of(context);
+    final activeFirmId = ref.watch(activeFirmIdProvider);
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final firmName = prefs.getString('firm_name_$activeFirmId') ?? (activeFirmId == 'firm_default' ? 'Default Company' : 'New Company');
 
     return Drawer(
       elevation: isPermanent ? 0 : 6,
@@ -70,12 +76,14 @@ class CustomDrawer extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'ENTERPRISE MANAGER',
+                    firmName.toUpperCase(),
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withOpacity(0.9),
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.2,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),

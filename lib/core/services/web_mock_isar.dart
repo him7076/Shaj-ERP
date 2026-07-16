@@ -18,6 +18,11 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_collection.da
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 
 class WebMockIsar implements Isar {
   final String firmId;
@@ -66,6 +71,16 @@ class WebMockIsar implements Isar {
     print(_e);
     final Query<Transaction> _txn = WebMockQuery<Transaction>([], WebMockCollection<Transaction>('', {}, WebMockIsar()));
     print(_txn);
+    final Query<BankAccount> _ba = WebMockQuery<BankAccount>([], WebMockCollection<BankAccount>('', {}, WebMockIsar()));
+    print(_ba);
+    final Query<CreditNote> _cn = WebMockQuery<CreditNote>([], WebMockCollection<CreditNote>('', {}, WebMockIsar()));
+    print(_cn);
+    final Query<CreditNoteItem> _cni = WebMockQuery<CreditNoteItem>([], WebMockCollection<CreditNoteItem>('', {}, WebMockIsar()));
+    print(_cni);
+    final Query<DebitNote> _dn = WebMockQuery<DebitNote>([], WebMockCollection<DebitNote>('', {}, WebMockIsar()));
+    print(_dn);
+    final Query<DebitNoteItem> _dni = WebMockQuery<DebitNoteItem>([], WebMockCollection<DebitNoteItem>('', {}, WebMockIsar()));
+    print(_dni);
   }
 
   @override
@@ -90,6 +105,11 @@ class WebMockIsar implements Isar {
     if (T == PurchaseItem) return 'purchaseItems';
     if (T == Expense) return 'expenses';
     if (T == Transaction) return 'transactions';
+    if (T == BankAccount) return 'bankAccounts';
+    if (T == CreditNote) return 'creditNotes';
+    if (T == CreditNoteItem) return 'creditNoteItems';
+    if (T == DebitNote) return 'debitNotes';
+    if (T == DebitNoteItem) return 'debitNoteItems';
     return 'dynamics';
   }
 
@@ -126,6 +146,11 @@ class WebMockIsar implements Isar {
     if (name == 'purchaseItems') return WebMockCollection<PurchaseItem>('purchaseItems', _db, this);
     if (name == 'expenses') return WebMockCollection<Expense>('expenses', _db, this);
     if (name == 'transactions') return WebMockCollection<Transaction>('transactions', _db, this);
+    if (name == 'bankAccounts') return WebMockCollection<BankAccount>('bankAccounts', _db, this);
+    if (name == 'creditNotes') return WebMockCollection<CreditNote>('creditNotes', _db, this);
+    if (name == 'creditNoteItems') return WebMockCollection<CreditNoteItem>('creditNoteItems', _db, this);
+    if (name == 'debitNotes') return WebMockCollection<DebitNote>('debitNotes', _db, this);
+    if (name == 'debitNoteItems') return WebMockCollection<DebitNoteItem>('debitNoteItems', _db, this);
     return WebMockCollection<dynamic>(name, _db, this);
   }
 
@@ -553,6 +578,135 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+    if (entity is BankAccount) {
+      return {
+        'type': 'BankAccount',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'accountName': entity.accountName,
+        'bankName': entity.bankName,
+        'accountNumber': entity.accountNumber,
+        'ifscCode': entity.ifscCode,
+        'branchName': entity.branchName,
+        'openingBalance': entity.openingBalance,
+        'currentBalance': entity.currentBalance,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is CreditNote) {
+      return {
+        'type': 'CreditNote',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'creditNoteNumber': entity.creditNoteNumber,
+        'creditNoteDate': entity.creditNoteDate?.toIso8601String(),
+        'originalInvoiceNumber': entity.originalInvoiceNumber,
+        'originalInvoiceUuid': entity.originalInvoiceUuid,
+        'partyId': entity.partyId,
+        'partyName': entity.partyName,
+        'gstNumber': entity.gstNumber,
+        'address': entity.address,
+        'subtotal': entity.subtotal,
+        'discountAmount': entity.discountAmount,
+        'taxableAmount': entity.taxableAmount,
+        'cgstAmount': entity.cgstAmount,
+        'sgstAmount': entity.sgstAmount,
+        'igstAmount': entity.igstAmount,
+        'totalGST': entity.totalGST,
+        'roundOff': entity.roundOff,
+        'grandTotal': entity.grandTotal,
+        'remarks': entity.remarks,
+        'createdBy': entity.createdBy,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is CreditNoteItem) {
+      return {
+        'type': 'CreditNoteItem',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'itemId': entity.itemId,
+        'itemName': entity.itemName,
+        'hsnCode': entity.hsnCode,
+        'parentCreditNoteId': entity.parentCreditNoteId,
+        'quantity': entity.quantity,
+        'freeQuantity': entity.freeQuantity,
+        'rate': entity.rate,
+        'discount': entity.discount,
+        'taxableAmount': entity.taxableAmount,
+        'gstRate': entity.gstRate,
+        'gstAmount': entity.gstAmount,
+        'totalAmount': entity.totalAmount,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is DebitNote) {
+      return {
+        'type': 'DebitNote',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'debitNoteNumber': entity.debitNoteNumber,
+        'debitNoteDate': entity.debitNoteDate?.toIso8601String(),
+        'originalPurchaseNumber': entity.originalPurchaseNumber,
+        'originalPurchaseUuid': entity.originalPurchaseUuid,
+        'partyId': entity.partyId,
+        'partyName': entity.partyName,
+        'gstNumber': entity.gstNumber,
+        'address': entity.address,
+        'subtotal': entity.subtotal,
+        'discountAmount': entity.discountAmount,
+        'taxableAmount': entity.taxableAmount,
+        'cgstAmount': entity.cgstAmount,
+        'sgstAmount': entity.sgstAmount,
+        'igstAmount': entity.igstAmount,
+        'totalGST': entity.totalGST,
+        'roundOff': entity.roundOff,
+        'grandTotal': entity.grandTotal,
+        'remarks': entity.remarks,
+        'createdBy': entity.createdBy,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is DebitNoteItem) {
+      return {
+        'type': 'DebitNoteItem',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'itemId': entity.itemId,
+        'itemName': entity.itemName,
+        'hsnCode': entity.hsnCode,
+        'parentDebitNoteId': entity.parentDebitNoteId,
+        'quantity': entity.quantity,
+        'freeQuantity': entity.freeQuantity,
+        'rate': entity.rate,
+        'discount': entity.discount,
+        'taxableAmount': entity.taxableAmount,
+        'gstRate': entity.gstRate,
+        'gstAmount': entity.gstAmount,
+        'totalAmount': entity.totalAmount,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
     return {};
   }
 
@@ -901,6 +1055,120 @@ class WebMockIsar implements Isar {
           ..linkedBillNumber = map['linkedBillNumber'] as String?
           ..targetPartyUuid = map['targetPartyUuid'] as String?
           ..targetPartyName = map['targetPartyName'] as String?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'BankAccount':
+        return BankAccount()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..accountName = map['accountName'] as String?
+          ..bankName = map['bankName'] as String?
+          ..accountNumber = map['accountNumber'] as String?
+          ..ifscCode = map['ifscCode'] as String?
+          ..branchName = map['branchName'] as String?
+          ..openingBalance = map['openingBalance'] as double?
+          ..currentBalance = map['currentBalance'] as double?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'CreditNote':
+        return CreditNote()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..creditNoteNumber = map['creditNoteNumber'] as String?
+          ..creditNoteDate = map['creditNoteDate'] != null ? DateTime.parse(map['creditNoteDate'] as String) : null
+          ..originalInvoiceNumber = map['originalInvoiceNumber'] as String?
+          ..originalInvoiceUuid = map['originalInvoiceUuid'] as String?
+          ..partyId = map['partyId'] as int?
+          ..partyName = map['partyName'] as String?
+          ..gstNumber = map['gstNumber'] as String?
+          ..address = map['address'] as String?
+          ..subtotal = map['subtotal'] as double?
+          ..discountAmount = map['discountAmount'] as double?
+          ..taxableAmount = map['taxableAmount'] as double?
+          ..cgstAmount = map['cgstAmount'] as double?
+          ..sgstAmount = map['sgstAmount'] as double?
+          ..igstAmount = map['igstAmount'] as double?
+          ..totalGST = map['totalGST'] as double?
+          ..roundOff = map['roundOff'] as double?
+          ..grandTotal = map['grandTotal'] as double?
+          ..remarks = map['remarks'] as String?
+          ..createdBy = map['createdBy'] as String?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'CreditNoteItem':
+        return CreditNoteItem()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..itemId = map['itemId'] as int?
+          ..itemName = map['itemName'] as String?
+          ..hsnCode = map['hsnCode'] as String?
+          ..parentCreditNoteId = map['parentCreditNoteId'] as int?
+          ..quantity = map['quantity'] as double?
+          ..freeQuantity = map['freeQuantity'] as double?
+          ..rate = map['rate'] as double?
+          ..discount = map['discount'] as double?
+          ..taxableAmount = map['taxableAmount'] as double?
+          ..gstRate = map['gstRate'] as double?
+          ..gstAmount = map['gstAmount'] as double?
+          ..totalAmount = map['totalAmount'] as double?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'DebitNote':
+        return DebitNote()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..debitNoteNumber = map['debitNoteNumber'] as String?
+          ..debitNoteDate = map['debitNoteDate'] != null ? DateTime.parse(map['debitNoteDate'] as String) : null
+          ..originalPurchaseNumber = map['originalPurchaseNumber'] as String?
+          ..originalPurchaseUuid = map['originalPurchaseUuid'] as String?
+          ..partyId = map['partyId'] as int?
+          ..partyName = map['partyName'] as String?
+          ..gstNumber = map['gstNumber'] as String?
+          ..address = map['address'] as String?
+          ..subtotal = map['subtotal'] as double?
+          ..discountAmount = map['discountAmount'] as double?
+          ..taxableAmount = map['taxableAmount'] as double?
+          ..cgstAmount = map['cgstAmount'] as double?
+          ..sgstAmount = map['sgstAmount'] as double?
+          ..igstAmount = map['igstAmount'] as double?
+          ..totalGST = map['totalGST'] as double?
+          ..roundOff = map['roundOff'] as double?
+          ..grandTotal = map['grandTotal'] as double?
+          ..remarks = map['remarks'] as String?
+          ..createdBy = map['createdBy'] as String?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'DebitNoteItem':
+        return DebitNoteItem()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..itemId = map['itemId'] as int?
+          ..itemName = map['itemName'] as String?
+          ..hsnCode = map['hsnCode'] as String?
+          ..parentDebitNoteId = map['parentDebitNoteId'] as int?
+          ..quantity = map['quantity'] as double?
+          ..freeQuantity = map['freeQuantity'] as double?
+          ..rate = map['rate'] as double?
+          ..discount = map['discount'] as double?
+          ..taxableAmount = map['taxableAmount'] as double?
+          ..gstRate = map['gstRate'] as double?
+          ..gstAmount = map['gstAmount'] as double?
+          ..totalAmount = map['totalAmount'] as double?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
