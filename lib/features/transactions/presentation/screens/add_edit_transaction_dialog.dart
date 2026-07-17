@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'dart:math';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -9,6 +11,7 @@ import 'package:business_sahaj_erp/features/transactions/presentation/providers/
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 
 class AddEditTransactionDialog extends ConsumerStatefulWidget {
   final Transaction? transaction;
@@ -70,8 +73,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
   final TextEditingController _remarksController = TextEditingController();
 
   List<dynamic> _pendingBills = [];
-  String? _selectedBillUuid;
-  String? _selectedBillNumber;
+  Map<String, double> _linkedAllocations = {};
+  final Map<String, TextEditingController> _allocControllers = {};
 
   @override
   void initState() {
@@ -84,8 +87,21 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     _referenceController.text = widget.transaction?.referenceNumber ?? '';
     _remarksController.text = widget.transaction?.remarks ?? '';
 
-    _selectedBillUuid = widget.transaction?.linkedBillUuid ?? widget.initialBillUuid;
-    _selectedBillNumber = widget.transaction?.linkedBillNumber ?? widget.initialBillNumber;
+    // Load initial allocations
+    final initialLink = widget.transaction?.linkedBillUuid ?? widget.initialBillUuid;
+    final initialAmt = widget.transaction?.amount ?? widget.initialAmount ?? 0.0;
+    if (initialLink != null && initialLink.isNotEmpty) {
+      if (initialLink.startsWith('{')) {
+        try {
+          final decoded = json.decode(initialLink) as Map<String, dynamic>;
+          _linkedAllocations = decoded.map((key, value) => MapEntry(key, (value as num).toDouble()));
+        } catch (_) {
+          _linkedAllocations = {initialLink: initialAmt};
+        }
+      } else {
+        _linkedAllocations = {initialLink: initialAmt};
+      }
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final parties = await ref.read(partiesListProvider.future);
@@ -122,50 +138,123 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     
     try {
       if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
-        // Fetch sales invoices
-        final list = await db.invoices
+        final allInvoices = await db.invoices
             .filter()
             .isDeletedEqualTo(false)
             .and()
             .partyIdEqualTo(_selectedParty!.id)
-            .and()
-            .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
             .findAll();
+        
+        final list = allInvoices.where((inv) {
+          final isUnpaidOrPartial = inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid';
+          final isLinked = _linkedAllocations.containsKey(inv.uuid);
+          return isUnpaidOrPartial || isLinked;
+        }).toList();
+        
         setState(() {
           _pendingBills = list;
-          // Ensure linked bill exists in options
-          if (_selectedBillUuid != null && !list.any((i) => i.uuid == _selectedBillUuid)) {
-            _selectedBillUuid = null;
-            _selectedBillNumber = null;
-          }
+          _updateControllers();
         });
       } else if (_transactionType == 'Payment' || _transactionType == 'Debit Note') {
-        // Fetch purchases
-        final list = await db.purchases
+        final allPurchases = await db.purchases
             .filter()
             .isDeletedEqualTo(false)
             .and()
             .partyIdEqualTo(_selectedParty!.id)
-            .and()
-            .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
             .findAll();
+        
+        final list = allPurchases.where((p) {
+          final isUnpaidOrPartial = p.paymentStatus == 'Unpaid' || p.paymentStatus == 'Partially Paid';
+          final isLinked = _linkedAllocations.containsKey(p.uuid);
+          return isUnpaidOrPartial || isLinked;
+        }).toList();
+        
         setState(() {
           _pendingBills = list;
-          if (_selectedBillUuid != null && !list.any((p) => p.uuid == _selectedBillUuid)) {
-            _selectedBillUuid = null;
-            _selectedBillNumber = null;
-          }
+          _updateControllers();
         });
       } else {
         setState(() {
           _pendingBills = [];
-          _selectedBillUuid = null;
-          _selectedBillNumber = null;
+          _updateControllers();
         });
       }
     } catch (e) {
-      // Quietly ignore or log
+      // Quietly ignore
     }
+  }
+
+  void _updateControllers() {
+    final currentUuids = _pendingBills.map((b) => b.uuid as String).toSet();
+    _allocControllers.removeWhere((uuid, controller) {
+      if (!currentUuids.contains(uuid)) {
+        controller.dispose();
+        return true;
+      }
+      return false;
+    });
+
+    for (var bill in _pendingBills) {
+      final uuid = bill.uuid as String;
+      final alloc = _linkedAllocations[uuid] ?? 0.0;
+      if (!_allocControllers.containsKey(uuid)) {
+        _allocControllers[uuid] = TextEditingController(
+          text: alloc > 0 ? alloc.toStringAsFixed(2) : '',
+        );
+      } else {
+        final textValue = alloc > 0 ? alloc.toStringAsFixed(2) : '';
+        if (_allocControllers[uuid]!.text != textValue && !_allocControllers[uuid]!.hasFocus) {
+          _allocControllers[uuid]!.text = textValue;
+        }
+      }
+    }
+  }
+
+  double getPendingToPay(dynamic bill) {
+    final grandTotal = ((bill.grandTotal ?? 0.0) as num).toDouble();
+    final paidAmount = ((bill.paidAmount ?? 0.0) as num).toDouble();
+    final currentAlloc = _linkedAllocations[bill.uuid] ?? 0.0;
+    final otherPaid = paidAmount - currentAlloc;
+    return max(0.0, grandTotal - otherPaid);
+  }
+
+  void _autoAllocate() {
+    final txnAmount = double.tryParse(_amountController.text) ?? 0.0;
+    if (txnAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid transaction amount first')),
+      );
+      return;
+    }
+
+    final sortedBills = List<dynamic>.from(_pendingBills);
+    sortedBills.sort((a, b) {
+      final dateA = a.createdAt as DateTime?;
+      final dateB = b.createdAt as DateTime?;
+      if (dateA == null && dateB == null) return 0;
+      if (dateA == null) return 1;
+      if (dateB == null) return -1;
+      return dateA.compareTo(dateB);
+    });
+
+    double remaining = txnAmount;
+    final Map<String, double> newAllocations = {};
+
+    for (var bill in sortedBills) {
+      if (remaining <= 0) break;
+      final uuid = bill.uuid as String;
+      final pendingToPay = getPendingToPay(bill);
+      if (pendingToPay > 0) {
+        final alloc = min(remaining, pendingToPay);
+        newAllocations[uuid] = double.parse(alloc.toStringAsFixed(2));
+        remaining -= alloc;
+      }
+    }
+
+    setState(() {
+      _linkedAllocations = newAllocations;
+      _updateControllers();
+    });
   }
 
   @override
@@ -173,6 +262,9 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     _amountController.dispose();
     _referenceController.dispose();
     _remarksController.dispose();
+    for (var controller in _allocControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -195,6 +287,20 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       return;
     }
 
+    final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
+    
+    // Filter out zero allocations
+    final validAllocations = Map<String, double>.from(_linkedAllocations)
+      ..removeWhere((k, v) => v <= 0.0);
+
+    final totalAllocated = validAllocations.values.fold(0.0, (sum, val) => sum + val);
+    if (totalAllocated > totalTxn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Total allocated amount (₹${totalAllocated.toStringAsFixed(2)}) exceeds transaction amount (₹${totalTxn.toStringAsFixed(2)})')),
+      );
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       final repo = ref.read(transactionRepositoryProvider);
@@ -202,7 +308,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       final txn = widget.transaction ?? Transaction();
       txn.transactionType = _transactionType;
       txn.transactionDate = _transactionDate;
-      txn.amount = double.tryParse(_amountController.text) ?? 0.0;
+      txn.amount = totalTxn;
       txn.paymentMode = _paymentMode;
       txn.referenceNumber = _referenceController.text;
       txn.remarks = _remarksController.text;
@@ -213,8 +319,23 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       txn.targetPartyUuid = _selectedTargetParty?.uuid;
       txn.targetPartyName = _selectedTargetParty?.partyName;
 
-      txn.linkedBillUuid = _selectedBillUuid;
-      txn.linkedBillNumber = _selectedBillNumber;
+      txn.linkedBillUuid = validAllocations.isNotEmpty ? json.encode(validAllocations) : null;
+
+      if (validAllocations.isNotEmpty) {
+        final numbers = <String>[];
+        for (final uuid in validAllocations.keys) {
+          final bill = _pendingBills.firstWhere((b) => b.uuid == uuid, orElse: () => null);
+          if (bill != null) {
+            final numStr = _transactionType == 'Receipt' || _transactionType == 'Credit Note'
+                ? (bill.invoiceNumber ?? '')
+                : (bill.purchaseNumber ?? '');
+            if (numStr.isNotEmpty) numbers.add(numStr);
+          }
+        }
+        txn.linkedBillNumber = numbers.isNotEmpty ? numbers.join(', ') : null;
+      } else {
+        txn.linkedBillNumber = null;
+      }
 
       await repo.saveTransaction(txn);
       
@@ -315,30 +436,20 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                         filteredParties = parties.where((p) => p.partyType == 'Supplier').toList();
                       }
 
-                      return DropdownButtonFormField<Party>(
-                        value: _selectedParty != null && filteredParties.any((p) => p.uuid == _selectedParty!.uuid)
+                      return SearchablePartyDropdown(
+                        parties: filteredParties,
+                        selectedParty: _selectedParty != null && filteredParties.any((p) => p.uuid == _selectedParty!.uuid)
                             ? filteredParties.firstWhere((p) => p.uuid == _selectedParty!.uuid)
                             : null,
-                        decoration: InputDecoration(
-                          labelText: _transactionType == 'Receipt' || _transactionType == 'Credit Note'
-                              ? 'Customer / Party'
-                              : 'Supplier / Party',
-                          border: const OutlineInputBorder(),
-                          prefixIcon: const Icon(Icons.person),
-                        ),
-                        items: filteredParties.map((p) {
-                          return DropdownMenuItem<Party>(
-                            value: p,
-                            child: Text(p.partyName ?? ''),
-                          );
-                        }).toList(),
+                        labelText: _transactionType == 'Receipt' || _transactionType == 'Credit Note'
+                            ? 'Customer / Party'
+                            : 'Supplier / Party',
                         onChanged: (party) {
                           setState(() {
                             _selectedParty = party;
                           });
                           _fetchPendingBills();
                         },
-                        validator: (val) => val == null ? 'Select party' : null,
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
@@ -349,85 +460,186 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
                 // Recipient Party Selection for Transfers
                 if (_transactionType == 'Transfer') ...[
-                  partiesAsync.when(
-                    data: (parties) {
-                      // Allow transferring to any party
-                      return DropdownButtonFormField<Party>(
-                        value: _selectedTargetParty != null && parties.any((p) => p.uuid == _selectedTargetParty!.uuid)
-                            ? parties.firstWhere((p) => p.uuid == _selectedTargetParty!.uuid)
+                      final targetParties = parties.where((p) => p.uuid != _selectedParty?.uuid).toList();
+                      return SearchablePartyDropdown(
+                        parties: targetParties,
+                        selectedParty: _selectedTargetParty != null && targetParties.any((p) => p.uuid == _selectedTargetParty!.uuid)
+                            ? targetParties.firstWhere((p) => p.uuid == _selectedTargetParty!.uuid)
                             : null,
-                        decoration: const InputDecoration(
-                          labelText: 'Transfer To (Recipient Party)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_pin),
-                        ),
-                        items: parties
-                            .where((p) => p.uuid != _selectedParty?.uuid)
-                            .map((p) {
-                          return DropdownMenuItem<Party>(
-                            value: p,
-                            child: Text(p.partyName ?? ''),
-                          );
-                        }).toList(),
+                        labelText: 'Transfer To (Recipient Party)',
                         onChanged: (party) {
                           setState(() {
                             _selectedTargetParty = party;
                           });
                         },
-                        validator: (val) => val == null ? 'Select recipient party' : null,
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Text('Error loading parties: $e'),
                   ),
                   const SizedBox(height: 16),
-                ],
-
-                // Linked bill selector
+                                // Linked bills section
                 if (_pendingBills.isNotEmpty) ...[
-                  DropdownButtonFormField<String>(
-                    value: _selectedBillUuid,
-                    decoration: const InputDecoration(
-                      labelText: 'Link to Pending Bill (Optional)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.link),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.dividerColor),
+                      borderRadius: BorderRadius.circular(8),
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
                     ),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text('-- None / Advance Payment --'),
-                      ),
-                      ..._pendingBills.map((b) {
-                        final billNo = b is Invoice ? b.invoiceNumber : (b as Purchase).purchaseNumber;
-                        final total = b is Invoice ? b.grandTotal : (b as Purchase).grandTotal;
-                        final pending = b is Invoice ? b.pendingAmount : (b as Purchase).pendingAmount;
-                        return DropdownMenuItem<String>(
-                          value: b.uuid,
-                          child: Text('$billNo (Amt: ₹$total, Bal: ₹$pending)'),
-                        );
-                      }).toList()
-                    ],
-                    onChanged: (uuid) {
-                      setState(() {
-                        _selectedBillUuid = uuid;
-                        if (uuid != null) {
-                          final matching = _pendingBills.firstWhere((b) => b.uuid == uuid);
-                          _selectedBillNumber = matching is Invoice
-                              ? matching.invoiceNumber
-                              : (matching as Purchase).purchaseNumber;
-                          
-                          // Pre-fill amount with pending amount if empty
-                          final pendingAmt = matching is Invoice
-                              ? matching.pendingAmount
-                              : (matching as Purchase).pendingAmount;
-                          if (_amountController.text.isEmpty) {
-                            _amountController.text = pendingAmt?.toString() ?? '';
-                          }
-                        } else {
-                          _selectedBillNumber = null;
-                        }
-                      });
-                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Link to Pending Bills',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            TextButton.icon(
+                              onPressed: _autoAllocate,
+                              icon: const Icon(Icons.auto_awesome, size: 16),
+                              label: const Text('Auto Allocate'),
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ..._pendingBills.map((bill) {
+                          final uuid = bill.uuid as String;
+                          final controller = _allocControllers[uuid];
+                          if (controller == null) return const SizedBox();
+
+                          final pendingToPay = getPendingToPay(bill);
+                          final currentAlloc = _linkedAllocations[uuid] ?? 0.0;
+                          final isLinked = currentAlloc > 0;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Checkbox(
+                                  value: isLinked,
+                                  onChanged: (val) {
+                                    final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
+                                    final allocatedSoFar = _linkedAllocations.entries
+                                        .where((e) => e.key != uuid)
+                                        .fold(0.0, (sum, e) => sum + e.value);
+                                    final remaining = max(0.0, totalTxn - allocatedSoFar);
+
+                                    setState(() {
+                                      if (val == true) {
+                                        final allocVal = min(remaining, pendingToPay);
+                                        _linkedAllocations[uuid] = double.parse(allocVal.toStringAsFixed(2));
+                                      } else {
+                                        _linkedAllocations.remove(uuid);
+                                      }
+                                      _updateControllers();
+                                    });
+                                  },
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _transactionType == 'Receipt' || _transactionType == 'Credit Note'
+                                            ? 'Invoice #${bill.invoiceNumber ?? bill.uuid.substring(0, 8)}'
+                                            : 'Bill #${bill.purchaseNumber ?? bill.uuid.substring(0, 8)}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        'Date: ${bill.createdAt != null ? DateFormat('dd-MM-yyyy').format(bill.createdAt) : "N/A"} | Bal: ₹${pendingToPay.toStringAsFixed(2)}',
+                                        style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 110,
+                                  height: 38,
+                                  child: TextFormField(
+                                    controller: controller,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    decoration: const InputDecoration(
+                                      prefixText: '₹',
+                                      hintText: '0.00',
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    onChanged: (val) {
+                                      final parsed = double.tryParse(val) ?? 0.0;
+                                      setState(() {
+                                        if (parsed > 0) {
+                                          _linkedAllocations[uuid] = parsed;
+                                        } else {
+                                          _linkedAllocations.remove(uuid);
+                                        }
+                                      });
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        const Divider(),
+                        // Summary status row
+                        Builder(
+                          builder: (context) {
+                            final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
+                            final totalAllocated = _linkedAllocations.values.fold(0.0, (sum, val) => sum + val);
+                            final remaining = totalTxn - totalAllocated;
+
+                            Color statusColor = Colors.grey;
+                            String statusText = 'No allocation';
+
+                            if (totalTxn > 0) {
+                              if (totalAllocated.toStringAsFixed(2) == totalTxn.toStringAsFixed(2)) {
+                                statusColor = Colors.green;
+                                statusText = 'Fully Allocated';
+                              } else if (totalAllocated > totalTxn) {
+                                statusColor = Colors.red;
+                                statusText = 'Over-allocated by ₹${(totalAllocated - totalTxn).toStringAsFixed(2)}';
+                              } else {
+                                statusColor = Colors.orange;
+                                statusText = 'Unallocated: ₹${remaining.toStringAsFixed(2)}';
+                              }
+                            }
+
+                            return Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Total Allocated: ₹${totalAllocated.toStringAsFixed(2)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: statusColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    statusText,
+                                    style: TextStyle(
+                                      color: statusColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -437,10 +649,13 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
-                    labelText: 'Amount (₹)',
+                    labelText: 'Amount (₹) *',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.attach_money),
                   ),
+                  onChanged: (val) {
+                    setState(() {});
+                  },
                   validator: (val) {
                     if (val == null || val.isEmpty) return 'Enter amount';
                     final parsed = double.tryParse(val);

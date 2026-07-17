@@ -81,6 +81,12 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       invoice.invoiceStatus = 'Active';
 
       await isar.writeTxn(() async {
+        // Fetch old invoice before putting (if editing)
+        Invoice? oldInvoice;
+        if (!isNew) {
+          oldInvoice = await collection.get(invoice.id);
+        }
+
         // 1. Put Invoice
         final invoiceId = await collection.put(invoice);
         invoice.id = invoiceId;
@@ -93,8 +99,17 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ? (invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null)
             : invoice.party.value;
 
-        // 2. Adjust Party Outstanding Balance (If credit / unpaid exists)
-        if (party != null && isNew) {
+        // 2. Adjust Party Outstanding Balance
+        if (oldInvoice != null) {
+          final oldPartyId = oldInvoice.partyId;
+          final oldParty = oldPartyId != null ? await isar.partys.get(oldPartyId) : null;
+          if (oldParty != null) {
+            oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - (oldInvoice.pendingAmount ?? 0.0);
+            await isar.partys.put(oldParty);
+          }
+        }
+
+        if (party != null) {
           final pendingAmt = invoice.pendingAmount ?? 0.0;
           party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
           await isar.partys.put(party);

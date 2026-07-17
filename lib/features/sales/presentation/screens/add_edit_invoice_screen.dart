@@ -20,9 +20,12 @@ import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_pro
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+
 
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
-  const AddEditInvoiceScreen({Key? key}) : super(key: key);
+  final String? invoiceUuid;
+  const AddEditInvoiceScreen({Key? key, this.invoiceUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditInvoiceScreen> createState() => _AddEditInvoiceScreenState();
@@ -42,12 +45,93 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   DateTime _dueDate = DateTime.now().add(const Duration(days: 15));
   DateTime _invoiceDate = DateTime.now();
 
+  Invoice? _existingInvoice;
+  String _paymentMode = 'Cash';
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       ref.read(invoiceCartProvider.notifier).clear();
+      if (widget.invoiceUuid != null) {
+        await _loadInvoiceData();
+      }
     });
+  }
+
+  Future<void> _loadInvoiceData() async {
+    try {
+      final db = ref.read(databaseServiceProvider).isar;
+      final invoice = await db.invoices.filter().uuidEqualTo(widget.invoiceUuid).findFirst();
+      if (invoice != null) {
+        _existingInvoice = invoice;
+        _invoiceType = invoice.invoiceType ?? 'Tax Invoice';
+        _invoiceDate = invoice.invoiceDate ?? DateTime.now();
+        _dueDate = invoice.dueDate ?? DateTime.now();
+        final remarksText = invoice.remarks ?? '';
+        _remarksController.text = remarksText.replaceAll(RegExp(r'\s*\[Paid via [^\]]+\]'), '');
+        final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(remarksText);
+        if (match != null) {
+          _paymentMode = match.group(1) ?? 'Cash';
+        } else {
+          _paymentMode = 'Cash';
+        }
+        _paidAmountController.text = invoice.paidAmount?.toString() ?? '0.0';
+        _discountController.text = invoice.discountAmount?.toString() ?? '0.0';
+        _discountPercentController.text = invoice.discountPercent?.toString() ?? '0.0';
+
+        if (!kIsWeb) {
+          await invoice.party.load();
+          await invoice.invoiceItems.load();
+        }
+        final party = kIsWeb
+            ? (invoice.partyId != null ? await db.partys.get(invoice.partyId!) : null)
+            : invoice.party.value;
+
+        if (party != null) {
+          final List<InvoiceItem> itemsList = kIsWeb
+              ? await db.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll()
+              : invoice.invoiceItems.toList();
+
+          final List<CartItemState> cartItems = [];
+          for (var item in itemsList) {
+            if (!kIsWeb) {
+              await item.item.load();
+            }
+            final dbItem = kIsWeb
+                ? (item.itemId != null ? await db.items.get(item.itemId!) : null)
+                : item.item.value;
+            if (dbItem != null) {
+              final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
+              final discPct = totalBase > 0 ? ((item.discount ?? 0.0) / totalBase) * 100.0 : 0.0;
+
+              cartItems.add(
+                CartItemState(
+                  item: dbItem,
+                  quantity: item.quantity ?? 1.0,
+                  freeQuantity: item.freeQuantity ?? 0.0,
+                  rate: item.rate ?? 0.0,
+                  discountPercent: discPct,
+                  discountAmount: item.discount ?? 0.0,
+                  gstPercent: item.gstRate ?? 18.0,
+                ),
+              );
+            }
+          }
+
+          ref.read(invoiceCartProvider.notifier).loadInvoice(
+            party: party,
+            invoice: invoice,
+            items: cartItems,
+          );
+        }
+        setState(() {});
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading invoice: $e')),
+      );
+    }
   }
 
   @override
@@ -88,8 +172,24 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(companyGst);
       final nextInvNum = await repo.generateNextInvoiceNumber();
 
-      final invoice = Invoice()
-        ..invoiceNumber = nextInvNum
+      final invoice = _existingInvoice ?? Invoice();
+      if (_existingInvoice == null) {
+        invoice.invoiceNumber = nextInvNum;
+        invoice.createdBy = userEmail;
+        invoice.createdAt = DateTime.now();
+        invoice.version = 1;
+      } else {
+        invoice.version = _existingInvoice!.version + 1;
+      }
+      
+      final double paidAmt = double.tryParse(_paidAmountController.text.trim()) ?? 0.0;
+      String currentRemarks = _remarksController.text.trim();
+      currentRemarks = currentRemarks.replaceAll(RegExp(r'\s*\[Paid via [^\]]+\]'), '');
+      if (paidAmt > 0) {
+        currentRemarks += ' [Paid via $_paymentMode]';
+      }
+
+      invoice
         ..invoiceDate = _invoiceDate
         ..invoiceType = _invoiceType
         ..partyId = cart.selectedParty!.id
@@ -102,16 +202,12 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         ..totalGST = totals['totalGST']
         ..roundOff = totals['roundOff']
         ..grandTotal = totals['grandTotal']
-        ..paidAmount = double.tryParse(_paidAmountController.text.trim()) ?? 0.0
+        ..paidAmount = paidAmt
         ..pendingAmount = totals['pendingAmount']
         ..dueDate = _dueDate
-        ..remarks = _remarksController.text.trim()
-        ..createdBy = userEmail
-        ..createdAt = DateTime.now()
+        ..remarks = currentRemarks
         ..updatedAt = DateTime.now()
-        ..isDeleted = false
-        ..isSynced = false
-        ..version = 1;
+        ..isDeleted = false;
 
       final cleanCompany = companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
       final cleanParty = cart.selectedParty!.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
@@ -256,6 +352,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       if (amt != null) {
                         ref.read(invoiceCartProvider.notifier).setPaidAmount(amt);
                       }
+                      setState(() {});
                     },
                   ),
                 ),
@@ -282,6 +379,65 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               ],
             ),
             const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+                if (paidAmt <= 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: ref.watch(bankAccountsListProvider).when(
+                    data: (accounts) {
+                      final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                      final dropdownItems = <DropdownMenuItem<String>>[
+                        const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        const DropdownMenuItem(value: 'UPI', child: Text('UPI / PhonePe / GPay')),
+                        const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                        ...activeAccounts.map((acc) => DropdownMenuItem(
+                          value: acc.accountName,
+                          child: Text(acc.accountName ?? ''),
+                        )),
+                      ];
+                      if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
+                        dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: _paymentMode,
+                        decoration: const InputDecoration(
+                          labelText: 'Payment Mode / Account',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.payment),
+                        ),
+                        items: dropdownItems,
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _paymentMode = val);
+                          }
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => DropdownButtonFormField<String>(
+                      value: _paymentMode,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Mode / Account',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.payment),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                        DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _paymentMode = val);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
             Row(
               children: [
                 Expanded(
@@ -334,7 +490,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Direct Tax Invoice'),
+        title: Text(widget.invoiceUuid != null ? 'Edit Sales Invoice' : 'Direct Tax Invoice'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -388,18 +544,12 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   child: partiesAsync.when(
                     data: (parties) {
                       final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
-                      return DropdownButtonFormField<Party>(
-                        value: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
+                      return SearchablePartyDropdown(
+                        parties: customerParties,
+                        selectedParty: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
                             ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
                             : null,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Customer Account',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_pin),
-                        ),
-                        items: customerParties.map((p) {
-                          return DropdownMenuItem<Party>(value: p, child: Text(p.partyName ?? ''));
-                        }).toList(),
+                        labelText: 'Select Customer Account',
                         onChanged: (party) {
                           ref.read(invoiceCartProvider.notifier).setParty(party);
                         },

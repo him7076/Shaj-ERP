@@ -12,6 +12,8 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/core/services/gst_service.dart';
 
 class AddEditDebitNoteScreen extends ConsumerStatefulWidget {
   const AddEditDebitNoteScreen({Key? key}) : super(key: key);
@@ -93,11 +95,9 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   }
 
   Map<String, double> _calculateGstBreakdown(String? companyGst) {
-    final cleanCompany = companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
-    final cleanParty = _selectedParty?.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
-    final isLocal = cleanCompany.length >= 2 && cleanParty.length >= 2 && cleanCompany.substring(0, 2) == cleanParty.substring(0, 2);
+    final isLocal = GstService().isIntrastate(companyGst, _selectedParty?.gstNumber, partyState: _selectedParty?.state);
 
-    if (cleanCompany.isEmpty || cleanParty.isEmpty || isLocal) {
+    if (isLocal) {
       return {
         'cgst': _gstTotal / 2.0,
         'sgst': _gstTotal / 2.0,
@@ -558,19 +558,10 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     return partiesAsync.when(
       data: (parties) {
         final suppliers = parties.where((p) => p.partyType == 'Supplier' && !p.isDeleted).toList();
-        return DropdownButtonFormField<Party>(
-          value: _selectedParty,
-          decoration: const InputDecoration(
-            labelText: 'Supplier *',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.person_outline),
-          ),
-          items: suppliers.map((p) {
-            return DropdownMenuItem<Party>(
-              value: p,
-              child: Text(p.partyName ?? ''),
-            );
-          }).toList(),
+        return SearchablePartyDropdown(
+          parties: suppliers,
+          selectedParty: _selectedParty,
+          labelText: 'Supplier *',
           onChanged: (val) {
             setState(() {
               _selectedParty = val;

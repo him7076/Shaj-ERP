@@ -292,7 +292,17 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                             ],
                                           ),
                                         ),
-                              onLongPress: () {
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => AddEditExpenseScreen(
+                                                expenseUuid: expense.uuid,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        onLongPress: () {
                                 showDialog(
                                   context: context,
                                   builder: (context) => AlertDialog(

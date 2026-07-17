@@ -578,6 +578,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               ),
                               Expanded(
                                 child: ListTile(
+                                  onTap: () => AddEditTransactionDialog.show(context, transaction: txn),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   leading: CircleAvatar(
                                     backgroundColor: badgeColor.withOpacity(0.08),
@@ -648,6 +649,54 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                               ),
                                             ),
                                           ),
+                                          if (txn.transactionType == 'Receipt' || txn.transactionType == 'Payment') ...[
+                                            InkWell(
+                                              onTap: () => AddEditTransactionDialog.show(context, transaction: txn),
+                                              borderRadius: BorderRadius.circular(4),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                                decoration: BoxDecoration(
+                                                  color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                                      ? Colors.green.withOpacity(0.12)
+                                                      : Colors.orange.withOpacity(0.12),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                  border: Border.all(
+                                                    color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                                        ? Colors.green
+                                                        : Colors.orange,
+                                                    width: 0.5,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                                          ? Icons.link
+                                                          : Icons.link_off,
+                                                      size: 10,
+                                                      color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                                          ? Colors.green[800]
+                                                          : Colors.orange[800],
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                                          ? 'Linked: ${txn.linkedBillNumber ?? "Yes"}'
+                                                          : 'Tap to Link Bills',
+                                                      style: TextStyle(
+                                                        color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                                            ? Colors.green[800]
+                                                            : Colors.orange[800],
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ],
                                       ),
                                     ],
@@ -666,7 +715,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       const SizedBox(width: 8),
                                       PopupMenuButton<String>(
                                         onSelected: (action) async {
-                                          if (action == 'edit') {
+                                          if (action == 'edit' || action == 'link') {
                                             AddEditTransactionDialog.show(context, transaction: txn);
                                           } else if (action == 'delete') {
                                             final confirm = await showDialog<bool>(
@@ -704,6 +753,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                               contentPadding: EdgeInsets.zero,
                                             ),
                                           ),
+                                          if (txn.transactionType == 'Receipt' || txn.transactionType == 'Payment')
+                                            const PopupMenuItem(
+                                              value: 'link',
+                                              child: ListTile(
+                                                leading: Icon(Icons.link, size: 20),
+                                                title: Text('Link to Bills'),
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                            ),
                                           const PopupMenuItem(
                                             value: 'delete',
                                             child: ListTile(

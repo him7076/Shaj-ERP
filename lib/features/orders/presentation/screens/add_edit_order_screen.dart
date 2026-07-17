@@ -21,6 +21,8 @@ import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+
 
 class AddEditOrderScreen extends ConsumerStatefulWidget {
   final String? orderUuid;
@@ -53,8 +55,6 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       ref.read(cartProvider.notifier).clear();
       if (widget.orderUuid != null) {
         _loadExistingOrder();
-      } else {
-        _fetchGPSLocation();
       }
     });
   }
@@ -417,18 +417,12 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   child: partiesAsync.when(
                     data: (parties) {
                       final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
-                      return DropdownButtonFormField<Party>(
-                        value: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
+                      return SearchablePartyDropdown(
+                        parties: customerParties,
+                        selectedParty: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
                             ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
                             : null,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Customer Account',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_pin),
-                        ),
-                        items: customerParties.map((p) {
-                          return DropdownMenuItem<Party>(value: p, child: Text(p.partyName ?? ''));
-                        }).toList(),
+                        labelText: 'Select Customer Account',
                         onChanged: (party) {
                           ref.read(cartProvider.notifier).setParty(party);
                         },

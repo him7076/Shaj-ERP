@@ -5,9 +5,12 @@ import 'package:business_sahaj_erp/data/local/collections/expense_collection.dar
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:isar/isar.dart';
 
 class AddEditExpenseScreen extends ConsumerStatefulWidget {
-  const AddEditExpenseScreen({Key? key}) : super(key: key);
+  final String? expenseUuid;
+  const AddEditExpenseScreen({Key? key, this.expenseUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditExpenseScreen> createState() => _AddEditExpenseScreenState();
@@ -21,6 +24,94 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   String _selectedCategory = 'Office Expense';
   String _selectedPaymentMode = 'Cash';
   DateTime _expenseDate = DateTime.now();
+
+  Expense? _existingExpense;
+  List<String> _categories = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    List<String>? cats = prefs.getStringList('expense_categories');
+    if (cats == null || cats.isEmpty) {
+      cats = ['Rent', 'Salaries', 'Utilities', 'Tea & Snacks', 'Office Expense', 'Other'];
+      await prefs.setStringList('expense_categories', cats);
+    }
+    _categories = cats;
+
+    if (widget.expenseUuid != null) {
+      final isar = ref.read(databaseServiceProvider).isar;
+      final expense = await isar.expenses.filter().uuidEqualTo(widget.expenseUuid).findFirst();
+      if (expense != null) {
+        _existingExpense = expense;
+        _amountController.text = expense.amount?.toString() ?? '';
+        _remarksController.text = expense.remarks ?? '';
+        _selectedCategory = expense.category ?? 'Office Expense';
+        _selectedPaymentMode = expense.paymentMode ?? 'Cash';
+        _expenseDate = expense.expenseDate ?? DateTime.now();
+      }
+    }
+    setState(() {});
+  }
+
+  Future<void> _showAddCategoryDialog() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final newCat = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Expense Category'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Category Name',
+                border: OutlineInputBorder(),
+              ),
+              validator: (val) {
+                if (val == null || val.trim().isEmpty) {
+                  return 'Please enter category name';
+                }
+                if (_categories.any((c) => c.toLowerCase() == val.trim().toLowerCase())) {
+                  return 'Category already exists';
+                }
+                return null;
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  Navigator.pop(context, controller.text.trim());
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newCat != null && newCat.isNotEmpty) {
+      setState(() {
+        _categories.add(newCat);
+        _selectedCategory = newCat;
+      });
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setStringList('expense_categories', _categories);
+    }
+  }
 
   @override
   void dispose() {
@@ -39,12 +130,17 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         return;
       }
 
-      final expense = Expense()
+      final expense = _existingExpense ?? Expense();
+      expense
         ..category = _selectedCategory
         ..amount = amt
         ..expenseDate = _expenseDate
         ..paymentMode = _selectedPaymentMode
         ..remarks = _remarksController.text.trim();
+
+      if (_existingExpense == null) {
+        expense.uuid = '${DateTime.now().millisecondsSinceEpoch}';
+      }
 
       final success = await ref
           .read(expenseNotifierProvider.notifier)
@@ -52,7 +148,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Expense logged successfully.')),
+          SnackBar(content: Text(_existingExpense == null ? 'Expense logged successfully.' : 'Expense updated successfully.')),
         );
         Navigator.pop(context);
       }
@@ -93,28 +189,26 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Category dropdown
-                      DropdownButtonFormField<String>(
-                        value: _selectedCategory,
-                        decoration: const InputDecoration(
-                          labelText: 'Expense Category',
-                          prefixIcon: Icon(Icons.category_outlined),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'Rent', child: Text('Rent')),
-                          DropdownMenuItem(value: 'Salaries', child: Text('Salaries')),
-                          DropdownMenuItem(value: 'Utilities', child: Text('Utilities')),
-                          DropdownMenuItem(value: 'Tea & Snacks', child: Text('Tea & Snacks')),
-                          DropdownMenuItem(value: 'Office Expense', child: Text('Office Expense')),
-                          DropdownMenuItem(value: 'Other', child: Text('Other')),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SearchableCategoryDropdown(
+                              categories: _categories,
+                              selectedCategory: _selectedCategory,
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedCategory = val;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            icon: const Icon(Icons.add),
+                            tooltip: 'Add Category',
+                            onPressed: _showAddCategoryDialog,
+                          ),
                         ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _selectedCategory = val;
-                            });
-                          }
-                        },
                       ),
                       const SizedBox(height: 20),
 
@@ -248,6 +342,103 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class SearchableCategoryDropdown extends StatefulWidget {
+  final List<String> categories;
+  final String selectedCategory;
+  final ValueChanged<String> onChanged;
+
+  const SearchableCategoryDropdown({
+    Key? key,
+    required this.categories,
+    required this.selectedCategory,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  State<SearchableCategoryDropdown> createState() => _SearchableCategoryDropdownState();
+}
+
+class _SearchableCategoryDropdownState extends State<SearchableCategoryDropdown> {
+  late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.selectedCategory);
+  }
+
+  @override
+  void didUpdateWidget(covariant SearchableCategoryDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedCategory != oldWidget.selectedCategory) {
+      _controller.text = widget.selectedCategory;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RawAutocomplete<String>(
+      textEditingController: _controller,
+      focusNode: _focusNode,
+      displayStringForOption: (cat) => cat,
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return widget.categories;
+        }
+        final query = textEditingValue.text.toLowerCase();
+        return widget.categories.where((c) => c.toLowerCase().contains(query));
+      },
+      onSelected: (cat) {
+        widget.onChanged(cat);
+        FocusScope.of(context).unfocus();
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 250, maxWidth: 400),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final cat = options.elementAt(index);
+                  return ListTile(
+                    title: Text(cat),
+                    onTap: () => onSelected(cat),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        return TextField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: const InputDecoration(
+            labelText: 'Expense Category',
+            prefixIcon: Icon(Icons.category_outlined),
+            border: OutlineInputBorder(),
+          ),
+        );
+      },
     );
   }
 }

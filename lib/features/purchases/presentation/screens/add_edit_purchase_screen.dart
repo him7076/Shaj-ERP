@@ -16,9 +16,13 @@ import 'package:business_sahaj_erp/features/purchases/presentation/providers/pur
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/core/services/gst_service.dart';
+
 
 class AddEditPurchaseScreen extends ConsumerStatefulWidget {
-  const AddEditPurchaseScreen({Key? key}) : super(key: key);
+  final String? purchaseUuid;
+  const AddEditPurchaseScreen({Key? key, this.purchaseUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditPurchaseScreen> createState() => _AddEditPurchaseScreenState();
@@ -44,6 +48,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   double _grandTotal = 0.0;
   bool _isSaving = false;
   String? _companyGst;
+  Purchase? _existingPurchase;
+  String _paymentMode = 'Cash';
 
   @override
   void initState() {
@@ -53,13 +59,47 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
   void _initValues() async {
     final repo = ref.read(purchaseRepositoryProvider);
-    final numStr = await repo.generateNextPurchaseNumber();
     final isar = ref.read(databaseServiceProvider).isar;
     final settings = await isar.settings.where().findFirst();
-    setState(() {
+    _companyGst = settings?.companyGST;
+
+    if (widget.purchaseUuid != null) {
+      final purchase = await isar.purchases.filter().uuidEqualTo(widget.purchaseUuid).findFirst();
+      if (purchase != null) {
+        _existingPurchase = purchase;
+        _billNumberController.text = purchase.purchaseNumber ?? '';
+        _purchaseDate = purchase.purchaseDate ?? DateTime.now();
+        final remarksText = purchase.remarks ?? '';
+        _remarksController.text = remarksText.replaceAll(RegExp(r'\s*\[Paid via [^\]]+\]'), '');
+        final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(remarksText);
+        if (match != null) {
+          _paymentMode = match.group(1) ?? 'Cash';
+        } else {
+          _paymentMode = 'Cash';
+        }
+        _paidAmountController.text = purchase.paidAmount?.toString() ?? '0.0';
+        _discountController.text = purchase.discountAmount?.toString() ?? '0.0';
+
+        if (!kIsWeb) {
+          await purchase.party.load();
+          await purchase.purchaseItems.load();
+        }
+        _selectedParty = kIsWeb
+            ? (purchase.partyId != null ? await isar.partys.get(purchase.partyId!) : null)
+            : purchase.party.value;
+
+        final itemsList = kIsWeb
+            ? await isar.purchaseItems.filter().purchase((q) => q.idEqualTo(purchase.id)).findAll()
+            : purchase.purchaseItems.toList();
+
+        _draftItems = List<PurchaseItem>.from(itemsList);
+        _recalculateTotals();
+      }
+    } else {
+      final numStr = await repo.generateNextPurchaseNumber();
       _billNumberController.text = numStr;
-      _companyGst = settings?.companyGST;
-    });
+    }
+    setState(() {});
   }
 
   @override
@@ -155,8 +195,22 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       final double pendingAmt = _grandTotal - paidAmt;
       final String paymentStat = pendingAmt <= 0 ? 'Paid' : (paidAmt > 0 ? 'Partially Paid' : 'Unpaid');
 
-      final purchase = Purchase()
-        ..purchaseNumber = _billNumberController.text.trim()
+      String currentRemarks = _remarksController.text.trim();
+      currentRemarks = currentRemarks.replaceAll(RegExp(r'\s*\[Paid via [^\]]+\]'), '');
+      if (paidAmt > 0) {
+        currentRemarks += ' [Paid via $_paymentMode]';
+      }
+
+      final purchase = _existingPurchase ?? Purchase();
+      if (_existingPurchase == null) {
+        purchase.purchaseNumber = _billNumberController.text.trim();
+        purchase.createdAt = DateTime.now();
+        purchase.version = 1;
+      } else {
+        purchase.version = _existingPurchase!.version + 1;
+      }
+
+      purchase
         ..purchaseDate = _purchaseDate
         ..partyId = _selectedParty!.id
         ..partyName = _selectedParty!.partyName
@@ -170,7 +224,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         ..paidAmount = paidAmt
         ..pendingAmount = pendingAmt
         ..paymentStatus = paymentStat
-        ..remarks = _remarksController.text.trim();
+        ..remarks = currentRemarks
+        ..updatedAt = DateTime.now();
 
       if (!kIsWeb) {
         purchase.party.value = _selectedParty;
@@ -275,6 +330,66 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
               ],
             ),
             const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+                if (paidAmt <= 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: ref.watch(bankAccountsListProvider).when(
+                    data: (accounts) {
+                      final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                      final dropdownItems = <DropdownMenuItem<String>>[
+                        const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        const DropdownMenuItem(value: 'UPI', child: Text('UPI / PhonePe / GPay')),
+                        const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                        ...activeAccounts.map((acc) => DropdownMenuItem(
+                          value: acc.accountName,
+                          child: Text(acc.accountName ?? ''),
+                        )),
+                      ];
+                      if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
+                        dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: _paymentMode,
+                        decoration: const InputDecoration(
+                          labelText: 'Payment Mode / Account',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.payment),
+                        ),
+                        items: dropdownItems,
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _paymentMode = val);
+                          }
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => DropdownButtonFormField<String>(
+                      value: _paymentMode,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Mode / Account',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.payment),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                        DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _paymentMode = val);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _discountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -306,7 +421,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Purchase Bill'),
+        title: Text(widget.purchaseUuid != null ? 'Edit Purchase Bill' : 'New Purchase Bill'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -359,18 +474,12 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   child: partiesAsync.when(
                     data: (parties) {
                       final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
-                      return DropdownButtonFormField<Party>(
-                        value: _selectedParty != null && supplierParties.any((p) => p.uuid == _selectedParty!.uuid)
+                      return SearchablePartyDropdown(
+                        parties: supplierParties,
+                        selectedParty: _selectedParty != null && supplierParties.any((p) => p.uuid == _selectedParty!.uuid)
                             ? supplierParties.firstWhere((p) => p.uuid == _selectedParty!.uuid)
                             : null,
-                        decoration: const InputDecoration(
-                          labelText: 'Select Supplier Profile',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.person_pin),
-                        ),
-                        items: supplierParties.map((p) {
-                          return DropdownMenuItem<Party>(value: p, child: Text(p.partyName ?? ''));
-                        }).toList(),
+                        labelText: 'Select Supplier Account',
                         onChanged: (party) {
                           setState(() {
                             _selectedParty = party;
@@ -642,9 +751,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
     final double pendingAmt = _grandTotal - paidAmt;
 
-    final cleanCompany = _companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
-    final cleanParty = _selectedParty?.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
-    final isLocal = cleanCompany.length >= 2 && cleanParty.length >= 2 && cleanCompany.substring(0, 2) == cleanParty.substring(0, 2);
+    final isLocal = GstService().isIntrastate(_companyGst, _selectedParty?.gstNumber, partyState: _selectedParty?.state);
 
     final totalGst = _totalGST;
     final cgst = isLocal ? totalGst / 2.0 : 0.0;

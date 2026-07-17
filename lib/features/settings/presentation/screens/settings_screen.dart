@@ -451,6 +451,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ),
+             const SizedBox(height: 20),
+
+            // Firebase Cloud Sync Configuration Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.cloud_sync_outlined, color: theme.colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Firebase Cloud Sync Configuration',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Firebase Database Kaise Connect Karein (Guide):',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            '1. Firebase Console (https://console.firebase.google.com/) par jayein.\n'
+                            '2. Naya project banayein aur Android/iOS/Web app add karein.\n'
+                            '3. Project Settings -> General tab me niche scroll karein aur app config keys copy karein.\n'
+                            '4. Niche diye gaye fields me API Key, Project ID, aur App ID fill karein.\n'
+                            '5. Save karke Application ko restart karein.',
+                            style: TextStyle(fontSize: 12, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: () => _showFirebaseConfigDialog(prefs),
+                      icon: const Icon(Icons.settings_outlined),
+                      label: const Text('Configure Firebase Keys'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
 
             // App Version Info Card
@@ -829,6 +894,115 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Navigator.pop(context);
             },
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFirebaseConfigDialog(dynamic prefs) {
+    final apiKeyController = TextEditingController(text: prefs.getString('firebase_api_key') ?? '');
+    final projectIdController = TextEditingController(text: prefs.getString('firebase_project_id') ?? '');
+    final appIdController = TextEditingController(text: prefs.getString('firebase_app_id') ?? '');
+    final senderIdController = TextEditingController(text: prefs.getString('firebase_sender_id') ?? '');
+    final storageBucketController = TextEditingController(text: prefs.getString('firebase_storage_bucket') ?? '');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Configure Firebase Sync'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: apiKeyController,
+                decoration: const InputDecoration(
+                  labelText: 'API Key *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: projectIdController,
+                decoration: const InputDecoration(
+                  labelText: 'Project ID *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: appIdController,
+                decoration: const InputDecoration(
+                  labelText: 'App ID *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: senderIdController,
+                decoration: const InputDecoration(
+                  labelText: 'Messaging Sender ID (Optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: storageBucketController,
+                decoration: const InputDecoration(
+                  labelText: 'Storage Bucket (Optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final apiKey = apiKeyController.text.trim();
+              final projectId = projectIdController.text.trim();
+              final appId = appIdController.text.trim();
+              final senderId = senderIdController.text.trim();
+              final storageBucket = storageBucketController.text.trim();
+
+              if (apiKey.isEmpty || projectId.isEmpty || appId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill all required (*) fields.')),
+                );
+                return;
+              }
+
+              await prefs.setString('firebase_api_key', apiKey);
+              await prefs.setString('firebase_project_id', projectId);
+              await prefs.setString('firebase_app_id', appId);
+              if (senderId.isNotEmpty) {
+                await prefs.setString('firebase_sender_id', senderId);
+              } else {
+                await prefs.remove('firebase_sender_id');
+              }
+              if (storageBucket.isNotEmpty) {
+                await prefs.setString('firebase_storage_bucket', storageBucket);
+              } else {
+                await prefs.remove('firebase_storage_bucket');
+              }
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Firebase config saved! Restart the app to initialize Firebase connection.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),

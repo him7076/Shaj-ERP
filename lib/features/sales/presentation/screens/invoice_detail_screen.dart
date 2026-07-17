@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/pdf_service.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
@@ -187,12 +188,25 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
             onPressed: _generatePdf,
             tooltip: 'Share/Print Invoice PDF',
           ),
-          if (!isCancelled)
+          if (!isCancelled) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddEditInvoiceScreen(invoiceUuid: invoice.uuid),
+                  ),
+                ).then((_) => _loadInvoice());
+              },
+              tooltip: 'Edit Invoice',
+            ),
             IconButton(
               icon: const Icon(Icons.cancel_outlined, color: Colors.redAccent),
               onPressed: _cancelInvoice,
               tooltip: 'Cancel Invoice',
             ),
+          ],
         ],
       ),
       body: SingleChildScrollView(

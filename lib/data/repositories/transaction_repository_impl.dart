@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:convert';
 import 'package:isar/isar.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
@@ -63,19 +64,97 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       transaction.version = isNew ? 1 : transaction.version + 1;
 
       await isar.writeTxn(() async {
-        // 1. Put the transaction
+        // Fetch old transaction before putting the updated one (if editing)
+        Transaction? oldTransaction;
+        if (!isNew) {
+          oldTransaction = await collection.get(transaction.id);
+        }
+
+        // 1. Revert Old Transaction's Balances (if editing)
+        if (oldTransaction != null) {
+          // Revert old party outstanding balance
+          if (oldTransaction.partyUuid != null) {
+            final oldParty = await isar.partys.filter().uuidEqualTo(oldTransaction.partyUuid).findFirst();
+            if (oldParty != null) {
+              final oldAmt = oldTransaction.amount ?? 0.0;
+              final oldType = oldTransaction.transactionType;
+              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Payment' || oldType == 'Debit Note') {
+                oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + oldAmt;
+              } else if (oldType == 'Sales' || oldType == 'Purchase') {
+                oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - oldAmt;
+              }
+              oldParty.updatedAt = DateTime.now();
+              await isar.partys.put(oldParty);
+            }
+          }
+
+          // Revert old target party balance (if Transfer)
+          if (oldTransaction.transactionType == 'Transfer' && oldTransaction.targetPartyUuid != null) {
+            final oldTargetParty = await isar.partys.filter().uuidEqualTo(oldTransaction.targetPartyUuid).findFirst();
+            if (oldTargetParty != null) {
+              final oldAmt = oldTransaction.amount ?? 0.0;
+              oldTargetParty.outstandingBalance = (oldTargetParty.outstandingBalance ?? 0.0) - oldAmt;
+              oldTargetParty.updatedAt = DateTime.now();
+              await isar.partys.put(oldTargetParty);
+            }
+          }
+
+          // Revert old linked bills
+          if (oldTransaction.linkedBillUuid != null) {
+            final oldType = oldTransaction.transactionType;
+            final oldAmt = oldTransaction.amount ?? 0.0;
+            final oldAllocations = _parseAllocations(oldTransaction.linkedBillUuid, oldAmt);
+
+            for (final entry in oldAllocations.entries) {
+              final billUuid = entry.key;
+              final allocAmt = entry.value;
+
+              if (oldType == 'Receipt' || oldType == 'Credit Note') {
+                final invoice = await isar.invoices.filter().uuidEqualTo(billUuid).findFirst();
+                if (invoice != null) {
+                  invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
+                  invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
+                  if (invoice.pendingAmount! <= 0) {
+                    invoice.paymentStatus = 'Paid';
+                  } else if (invoice.paidAmount! > 0) {
+                    invoice.paymentStatus = 'Partially Paid';
+                  } else {
+                    invoice.paymentStatus = 'Unpaid';
+                  }
+                  invoice.updatedAt = DateTime.now();
+                  await isar.invoices.put(invoice);
+                }
+              } else if (oldType == 'Payment' || oldType == 'Debit Note') {
+                final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
+                if (purchase != null) {
+                  purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
+                  purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
+                  if (purchase.pendingAmount! <= 0) {
+                    purchase.paymentStatus = 'Paid';
+                  } else if (purchase.paidAmount! > 0) {
+                    purchase.paymentStatus = 'Partially Paid';
+                  } else {
+                    purchase.paymentStatus = 'Unpaid';
+                  }
+                  purchase.updatedAt = DateTime.now();
+                  await isar.purchases.put(purchase);
+                }
+              }
+            }
+          }
+        }
+
+        // 2. Put the transaction
         final transactionId = await collection.put(transaction);
         transaction.id = transactionId;
 
-        // 2. Adjust Party Outstanding Balances
+        // 3. Adjust Party Outstanding Balances
         if (transaction.partyUuid != null) {
           final party = await isar.partys.filter().uuidEqualTo(transaction.partyUuid).findFirst();
           if (party != null) {
             final amt = transaction.amount ?? 0.0;
             final type = transaction.transactionType;
             
-            // Adjust customer outstanding balance:
-            // - Receipt (Payment In), Credit Note, Debit Note, Payment (Payment Out) reduces outstanding balance
             if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
             } else if (type == 'Sales' || type == 'Purchase') {
@@ -90,58 +169,62 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           }
         }
 
-        // 3. For transfer type, adjust target party too
+        // 4. Adjust target party (if Transfer)
         if (transaction.transactionType == 'Transfer' && transaction.targetPartyUuid != null) {
           final targetParty = await isar.partys.filter().uuidEqualTo(transaction.targetPartyUuid).findFirst();
           if (targetParty != null) {
             final amt = transaction.amount ?? 0.0;
-            // Target party receives money, so their outstanding increases/decreases based on standard double entry.
-            // In ERP, transfer reduces outstanding of sender (source) and increases target balance.
             targetParty.outstandingBalance = (targetParty.outstandingBalance ?? 0.0) + amt;
             targetParty.updatedAt = DateTime.now();
             await isar.partys.put(targetParty);
           }
         }
 
-        // 4. Update linked Invoice or Purchase bill
+        // 5. Update linked Invoices or Purchase bills
         if (transaction.linkedBillUuid != null) {
-          final amt = transaction.amount ?? 0.0;
           final type = transaction.transactionType;
+          final amt = transaction.amount ?? 0.0;
+          final allocations = _parseAllocations(transaction.linkedBillUuid, amt);
 
-          if (type == 'Receipt' || type == 'Credit Note') {
-            final invoice = await isar.invoices.filter().uuidEqualTo(transaction.linkedBillUuid).findFirst();
-            if (invoice != null) {
-              invoice.paidAmount = (invoice.paidAmount ?? 0.0) + amt;
-              invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-              if (invoice.pendingAmount! <= 0) {
-                invoice.paymentStatus = 'Paid';
-              } else if (invoice.paidAmount! > 0) {
-                invoice.paymentStatus = 'Partially Paid';
-              } else {
-                invoice.paymentStatus = 'Unpaid';
+          for (final entry in allocations.entries) {
+            final billUuid = entry.key;
+            final allocAmt = entry.value;
+
+            if (type == 'Receipt' || type == 'Credit Note') {
+              final invoice = await isar.invoices.filter().uuidEqualTo(billUuid).findFirst();
+              if (invoice != null) {
+                invoice.paidAmount = (invoice.paidAmount ?? 0.0) + allocAmt;
+                invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
+                if (invoice.pendingAmount! <= 0) {
+                  invoice.paymentStatus = 'Paid';
+                } else if (invoice.paidAmount! > 0) {
+                  invoice.paymentStatus = 'Partially Paid';
+                } else {
+                  invoice.paymentStatus = 'Unpaid';
+                }
+                invoice.updatedAt = DateTime.now();
+                await isar.invoices.put(invoice);
               }
-              invoice.updatedAt = DateTime.now();
-              await isar.invoices.put(invoice);
-            }
-          } else if (type == 'Payment' || type == 'Debit Note') {
-            final purchase = await isar.purchases.filter().uuidEqualTo(transaction.linkedBillUuid).findFirst();
-            if (purchase != null) {
-              purchase.paidAmount = (purchase.paidAmount ?? 0.0) + amt;
-              purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
-              if (purchase.pendingAmount! <= 0) {
-                purchase.paymentStatus = 'Paid';
-              } else if (purchase.paidAmount! > 0) {
-                purchase.paymentStatus = 'Partially Paid';
-              } else {
-                purchase.paymentStatus = 'Unpaid';
+            } else if (type == 'Payment' || type == 'Debit Note') {
+              final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
+              if (purchase != null) {
+                purchase.paidAmount = (purchase.paidAmount ?? 0.0) + allocAmt;
+                purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
+                if (purchase.pendingAmount! <= 0) {
+                  purchase.paymentStatus = 'Paid';
+                } else if (purchase.paidAmount! > 0) {
+                  purchase.paymentStatus = 'Partially Paid';
+                } else {
+                  purchase.paymentStatus = 'Unpaid';
+                }
+                purchase.updatedAt = DateTime.now();
+                await isar.purchases.put(purchase);
               }
-              purchase.updatedAt = DateTime.now();
-              await isar.purchases.put(purchase);
             }
           }
         }
 
-        // 5. Add to Sync Queue
+        // 6. Add to Sync Queue
         final queueItem = SyncQueue()
           ..uuid = _generateUuid()
           ..entityType = 'Transaction'
@@ -174,7 +257,6 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             final type = transaction.transactionType;
 
-            // Revert changes
             if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
             } else if (type == 'Sales' || type == 'Purchase') {
@@ -197,38 +279,44 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
 
         // Revert linked bill totals
         if (transaction.linkedBillUuid != null) {
-          final amt = transaction.amount ?? 0.0;
           final type = transaction.transactionType;
+          final amt = transaction.amount ?? 0.0;
+          final allocations = _parseAllocations(transaction.linkedBillUuid, amt);
 
-          if (type == 'Receipt' || type == 'Credit Note') {
-            final invoice = await isar.invoices.filter().uuidEqualTo(transaction.linkedBillUuid).findFirst();
-            if (invoice != null) {
-              invoice.paidAmount = (invoice.paidAmount ?? 0.0) - amt;
-              invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-              if (invoice.pendingAmount! <= 0) {
-                invoice.paymentStatus = 'Paid';
-              } else if (invoice.paidAmount! > 0) {
-                invoice.paymentStatus = 'Partially Paid';
-              } else {
-                invoice.paymentStatus = 'Unpaid';
+          for (final entry in allocations.entries) {
+            final billUuid = entry.key;
+            final allocAmt = entry.value;
+
+            if (type == 'Receipt' || type == 'Credit Note') {
+              final invoice = await isar.invoices.filter().uuidEqualTo(billUuid).findFirst();
+              if (invoice != null) {
+                invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
+                invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
+                if (invoice.pendingAmount! <= 0) {
+                  invoice.paymentStatus = 'Paid';
+                } else if (invoice.paidAmount! > 0) {
+                  invoice.paymentStatus = 'Partially Paid';
+                } else {
+                  invoice.paymentStatus = 'Unpaid';
+                }
+                invoice.updatedAt = DateTime.now();
+                await isar.invoices.put(invoice);
               }
-              invoice.updatedAt = DateTime.now();
-              await isar.invoices.put(invoice);
-            }
-          } else if (type == 'Payment' || type == 'Debit Note') {
-            final purchase = await isar.purchases.filter().uuidEqualTo(transaction.linkedBillUuid).findFirst();
-            if (purchase != null) {
-              purchase.paidAmount = (purchase.paidAmount ?? 0.0) - amt;
-              purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
-              if (purchase.pendingAmount! <= 0) {
-                purchase.paymentStatus = 'Paid';
-              } else if (purchase.paidAmount! > 0) {
-                purchase.paymentStatus = 'Partially Paid';
-              } else {
-                purchase.paymentStatus = 'Unpaid';
+            } else if (type == 'Payment' || type == 'Debit Note') {
+              final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
+              if (purchase != null) {
+                purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
+                purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
+                if (purchase.pendingAmount! <= 0) {
+                  purchase.paymentStatus = 'Paid';
+                } else if (purchase.paidAmount! > 0) {
+                  purchase.paymentStatus = 'Partially Paid';
+                } else {
+                  purchase.paymentStatus = 'Unpaid';
+                }
+                purchase.updatedAt = DateTime.now();
+                await isar.purchases.put(purchase);
               }
-              purchase.updatedAt = DateTime.now();
-              await isar.purchases.put(purchase);
             }
           }
         }
@@ -247,6 +335,23 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       logger.info('Transaction ${transaction.transactionNumber} deleted.');
     } catch (e) {
       throw DatabaseException('Failed to delete transaction: $e');
+    }
+  }
+
+  Map<String, double> _parseAllocations(String? linkedBillUuid, double txnAmount) {
+    if (linkedBillUuid == null || linkedBillUuid.trim().isEmpty) {
+      return {};
+    }
+    final clean = linkedBillUuid.trim();
+    if (clean.startsWith('{')) {
+      try {
+        final decoded = json.decode(clean) as Map<String, dynamic>;
+        return decoded.map((key, val) => MapEntry(key, (val as num).toDouble()));
+      } catch (_) {
+        return {clean: txnAmount};
+      }
+    } else {
+      return {clean: txnAmount};
     }
   }
 

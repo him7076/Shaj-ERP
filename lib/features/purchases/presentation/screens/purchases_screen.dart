@@ -232,6 +232,14 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                     Expanded(
                                       child: ListTile(
                                         contentPadding: const EdgeInsets.all(16),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
+                                            ),
+                                          ).then((_) => ref.invalidate(purchaseListProvider));
+                                        },
                                         leading: CircleAvatar(
                                           backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
                                           child: Icon(Icons.shopping_bag_outlined, color: theme.colorScheme.primary, size: 20),

@@ -34,17 +34,82 @@ class GstCalculationResult {
 
 class GstService {
   /// Evaluates whether the transaction is Local (CGST+SGST) or Interstate (IGST)
-  /// by comparing the first 2 digits (state code) of Company and Party GSTINs.
-  bool isIntrastate(String? companyGst, String? partyGst) {
-    if (companyGst == null || partyGst == null) return true; // Default to local if missing
+  /// by comparing the first 2 digits (state code) of Company and Party GSTINs,
+  /// or checking state names if GSTIN is missing.
+  bool isIntrastate(String? companyGst, String? partyGst, {String? partyState}) {
+    if (companyGst == null) return true; // Default to local
     
     final cleanCompany = companyGst.trim().replaceAll(RegExp(r'\s+'), '');
-    final cleanParty = partyGst.trim().replaceAll(RegExp(r'\s+'), '');
+    if (cleanCompany.length < 2) return true;
+    final companyStateCode = cleanCompany.substring(0, 2);
 
-    if (cleanCompany.length < 2 || cleanParty.length < 2) return true;
+    if (partyGst != null && partyGst.trim().replaceAll(RegExp(r'\s+'), '').length >= 2) {
+      final cleanParty = partyGst.trim().replaceAll(RegExp(r'\s+'), '');
+      final partyStateCode = cleanParty.substring(0, 2);
+      return companyStateCode == partyStateCode;
+    }
 
-    // Check if the state code digits match
-    return cleanCompany.substring(0, 2) == cleanParty.substring(0, 2);
+    if (partyState != null && partyState.trim().isNotEmpty) {
+      final companyStateName = _getStateNameByCode(companyStateCode);
+      if (companyStateName != null) {
+        return _compareStates(companyStateName, partyState);
+      }
+    }
+
+    return true; // Default to local if no other info is available
+  }
+
+  String? _getStateNameByCode(String code) {
+    const codes = {
+      '01': 'Jammu and Kashmir',
+      '02': 'Himachal Pradesh',
+      '03': 'Punjab',
+      '04': 'Chandigarh',
+      '05': 'Uttarakhand',
+      '06': 'Haryana',
+      '07': 'Delhi',
+      '08': 'Rajasthan',
+      '09': 'Uttar Pradesh',
+      '10': 'Bihar',
+      '11': 'Sikkim',
+      '12': 'Arunachal Pradesh',
+      '13': 'Nagaland',
+      '14': 'Manipur',
+      '15': 'Mizoram',
+      '16': 'Tripura',
+      '17': 'Meghalaya',
+      '18': 'Assam',
+      '19': 'West Bengal',
+      '20': 'Jharkhand',
+      '21': 'Odisha',
+      '22': 'Chhattisgarh',
+      '23': 'Madhya Pradesh',
+      '24': 'Gujarat',
+      '25': 'Daman and Diu',
+      '26': 'Dadra and Nagar Haveli',
+      '27': 'Maharashtra',
+      '29': 'Karnataka',
+      '30': 'Goa',
+      '31': 'Lakshadweep',
+      '32': 'Kerala',
+      '33': 'Tamil Nadu',
+      '34': 'Puducherry',
+      '35': 'Andaman and Nicobar Islands',
+      '36': 'Telangana',
+      '37': 'Andhra Pradesh',
+      '38': 'Ladakh',
+    };
+    return codes[code];
+  }
+
+  bool _compareStates(String s1, String s2) {
+    String clean(String s) {
+      return s.toLowerCase()
+              .replaceAll('and', '')
+              .replaceAll('&', '')
+              .replaceAll(RegExp(r'\s+'), '');
+    }
+    return clean(s1) == clean(s2);
   }
 
   /// Calculates GST components for a line item
@@ -56,6 +121,7 @@ class GstService {
     required double itemDiscountAmount, // discount amount already deducted from price
     String? companyGst,
     String? partyGst,
+    String? partyState,
   }) {
     try {
       if (rate < 0 || quantity < 0 || gstRatePercent < 0 || itemDiscountAmount < 0) {
@@ -86,7 +152,7 @@ class GstService {
       double igst = 0.0;
 
       if (gstRatePercent > 0) {
-        if (isIntrastate(companyGst, partyGst)) {
+        if (isIntrastate(companyGst, partyGst, partyState: partyState)) {
           cgst = gstAmount / 2.0;
           sgst = gstAmount / 2.0;
         } else {

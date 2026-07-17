@@ -179,6 +179,24 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     );
   }
 
+  void loadInvoice({
+    required Party party,
+    required Invoice invoice,
+    required List<CartItemState> items,
+  }) {
+    state = InvoiceCart(
+      selectedParty: party,
+      items: items,
+      isGstInclusive: invoice.isGstInclusive ?? true,
+      discountPercent: invoice.discountPercent ?? 0.0,
+      discountAmount: invoice.discountAmount ?? 0.0,
+      invoiceType: invoice.invoiceType ?? 'Tax Invoice',
+      paidAmount: invoice.paidAmount ?? 0.0,
+      dueDate: invoice.dueDate ?? DateTime.now(),
+      remarks: invoice.remarks ?? '',
+    );
+  }
+
   void clear() {
     state = InvoiceCart();
   }
@@ -189,6 +207,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     double totalDiscount = 0.0;
 
     final partyGst = state.selectedParty?.gstNumber;
+    final partyState = state.selectedParty?.state;
 
     for (var cartItem in state.items) {
       final res = _gstService.calculateTax(
@@ -199,6 +218,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
         itemDiscountAmount: cartItem.discountAmount,
         companyGst: companyGst,
         partyGst: partyGst,
+        partyState: partyState,
       );
 
       subtotal += res.taxableAmount;
