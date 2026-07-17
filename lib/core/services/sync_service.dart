@@ -157,6 +157,41 @@ class SyncService {
     }
   }
 
+  /// Deletes all documents belonging to the active company context from Firestore.
+  Future<void> clearCloudData() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) {
+      throw StateError('Firebase authentication failed. Enable Anonymous login in console.');
+    }
+
+    final companyId = _firebaseService.companyId;
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      final querySnapshot = await _firebaseService.firestore
+          .collection(collectionName)
+          .where('companyId', isEqualTo: companyId)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) continue;
+
+      final batch = _firebaseService.firestore.batch();
+      for (var doc in querySnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+
+    // Reset local sync state so next sync starts fresh
+    await _prefs.remove(AppConstants.keyLastSyncTime);
+    _currentState = _currentState.copyWith(lastSyncTime: DateTime.fromMillisecondsSinceEpoch(0));
+    _stateController.add(_currentState);
+  }
+
   /// Uploads all dirty local records marked isSynced == false
   Future<void> _uploadLocalChanges() async {
     logger.info('Uploading local dirty changes to Firestore...');

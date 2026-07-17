@@ -496,21 +496,99 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            '1. Firebase Console (https://console.firebase.google.com/) par jayein.\n'
-                            '2. Naya project banayein aur Android/iOS/Web app add karein.\n'
-                            '3. Project Settings -> General tab me niche scroll karein aur app config keys copy karein.\n'
-                            '4. Niche diye gaye fields me API Key, Project ID, aur App ID fill karein.\n'
-                            '5. Save karke Application ko restart karein.',
+                            '1. Firebase Console (https://console.firebase.google.com/) par naya project banayein.\n'
+                            '2. BUILD -> FIRESTORE DATABASE par click karke database ko "Test Mode" me create karein.\n'
+                            '3. Firestore -> RULES tab me paste karein:\n'
+                            '   allow read, write: if request.time < timestamp.date(2026, 8, 16);\n'
+                            '4. BUILD -> AUTHENTICATION -> SIGN-IN METHOD me ANONYMOUS login ko "Enable" karein.\n'
+                            '5. Project Settings me select karein aur dynamic web app key variables copy karein.\n'
+                            '6. Save karke Application ko restart karein.',
                             style: TextStyle(fontSize: 12, height: 1.4),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      onPressed: () => _showFirebaseConfigDialog(prefs),
-                      icon: const Icon(Icons.settings_outlined),
-                      label: const Text('Configure Firebase Keys'),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () => _showFirebaseConfigDialog(prefs),
+                          icon: const Icon(Icons.settings_outlined),
+                          label: const Text('Configure Firebase Keys'),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Reset Firebase Data?'),
+                                content: const Text(
+                                  'Kya aap sachme cloud database se is company ka sara data delete karna chahte hain? '
+                                  'Isse aapka local database safe rahega, but cloud data clean ho jayega.'
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                    child: const Text('Reset Now', style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              if (!mounted) return;
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(
+                                  child: Card(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(20.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          CircularProgressIndicator(),
+                                          SizedBox(height: 12),
+                                          Text('Deleting Cloud Data...'),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+
+                              try {
+                                await ref.read(syncServiceProvider).clearCloudData();
+                                if (mounted) {
+                                  Navigator.of(context).pop(); // dismiss loading dialog
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Firebase data cleared successfully!')),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  Navigator.of(context).pop(); // dismiss loading dialog
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error clearing data: $e')),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.delete_forever, color: Colors.white),
+                          label: const Text('Reset Firebase Data'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[800],
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

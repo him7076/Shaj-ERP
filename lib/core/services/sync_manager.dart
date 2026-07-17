@@ -32,8 +32,8 @@ class SyncManager {
       }
     });
 
-    // 3. Periodic Auto-Sync Timer (Every 5 minutes)
-    _autoSyncTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+    // 3. Periodic Auto-Sync Timer (Every 60 minutes)
+    _autoSyncTimer = Timer.periodic(const Duration(minutes: 60), (timer) {
       logger.info('Auto-sync timer fired. Starting sync cycle...');
       _syncService.syncAll();
     });
