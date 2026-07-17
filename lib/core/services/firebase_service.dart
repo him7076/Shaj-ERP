@@ -80,6 +80,37 @@ class FirebaseService {
 
   /// Check if the user is authenticated
   bool get isAuthenticated => _isFirebaseReady && auth.currentUser != null;
+
+  /// Ensures that the client is authenticated with Firebase (anonymously or fallback user)
+  Future<void> ensureAuthenticated() async {
+    if (!_isFirebaseReady) return;
+    if (auth.currentUser == null) {
+      try {
+        // Try anonymous sign-in first
+        try {
+          await auth.signInAnonymously();
+          logger.info('Firebase anonymous login successful.');
+          return;
+        } catch (_) {}
+
+        // Fallback: try signing in with default credentials
+        final email = _prefs.getString('user_email') ?? 'admin@sahaj.com';
+        try {
+          await auth.signInWithEmailAndPassword(email: email, password: 'admin123');
+          logger.info('Firebase email/password login successful.');
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'user-not-found') {
+            await auth.createUserWithEmailAndPassword(email: email, password: 'admin123');
+            logger.info('Firebase email/password user created and logged in.');
+          } else {
+            rethrow;
+          }
+        }
+      } catch (e) {
+        logger.error('Firebase authentication failed', e);
+      }
+    }
+  }
 }
 
 // Simple Platform checking helper

@@ -104,6 +104,8 @@ class SyncService {
       return;
     }
 
+    await _firebaseService.ensureAuthenticated();
+
     if (!_firebaseService.isAuthenticated) {
       logger.warning('Bypassing sync: User not authenticated.');
       _updateState(const SyncState(
