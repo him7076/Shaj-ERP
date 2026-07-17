@@ -32,6 +32,7 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collec
 
 class DatabaseService {
   Isar? _isar;
+  String? initErrorMessage;
   static const int currentDatabaseVersion = 1;
 
   Isar get isar {
@@ -113,6 +114,7 @@ class DatabaseService {
       // Run Schema Migrations if required
       await _checkAndRunMigrations();
     } catch (e, stackTrace) {
+      initErrorMessage = e.toString();
       logger.error('Failed to initialize Isar Database', e, stackTrace);
       rethrow;
     }

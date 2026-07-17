@@ -94,7 +94,7 @@ class MyApp extends ConsumerWidget {
       final _ = dbService.isar;
       isDbInitialized = true;
     } catch (e) {
-      initError = e.toString();
+      initError = dbService.initErrorMessage ?? e.toString();
     }
 
     if (!isDbInitialized) {
