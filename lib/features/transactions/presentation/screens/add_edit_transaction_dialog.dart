@@ -422,8 +422,6 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                             setState(() {
                               _transactionType = val;
                               _pendingBills = [];
-                              _selectedBillUuid = null;
-                              _selectedBillNumber = null;
                             });
                             _fetchPendingBills();
                           }
