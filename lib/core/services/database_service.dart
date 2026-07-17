@@ -80,34 +80,85 @@ class DatabaseService {
         dirPath = dir.path;
       }
       
-      _isar = await Isar.open(
-        [
-          CategorySchema,
-          UnitSchema,
-          BrandSchema,
-          PartySchema,
-          ItemSchema,
-          OrderItemSchema,
-          OrderSchema,
-          InvoiceItemSchema,
-          InvoiceSchema,
-          SettingsSchema,
-          UserSchema,
-          SyncQueueSchema,
-          PurchaseSchema,
-          PurchaseItemSchema,
-          ExpenseSchema,
-          TransactionSchema,
-          BankAccountSchema,
-          CreditNoteSchema,
-          CreditNoteItemSchema,
-          DebitNoteSchema,
-          DebitNoteItemSchema,
-        ],
-        name: activeFirmId,
-        directory: dirPath ?? '',
-        inspector: !kIsWeb && !kReleaseMode,
-      );
+      try {
+        _isar = await Isar.open(
+          [
+            CategorySchema,
+            UnitSchema,
+            BrandSchema,
+            PartySchema,
+            ItemSchema,
+            OrderItemSchema,
+            OrderSchema,
+            InvoiceItemSchema,
+            InvoiceSchema,
+            SettingsSchema,
+            UserSchema,
+            SyncQueueSchema,
+            PurchaseSchema,
+            PurchaseItemSchema,
+            ExpenseSchema,
+            TransactionSchema,
+            BankAccountSchema,
+            CreditNoteSchema,
+            CreditNoteItemSchema,
+            DebitNoteSchema,
+            DebitNoteItemSchema,
+          ],
+          name: activeFirmId,
+          directory: dirPath ?? '',
+          inspector: !kIsWeb && !kReleaseMode,
+        );
+      } catch (openError) {
+        logger.warning('Failed to open Isar database directly: $openError. Attempting to clear database file to resolve schema mismatch.');
+        
+        // Delete the database file (activeFirmId.isar)
+        if (!kIsWeb && dirPath != null) {
+          final isarFile = File('$dirPath/$activeFirmId.isar');
+          final isarLock = File('$dirPath/$activeFirmId.isar.lock');
+          try {
+            if (await isarFile.exists()) {
+              await isarFile.delete();
+            }
+            if (await isarLock.exists()) {
+              await isarLock.delete();
+            }
+            logger.info('Successfully deleted old database files to recover from crash.');
+          } catch (deleteError) {
+            logger.error('Failed to delete database files during auto-recovery: $deleteError');
+          }
+        }
+        
+        // Retry opening Isar database
+        _isar = await Isar.open(
+          [
+            CategorySchema,
+            UnitSchema,
+            BrandSchema,
+            PartySchema,
+            ItemSchema,
+            OrderItemSchema,
+            OrderSchema,
+            InvoiceItemSchema,
+            InvoiceSchema,
+            SettingsSchema,
+            UserSchema,
+            SyncQueueSchema,
+            PurchaseSchema,
+            PurchaseItemSchema,
+            ExpenseSchema,
+            TransactionSchema,
+            BankAccountSchema,
+            CreditNoteSchema,
+            CreditNoteItemSchema,
+            DebitNoteSchema,
+            DebitNoteItemSchema,
+          ],
+          name: activeFirmId,
+          directory: dirPath ?? '',
+          inspector: !kIsWeb && !kReleaseMode,
+        );
+      }
 
       logger.info('Isar Database ($activeFirmId) v$currentDatabaseVersion initialized successfully.');
 
