@@ -77,8 +77,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           _paymentMode = 'Cash';
         }
         _paidAmountController.text = invoice.paidAmount?.toString() ?? '0.0';
-        _discountController.text = invoice.discountAmount?.toString() ?? '0.0';
-        _discountPercentController.text = invoice.discountPercent?.toString() ?? '0.0';
+        final double subVal = invoice.subtotal ?? 0.0;
+        final double discAmtVal = invoice.discountAmount ?? 0.0;
+        _discountController.text = discAmtVal.toString();
+        final double discPctVal = subVal > 0 ? (discAmtVal / subVal * 100) : 0.0;
+        _discountPercentController.text = discPctVal.toStringAsFixed(1);
 
         if (!kIsWeb) {
           await invoice.party.load();

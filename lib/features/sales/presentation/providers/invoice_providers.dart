@@ -184,12 +184,15 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     required Invoice invoice,
     required List<CartItemState> items,
   }) {
+    final double sub = invoice.subtotal ?? 0.0;
+    final double discAmt = invoice.discountAmount ?? 0.0;
+    final double discPct = sub > 0 ? (discAmt / sub * 100) : 0.0;
     state = InvoiceCart(
       selectedParty: party,
       items: items,
-      isGstInclusive: invoice.isGstInclusive ?? true,
-      discountPercent: invoice.discountPercent ?? 0.0,
-      discountAmount: invoice.discountAmount ?? 0.0,
+      isGstInclusive: true,
+      discountPercent: discPct,
+      discountAmount: discAmt,
       invoiceType: invoice.invoiceType ?? 'Tax Invoice',
       paidAmount: invoice.paidAmount ?? 0.0,
       dueDate: invoice.dueDate ?? DateTime.now(),

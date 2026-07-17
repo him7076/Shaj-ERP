@@ -75,6 +75,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
   List<dynamic> _pendingBills = [];
   Map<String, double> _linkedAllocations = {};
   final Map<String, TextEditingController> _allocControllers = {};
+  final Map<String, FocusNode> _allocFocusNodes = {};
 
   @override
   void initState() {
@@ -189,6 +190,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     _allocControllers.removeWhere((uuid, controller) {
       if (!currentUuids.contains(uuid)) {
         controller.dispose();
+        _allocFocusNodes[uuid]?.dispose();
+        _allocFocusNodes.remove(uuid);
         return true;
       }
       return false;
@@ -201,9 +204,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
         _allocControllers[uuid] = TextEditingController(
           text: alloc > 0 ? alloc.toStringAsFixed(2) : '',
         );
+        _allocFocusNodes[uuid] = FocusNode();
       } else {
         final textValue = alloc > 0 ? alloc.toStringAsFixed(2) : '';
-        if (_allocControllers[uuid]!.text != textValue && !_allocControllers[uuid]!.hasFocus) {
+        if (_allocControllers[uuid]!.text != textValue && !(_allocFocusNodes[uuid]?.hasFocus ?? false)) {
           _allocControllers[uuid]!.text = textValue;
         }
       }
@@ -264,6 +268,9 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     _remarksController.dispose();
     for (var controller in _allocControllers.values) {
       controller.dispose();
+    }
+    for (var node in _allocFocusNodes.values) {
+      node.dispose();
     }
     super.dispose();
   }
@@ -460,6 +467,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
                 // Recipient Party Selection for Transfers
                 if (_transactionType == 'Transfer') ...[
+                  partiesAsync.when(
+                    data: (parties) {
                       final targetParties = parties.where((p) => p.uuid != _selectedParty?.uuid).toList();
                       return SearchablePartyDropdown(
                         parties: targetParties,
@@ -478,6 +487,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                     error: (e, _) => Text('Error loading parties: $e'),
                   ),
                   const SizedBox(height: 16),
+                ],
                                 // Linked bills section
                 if (_pendingBills.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -565,6 +575,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                                   height: 38,
                                   child: TextFormField(
                                     controller: controller,
+                                    focusNode: _allocFocusNodes[uuid],
                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                     decoration: const InputDecoration(
                                       prefixText: '₹',
