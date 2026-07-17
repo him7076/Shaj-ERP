@@ -1462,6 +1462,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (item is Invoice) {
       if (prop == 'invoicenumber') return item.invoiceNumber;
       if (prop == 'paymentstatus') return item.paymentStatus;
+      if (prop == 'partyid') return item.partyId;
     }
     if (item is Category) {
       if (prop == 'categoryname') return item.categoryName;
@@ -1476,6 +1477,17 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (item is Purchase) {
       if (prop == 'purchasenumber') return item.purchaseNumber;
       if (prop == 'partyname') return item.partyName;
+      if (prop == 'partyid') return item.partyId;
+      if (prop == 'paymentstatus') return item.paymentStatus;
+    }
+    if (item is InvoiceItem) {
+      if (prop == 'parentinvoiceid') return item.parentInvoiceId;
+    }
+    if (item is CreditNote) {
+      if (prop == 'partyid') return item.partyId;
+    }
+    if (item is DebitNote) {
+      if (prop == 'partyid') return item.partyId;
     }
     if (item is Expense) {
       if (prop == 'category') return item.category;
