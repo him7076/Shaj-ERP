@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,7 +105,7 @@ class DatabaseService {
         ],
         name: activeFirmId,
         directory: dirPath ?? '',
-        inspector: !kIsWeb,
+        inspector: !kIsWeb && !kReleaseMode,
       );
 
       logger.info('Isar Database ($activeFirmId) v$currentDatabaseVersion initialized successfully.');

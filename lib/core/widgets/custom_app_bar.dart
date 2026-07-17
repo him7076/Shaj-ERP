@@ -24,10 +24,13 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
     
     final theme = Theme.of(context);
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+
     return AppBar(
-      title: const Text(
-        'Business Sahaj ERP',
-        style: TextStyle(
+      title: Text(
+        isMobile ? 'Sahaj ERP' : 'Business Sahaj ERP',
+        style: const TextStyle(
           fontWeight: FontWeight.bold,
           letterSpacing: 0.5,
         ),
@@ -37,27 +40,36 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         // Internet Connectivity status widget
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: Tooltip(
             message: isOnline ? 'Network Connection: Online' : 'Network Connection: Offline',
-            child: Chip(
-              avatar: Icon(
-                isOnline ? Icons.wifi : Icons.wifi_off,
-                size: 16,
-                color: isOnline ? Colors.green[800] : Colors.grey[800],
-              ),
-              label: Text(
-                isOnline ? 'Online' : 'Offline',
-                style: TextStyle(
-                  color: isOnline ? Colors.green[800] : Colors.grey[800],
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-              backgroundColor: isOnline ? Colors.green[100] : Colors.grey[200],
-              side: BorderSide.none,
-              visualDensity: VisualDensity.compact,
-            ),
+            child: isMobile
+                ? IconButton(
+                    icon: Icon(
+                      isOnline ? Icons.wifi : Icons.wifi_off,
+                      size: 20,
+                      color: isOnline ? Colors.green : Colors.red,
+                    ),
+                    onPressed: null,
+                  )
+                : Chip(
+                    avatar: Icon(
+                      isOnline ? Icons.wifi : Icons.wifi_off,
+                      size: 16,
+                      color: isOnline ? Colors.green[800] : Colors.grey[800],
+                    ),
+                    label: Text(
+                      isOnline ? 'Online' : 'Offline',
+                      style: TextStyle(
+                        color: isOnline ? Colors.green[800] : Colors.grey[800],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    backgroundColor: isOnline ? Colors.green[100] : Colors.grey[200],
+                    side: BorderSide.none,
+                    visualDensity: VisualDensity.compact,
+                  ),
           ),
         ),
 

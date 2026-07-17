@@ -84,8 +84,72 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Check if database service is initialized
+    final dbService = ref.read(databaseServiceProvider);
+    
+    // Catch database initialization error
+    bool isDbInitialized = false;
+    String? initError;
+    try {
+      final _ = dbService.isar;
+      isDbInitialized = true;
+    } catch (e) {
+      initError = e.toString();
+    }
+
+    if (!isDbInitialized) {
+      return MaterialApp(
+        title: 'Business Sahaj ERP - Crash',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Database Initialization Failed',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    ),
+                    child: Text(
+                      initError ?? 'Unknown database error occurred during startup.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontFamily: 'monospace', color: Colors.redAccent),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Please make sure that the app has all required permissions and the device storage is not full.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     // Initialize background Sync Manager
-    ref.read(syncManagerProvider).initialize();
+    try {
+      ref.read(syncManagerProvider).initialize();
+    } catch (e) {
+      logger.error('Failed to initialize sync manager on boot', e);
+    }
 
     final themeMode = ref.watch(themeProvider);
     final router = ref.watch(routerProvider);

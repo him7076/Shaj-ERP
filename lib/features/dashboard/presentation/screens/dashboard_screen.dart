@@ -189,54 +189,67 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildQuickActionsHeader(BuildContext context) {
     final theme = Theme.of(context);
     final todayDateStr = DateFormat('EEEE, MMMM dd, yyyy').format(DateTime.now());
+    final isMobile = ResponsiveLayout.isMobile(context);
+
+    final content = [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Quick Create Shortcuts',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onBackground,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Record a transaction directly into Shaj ERP',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+      if (isMobile) const SizedBox(height: 12),
+      Card(
+        elevation: 0,
+        color: theme.colorScheme.primary.withOpacity(0.08),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.15)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_today_rounded, color: theme.colorScheme.primary, size: 14),
+              const SizedBox(width: 8),
+              Text(
+                todayDateStr,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: content,
+      );
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Quick Create Shortcuts',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onBackground,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Record a transaction directly into Shaj ERP',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-        Card(
-          elevation: 0,
-          color: theme.colorScheme.primary.withOpacity(0.08),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.15)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_rounded, color: theme.colorScheme.primary, size: 14),
-                const SizedBox(width: 8),
-                Text(
-                  todayDateStr,
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      children: content,
     );
   }
 
