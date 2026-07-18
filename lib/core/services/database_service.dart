@@ -112,7 +112,18 @@ class DatabaseService {
       } catch (openError) {
         logger.warning('Failed to open Isar database directly: $openError. Attempting to clear database file to resolve schema mismatch.');
         
-        // Delete the database file (activeFirmId.isar)
+        // 1. Close existing instance from memory if registered
+        try {
+          final existingInstance = Isar.getInstance(activeFirmId);
+          if (existingInstance != null) {
+            await existingInstance.close();
+            logger.info('Closed duplicate/broken database instance from memory.');
+          }
+        } catch (closeError) {
+          logger.error('Failed to close duplicate database instance from memory: $closeError');
+        }
+
+        // 2. Delete the database file (activeFirmId.isar)
         if (!kIsWeb && dirPath != null) {
           final isarFile = File('$dirPath/$activeFirmId.isar');
           final isarLock = File('$dirPath/$activeFirmId.isar.lock');
@@ -129,7 +140,7 @@ class DatabaseService {
           }
         }
         
-        // Retry opening Isar database
+        // 3. Retry opening Isar database
         _isar = await Isar.open(
           [
             CategorySchema,
