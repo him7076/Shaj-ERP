@@ -154,6 +154,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
+            path: '/transactions',
+            name: 'transactions',
+            builder: (context, state) => const TransactionsScreen(),
+          ),
+          GoRoute(
             path: '/other-incomes',
             name: 'other-incomes',
             builder: (context, state) {

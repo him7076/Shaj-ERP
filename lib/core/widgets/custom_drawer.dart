@@ -105,6 +105,20 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerHeader('ACCOUNTS'),
                   _buildDrawerItem(
                     context: context,
+                    icon: Icons.shopping_cart_rounded,
+                    label: 'Sales Orders',
+                    routePath: '/orders',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    icon: Icons.receipt_long_rounded,
+                    label: 'All Transactions',
+                    routePath: '/transactions',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
                     icon: Icons.monetization_on_rounded,
                     label: 'Sales (Invoices)',
                     routePath: '/sales',
@@ -179,13 +193,6 @@ class CustomDrawer extends ConsumerWidget {
                     icon: Icons.inventory_2_rounded,
                     label: 'Items & Inventory',
                     routePath: '/items',
-                    currentPath: location,
-                  ),
-                  _buildDrawerItem(
-                    context: context,
-                    icon: Icons.shopping_cart_rounded,
-                    label: 'Sales Orders',
-                    routePath: '/orders',
                     currentPath: location,
                   ),
                   _buildDrawerHeader('SYSTEM'),
@@ -269,6 +276,7 @@ class CustomDrawer extends ConsumerWidget {
   Color _getItemColor(String routePath) {
     switch (routePath) {
       case '/dashboard': return const Color(0xFF1E88E5); // Rich blue
+      case '/transactions': return const Color(0xFF673AB7); // Deep Purple
       case '/sales': return const Color(0xFF43A047); // Rich emerald green
       case '/purchases': return const Color(0xFF5E35B1); // Premium indigo
       case '/expenses': return const Color(0xFFE53935); // Clean red

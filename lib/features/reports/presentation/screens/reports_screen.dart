@@ -8,6 +8,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/screens/gst_rep
 import 'package:business_sahaj_erp/features/reports/presentation/screens/stock_report_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/outstanding_report_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/party_ledger_screen.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/screens/salesman_report_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 
@@ -269,6 +270,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ExpensesScreen()),
+                      ),
+                    ),
+                    _buildReportMenuCard(
+                      title: 'Salesman Performance',
+                      description: 'Salesperson wise revenue, orders & invoices',
+                      icon: Icons.badge_outlined,
+                      color: Colors.indigo,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SalesmanReportScreen()),
                       ),
                     ),
                   ],
