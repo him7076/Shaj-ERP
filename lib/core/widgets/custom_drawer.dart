@@ -183,6 +183,13 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerHeader('MANAGEMENT'),
                   _buildDrawerItem(
                     context: context,
+                    icon: Icons.category_rounded,
+                    label: 'Manage Categories',
+                    routePath: '/categories',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
                     icon: Icons.people_alt_rounded,
                     label: 'Parties & Contacts',
                     routePath: '/parties',
@@ -276,6 +283,7 @@ class CustomDrawer extends ConsumerWidget {
   Color _getItemColor(String routePath) {
     switch (routePath) {
       case '/dashboard': return const Color(0xFF1E88E5); // Rich blue
+      case '/categories': return const Color(0xFFE91E63); // Vivid Pink
       case '/transactions': return const Color(0xFF673AB7); // Deep Purple
       case '/sales': return const Color(0xFF43A047); // Rich emerald green
       case '/purchases': return const Color(0xFF5E35B1); // Premium indigo

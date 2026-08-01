@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/features/orders/presentation/screens/orders_s
 import 'package:business_sahaj_erp/features/sales/presentation/screens/sales_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/reports_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/settings_screen.dart';
+import 'package:business_sahaj_erp/features/settings/presentation/screens/manage_categories_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/sync_center_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
@@ -165,6 +166,11 @@ final routerProvider = Provider<GoRouter>((ref) {
               final create = state.uri.queryParameters['create'] == 'true';
               return TransactionsScreen(lockedType: 'Other Income', createImmediately: create);
             },
+          ),
+          GoRoute(
+            path: '/categories',
+            name: 'categories',
+            builder: (context, state) => const ManageCategoriesScreen(),
           ),
         ],
       ),

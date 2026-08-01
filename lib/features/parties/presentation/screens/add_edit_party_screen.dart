@@ -52,20 +52,134 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
 
   bool _isSaving = false;
 
-  final List<String> _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier'];
+  List<String> _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier'];
   final List<String> _gstTypes = ['Registered', 'Unregistered', 'Composition'];
   final List<String> _balanceTypes = ['Dr', 'Cr'];
   final List<String> _paymentTermsList = ['Cash', 'Net 15', 'Net 30', 'Net 60', 'Due on Receipt'];
   List<String> _categories = ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services'];
+  List<String> _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines'];
 
   @override
   void initState() {
     super.initState();
     _loadCustomCategories();
+    _loadCustomPartyTypesAndLocalities();
     if (_isEditMode) {
       _populateFields();
     } else {
       _autoGenerateCode();
+    }
+  }
+
+  void _loadCustomPartyTypesAndLocalities() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final savedPartyTypes = prefs.getStringList('custom_party_types_list') ?? [];
+      final savedLocalities = prefs.getStringList('custom_localities_list') ?? [];
+      setState(() {
+        _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier', ...savedPartyTypes].toSet().toList();
+        _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines', ...savedLocalities].toSet().toList();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showAddPartyTypeDialog() async {
+    final typeController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final newType = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Create New Party Type'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: typeController,
+              decoration: const InputDecoration(
+                labelText: 'Party Type Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.badge),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Type name is required' : null,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, typeController.text.trim());
+                }
+              },
+              child: const Text('Save Party Type'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newType != null && newType.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_party_types_list') ?? [];
+      if (!list.contains(newType)) {
+        list.add(newType);
+        await prefs.setStringList('custom_party_types_list', list);
+      }
+      setState(() {
+        _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier', ...list].toSet().toList();
+        _partyType = newType;
+      });
+    }
+  }
+
+  Future<void> _showAddLocalityDialog() async {
+    final locController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final newLoc = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add New Locality / Area'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: locController,
+              decoration: const InputDecoration(
+                labelText: 'Locality Name (e.g. Sector 12, Subhash Nagar)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_city),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Locality is required' : null,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, locController.text.trim());
+                }
+              },
+              child: const Text('Add Locality'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newLoc != null && newLoc.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_localities_list') ?? [];
+      if (!list.contains(newLoc)) {
+        list.add(newLoc);
+        await prefs.setStringList('custom_localities_list', list);
+      }
+      setState(() {
+        _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines', ...list].toSet().toList();
+        _addressLine2Controller.text = newLoc;
+      });
     }
   }
 
@@ -286,20 +400,28 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                     _buildFormSection(
                       title: 'Basic Information',
                       children: [
-                        DropdownButtonFormField<String>(
-                          value: _partyType,
-                          decoration: const InputDecoration(labelText: 'Party Type *'),
-                          items: _partyTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() {
-                                _partyType = val;
-                              });
-                              if (!_isEditMode) {
-                                _autoGenerateCode();
-                              }
-                            }
-                          },
+                        Row(
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _partyTypes.contains(_partyType) ? _partyType : _partyTypes.first,
+                                decoration: const InputDecoration(labelText: 'Party Type *', border: OutlineInputBorder()),
+                                items: _partyTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() => _partyType = val);
+                                    if (!_isEditMode) _autoGenerateCode();
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              icon: const Icon(Icons.add),
+                              tooltip: 'Create New Party Type',
+                              onPressed: _showAddPartyTypeDialog,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -426,12 +548,43 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                           decoration: const InputDecoration(labelText: 'Address Line 1 (Shop/Building/Street)', prefixIcon: Icon(Icons.location_on)),
                         ),
                         const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _addressLine2Controller,
-                          decoration: const InputDecoration(
-                            labelText: 'Locality / Area / Landmark (e.g. Main Market, Ring Road)',
-                            prefixIcon: Icon(Icons.location_city),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Autocomplete<String>(
+                                initialValue: TextEditingValue(text: _addressLine2Controller.text),
+                                optionsBuilder: (textEditingValue) {
+                                  if (textEditingValue.text.isEmpty) return _localities;
+                                  return _localities.where((loc) => loc.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                                },
+                                onSelected: (val) {
+                                  _addressLine2Controller.text = val;
+                                },
+                                fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                                  if (_addressLine2Controller.text != controller.text && controller.text.isNotEmpty) {
+                                    _addressLine2Controller.text = controller.text;
+                                  }
+                                  return TextFormField(
+                                    controller: controller,
+                                    focusNode: focusNode,
+                                    onEditingComplete: onEditingComplete,
+                                    onChanged: (v) => _addressLine2Controller.text = v,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Locality / Area / Landmark',
+                                      prefixIcon: Icon(Icons.location_city),
+                                      border: OutlineInputBorder(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              icon: const Icon(Icons.add_location_alt_outlined),
+                              tooltip: 'Add New Locality',
+                              onPressed: _showAddLocalityDialog,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         Row(
