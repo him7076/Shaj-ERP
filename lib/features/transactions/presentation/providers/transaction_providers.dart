@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/transaction_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/transaction_repository_impl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -12,7 +16,7 @@ final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
 
 class TransactionSearchFilter {
   final String query;
-  final String transactionType; // 'All', 'Receipt', 'Payment', 'Sales', 'Purchase', 'Credit Note', 'Debit Note', 'Expense', 'Transfer', 'Other Income'
+  final String transactionType; // 'All', 'Receipt', 'Payment', 'Sales', 'Sales Order', 'Purchase', 'Credit Note', 'Debit Note', 'Expense', 'Transfer', 'Other Income'
   final DateTimeRange? dateRange;
   final String? partyUuid;
 
@@ -42,13 +46,89 @@ final transactionSearchFilterProvider = StateProvider<TransactionSearchFilter>((
 
 final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) async {
   final filter = ref.watch(transactionSearchFilterProvider);
+  final isar = ref.watch(isarProvider);
   final repo = ref.watch(transactionRepositoryProvider);
 
-  var list = await repo.searchTransactions(filter.query);
+  // 1. Fetch Transactions
+  var rawTransactions = await repo.searchTransactions('');
 
-  // Load relations
-  for (var t in list) {
-    try { await t.party.load(); } catch (_) {}
+  // 2. Fetch Invoices (Sales)
+  final rawInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+  final invoiceTransactions = rawInvoices.map((inv) {
+    String pMode = 'Credit';
+    if (inv.remarks != null && inv.remarks!.contains('[Paid via ')) {
+      final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(inv.remarks!);
+      if (match != null) pMode = match.group(1) ?? 'Cash';
+    } else if ((inv.paidAmount ?? 0) >= (inv.grandTotal ?? 0) && (inv.grandTotal ?? 0) > 0) {
+      pMode = 'Cash';
+    }
+
+    return Transaction()
+      ..id = 100000000 + (inv.id ?? 0)
+      ..uuid = inv.uuid
+      ..transactionNumber = inv.invoiceNumber ?? 'INV-01'
+      ..transactionType = 'Sales'
+      ..transactionDate = inv.invoiceDate ?? inv.createdAt ?? DateTime.now()
+      ..amount = inv.grandTotal ?? 0.0
+      ..partyName = inv.partyName ?? 'Party'
+      ..partyUuid = inv.partyUuid
+      ..paymentMode = pMode
+      ..remarks = inv.remarks
+      ..createdAt = inv.createdAt ?? DateTime.now();
+  }).toList();
+
+  // 3. Fetch Orders (Sales Orders)
+  final rawOrders = await isar.orders.filter().isDeletedEqualTo(false).findAll();
+  final orderTransactions = rawOrders.map((ord) {
+    return Transaction()
+      ..id = 200000000 + (ord.id ?? 0)
+      ..uuid = ord.uuid
+      ..transactionNumber = ord.orderNumber ?? 'SO-01'
+      ..transactionType = 'Sales Order'
+      ..transactionDate = ord.orderDate ?? ord.createdAt ?? DateTime.now()
+      ..amount = ord.grandTotal ?? 0.0
+      ..partyName = ord.partyName ?? 'Party'
+      ..partyUuid = ord.partyUuid
+      ..paymentMode = 'Order (${ord.status ?? "Pending"})'
+      ..remarks = ord.remarks
+      ..createdAt = ord.createdAt ?? DateTime.now();
+  }).toList();
+
+  // 4. Fetch Purchases (Purchase Bills)
+  final rawPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+  final purchaseTransactions = rawPurchases.map((pur) {
+    return Transaction()
+      ..id = 300000000 + (pur.id ?? 0)
+      ..uuid = pur.uuid
+      ..transactionNumber = pur.purchaseNumber ?? 'PUR-01'
+      ..transactionType = 'Purchase'
+      ..transactionDate = pur.purchaseDate ?? pur.createdAt ?? DateTime.now()
+      ..amount = pur.grandTotal ?? 0.0
+      ..partyName = pur.partyName ?? 'Supplier'
+      ..partyUuid = pur.partyUuid
+      ..paymentMode = 'Bill'
+      ..remarks = pur.remarks
+      ..createdAt = pur.createdAt ?? DateTime.now();
+  }).toList();
+
+  // Combine all 4 lists
+  List<Transaction> list = [
+    ...rawTransactions,
+    ...invoiceTransactions,
+    ...orderTransactions,
+    ...purchaseTransactions,
+  ];
+
+  // Search Filter
+  if (filter.query.trim().isNotEmpty) {
+    final q = filter.query.trim().toLowerCase();
+    list = list.where((t) {
+      final tNo = t.transactionNumber?.toLowerCase() ?? '';
+      final pName = t.partyName?.toLowerCase() ?? '';
+      final tType = t.transactionType?.toLowerCase() ?? '';
+      final rem = t.remarks?.toLowerCase() ?? '';
+      return tNo.contains(q) || pName.contains(q) || tType.contains(q) || rem.contains(q);
+    }).toList();
   }
 
   // Filter Transaction Type

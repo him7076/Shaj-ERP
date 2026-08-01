@@ -6,6 +6,9 @@ import 'package:business_sahaj_erp/features/transactions/presentation/providers/
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/screens/add_edit_order_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 
@@ -39,6 +42,37 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     if (widget.lockedType != oldWidget.lockedType && widget.lockedType != null) {
       ref.read(transactionSearchFilterProvider.notifier).state =
           ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType);
+    }
+  }
+
+  void _openTransaction(BuildContext context, Transaction txn) {
+    if (txn.transactionType == 'Sales') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AddEditInvoiceScreen(invoiceUuid: txn.uuid)),
+      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+    } else if (txn.transactionType == 'Sales Order') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AddEditOrderScreen(orderUuid: txn.uuid)),
+      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+    } else if (txn.transactionType == 'Purchase') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: txn.uuid)),
+      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+    } else if (txn.transactionType == 'Credit Note') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
+      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+    } else if (txn.transactionType == 'Debit Note') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+    } else {
+      AddEditTransactionDialog.show(context, transaction: txn);
     }
   }
 
@@ -440,10 +474,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 value: filter.transactionType,
                                 items: const [
                                   DropdownMenuItem(value: 'All', child: Text('All Types')),
+                                  DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                                  DropdownMenuItem(value: 'Sales Order', child: Text('Sales Order')),
+                                  DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                                  DropdownMenuItem(value: 'Expense', child: Text('Expense')),
                                   DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
                                   DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                                  DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
-                                  DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
                                   DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
                                   DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
                                   DropdownMenuItem(value: 'Expense', child: Text('Expense')),
@@ -578,7 +614,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               ),
                               Expanded(
                                 child: ListTile(
-                                  onTap: () => AddEditTransactionDialog.show(context, transaction: txn),
+                                  onTap: () => _openTransaction(context, txn),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   leading: CircleAvatar(
                                     backgroundColor: badgeColor.withOpacity(0.08),
