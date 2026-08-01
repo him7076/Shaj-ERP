@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
@@ -53,16 +55,72 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
   final List<String> _gstTypes = ['Registered', 'Unregistered', 'Composition'];
   final List<String> _balanceTypes = ['Dr', 'Cr'];
   final List<String> _paymentTermsList = ['Cash', 'Net 15', 'Net 30', 'Net 60', 'Due on Receipt'];
-  final List<String> _categories = ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services'];
+  List<String> _categories = ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services'];
 
   @override
   void initState() {
     super.initState();
+    _loadCustomCategories();
     if (_isEditMode) {
       _populateFields();
     } else {
       _autoGenerateCode();
     }
+  }
+
+  void _loadCustomCategories() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final saved = prefs.getStringList('party_business_categories');
+      if (saved != null && saved.isNotEmpty) {
+        final set = Set<String>.from(_categories)..addAll(saved);
+        setState(() {
+          _categories = set.toList();
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _showAddCategoryDialog() async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Business Category'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Category Name',
+            hintText: 'e.g. Distributor, Textile, Pharma',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newCat = controller.text.trim();
+              if (newCat.isNotEmpty) {
+                if (!_categories.contains(newCat)) {
+                  _categories.add(newCat);
+                  final prefs = ref.read(sharedPreferencesProvider);
+                  await prefs.setStringList('party_business_categories', _categories);
+                }
+                setState(() {
+                  _category = newCat;
+                });
+                if (mounted) Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -268,9 +326,18 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                         TextFormField(
                           controller: _mobileController,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(labelText: 'Mobile Number', prefixIcon: Icon(Icons.phone)),
+                          maxLength: 10,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Mobile Number (10 Digits)',
+                            prefixIcon: Icon(Icons.phone),
+                            counterText: '',
+                          ),
                           validator: (value) {
-                            if (value != null && value.isNotEmpty && value.length < 10) {
+                            if (value != null && value.isNotEmpty && value.length != 10) {
                               return 'Enter a valid 10-digit mobile number';
                             }
                             return null;
@@ -280,7 +347,16 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                         TextFormField(
                           controller: _whatsappController,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(labelText: 'WhatsApp Number', prefixIcon: Icon(Icons.chat_bubble_outline)),
+                          maxLength: 10,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'WhatsApp Number (10 Digits)',
+                            prefixIcon: Icon(Icons.chat_bubble_outline),
+                            counterText: '',
+                          ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -346,12 +422,15 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                       children: [
                         TextFormField(
                           controller: _addressLine1Controller,
-                          decoration: const InputDecoration(labelText: 'Address Line 1', prefixIcon: Icon(Icons.location_on)),
+                          decoration: const InputDecoration(labelText: 'Address Line 1 (Shop/Building/Street)', prefixIcon: Icon(Icons.location_on)),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _addressLine2Controller,
-                          decoration: const InputDecoration(labelText: 'Address Line 2'),
+                          decoration: const InputDecoration(
+                            labelText: 'Locality / Area / Landmark (e.g. Main Market, Ring Road)',
+                            prefixIcon: Icon(Icons.location_city),
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -443,13 +522,29 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                           decoration: const InputDecoration(labelText: 'Contact Person Name'),
                         ),
                         const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _category,
-                          decoration: const InputDecoration(labelText: 'Business Category'),
-                          items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                          onChanged: (val) {
-                            if (val != null) setState(() => _category = val);
-                          },
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: DropdownButtonFormField<String>(
+                                value: _categories.contains(_category) ? _category : _categories.first,
+                                decoration: const InputDecoration(
+                                  labelText: 'Business Category',
+                                  prefixIcon: Icon(Icons.category_outlined),
+                                ),
+                                items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _category = val);
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              onPressed: _showAddCategoryDialog,
+                              icon: const Icon(Icons.add),
+                              tooltip: 'Add Custom Category',
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

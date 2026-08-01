@@ -7,15 +7,17 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
+
 class AddItemSheet extends ConsumerStatefulWidget {
   const AddItemSheet({Key? key}) : super(key: key);
 
   static Future<Item?> show(BuildContext context) {
-    return showModalBottomSheet<Item>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const AddItemSheet(),
+    return Navigator.push<Item>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddEditItemScreen(),
+      ),
     );
   }
 

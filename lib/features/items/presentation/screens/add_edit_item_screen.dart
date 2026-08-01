@@ -554,7 +554,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       ref.invalidate(lowStockAlertProvider);
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, item);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Product "${item.itemName}" saved successfully!'),
