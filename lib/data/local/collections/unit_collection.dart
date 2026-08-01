@@ -14,6 +14,7 @@ class Unit implements IsarModel {
 
   String? unitName;
   String? shortName; // E.g. PCS, KG, LTR
+  bool isSecondary = false;
 
   @override
   DateTime createdAt = DateTime.now();

@@ -71,7 +71,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       ..transactionDate = inv.invoiceDate ?? inv.createdAt ?? DateTime.now()
       ..amount = inv.grandTotal ?? 0.0
       ..partyName = inv.partyName ?? 'Party'
-      ..partyUuid = inv.partyUuid
+      ..partyUuid = inv.party.value?.uuid ?? (inv.partyId != null ? inv.partyId.toString() : null)
       ..paymentMode = pMode
       ..remarks = inv.remarks
       ..createdAt = inv.createdAt ?? DateTime.now();
@@ -88,7 +88,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       ..transactionDate = ord.orderDate ?? ord.createdAt ?? DateTime.now()
       ..amount = ord.grandTotal ?? 0.0
       ..partyName = ord.partyName ?? 'Party'
-      ..partyUuid = ord.partyUuid
+      ..partyUuid = ord.party.value?.uuid ?? (ord.partyId != null ? ord.partyId.toString() : null)
       ..paymentMode = 'Order (${ord.status ?? "Pending"})'
       ..remarks = ord.remarks
       ..createdAt = ord.createdAt ?? DateTime.now();
@@ -105,7 +105,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       ..transactionDate = pur.purchaseDate ?? pur.createdAt ?? DateTime.now()
       ..amount = pur.grandTotal ?? 0.0
       ..partyName = pur.partyName ?? 'Supplier'
-      ..partyUuid = pur.partyUuid
+      ..partyUuid = pur.party.value?.uuid ?? (pur.partyId != null ? pur.partyId.toString() : null)
       ..paymentMode = 'Bill'
       ..remarks = pur.remarks
       ..createdAt = pur.createdAt ?? DateTime.now();

@@ -462,7 +462,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                 child: Icon(Icons.square_foot, color: Colors.orange),
               ),
               title: Text('${unit.unitName ?? "Unit"} (${unit.shortName ?? ""})', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(unit.isSecondary == true ? 'Type: Secondary Unit' : 'Type: Primary Unit'),
+              subtitle: Text('Symbol: ${unit.shortName ?? "N/A"}'),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.red),
                 onPressed: () async {
@@ -484,59 +484,47 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
   Future<void> _showAddUnitDialog() async {
     final nameController = TextEditingController();
     final shortController = TextEditingController();
-    bool isSecondary = false;
 
     await showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Add Measurement Unit'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Unit Full Name (e.g. Pieces, Kilograms)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: shortController,
-                  decoration: const InputDecoration(labelText: 'Short Name / Symbol (e.g. Pcs, Kg)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                CheckboxListTile(
-                  title: const Text('Is Secondary / Alternative Unit?'),
-                  value: isSecondary,
-                  onChanged: (val) => setDialogState(() => isSecondary = val ?? false),
-                ),
-              ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Measurement Unit'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Unit Full Name (e.g. Pieces, Kilograms)', border: OutlineInputBorder()),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              ElevatedButton(
-                onPressed: () async {
-                  if (shortController.text.trim().isNotEmpty) {
-                    final isar = ref.read(databaseServiceProvider).isar;
-                    final unit = Unit()
-                      ..uuid = DateTime.now().millisecondsSinceEpoch.toString()
-                      ..unitName = nameController.text.trim().isEmpty ? shortController.text.trim() : nameController.text.trim()
-                      ..shortName = shortController.text.trim()
-                      ..isSecondary = isSecondary
-                      ..isDeleted = false;
+            const SizedBox(height: 12),
+            TextField(
+              controller: shortController,
+              decoration: const InputDecoration(labelText: 'Short Name / Symbol (e.g. Pcs, Kg)', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (shortController.text.trim().isNotEmpty) {
+                final isar = ref.read(databaseServiceProvider).isar;
+                final unit = Unit()
+                  ..uuid = DateTime.now().millisecondsSinceEpoch.toString()
+                  ..unitName = nameController.text.trim().isEmpty ? shortController.text.trim() : nameController.text.trim()
+                  ..shortName = shortController.text.trim()
+                  ..isDeleted = false;
 
-                    await isar.writeTxn(() async {
-                      await isar.units.put(unit);
-                    });
-                    Navigator.pop(ctx);
-                    _loadAllCategories();
-                  }
-                },
-                child: const Text('Save Unit'),
-              ),
-            ],
-          );
-        },
+                await isar.writeTxn(() async {
+                  await isar.units.put(unit);
+                });
+                Navigator.pop(ctx);
+                _loadAllCategories();
+              }
+            },
+            child: const Text('Save Unit'),
+          ),
+        ],
       ),
     );
   }
