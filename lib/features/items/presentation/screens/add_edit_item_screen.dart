@@ -577,6 +577,108 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     }
   }
 
+  void _showSearchableUnitPicker({required bool isSecondary, required List<Unit> unitsList}) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final filtered = unitsList.where((u) {
+              final q = query.trim().toLowerCase();
+              if (q.isEmpty) return true;
+              final name = u.unitName?.toLowerCase() ?? '';
+              final short = u.shortName?.toLowerCase() ?? '';
+              return name.contains(q) || short.contains(q);
+            }).toList();
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                isSecondary ? 'Select Secondary Unit' : 'Select Primary Unit',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              content: SizedBox(
+                width: 420,
+                height: 480,
+                child: Column(
+                  children: [
+                    TextField(
+                      autofocus: true,
+                      decoration: const InputDecoration(
+                        hintText: 'Search unit (e.g. PCS, BOX, KGS, LTR)...',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        setDialogState(() => query = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      ),
+                      icon: const Icon(Icons.add),
+                      label: const Text('+ Add New Custom Unit'),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _showCreateUnitDialog(isSecondary: isSecondary);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    if (isSecondary) ...[
+                      ListTile(
+                        leading: const Icon(Icons.close, color: Colors.grey),
+                        title: const Text('None (Remove Secondary Unit)'),
+                        onTap: () {
+                          setState(() => _selectedSecUnit = null);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                      const Divider(),
+                    ],
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(child: Text('No units found.'))
+                          : ListView.builder(
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final unit = filtered[index];
+                                final isSelected = isSecondary
+                                    ? (_selectedSecUnit?.id == unit.id)
+                                    : (_selectedUnit?.id == unit.id);
+                                return ListTile(
+                                  selected: isSelected,
+                                  title: Text(
+                                    '${unit.unitName ?? ""} (${unit.shortName ?? ""})',
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                  trailing: isSelected ? const Icon(Icons.check_circle, color: Colors.green) : null,
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSecondary) {
+                                        _selectedSecUnit = unit;
+                                      } else {
+                                        _selectedUnit = unit;
+                                      }
+                                    });
+                                    Navigator.pop(ctx);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildSectionCard({
     required BuildContext context,
     required String title,
@@ -1265,20 +1367,26 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   return Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<Unit>(
-                          value: _selectedUnit,
-                          decoration: const InputDecoration(
-                            labelText: 'Primary Unit *',
-                            border: OutlineInputBorder(),
+                        child: InkWell(
+                          onTap: () => _showSearchableUnitPicker(isSecondary: false, unitsList: dropdownItems),
+                          borderRadius: BorderRadius.circular(4),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Primary Unit *',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.search),
+                              suffixIcon: Icon(Icons.arrow_drop_down),
+                            ),
+                            child: Text(
+                              _selectedUnit != null 
+                                  ? '${_selectedUnit!.unitName} (${_selectedUnit!.shortName})' 
+                                  : 'Select Primary Unit *',
+                              style: TextStyle(
+                                color: _selectedUnit == null ? Colors.grey : null,
+                                fontWeight: _selectedUnit != null ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
                           ),
-                          items: dropdownItems.map((u) {
-                            return DropdownMenuItem<Unit>(
-                              value: u,
-                              child: Text('${u.unitName} (${u.shortName})'),
-                            );
-                          }).toList(),
-                          onChanged: (v) => setState(() => _selectedUnit = v),
-                          validator: (v) => v == null ? 'Primary unit is required' : null,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1303,25 +1411,26 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   return Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<Unit>(
-                          value: _selectedSecUnit,
-                          decoration: const InputDecoration(
-                            labelText: 'Secondary Unit',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: [
-                            const DropdownMenuItem<Unit>(
-                              value: null,
-                              child: Text('None'),
+                        child: InkWell(
+                          onTap: () => _showSearchableUnitPicker(isSecondary: true, unitsList: dropdownItems),
+                          borderRadius: BorderRadius.circular(4),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Secondary Unit',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.search),
+                              suffixIcon: Icon(Icons.arrow_drop_down),
                             ),
-                            ...dropdownItems.map((u) {
-                              return DropdownMenuItem<Unit>(
-                                value: u,
-                                child: Text('${u.unitName} (${u.shortName})'),
-                              );
-                            }),
-                          ],
-                          onChanged: (v) => setState(() => _selectedSecUnit = v),
+                            child: Text(
+                              _selectedSecUnit != null 
+                                  ? '${_selectedSecUnit!.unitName} (${_selectedSecUnit!.shortName})' 
+                                  : 'None (Optional)',
+                              style: TextStyle(
+                                color: _selectedSecUnit == null ? Colors.grey : null,
+                                fontWeight: _selectedSecUnit != null ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),

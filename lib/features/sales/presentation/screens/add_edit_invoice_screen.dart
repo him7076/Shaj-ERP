@@ -235,6 +235,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..itemId = cartItem.item.id
           ..itemName = cartItem.item.itemName
           ..hsnCode = cartItem.item.hsnCode
+          ..unit = cartItem.unit ?? cartItem.item.unit.value?.shortName
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
           ..rate = cartItem.rate
@@ -956,6 +957,14 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final item = widget.cartItem;
+    final primaryUnit = item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
+    final secondaryUnit = item.item.secondaryUnit;
+    final List<String> availableUnits = [
+      primaryUnit,
+      if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit) secondaryUnit,
+    ];
+    final selectedUnit = item.unit ?? primaryUnit;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -988,6 +997,19 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
                     ref.read(invoiceCartProvider.notifier).updateItem(item.item.uuid!, quantity: qty);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                decoration: const InputDecoration(labelText: 'Unit', isDense: true, border: OutlineInputBorder()),
+                items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(invoiceCartProvider.notifier).updateItem(item.item.uuid!, unit: val);
                   }
                 },
               ),

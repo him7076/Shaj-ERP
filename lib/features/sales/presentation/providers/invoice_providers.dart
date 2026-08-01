@@ -95,10 +95,12 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
 
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
+    final defaultUnit = item.unit.value?.shortName ?? item.unit.value?.unitName;
 
     final newItem = CartItemState(
       item: item,
       quantity: qty,
+      unit: defaultUnit,
       rate: rate,
       gstPercent: gst,
     );
@@ -110,6 +112,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     String itemUuid, {
     double? quantity,
     double? freeQuantity,
+    String? unit,
     double? rate,
     double? discountPercent,
     double? discountAmount,
@@ -136,6 +139,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     final updated = current.copyWith(
       quantity: quantity,
       freeQuantity: freeQuantity,
+      unit: unit,
       rate: rate,
       discountPercent: finalDiscPercent,
       discountAmount: finalDiscAmount,

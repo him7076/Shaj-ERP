@@ -19,6 +19,7 @@ class PurchaseItem implements IsarModel {
   String? hsnCode;
 
   double? quantity;
+  String? unit;
   double? rate;
   double? discount;
 

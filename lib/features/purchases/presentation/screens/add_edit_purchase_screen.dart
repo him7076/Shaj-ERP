@@ -892,6 +892,15 @@ class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final dbItem = item.item.value;
+    final primaryUnit = dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? 'PCS';
+    final secondaryUnit = dbItem?.secondaryUnit;
+    final List<String> availableUnits = [
+      primaryUnit,
+      if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit) secondaryUnit,
+    ];
+    final selectedUnit = item.unit ?? primaryUnit;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -922,6 +931,21 @@ class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
                   final double? qtyVal = double.tryParse(val);
                   if (qtyVal != null) {
                     _triggerChanged(qty: qtyVal);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                decoration: const InputDecoration(labelText: 'Unit', isDense: true, border: OutlineInputBorder()),
+                items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      item.unit = val;
+                    });
                   }
                 },
               ),

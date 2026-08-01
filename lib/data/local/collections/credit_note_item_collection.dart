@@ -23,6 +23,7 @@ class CreditNoteItem implements IsarModel {
 
   double? quantity;
   double? freeQuantity;
+  String? unit;
   double? rate;
   double? discount; // discount amount
 

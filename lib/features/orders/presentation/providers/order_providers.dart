@@ -36,6 +36,7 @@ class CartItemState {
   final Item item;
   final double quantity;
   final double freeQuantity;
+  final String? unit;
   final double rate;
   final double discountPercent;
   final double discountAmount;
@@ -45,6 +46,7 @@ class CartItemState {
     required this.item,
     this.quantity = 1.0,
     this.freeQuantity = 0.0,
+    this.unit,
     required this.rate,
     this.discountPercent = 0.0,
     this.discountAmount = 0.0,
@@ -54,6 +56,7 @@ class CartItemState {
   CartItemState copyWith({
     double? quantity,
     double? freeQuantity,
+    String? unit,
     double? rate,
     double? discountPercent,
     double? discountAmount,
@@ -63,6 +66,7 @@ class CartItemState {
       item: item,
       quantity: quantity ?? this.quantity,
       freeQuantity: freeQuantity ?? this.freeQuantity,
+      unit: unit ?? this.unit,
       rate: rate ?? this.rate,
       discountPercent: discountPercent ?? this.discountPercent,
       discountAmount: discountAmount ?? this.discountAmount,
@@ -132,10 +136,12 @@ class CartNotifier extends StateNotifier<OrderCart> {
 
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
+    final defaultUnit = item.unit.value?.shortName ?? item.unit.value?.unitName;
 
     final newItem = CartItemState(
       item: item,
       quantity: qty,
+      unit: defaultUnit,
       rate: rate,
       gstPercent: gst,
     );
@@ -147,6 +153,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
     String itemUuid, {
     double? quantity,
     double? freeQuantity,
+    String? unit,
     double? rate,
     double? discountPercent,
     double? discountAmount,
@@ -174,6 +181,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
     final updated = current.copyWith(
       quantity: quantity,
       freeQuantity: freeQuantity,
+      unit: unit,
       rate: rate,
       discountPercent: finalDiscPercent,
       discountAmount: finalDiscAmount,

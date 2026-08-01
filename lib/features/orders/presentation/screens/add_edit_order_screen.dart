@@ -218,6 +218,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ..hsnCode = cartItem.item.hsnCode
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
+          ..unit = cartItem.unit ?? cartItem.item.unit.value?.shortName
           ..rate = cartItem.rate
           ..discountAmount = cartItem.discountAmount
           ..discountPercent = cartItem.discountPercent
@@ -819,7 +820,14 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final item = widget.cartItem;
+    final primaryUnit = item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
+    final secondaryUnit = item.item.secondaryUnit;
+    final List<String> availableUnits = [
+      primaryUnit,
+      if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit) secondaryUnit,
+    ];
+    final selectedUnit = item.unit ?? primaryUnit;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -852,6 +860,19 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
                     ref.read(cartProvider.notifier).updateItem(item.item.uuid!, quantity: qty);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                decoration: const InputDecoration(labelText: 'Unit', isDense: true, border: OutlineInputBorder()),
+                items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    ref.read(cartProvider.notifier).updateItem(item.item.uuid!, unit: val);
                   }
                 },
               ),
