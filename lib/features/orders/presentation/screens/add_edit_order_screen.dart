@@ -873,7 +873,44 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
                   if (val != null) {
-                    ref.read(cartProvider.notifier).updateItem(item.item.uuid!, unit: val);
+                    final oldUnit = selectedUnit;
+                    final newUnit = val;
+                    if (oldUnit != newUnit) {
+                      final conv = item.item.conversionFactor ?? 1.0;
+                      if (conv > 0 && conv != 1.0) {
+                        double currentRate = item.rate;
+                        double newRate = currentRate;
+                        if (oldUnit == primaryUnit && newUnit == secondaryUnit) {
+                          newRate = currentRate / conv;
+                        } else if (oldUnit == secondaryUnit && newUnit == primaryUnit) {
+                          newRate = currentRate * conv;
+                        }
+
+                        final gstPct = item.gstPercent;
+                        final double rateExcl = widget.isGstInclusive
+                            ? newRate / (1 + gstPct / 100.0)
+                            : newRate;
+                        final double rateIncl = widget.isGstInclusive
+                            ? newRate
+                            : newRate * (1 + gstPct / 100.0);
+
+                        _isUpdatingLocally = true;
+                        _rateExclController.text = rateExcl.toStringAsFixed(2);
+                        _rateInclController.text = rateIncl.toStringAsFixed(2);
+                        _isUpdatingLocally = false;
+
+                        ref.read(cartProvider.notifier).updateItem(
+                          item.item.uuid!,
+                          unit: newUnit,
+                          rate: newRate,
+                        );
+                      } else {
+                        ref.read(cartProvider.notifier).updateItem(
+                          item.item.uuid!,
+                          unit: newUnit,
+                        );
+                      }
+                    }
                   }
                 },
               ),

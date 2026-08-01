@@ -943,9 +943,38 @@ class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
                   if (val != null) {
-                    setState(() {
-                      item.unit = val;
-                    });
+                    final oldUnit = selectedUnit;
+                    final newUnit = val;
+                    if (oldUnit != newUnit) {
+                      final conv = dbItem?.conversionFactor ?? 1.0;
+                      if (conv > 0 && conv != 1.0) {
+                        double currentRate = item.rate ?? 0.0;
+                        double newRate = currentRate;
+                        if (oldUnit == primaryUnit && newUnit == secondaryUnit) {
+                          newRate = currentRate / conv;
+                        } else if (oldUnit == secondaryUnit && newUnit == primaryUnit) {
+                          newRate = currentRate * conv;
+                        }
+
+                        final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                        final double rateIncl = newRate * (1 + gstPct / 100.0);
+
+                        _isUpdatingLocally = true;
+                        _rateExclController.text = newRate.toStringAsFixed(2);
+                        _rateInclController.text = rateIncl.toStringAsFixed(2);
+                        _isUpdatingLocally = false;
+
+                        setState(() {
+                          item.unit = newUnit;
+                          item.rate = newRate;
+                        });
+                        _triggerChanged(exclRate: newRate);
+                      } else {
+                        setState(() {
+                          item.unit = newUnit;
+                        });
+                      }
+                    }
                   }
                 },
               ),

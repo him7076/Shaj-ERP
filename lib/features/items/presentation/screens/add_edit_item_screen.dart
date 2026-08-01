@@ -54,6 +54,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   Brand? _selectedBrand;
   Unit? _selectedUnit;
   Unit? _selectedSecUnit;
+  String _rateUnitType = 'Primary'; // 'Primary' or 'Secondary'
   double _gstRate = 18.0;
   double _cessRate = 0.0;
   bool _gstApplicable = true;
@@ -516,11 +517,20 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.sku = _skuController.text.trim().isEmpty ? null : _skuController.text.trim();
       item.skuCode = _skuCodeController.text.trim().isEmpty ? null : _skuCodeController.text.trim();
 
-      item.buyRate = double.tryParse(_buyRateController.text.trim());
-      item.mrp = double.tryParse(_mrpController.text.trim());
-      item.sellRate = double.tryParse(_sellRateController.text.trim());
-      item.wholesaleRate = double.tryParse(_wholesaleRateController.text.trim());
-      item.minimumSellingPrice = double.tryParse(_minPriceController.text.trim());
+      final conv = double.tryParse(_conversionController.text.trim()) ?? 1.0;
+      final isPerSecondary = _rateUnitType == 'Secondary' && conv > 0 && conv != 1.0;
+
+      double? rawBuy = double.tryParse(_buyRateController.text.trim());
+      double? rawMrp = double.tryParse(_mrpController.text.trim());
+      double? rawSell = double.tryParse(_sellRateController.text.trim());
+      double? rawWholesale = double.tryParse(_wholesaleRateController.text.trim());
+      double? rawMinPrice = double.tryParse(_minPriceController.text.trim());
+
+      item.buyRate = (rawBuy != null && isPerSecondary) ? (rawBuy * conv) : rawBuy;
+      item.mrp = (rawMrp != null && isPerSecondary) ? (rawMrp * conv) : rawMrp;
+      item.sellRate = (rawSell != null && isPerSecondary) ? (rawSell * conv) : rawSell;
+      item.wholesaleRate = (rawWholesale != null && isPerSecondary) ? (rawWholesale * conv) : rawWholesale;
+      item.minimumSellingPrice = (rawMinPrice != null && isPerSecondary) ? (rawMinPrice * conv) : rawMinPrice;
 
       item.openingStock = double.tryParse(_openingStockController.text.trim()) ?? 0.0;
       item.currentStock = double.tryParse(_currentStockController.text.trim()) ?? 
@@ -1124,12 +1134,47 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   }
 
   Widget _buildPricingSection() {
+    final primaryName = _selectedUnit != null ? '${_selectedUnit!.unitName} (${_selectedUnit!.shortName})' : 'Primary Unit';
+    final secondaryName = _selectedSecUnit != null ? '${_selectedSecUnit!.unitName} (${_selectedSecUnit!.shortName})' : 'Secondary Unit';
+
     return _buildSectionCard(
       context: context,
       title: 'Pricing Details (INR)',
       icon: Icons.payments_outlined,
       color: Colors.green,
       children: [
+        if (_selectedSecUnit != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, size: 20, color: Colors.teal),
+                const SizedBox(width: 8),
+                const Text('Rates entered below are per: ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                DropdownButton<String>(
+                  value: _rateUnitType,
+                  isDense: true,
+                  underline: const SizedBox.shrink(),
+                  items: [
+                    DropdownMenuItem(value: 'Primary', child: Text('Primary Unit ($primaryName)')),
+                    DropdownMenuItem(value: 'Secondary', child: Text('Secondary Unit ($secondaryName)')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() => _rateUnitType = val);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         Row(
           children: [
             Expanded(
