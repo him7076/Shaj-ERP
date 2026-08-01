@@ -1,14 +1,18 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:isar/isar.dart';
+
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/pdf_service.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
-import 'package:isar/isar.dart';
-import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 
 class InvoiceDetailScreen extends ConsumerStatefulWidget {
@@ -23,6 +27,7 @@ class InvoiceDetailScreen extends ConsumerStatefulWidget {
 class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   bool _isLoading = false;
   Invoice? _invoice;
+  List<InvoiceItem> _invoiceItems = [];
 
   @override
   void initState() {
@@ -33,19 +38,36 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   Future<void> _loadInvoice() async {
     setState(() => _isLoading = true);
     try {
-      final repo = ref.read(invoiceRepositoryProvider);
-      final fetched = await repo.getByUuid(widget.invoiceUuid);
+      final isar = ref.read(databaseServiceProvider).isar;
+      final fetched = await isar.invoices.filter().uuidEqualTo(widget.invoiceUuid).findFirst();
       if (fetched != null) {
-        try { await fetched.party.load(); } catch (_) {}
-        try { await fetched.invoiceItems.load(); } catch (_) {}
+        List<InvoiceItem> items = [];
+        try {
+          await fetched.party.load();
+        } catch (_) {}
+
+        if (kIsWeb) {
+          items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(fetched.id).findAll();
+          if (items.isEmpty) {
+            final allItems = await isar.invoiceItems.filter().findAll();
+            items = allItems.where((i) => i.invoice.value?.id == fetched.id || i.itemId != null).toList();
+          }
+        } else {
+          try {
+            await fetched.invoiceItems.load();
+          } catch (_) {}
+          items = fetched.invoiceItems.toList();
+        }
+
+        setState(() {
+          _invoice = fetched;
+          _invoiceItems = items;
+        });
       }
-      setState(() {
-        _invoice = fetched;
-      });
     } catch (e) {
       logger.error('Failed to load invoice details', e);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -57,13 +79,21 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cancel Sales Invoice'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.cancel_outlined, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Cancel Sales Invoice'),
+            ],
+          ),
           content: Form(
             key: formKey,
             child: TextFormField(
               controller: reasonController,
               decoration: const InputDecoration(
                 labelText: 'Cancellation Reason',
+                hintText: 'Enter reason for cancellation',
                 border: OutlineInputBorder(),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Reason is required' : null,
@@ -81,7 +111,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                   Navigator.pop(context, true);
                 }
               },
-              child: const Text('Cancel Invoice'),
+              child: const Text('Confirm Cancel'),
             ),
           ],
         );
@@ -107,7 +137,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Invoice cancelled successfully! Stock levels and outstanding values restored.'),
+              content: Text('Invoice cancelled successfully! Stock and balances updated.'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -171,17 +201,18 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
     if (_invoice == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(title: const Text('Sales Invoice')),
         body: const Center(child: Text('Sales invoice not found.')),
       );
     }
 
     final invoice = _invoice!;
-    final isCancelled = invoice.invoiceStatus == 'Cancelled';
+    final isCancelled = invoice.paymentStatus == 'Cancelled';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Invoice: ${invoice.invoiceNumber}'),
+        title: Text('Invoice #${invoice.invoiceNumber}'),
+        centerTitle: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf_outlined),
@@ -215,27 +246,27 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Status Badge
-              _buildStatusHeader(invoice, theme),
-              const SizedBox(height: 20),
+              // Header Banner Card
+              _buildModernHeaderCard(invoice, theme),
+              const SizedBox(height: 16),
 
-              // Party Billing Card
+              // SECTION 1: Customer / Billing Party Details
               _buildPartyBillingCard(invoice, theme),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Products Table Card
-              _buildItemsTable(invoice, theme),
-              const SizedBox(height: 20),
+              // SECTION 2: PRODUCTS BILLED (Item Details - Right after Party Details!)
+              _buildModernItemsTable(invoice, theme),
+              const SizedBox(height: 16),
 
-              // Financial breakdown & Tax Summary Card
+              // SECTION 3: Financial Totals Breakdown & Tax Split
               _buildTotalsCard(invoice, theme),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Payment Status details Card
+              // SECTION 4: Payment Status & Credit Details
               _buildPaymentCard(invoice, theme),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
 
-              // Audit history log timeline
+              // SECTION 5: Invoice Audit History
               _buildTimelineCard(invoice, theme),
               const SizedBox(height: 32),
             ],
@@ -245,38 +276,97 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     );
   }
 
-  Widget _buildStatusHeader(Invoice invoice, ThemeData theme) {
-    Color color = Colors.grey;
-    if (invoice.paymentStatus == 'Unpaid') color = Colors.red;
-    if (invoice.paymentStatus == 'Partially Paid') color = Colors.orange;
-    if (invoice.paymentStatus == 'Paid') color = Colors.green;
-    if (invoice.paymentStatus == 'Cancelled') color = Colors.black54;
+  Widget _buildModernHeaderCard(Invoice invoice, ThemeData theme) {
+    Color statusColor = Colors.grey;
+    IconData statusIcon = Icons.receipt_long;
+
+    if (invoice.paymentStatus == 'Unpaid') { statusColor = Colors.red; statusIcon = Icons.error_outline; }
+    if (invoice.paymentStatus == 'Partially Paid') { statusColor = Colors.orange; statusIcon = Icons.timelapse; }
+    if (invoice.paymentStatus == 'Paid') { statusColor = Colors.green; statusIcon = Icons.check_circle; }
+    if (invoice.paymentStatus == 'Cancelled') { statusColor = Colors.grey; statusIcon = Icons.block; }
+
+    final formattedDate = invoice.invoiceDate != null ? DateFormat('dd MMM yyyy').format(invoice.invoiceDate!) : 'N/A';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
+        gradient: LinearGradient(
+          colors: [statusColor.withOpacity(0.15), statusColor.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: statusColor.withOpacity(0.3), width: 1.5),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Icon(Icons.receipt_long, color: color, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Invoice Type: ${invoice.invoiceType ?? "Tax Invoice"}',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(statusIcon, color: statusColor, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        invoice.invoiceType?.toUpperCase() ?? 'TAX INVOICE',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Text(
+                        '#${invoice.invoiceNumber}',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                Text(
-                  'Status: ${invoice.paymentStatus} | Date: ${invoice.invoiceDate?.toIso8601String().substring(0, 10)}',
-                  style: theme.textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.bold),
+                child: Text(
+                  invoice.paymentStatus?.toUpperCase() ?? 'UNPAID',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text('Date: $formattedDate', style: theme.textTheme.bodyMedium),
+                ],
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.inventory_2_outlined, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text('Items: ${_invoiceItems.length}', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -286,32 +376,80 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   Widget _buildPartyBillingCard(Invoice invoice, ThemeData theme) {
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: Color(0xFF1E88E5), width: 5)),
+        ),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('BILL TO CUSTOMER', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-            const SizedBox(height: 12),
-            Text(invoice.partyName ?? 'N/A', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.receipt, size: 14, color: Colors.grey),
-                const SizedBox(width: 6),
-                Text('GSTIN: ${invoice.gstNumber ?? "Unregistered"}', style: theme.textTheme.bodyMedium),
+                const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(0xFFE3F2FD),
+                  child: Icon(Icons.person, color: Color(0xFF1E88E5), size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'BILL TO CUSTOMER (PARTY)',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E88E5),
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        invoice.partyName ?? 'N/A',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-            if (invoice.address != null) ...[
-              const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.receipt, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'GSTIN: ${invoice.gstNumber ?? "Unregistered"}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (invoice.address != null && invoice.address!.isNotEmpty) ...[
+              const SizedBox(height: 10),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                  const Icon(Icons.location_on_outlined, size: 15, color: Colors.grey),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -328,40 +466,114 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     );
   }
 
-  Widget _buildItemsTable(Invoice invoice, ThemeData theme) {
+  Widget _buildModernItemsTable(Invoice invoice, ThemeData theme) {
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: Color(0xFF43A047), width: 5)),
+        ),
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('PRODUCTS BILLED', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-            const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: invoice.invoiceItems.length,
-              separatorBuilder: (context, index) => const Divider(),
-              itemBuilder: (context, index) {
-                final item = invoice.invoiceItems.elementAt(index);
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.inventory_2_outlined, color: Color(0xFF43A047), size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PRODUCTS BILLED',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF43A047),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_invoiceItems.length} Products',
+                    style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_invoiceItems.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(child: Text('No item lines found in this invoice.')),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _invoiceItems.length,
+                separatorBuilder: (context, index) => const Divider(height: 24),
+                itemBuilder: (context, index) {
+                  final item = _invoiceItems[index];
+                  final unitStr = item.unit ?? 'PCS';
+                  final qty = item.quantity ?? 0.0;
+                  final freeQty = item.freeQuantity ?? 0.0;
+                  final rate = item.rate ?? 0.0;
+                  final total = item.totalAmount ?? (qty * rate);
+
+                  return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: theme.colorScheme.primaryContainer,
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.itemName ?? 'N/A', style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                             Text(
-                              'Rate: ₹${item.rate?.toStringAsFixed(2)} | HSN: ${item.hsnCode ?? "N/A"}',
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              item.itemName ?? 'Unnamed Item',
+                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                if (item.hsnCode != null && item.hsnCode!.isNotEmpty)
+                                  Text('HSN: ${item.hsnCode}', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700])),
+                                if (item.gstRate != null)
+                                  Text('GST ${item.gstRate!.toInt()}%', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[700])),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: Colors.teal.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text('Unit: $unitStr', style: const TextStyle(fontSize: 11, color: Colors.teal, fontWeight: FontWeight.w600)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Rate: ₹${rate.toStringAsFixed(2)} / $unitStr',
+                              style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                             ),
                           ],
                         ),
@@ -370,20 +582,23 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${item.quantity?.toInt()} ${item.freeQuantity != null && item.freeQuantity! > 0 ? "+${item.freeQuantity!.toInt()} Free" : ""}',
+                            '${qty % 1 == 0 ? qty.toInt() : qty} $unitStr ${freeQty > 0 ? "(+${freeQty.toInt()} Free)" : ""}',
                             style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                           ),
+                          const SizedBox(height: 4),
                           Text(
-                            '₹${item.totalAmount?.toStringAsFixed(2)}',
-                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                            '₹${total.toStringAsFixed(2)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),
                     ],
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -395,41 +610,75 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Padding(
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: Color(0xFFFB8C00), width: 5)),
+        ),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Row(
+              children: [
+                const Icon(Icons.calculate_outlined, color: Color(0xFFFB8C00), size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'INVOICE FINANCIAL BREAKDOWN',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFB8C00),
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             _buildTotalRow('Subtotal (Taxable Value)', '₹${invoice.subtotal?.toStringAsFixed(2) ?? "0.00"}', theme),
             _buildTotalRow('Discount Total', '-₹${invoice.discountAmount?.toStringAsFixed(2) ?? "0.00"}', theme),
             _buildTotalRow('GST Tax Total', '₹${invoice.totalGST?.toStringAsFixed(2) ?? "0.00"}', theme),
             _buildTotalRow('Round Off', '₹${invoice.roundOff?.toStringAsFixed(2) ?? "0.00"}', theme),
-            const Divider(),
+            const Divider(height: 20),
             _buildTotalRow('GRAND TOTAL', '₹${invoice.grandTotal?.toStringAsFixed(2) ?? "0.00"}', theme, isGrandTotal: true),
             const SizedBox(height: 12),
-            Text(
-              'Amount in Words:',
-              style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Amount in Words:',
+                    style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    words,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
-            Text(
-              words,
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 12),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text('GST Tax Division Splits:', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            if (invoice.cgstAmount != null && invoice.cgstAmount! > 0)
-              _buildTaxRow('Central GST (CGST):', '₹${invoice.cgstAmount?.toStringAsFixed(2)}', theme),
-            if (invoice.sgstAmount != null && invoice.sgstAmount! > 0)
-              _buildTaxRow('State GST (SGST):', '₹${invoice.sgstAmount?.toStringAsFixed(2)}', theme),
-            if (invoice.igstAmount != null && invoice.igstAmount! > 0)
-              _buildTaxRow('Integrated GST (IGST):', '₹${invoice.igstAmount?.toStringAsFixed(2)}', theme),
+            if ((invoice.cgstAmount ?? 0) > 0 || (invoice.sgstAmount ?? 0) > 0 || (invoice.igstAmount ?? 0) > 0) ...[
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 4),
+              Text('GST Tax Division Splits:', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              if (invoice.cgstAmount != null && invoice.cgstAmount! > 0)
+                _buildTaxRow('Central GST (CGST):', '₹${invoice.cgstAmount?.toStringAsFixed(2)}', theme),
+              if (invoice.sgstAmount != null && invoice.sgstAmount! > 0)
+                _buildTaxRow('State GST (SGST):', '₹${invoice.sgstAmount?.toStringAsFixed(2)}', theme),
+              if (invoice.igstAmount != null && invoice.igstAmount! > 0)
+                _buildTaxRow('Integrated GST (IGST):', '₹${invoice.igstAmount?.toStringAsFixed(2)}', theme),
+            ],
           ],
         ),
       ),
@@ -464,7 +713,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
   Widget _buildTaxRow(String label, String val, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -476,7 +725,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   }
 
   Widget _buildPaymentCard(Invoice invoice, ThemeData theme) {
-    final dueStr = invoice.dueDate?.toIso8601String().substring(0, 10) ?? 'N/A';
+    final dueStr = invoice.dueDate != null ? DateFormat('dd MMM yyyy').format(invoice.dueDate!) : 'N/A';
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -488,11 +737,11 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('PAYMENT & OUTSTANDING status', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+            Text('PAYMENT & OUTSTANDING STATUS', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
             const SizedBox(height: 12),
             _buildTaxRow('Payment Status:', invoice.paymentStatus ?? 'Unpaid', theme),
-            _buildTaxRow('Paid Amount:', '₹${invoice.paidAmount?.toStringAsFixed(2)}', theme),
-            _buildTaxRow('Pending credit Amount:', '₹${invoice.pendingAmount?.toStringAsFixed(2)}', theme),
+            _buildTaxRow('Paid Amount:', '₹${invoice.paidAmount?.toStringAsFixed(2) ?? "0.00"}', theme),
+            _buildTaxRow('Pending Credit Amount:', '₹${invoice.pendingAmount?.toStringAsFixed(2) ?? "0.00"}', theme),
             _buildTaxRow('Credit Due Date:', dueStr, theme),
           ],
         ),
@@ -512,14 +761,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('SALES AUDIT history', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+            Text('SALES AUDIT & TIMELINE', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
             const SizedBox(height: 12),
             if (invoice.remarks != null && invoice.remarks!.isNotEmpty) ...[
               Text('Remarks / Terms:', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold)),
               Text(invoice.remarks!, style: theme.textTheme.bodyMedium),
               const SizedBox(height: 16),
             ],
-            if (invoice.invoiceStatus == 'Cancelled') ...[
+            if (invoice.paymentStatus == 'Cancelled') ...[
               Text('Cancellation Audit Info:', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.red)),
               Text('Cancelled By: ${invoice.cancelledBy ?? "N/A"}', style: theme.textTheme.bodySmall),
               Text('Cancelled Date: ${invoice.cancelledDate?.toIso8601String().substring(0, 16)}', style: theme.textTheme.bodySmall),
