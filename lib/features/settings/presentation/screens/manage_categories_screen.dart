@@ -16,9 +16,7 @@ class ManageCategoriesScreen extends ConsumerStatefulWidget {
   ConsumerState<ManageCategoriesScreen> createState() => _ManageCategoriesScreenState();
 }
 
-class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
+class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen> {
   List<String> _partyTypes = [];
   List<String> _salesmen = [];
   List<String> _localities = [];
@@ -28,17 +26,15 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
   bool _isLoading = false;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
+  final List<String> _defaultPartyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier'];
+  final List<String> _defaultSalesmen = ['Default Salesman', 'Salesperson 1', 'Salesperson 2'];
+  final List<String> _defaultLocalities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines'];
+  final List<String> _defaultCategories = ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services'];
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
     _loadAllCategories();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadAllCategories() async {
@@ -47,23 +43,18 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
       final prefs = ref.read(sharedPreferencesProvider);
       final isar = ref.read(databaseServiceProvider).isar;
 
-      // 1. Party Types
       final customPT = prefs.getStringList('custom_party_types_list') ?? [];
-      _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier', ...customPT].toSet().toList();
+      _partyTypes = [..._defaultPartyTypes, ...customPT].toSet().toList();
 
-      // 2. Salesmen
       final customS = prefs.getStringList('custom_salesmen_list') ?? [];
-      _salesmen = ['Default Salesman', 'Salesperson 1', 'Salesperson 2', ...customS].toSet().toList();
+      _salesmen = [..._defaultSalesmen, ...customS].toSet().toList();
 
-      // 3. Localities
       final customL = prefs.getStringList('custom_localities_list') ?? [];
-      _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines', ...customL].toSet().toList();
+      _localities = [..._defaultLocalities, ...customL].toSet().toList();
 
-      // 4. Business Categories
       final customBC = prefs.getStringList('party_business_categories') ?? [];
-      _businessCategories = ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services', ...customBC].toSet().toList();
+      _businessCategories = [..._defaultCategories, ...customBC].toSet().toList();
 
-      // 5. Units
       _units = await isar.units.filter().isDeletedEqualTo(false).findAll();
     } catch (_) {
     } finally {
@@ -71,20 +62,20 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     }
   }
 
-  // --- Category Handlers ---
-  Future<void> _addOrEditItemDialog({
+  // --- Preference List Handlers ---
+  Future<void> _addPrefItem({
     required String title,
     required String labelText,
-    String? initialValue,
-    required Function(String text) onSave,
+    required String prefKey,
   }) async {
-    final controller = TextEditingController(text: initialValue ?? '');
+    final controller = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
     final result = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(title),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         content: Form(
           key: formKey,
           child: TextFormField(
@@ -112,7 +103,72 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     );
 
     if (result != null && result.isNotEmpty) {
-      await onSave(result);
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList(prefKey) ?? [];
+      if (!list.contains(result)) {
+        list.add(result);
+        await prefs.setStringList(prefKey, list);
+      }
+      await _loadAllCategories();
+    }
+  }
+
+  Future<void> _editPrefItem({
+    required String title,
+    required String oldItem,
+    required String prefKey,
+    required List<String> defaultItems,
+  }) async {
+    final controller = TextEditingController(text: oldItem);
+    final formKey = GlobalKey<FormState>();
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Updated Name',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) => v == null || v.trim().isEmpty ? 'Value is required' : null,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, controller.text.trim());
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty && result != oldItem) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList(prefKey) ?? [];
+
+      if (defaultItems.contains(oldItem)) {
+        // If system default item is edited, save customized override into list
+        if (!list.contains(result)) list.add(result);
+      } else {
+        final index = list.indexOf(oldItem);
+        if (index != -1) {
+          list[index] = result;
+        } else {
+          list.add(result);
+        }
+      }
+      await prefs.setStringList(prefKey, list);
       await _loadAllCategories();
     }
   }
@@ -120,7 +176,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
   Future<void> _deletePrefItem(String prefKey, String item, List<String> defaultItems) async {
     if (defaultItems.contains(item)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cannot delete system default item "$item".')),
+        SnackBar(content: Text('Cannot delete system default item "$item". You can edit it instead.')),
       );
       return;
     }
@@ -128,6 +184,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Confirm Delete'),
         content: Text('Are you sure you want to delete "$item"?'),
         actions: [
@@ -156,190 +213,532 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Categories & Master Lists'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(icon: Icon(Icons.badge), text: 'Party Types'),
-            Tab(icon: Icon(Icons.person_pin), text: 'Salesmen'),
-            Tab(icon: Icon(Icons.square_foot), text: 'Units & Dual Units'),
-            Tab(icon: Icon(Icons.location_city), text: 'Localities & Areas'),
-            Tab(icon: Icon(Icons.category), text: 'Business Categories'),
-          ],
-        ),
+        title: const Text('Manage Categories & Masters', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildSimpleCategoryTab(
-                  title: 'Party Types',
-                  items: _partyTypes,
-                  defaultItems: ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier'],
-                  prefKey: 'custom_party_types_list',
-                  onAdd: () => _addOrEditItemDialog(
-                    title: 'Add Party Type',
-                    labelText: 'Party Type Name',
-                    onSave: (text) async {
-                      final prefs = ref.read(sharedPreferencesProvider);
-                      final list = prefs.getStringList('custom_party_types_list') ?? [];
-                      if (!list.contains(text)) list.add(text);
-                      await prefs.setStringList('custom_party_types_list', list);
-                    },
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Banner Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [theme.colorScheme.primary, theme.colorScheme.tertiary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Category Management Center',
+                          style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Configure party types, salesmen, units, localities, and business categories for your ERP.',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                _buildSalesmenTab(),
-                _buildUnitsTab(),
-                _buildSimpleCategoryTab(
-                  title: 'Localities / Areas',
-                  items: _localities,
-                  defaultItems: ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines'],
-                  prefKey: 'custom_localities_list',
-                  onAdd: () => _addOrEditItemDialog(
-                    title: 'Add Locality / Area',
-                    labelText: 'Locality Name',
-                    onSave: (text) async {
-                      final prefs = ref.read(sharedPreferencesProvider);
-                      final list = prefs.getStringList('custom_localities_list') ?? [];
-                      if (!list.contains(text)) list.add(text);
-                      await prefs.setStringList('custom_localities_list', list);
-                    },
+                  const SizedBox(height: 24),
+                  const Text('CATEGORIES & MASTER LISTS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+                  const SizedBox(height: 12),
+
+                  // Menu Category Cards List
+                  _buildCategoryMenuCard(
+                    title: 'Party Types',
+                    subtitle: 'Manage party roles (Customer, Wholesaler, Supplier, etc.)',
+                    itemCount: _partyTypes.length,
+                    icon: Icons.badge_rounded,
+                    iconColor: const Color(0xFF673AB7),
+                    iconBg: const Color(0xFFEDE7F6),
+                    onTap: () => _openCategorySubScreen(
+                      title: 'Manage Party Types',
+                      items: _partyTypes,
+                      defaultItems: _defaultPartyTypes,
+                      prefKey: 'custom_party_types_list',
+                      onAdd: () => _addPrefItem(title: 'Add Party Type', labelText: 'Party Type Name', prefKey: 'custom_party_types_list'),
+                    ),
                   ),
-                ),
-                _buildSimpleCategoryTab(
-                  title: 'Business Categories',
-                  items: _businessCategories,
-                  defaultItems: ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services'],
-                  prefKey: 'party_business_categories',
-                  onAdd: () => _addOrEditItemDialog(
-                    title: 'Add Business Category',
-                    labelText: 'Category Name',
-                    onSave: (text) async {
-                      final prefs = ref.read(sharedPreferencesProvider);
-                      final list = prefs.getStringList('party_business_categories') ?? [];
-                      if (!list.contains(text)) list.add(text);
-                      await prefs.setStringList('party_business_categories', list);
-                    },
+                  const SizedBox(height: 12),
+
+                  _buildCategoryMenuCard(
+                    title: 'Salesmen Directory',
+                    subtitle: 'Manage sales representatives & track assigned transactions',
+                    itemCount: _salesmen.length,
+                    icon: Icons.person_pin_rounded,
+                    iconColor: const Color(0xFF00897B),
+                    iconBg: const Color(0xFFE0F2F1),
+                    onTap: _openSalesmenSubScreen,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+
+                  _buildCategoryMenuCard(
+                    title: 'Measurement Units & Dual Units',
+                    subtitle: 'Manage product measurement units (Pcs, Kg, Box, Ltr, etc.)',
+                    itemCount: _units.length,
+                    icon: Icons.square_foot_rounded,
+                    iconColor: const Color(0xFFFB8C00),
+                    iconBg: const Color(0xFFFFF3E0),
+                    onTap: _openUnitsSubScreen,
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildCategoryMenuCard(
+                    title: 'Localities & Areas',
+                    subtitle: 'Manage party location zones & market areas',
+                    itemCount: _localities.length,
+                    icon: Icons.location_city_rounded,
+                    iconColor: const Color(0xFF1E88E5),
+                    iconBg: const Color(0xFFE3F2FD),
+                    onTap: () => _openCategorySubScreen(
+                      title: 'Manage Localities & Areas',
+                      items: _localities,
+                      defaultItems: _defaultLocalities,
+                      prefKey: 'custom_localities_list',
+                      onAdd: () => _addPrefItem(title: 'Add Locality / Area', labelText: 'Locality Name', prefKey: 'custom_localities_list'),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildCategoryMenuCard(
+                    title: 'Business Categories',
+                    subtitle: 'Manage party industry sectors (Retail, Wholesale, Pharma, etc.)',
+                    itemCount: _businessCategories.length,
+                    icon: Icons.category_rounded,
+                    iconColor: const Color(0xFFE91E63),
+                    iconBg: const Color(0xFFFCE4EC),
+                    onTap: () => _openCategorySubScreen(
+                      title: 'Manage Business Categories',
+                      items: _businessCategories,
+                      defaultItems: _defaultCategories,
+                      prefKey: 'party_business_categories',
+                      onAdd: () => _addPrefItem(title: 'Add Business Category', labelText: 'Category Name', prefKey: 'party_business_categories'),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
     );
   }
 
-  // --- 1. Generic Simple Category Tab ---
-  Widget _buildSimpleCategoryTab({
+  // --- Category Card Builder ---
+  Widget _buildCategoryMenuCard({
+    required String title,
+    required String subtitle,
+    required int itemCount,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        leading: CircleAvatar(
+          radius: 26,
+          backgroundColor: iconBg,
+          child: Icon(icon, color: iconColor, size: 28),
+        ),
+        title: Row(
+          children: [
+            Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '$itemCount Items',
+                style: TextStyle(color: iconColor, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+      ),
+    );
+  }
+
+  // --- Sub-Screen List View (With Edit & Delete buttons + FAB bottom padding) ---
+  void _openCategorySubScreen({
     required String title,
     required List<String> items,
     required List<String> defaultItems,
     required String prefKey,
     required VoidCallback onAdd,
   }) {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: onAdd,
-        icon: const Icon(Icons.add),
-        label: Text('Add $title'),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          final isDefault = defaultItems.contains(item);
-
-          return Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-            ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isDefault ? Colors.blue.withOpacity(0.1) : Colors.green.withOpacity(0.1),
-                child: Icon(isDefault ? Icons.lock_outline : Icons.category, color: isDefault ? Colors.blue : Colors.green),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setSubState) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
-              title: Text(item, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(isDefault ? 'System Default Category' : 'Custom Added'),
-              trailing: isDefault
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _deletePrefItem(prefKey, item, defaultItems),
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () async {
+                  onAdd();
+                  await _loadAllCategories();
+                  setSubState(() {});
+                },
+                icon: const Icon(Icons.add),
+                label: Text('Add Item'),
+              ),
+              body: ListView.separated(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 90), // Prevent FAB overlap!
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  final isDefault = defaultItems.contains(item);
+
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
                     ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // --- 2. Salesmen Tab with Detailed View ---
-  Widget _buildSalesmenTab() {
-    final defaultSalesmen = ['Default Salesman', 'Salesperson 1', 'Salesperson 2'];
-
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _addOrEditItemDialog(
-          title: 'Add New Salesman',
-          labelText: 'Salesman Name',
-          onSave: (text) async {
-            final prefs = ref.read(sharedPreferencesProvider);
-            final list = prefs.getStringList('custom_salesmen_list') ?? [];
-            if (!list.contains(text)) list.add(text);
-            await prefs.setStringList('custom_salesmen_list', list);
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: CircleAvatar(
+                        backgroundColor: isDefault ? Colors.blue.withOpacity(0.1) : Colors.purple.withOpacity(0.1),
+                        child: Icon(isDefault ? Icons.star_border : Icons.category, color: isDefault ? Colors.blue : Colors.purple),
+                      ),
+                      title: Text(item, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: Text(isDefault ? 'System Default Item' : 'Custom Category'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                            tooltip: 'Edit Item',
+                            onPressed: () async {
+                              await _editPrefItem(title: 'Edit Item', oldItem: item, prefKey: prefKey, defaultItems: defaultItems);
+                              setSubState(() {});
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, color: isDefault ? Colors.grey : Colors.red),
+                            tooltip: isDefault ? 'Cannot delete default item' : 'Delete Item',
+                            onPressed: isDefault
+                                ? null
+                                : () async {
+                                    await _deletePrefItem(prefKey, item, defaultItems);
+                                    setSubState(() {});
+                                  },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
           },
         ),
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Salesman'),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _salesmen.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final salesman = _salesmen[index];
-          final isDefault = defaultSalesmen.contains(salesman);
-
-          return Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-            ),
-            child: ListTile(
-              onTap: () => _openSalesmanDetailModal(salesman),
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFE8EAF6),
-                child: Icon(Icons.person, color: Colors.indigo),
-              ),
-              title: Text(salesman, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Tap to view assigned transactions & performance'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.visibility_outlined, color: Colors.indigo),
-                    onPressed: () => _openSalesmanDetailModal(salesman),
-                  ),
-                  if (!isDefault)
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () => _deletePrefItem('custom_salesmen_list', salesman, defaultSalesmen),
-                    ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 
-  // --- 3. Salesman Detailed Modal ---
+  // --- Salesmen Sub-Screen ---
+  void _openSalesmenSubScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setSubState) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Manage Salesmen', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () async {
+                  await _addPrefItem(title: 'Add New Salesman', labelText: 'Salesman Name', prefKey: 'custom_salesmen_list');
+                  setSubState(() {});
+                },
+                icon: const Icon(Icons.person_add),
+                label: const Text('Add Salesman'),
+              ),
+              body: ListView.separated(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 90), // Prevent FAB overlap!
+                itemCount: _salesmen.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final salesman = _salesmen[index];
+                  final isDefault = _defaultSalesmen.contains(salesman);
+
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      onTap: () => _openSalesmanDetailModal(salesman),
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFE0F2F1),
+                        child: Icon(Icons.person, color: Color(0xFF00897B)),
+                      ),
+                      title: Text(salesman, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: const Text('Tap to view assigned orders & revenue performance'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.visibility_outlined, color: Colors.indigo),
+                            tooltip: 'View Performance',
+                            onPressed: () => _openSalesmanDetailModal(salesman),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                            tooltip: 'Edit Salesman',
+                            onPressed: () async {
+                              await _editPrefItem(title: 'Edit Salesman Name', oldItem: salesman, prefKey: 'custom_salesmen_list', defaultItems: _defaultSalesmen);
+                              setSubState(() {});
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, color: isDefault ? Colors.grey : Colors.red),
+                            tooltip: isDefault ? 'Cannot delete default salesman' : 'Delete Salesman',
+                            onPressed: isDefault
+                                ? null
+                                : () async {
+                                    await _deletePrefItem('custom_salesmen_list', salesman, _defaultSalesmen);
+                                    setSubState(() {});
+                                  },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // --- Units Sub-Screen ---
+  void _openUnitsSubScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setSubState) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Manage Measurement Units', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () async {
+                  await _showAddUnitDialog();
+                  setSubState(() {});
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Unit'),
+              ),
+              body: ListView.separated(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 90), // Prevent FAB overlap!
+                itemCount: _units.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final unit = _units[index];
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFFFF3E0),
+                        child: Icon(Icons.square_foot, color: Colors.orange),
+                      ),
+                      title: Text('${unit.unitName ?? "Unit"} (${unit.shortName ?? ""})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: Text('Short Symbol: ${unit.shortName ?? "N/A"}'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                            tooltip: 'Edit Unit',
+                            onPressed: () async {
+                              await _showEditUnitDialog(unit);
+                              setSubState(() {});
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            tooltip: 'Delete Unit',
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  title: const Text('Delete Unit'),
+                                  content: Text('Are you sure you want to delete unit "${unit.unitName}"?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                    ElevatedButton(onPressed: () => Navigator.pop(c, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text('Delete')),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                final isar = ref.read(databaseServiceProvider).isar;
+                                await isar.writeTxn(() async {
+                                  unit.isDeleted = true;
+                                  await isar.units.put(unit);
+                                });
+                                await _loadAllCategories();
+                                setSubState(() {});
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // --- Add & Edit Unit Dialogs ---
+  Future<void> _showAddUnitDialog() async {
+    final nameController = TextEditingController();
+    final shortController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Add Measurement Unit', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Unit Full Name (e.g. Pieces, Kilograms)', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: shortController,
+              decoration: const InputDecoration(labelText: 'Short Symbol (e.g. Pcs, Kg)', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (shortController.text.trim().isNotEmpty) {
+                final isar = ref.read(databaseServiceProvider).isar;
+                final unit = Unit()
+                  ..uuid = DateTime.now().millisecondsSinceEpoch.toString()
+                  ..unitName = nameController.text.trim().isEmpty ? shortController.text.trim() : nameController.text.trim()
+                  ..shortName = shortController.text.trim()
+                  ..isDeleted = false;
+
+                await isar.writeTxn(() async {
+                  await isar.units.put(unit);
+                });
+                Navigator.pop(ctx);
+                await _loadAllCategories();
+              }
+            },
+            child: const Text('Save Unit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditUnitDialog(Unit unit) async {
+    final nameController = TextEditingController(text: unit.unitName);
+    final shortController = TextEditingController(text: unit.shortName);
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Edit Measurement Unit', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Unit Full Name', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: shortController,
+              decoration: const InputDecoration(labelText: 'Short Symbol', border: OutlineInputBorder()),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (shortController.text.trim().isNotEmpty) {
+                final isar = ref.read(databaseServiceProvider).isar;
+                await isar.writeTxn(() async {
+                  unit.unitName = nameController.text.trim();
+                  unit.shortName = shortController.text.trim();
+                  unit.updatedAt = DateTime.now();
+                  await isar.units.put(unit);
+                });
+                Navigator.pop(ctx);
+                await _loadAllCategories();
+              }
+            },
+            child: const Text('Update Unit'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- Salesman Detailed Performance Modal ---
   void _openSalesmanDetailModal(String salesman) async {
     final isar = ref.read(databaseServiceProvider).isar;
     final orders = await isar.orders.filter().isDeletedEqualTo(false).and().createdByEqualTo(salesman).findAll();
@@ -353,7 +752,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.8,
@@ -379,12 +778,13 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                 children: [
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Orders Value', style: TextStyle(fontSize: 12, color: Colors.blue)),
+                          const Text('Orders Revenue', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
                           Text(currencyFormat.format(ordersVal), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
@@ -393,12 +793,13 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Invoices Value', style: TextStyle(fontSize: 12, color: Colors.green)),
+                          const Text('Invoices Revenue', style: TextStyle(fontSize: 12, color: Colors.teal, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
                           Text(currencyFormat.format(invoicesVal), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
@@ -406,9 +807,9 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              const Text('Transaction Activity History:', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
+              const Text('Assigned Transaction History:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const SizedBox(height: 10),
               Expanded(
                 child: (orders.isEmpty && invoices.isEmpty)
                     ? const Center(child: Text('No transactions recorded by this salesman yet.'))
@@ -433,99 +834,6 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
           ),
         );
       },
-    );
-  }
-
-  // --- 4. Units & Dual Units Tab ---
-  Widget _buildUnitsTab() {
-    return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddUnitDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Unit'),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _units.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final unit = _units[index];
-          return Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-            ),
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFFFF3E0),
-                child: Icon(Icons.square_foot, color: Colors.orange),
-              ),
-              title: Text('${unit.unitName ?? "Unit"} (${unit.shortName ?? ""})', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('Symbol: ${unit.shortName ?? "N/A"}'),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
-                onPressed: () async {
-                  final isar = ref.read(databaseServiceProvider).isar;
-                  await isar.writeTxn(() async {
-                    unit.isDeleted = true;
-                    await isar.units.put(unit);
-                  });
-                  _loadAllCategories();
-                },
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _showAddUnitDialog() async {
-    final nameController = TextEditingController();
-    final shortController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Measurement Unit'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Unit Full Name (e.g. Pieces, Kilograms)', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: shortController,
-              decoration: const InputDecoration(labelText: 'Short Name / Symbol (e.g. Pcs, Kg)', border: OutlineInputBorder()),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (shortController.text.trim().isNotEmpty) {
-                final isar = ref.read(databaseServiceProvider).isar;
-                final unit = Unit()
-                  ..uuid = DateTime.now().millisecondsSinceEpoch.toString()
-                  ..unitName = nameController.text.trim().isEmpty ? shortController.text.trim() : nameController.text.trim()
-                  ..shortName = shortController.text.trim()
-                  ..isDeleted = false;
-
-                await isar.writeTxn(() async {
-                  await isar.units.put(unit);
-                });
-                Navigator.pop(ctx);
-                _loadAllCategories();
-              }
-            },
-            child: const Text('Save Unit'),
-          ),
-        ],
-      ),
     );
   }
 }
