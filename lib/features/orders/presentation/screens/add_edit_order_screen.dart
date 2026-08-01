@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/data/local/collections/settings_collection.da
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
@@ -48,10 +49,74 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
   Order? _existingOrder;
   DateTime _orderDate = DateTime.now();
 
+  List<String> _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2'];
+  String _selectedSalesman = 'Default Salesman';
+
+  void _loadSalesmen() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final custom = prefs.getStringList('custom_salesmen_list') ?? [];
+      setState(() {
+        _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2', ...custom].toSet().toList();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showAddSalesmanDialog() async {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final newSalesman = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add New Salesman'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Salesman Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_add),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, nameController.text.trim());
+                }
+              },
+              child: const Text('Save Salesman'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newSalesman != null && newSalesman.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_salesmen_list') ?? [];
+      if (!list.contains(newSalesman)) {
+        list.add(newSalesman);
+        await prefs.setStringList('custom_salesmen_list', list);
+      }
+      setState(() {
+        _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2', ...list].toSet().toList();
+        _selectedSalesman = newSalesman;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSalesmen();
       ref.read(cartProvider.notifier).clear();
       if (widget.orderUuid != null) {
         _loadExistingOrder();
@@ -178,9 +243,9 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       if (_existingOrder == null) {
         order.orderNumber = await repo.generateNextOrderNumber();
         order.status = 'Pending';
-        order.createdBy = userEmail;
+        order.createdBy = _selectedSalesman;
       } else {
-        order.editedBy = userEmail;
+        order.editedBy = _selectedSalesman;
         order.editTime = DateTime.now();
       }
 
@@ -487,6 +552,34 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                       decoration: const InputDecoration(labelText: 'Order Date', border: OutlineInputBorder()),
                       child: Text(DateFormat('dd-MM-yyyy').format(_orderDate)),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
+                          decoration: const InputDecoration(
+                            labelText: 'Salesman Name',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
+                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedSalesman = val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        icon: const Icon(Icons.person_add_alt_1),
+                        tooltip: 'Add Salesman',
+                        onPressed: _showAddSalesmanDialog,
+                      ),
+                    ],
                   ),
                 ),
               ],

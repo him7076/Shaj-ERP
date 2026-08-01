@@ -392,11 +392,26 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         await isar.orders.put(order);
 
         // 5. Create InvoiceItems
-        for (var orderItem in order.orderItems) {
+        List<OrderItem> sourceItems = [];
+        if (kIsWeb) {
+          final allOrderItems = await isar.orderItems.where().findAll();
+          sourceItems = allOrderItems.where((i) => i.order.value?.id == order.id || i.itemId != null).toList();
+        } else {
+          try { await order.orderItems.load(); } catch (_) {}
+          sourceItems = order.orderItems.toList();
+        }
+        if (sourceItems.isEmpty) {
+          try { await order.orderItems.load(); } catch (_) {}
+          sourceItems = order.orderItems.toList();
+        }
+
+        for (var orderItem in sourceItems) {
           try { await orderItem.item.load(); } catch (_) {}
           
           final invItem = InvoiceItem()
             ..uuid = _generateUuid()
+            ..parentInvoiceId = invoiceId
+            ..unit = orderItem.unit
             ..itemId = orderItem.itemId
             ..itemName = orderItem.itemName
             ..hsnCode = orderItem.hsnCode
@@ -414,32 +429,36 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ..isSynced = false;
 
           await isar.invoiceItems.put(invItem);
-          invItem.invoice.value = invoice;
+          if (!kIsWeb) {
+            invItem.invoice.value = invoice;
+          }
           
-          if (orderItem.item.value != null) {
-            invItem.item.value = orderItem.item.value;
-            
-            // Deduct stock if stock WAS NOT reserved on order creation.
-            // If it was already reserved on order, we do not deduct again!
-            if (!reserveStockOnOrder) {
-              final dbItem = orderItem.item.value!;
-              final double available = dbItem.currentStock ?? 0.0;
-              final double requested = orderItem.quantity ?? 0.0;
-
-              if (available < requested) {
-                throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requested');
-              }
-
-              dbItem.currentStock = available - requested;
-
-              final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Convert Order #${order.orderNumber}';
-              dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+          if (orderItem.item.value != null || orderItem.itemId != null) {
+            final dbItem = orderItem.item.value ?? (orderItem.itemId != null ? await isar.items.get(orderItem.itemId!) : null);
+            if (dbItem != null) {
+              if (!kIsWeb) invItem.item.value = dbItem;
               
-              await isar.items.put(dbItem);
+              if (!reserveStockOnOrder) {
+                final double available = dbItem.currentStock ?? 0.0;
+                final double requested = orderItem.quantity ?? 0.0;
+
+                if (available < requested) {
+                  throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requested');
+                }
+
+                dbItem.currentStock = available - requested;
+
+                final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Convert Order #${order.orderNumber}';
+                dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+                
+                await isar.items.put(dbItem);
+              }
             }
           }
-          await invItem.item.save();
-          await invItem.invoice.save();
+          if (!kIsWeb) {
+            await invItem.item.save();
+            await invItem.invoice.save();
+          }
           invoiceItems.add(invItem);
         }
 

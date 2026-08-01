@@ -8,7 +8,6 @@ class InvoiceNumberService {
 
   InvoiceNumberService(this.isar);
 
-  /// Returns financial year prefix based on Indian FY calendar (April 1 - March 31)
   String getFinancialYearPrefix(DateTime date) {
     final year = date.year;
     final month = date.month;
@@ -22,35 +21,13 @@ class InvoiceNumberService {
     }
   }
 
-  /// Generates the next sequential unique Invoice Number (e.g. 2026-27/INV000001)
+  /// Generates the next sequential unique Invoice Number (e.g. INV-01, INV-02)
   Future<String> generateNextInvoiceNumber() async {
     try {
-      final prefix = getFinancialYearPrefix(DateTime.now());
-      final queryPrefix = '$prefix/INV';
-
-      // Find last invoice generated in this financial year
-      final lastInvoice = await isar.invoices
-          .filter()
-          .invoiceNumberStartsWith(queryPrefix)
-          .sortByInvoiceNumberDesc()
-          .findFirst();
-
-      if (lastInvoice == null || lastInvoice.invoiceNumber == null) {
-        return '$queryPrefix${1.toString().padLeft(6, '0')}';
-      }
-
-      final lastCode = lastInvoice.invoiceNumber!;
-      final parts = lastCode.split('/INV');
-      if (parts.length < 2) {
-        return '$queryPrefix${1.toString().padLeft(6, '0')}';
-      }
-
-      final numStr = parts[1];
-      final currentNum = int.tryParse(numStr) ?? 0;
-      final nextNum = currentNum + 1;
-
-      final nextCode = '$queryPrefix${nextNum.toString().padLeft(6, '0')}';
-      logger.debug('Generated next invoice number: $nextCode (previous: $lastCode)');
+      final count = await isar.invoices.filter().isDeletedEqualTo(false).count();
+      final numStr = (count + 1).toString().padLeft(2, '0');
+      final nextCode = 'INV-$numStr';
+      logger.debug('Generated next invoice number: $nextCode');
       return nextCode;
     } catch (e) {
       throw InvoiceException('Failed to generate next invoice number: $e');

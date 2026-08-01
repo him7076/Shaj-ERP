@@ -21,14 +21,9 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
   @override
   Future<String> generateNextDebitNoteNumber() async {
     try {
-      final now = DateTime.now();
-      final year = now.year;
-      final month = now.month;
-      final String prefix = month >= 4 ? 'DN-$year-${year + 1}/' : 'DN-${year - 1}-$year/';
-
-      final count = await collection.filter().debitNoteNumberStartsWith(prefix).count();
-      final numStr = (count + 1).toString().padLeft(4, '0');
-      return '$prefix$numStr';
+      final count = await collection.filter().isDeletedEqualTo(false).count();
+      final suffix = (count + 1).toString().padLeft(2, '0');
+      return 'DN-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate debit note number: $e');
     }

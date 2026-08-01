@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edi
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:isar/isar.dart';
@@ -47,11 +48,128 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
   Invoice? _existingInvoice;
   String _paymentMode = 'Cash';
+  List<String> _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit'];
+
+  List<String> _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2'];
+  String _selectedSalesman = 'Default Salesman';
+
+  void _loadSalesmenAndModes() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final customS = prefs.getStringList('custom_salesmen_list') ?? [];
+      final customP = prefs.getStringList('custom_payment_modes_list') ?? [];
+      setState(() {
+        _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2', ...customS].toSet().toList();
+        _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...customP].toSet().toList();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showAddSalesmanDialog() async {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final newSalesman = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add New Salesman'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Salesman Name',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_add),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, nameController.text.trim());
+                }
+              },
+              child: const Text('Save Salesman'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newSalesman != null && newSalesman.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_salesmen_list') ?? [];
+      if (!list.contains(newSalesman)) {
+        list.add(newSalesman);
+        await prefs.setStringList('custom_salesmen_list', list);
+      }
+      setState(() {
+        _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2', ...list].toSet().toList();
+        _selectedSalesman = newSalesman;
+      });
+    }
+  }
+
+  Future<void> _showAddPaymentModeDialog() async {
+    final modeController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final newMode = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Payment Type'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: modeController,
+              decoration: const InputDecoration(
+                labelText: 'Payment Mode Name (e.g. Finance, EMI)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.account_balance_wallet),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, modeController.text.trim());
+                }
+              },
+              child: const Text('Add Payment Type'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newMode != null && newMode.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_payment_modes_list') ?? [];
+      if (!list.contains(newMode)) {
+        list.add(newMode);
+        await prefs.setStringList('custom_payment_modes_list', list);
+      }
+      setState(() {
+        _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...list].toSet().toList();
+        _paymentMode = newMode;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _loadSalesmenAndModes();
       ref.read(invoiceCartProvider.notifier).clear();
       if (widget.invoiceUuid != null) {
         await _loadInvoiceData();
@@ -209,6 +327,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         ..pendingAmount = totals['pendingAmount']
         ..dueDate = _dueDate
         ..remarks = currentRemarks
+        ..createdBy = _selectedSalesman
         ..updatedAt = DateTime.now()
         ..isDeleted = false;
 
@@ -396,6 +515,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                         const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
                         const DropdownMenuItem(value: 'UPI', child: Text('UPI / PhonePe / GPay')),
                         const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                        const DropdownMenuItem(value: 'Credit', child: Text('Credit')),
+                        ..._paymentModesList.map((m) => DropdownMenuItem(value: m, child: Text(m))),
                         ...activeAccounts.map((acc) => DropdownMenuItem(
                           value: acc.accountName,
                           child: Text(acc.accountName ?? ''),
@@ -404,19 +525,31 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
                         dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                       }
-                      return DropdownButtonFormField<String>(
-                        value: _paymentMode,
-                        decoration: const InputDecoration(
-                          labelText: 'Payment Mode / Account',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.payment),
-                        ),
-                        items: dropdownItems,
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _paymentMode = val);
-                          }
-                        },
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: _paymentMode,
+                              decoration: const InputDecoration(
+                                labelText: 'Payment Mode / Account',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.payment),
+                              ),
+                              items: dropdownItems,
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _paymentMode = val);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            icon: const Icon(Icons.account_balance_wallet_outlined),
+                            tooltip: 'Add Payment Type',
+                            onPressed: _showAddPaymentModeDialog,
+                          ),
+                        ],
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
@@ -617,6 +750,34 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       decoration: const InputDecoration(labelText: 'Invoice Date', border: OutlineInputBorder()),
                       child: Text(DateFormat('dd-MM-yyyy').format(_invoiceDate)),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
+                          decoration: const InputDecoration(
+                            labelText: 'Salesman Name',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
+                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedSalesman = val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        icon: const Icon(Icons.person_add_alt_1),
+                        tooltip: 'Add Salesman',
+                        onPressed: _showAddSalesmanDialog,
+                      ),
+                    ],
                   ),
                 ),
               ],

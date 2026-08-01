@@ -43,8 +43,8 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
   Future<String> generateNextPurchaseNumber() async {
     try {
       final count = await collection.filter().isDeletedEqualTo(false).count();
-      final suffix = (count + 1).toString().padLeft(6, '0');
-      return 'PUR-2026-$suffix';
+      final suffix = (count + 1).toString().padLeft(2, '0');
+      return 'PUR-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate purchase number: $e');
     }

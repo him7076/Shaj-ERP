@@ -40,12 +40,15 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
   @override
   Future<String> generateNextTransactionNumber(String type) async {
     try {
-      final count = await collection.filter().isDeletedEqualTo(false).count();
-      final suffix = (count + 1).toString().padLeft(6, '0');
-      String prefix = 'TXN';
+      final count = await collection.filter().isDeletedEqualTo(false).and().transactionTypeEqualTo(type).count();
+      final suffix = (count + 1).toString().padLeft(2, '0');
+      String prefix = 'PAYMENT';
+      if (type == 'Receipt' || type == 'Payment In') prefix = 'RECEIPT';
+      if (type == 'Expense') prefix = 'EXP';
+      if (type == 'Other Income') prefix = 'OTHER Income';
       if (type == 'Credit Note') prefix = 'CN';
       if (type == 'Debit Note') prefix = 'DN';
-      return '$prefix-2026-$suffix';
+      return '$prefix-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate transaction number: $e');
     }

@@ -14,6 +14,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
@@ -50,10 +51,72 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   String? _companyGst;
   Purchase? _existingPurchase;
   String _paymentMode = 'Cash';
+  List<String> _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit'];
+
+  void _loadPaymentModes() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final customP = prefs.getStringList('custom_payment_modes_list') ?? [];
+      setState(() {
+        _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...customP].toSet().toList();
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _showAddPaymentModeDialog() async {
+    final modeController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final newMode = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Payment Type'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: modeController,
+              decoration: const InputDecoration(
+                labelText: 'Payment Mode Name (e.g. Finance, EMI)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.account_balance_wallet),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, modeController.text.trim());
+                }
+              },
+              child: const Text('Add Payment Type'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newMode != null && newMode.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_payment_modes_list') ?? [];
+      if (!list.contains(newMode)) {
+        list.add(newMode);
+        await prefs.setStringList('custom_payment_modes_list', list);
+      }
+      setState(() {
+        _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...list].toSet().toList();
+        _paymentMode = newMode;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadPaymentModes();
     _initValues();
   }
 
@@ -343,6 +406,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                         const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
                         const DropdownMenuItem(value: 'UPI', child: Text('UPI / PhonePe / GPay')),
                         const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                        const DropdownMenuItem(value: 'Credit', child: Text('Credit')),
+                        ..._paymentModesList.map((m) => DropdownMenuItem(value: m, child: Text(m))),
                         ...activeAccounts.map((acc) => DropdownMenuItem(
                           value: acc.accountName,
                           child: Text(acc.accountName ?? ''),
@@ -351,19 +416,31 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
                         dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                       }
-                      return DropdownButtonFormField<String>(
-                        value: _paymentMode,
-                        decoration: const InputDecoration(
-                          labelText: 'Payment Mode / Account',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.payment),
-                        ),
-                        items: dropdownItems,
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _paymentMode = val);
-                          }
-                        },
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: _paymentMode,
+                              decoration: const InputDecoration(
+                                labelText: 'Payment Mode / Account',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.payment),
+                              ),
+                              items: dropdownItems,
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _paymentMode = val);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            icon: const Icon(Icons.account_balance_wallet_outlined),
+                            tooltip: 'Add Payment Type',
+                            onPressed: _showAddPaymentModeDialog,
+                          ),
+                        ],
                       );
                     },
                     loading: () => const Center(child: CircularProgressIndicator()),
