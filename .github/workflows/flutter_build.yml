@@ -3,19 +3,24 @@ name: Flutter Cloud Build
 on:
   push:
     branches:
-      - '**'
+      - 'main'
   pull_request:
     branches:
-      - '**'
+      - 'main'
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Android APK & Web Bundle
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Setup Java (JDK 17)
         uses: actions/setup-java@v4
@@ -31,9 +36,17 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Build Web Bundle
+        run: flutter build web --release --base-href "/"
+
+      - name: Commit build/web for Vercel Deployment
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: Auto-build web bundle for Vercel deployment"
+          file_pattern: 'build/web/*'
+
       - name: Build APK (Split Per ABI)
-        run: |
-          flutter build apk --split-per-abi
+        run: flutter build apk --split-per-abi
 
       - name: Upload APKs as Artifacts
         uses: actions/upload-artifact@v4
