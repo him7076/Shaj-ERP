@@ -48,7 +48,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         } catch (_) {}
 
         if (kIsWeb) {
-          items = await isar.orderItems.filter().findAll();
+          items = await isar.orderItems.where().findAll();
           items = items.where((i) => i.order.value?.id == fetched.id || i.itemId != null).toList();
         } else {
           try {

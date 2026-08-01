@@ -49,7 +49,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         if (kIsWeb) {
           items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(fetched.id).findAll();
           if (items.isEmpty) {
-            final allItems = await isar.invoiceItems.filter().findAll();
+            final allItems = await isar.invoiceItems.where().findAll();
             items = allItems.where((i) => i.invoice.value?.id == fetched.id || i.itemId != null).toList();
           }
         } else {
