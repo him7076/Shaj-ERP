@@ -22,6 +22,15 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_item_collectio
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 
 enum SyncStatus { idle, syncing, success, failure }
 
@@ -88,13 +97,113 @@ class SyncService {
     if (timestamp != null) {
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     }
-    // Default to epoch if first time
     return DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   Future<void> _saveLastSyncTime(DateTime time) async {
     await _prefs.setInt(AppConstants.keyLastSyncTime, time.millisecondsSinceEpoch);
     _currentState = _currentState.copyWith(lastSyncTime: time);
+  }
+
+  /// Synchronizes company/firm definitions with Firestore `firms` collection
+  Future<List<String>> syncFirms() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) {
+      logger.warning('Skipping firm sync: Firebase not authenticated.');
+      return _prefs.getStringList('firms_list') ?? ['firm_default'];
+    }
+
+    try {
+      logger.info('Syncing company/firm definitions with Firebase Firestore...');
+      final companyId = _firebaseService.companyId;
+
+      // 1. Download remote firms from Firestore
+      final querySnapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: companyId)
+          .get();
+
+      final localFirms = List<String>.from(_prefs.getStringList('firms_list') ?? ['firm_default']);
+      final Set<String> updatedFirmsSet = Set.from(localFirms);
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final firmId = data['firmId'] as String? ?? doc.id;
+        final firmName = data['firmName'] as String?;
+        final isDeleted = data['isDeleted'] as bool? ?? false;
+
+        if (isDeleted) {
+          updatedFirmsSet.remove(firmId);
+          await _prefs.remove('firm_name_$firmId');
+        } else {
+          updatedFirmsSet.add(firmId);
+          if (firmName != null && firmName.isNotEmpty) {
+            await _prefs.setString('firm_name_$firmId', firmName);
+          }
+        }
+      }
+
+      if (updatedFirmsSet.isEmpty) {
+        updatedFirmsSet.add('firm_default');
+      }
+
+      final updatedFirmsList = updatedFirmsSet.toList();
+
+      // 2. Upload local firms to Firestore if missing
+      final batch = _firebaseService.firestore.batch();
+      bool hasUploads = false;
+
+      for (var firmId in updatedFirmsList) {
+        final firmName = _prefs.getString('firm_name_$firmId') ??
+            (firmId == 'firm_default' ? 'Default Company' : 'New Company');
+
+        final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
+        batch.set(
+          docRef,
+          {
+            'firmId': firmId,
+            'firmName': firmName,
+            'companyId': companyId,
+            'createdAt': DateTime.now().toIso8601String(),
+            'updatedAt': DateTime.now().toIso8601String(),
+            'isDeleted': false,
+            'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
+          },
+          SetOptions(merge: true),
+        );
+        hasUploads = true;
+      }
+
+      if (hasUploads) {
+        await batch.commit();
+      }
+
+      await _prefs.setStringList('firms_list', updatedFirmsList);
+      logger.info('Firm definitions synced successfully: $updatedFirmsList');
+      return updatedFirmsList;
+    } catch (e, stackTrace) {
+      logger.error('Failed to sync firms with Firestore', e, stackTrace);
+      return _prefs.getStringList('firms_list') ?? ['firm_default'];
+    }
+  }
+
+  /// Delete or soft-delete a firm in Firestore
+  Future<void> deleteRemoteFirm(String firmId) async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+    try {
+      final companyId = _firebaseService.companyId;
+      final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
+      await docRef.set({
+        'firmId': firmId,
+        'companyId': companyId,
+        'isDeleted': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
+      logger.info('Marked firm $firmId as deleted in Firestore.');
+    } catch (e) {
+      logger.error('Failed to delete firm $firmId in Firestore', e);
+    }
   }
 
   /// Triggers full synchronization of all collections: upload edits, download changes, resolve conflicts
@@ -123,6 +232,9 @@ class SyncService {
     ));
 
     try {
+      // 0. Sync company/firm definitions first
+      await syncFirms();
+
       // 1. Upload local changes to Firestore
       await _uploadLocalChanges();
 
@@ -167,7 +279,9 @@ class SyncService {
     final companyId = _firebaseService.companyId;
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
-      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User'
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
     ];
 
     for (var entityType in entityTypes) {
@@ -203,7 +317,6 @@ class SyncService {
     }
 
     for (var queueItem in queueItems) {
-      // If retry threshold is reached, skip for SyncManager retry loop
       if (queueItem.retryCount >= 5) continue;
 
       try {
@@ -211,42 +324,28 @@ class SyncService {
         final entityId = queueItem.entityId!;
         final isar = _dbService.isar;
 
-        // Fetch local entity details dynamically
         dynamic entity;
         switch (entityType) {
-          case 'Party':
-            entity = await isar.partys.get(entityId);
-            break;
-          case 'Item':
-            entity = await isar.items.get(entityId);
-            break;
-          case 'Category':
-            entity = await isar.categorys.get(entityId);
-            break;
-          case 'Unit':
-            entity = await isar.units.get(entityId);
-            break;
-          case 'Brand':
-            entity = await isar.brands.get(entityId);
-            break;
-          case 'Order':
-            entity = await isar.orders.get(entityId);
-            break;
-          case 'OrderItem':
-            entity = await isar.orderItems.get(entityId);
-            break;
-          case 'Invoice':
-            entity = await isar.invoices.get(entityId);
-            break;
-          case 'InvoiceItem':
-            entity = await isar.invoiceItems.get(entityId);
-            break;
-          case 'Settings':
-            entity = await isar.settings.get(entityId);
-            break;
-          case 'User':
-            entity = await isar.users.get(entityId);
-            break;
+          case 'Party': entity = await isar.partys.get(entityId); break;
+          case 'Item': entity = await isar.items.get(entityId); break;
+          case 'Category': entity = await isar.categorys.get(entityId); break;
+          case 'Unit': entity = await isar.units.get(entityId); break;
+          case 'Brand': entity = await isar.brands.get(entityId); break;
+          case 'Order': entity = await isar.orders.get(entityId); break;
+          case 'OrderItem': entity = await isar.orderItems.get(entityId); break;
+          case 'Invoice': entity = await isar.invoices.get(entityId); break;
+          case 'InvoiceItem': entity = await isar.invoiceItems.get(entityId); break;
+          case 'Settings': entity = await isar.settings.get(entityId); break;
+          case 'User': entity = await isar.users.get(entityId); break;
+          case 'Purchase': entity = await isar.purchases.get(entityId); break;
+          case 'PurchaseItem': entity = await isar.purchaseItems.get(entityId); break;
+          case 'Expense': entity = await isar.expenses.get(entityId); break;
+          case 'Transaction': entity = await isar.transactions.get(entityId); break;
+          case 'BankAccount': entity = await isar.bankAccounts.get(entityId); break;
+          case 'CreditNote': entity = await isar.creditNotes.get(entityId); break;
+          case 'CreditNoteItem': entity = await isar.creditNoteItems.get(entityId); break;
+          case 'DebitNote': entity = await isar.debitNotes.get(entityId); break;
+          case 'DebitNoteItem': entity = await isar.debitNoteItems.get(entityId); break;
         }
 
         if (entity == null && queueItem.operation != 'Delete') {
@@ -255,12 +354,10 @@ class SyncService {
           continue;
         }
 
-        // Prepare document payload
         final firestoreCollection = _getFirestoreCollection(entityType);
         final docRef = _firebaseService.firestore.collection(firestoreCollection).doc(queueItem.entityUuid);
 
         if (queueItem.operation == 'Delete') {
-          // Sync deletion as a soft-delete
           await docRef.set({
             'uuid': queueItem.entityUuid,
             'isDeleted': true,
@@ -270,56 +367,41 @@ class SyncService {
             'deviceId': _firebaseService.deviceId,
             'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
             'companyId': _firebaseService.companyId,
+            'firmId': _dbService.activeFirmId,
           }, SetOptions(merge: true));
         } else {
-          // Sync inserts/updates
           final map = _mapEntityToMap(entityType, entity);
           await docRef.set(map);
         }
 
-        // On success: update local DB record to state isSynced = true (skip adding to SyncQueue)
         if (entity != null) {
           entity.isSynced = true;
           await _dbService.isar.writeTxn(() async {
             switch (entityType) {
-              case 'Party':
-                await isar.partys.put(entity as Party);
-                break;
-              case 'Item':
-                await isar.items.put(entity as Item);
-                break;
-              case 'Category':
-                await isar.categorys.put(entity as Category);
-                break;
-              case 'Unit':
-                await isar.units.put(entity as Unit);
-                break;
-              case 'Brand':
-                await isar.brands.put(entity as Brand);
-                break;
-              case 'Order':
-                await isar.orders.put(entity as Order);
-                break;
-              case 'OrderItem':
-                await isar.orderItems.put(entity as OrderItem);
-                break;
-              case 'Invoice':
-                await isar.invoices.put(entity as Invoice);
-                break;
-              case 'InvoiceItem':
-                await isar.invoiceItems.put(entity as InvoiceItem);
-                break;
-              case 'Settings':
-                await isar.settings.put(entity as Settings);
-                break;
-              case 'User':
-                await isar.users.put(entity as User);
-                break;
+              case 'Party': await isar.partys.put(entity as Party); break;
+              case 'Item': await isar.items.put(entity as Item); break;
+              case 'Category': await isar.categorys.put(entity as Category); break;
+              case 'Unit': await isar.units.put(entity as Unit); break;
+              case 'Brand': await isar.brands.put(entity as Brand); break;
+              case 'Order': await isar.orders.put(entity as Order); break;
+              case 'OrderItem': await isar.orderItems.put(entity as OrderItem); break;
+              case 'Invoice': await isar.invoices.put(entity as Invoice); break;
+              case 'InvoiceItem': await isar.invoiceItems.put(entity as InvoiceItem); break;
+              case 'Settings': await isar.settings.put(entity as Settings); break;
+              case 'User': await isar.users.put(entity as User); break;
+              case 'Purchase': await isar.purchases.put(entity as Purchase); break;
+              case 'PurchaseItem': await isar.purchaseItems.put(entity as PurchaseItem); break;
+              case 'Expense': await isar.expenses.put(entity as Expense); break;
+              case 'Transaction': await isar.transactions.put(entity as Transaction); break;
+              case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
+              case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
+              case 'CreditNoteItem': await isar.creditNoteItems.put(entity as CreditNoteItem); break;
+              case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
+              case 'DebitNoteItem': await isar.debitNoteItems.put(entity as DebitNoteItem); break;
             }
           });
         }
 
-        // Delete from local queue
         await _queueService.removeQueueItem(queueItem.id);
       } catch (e) {
         logger.error('Failed to sync queue item ID ${queueItem.id}', e);
@@ -330,11 +412,17 @@ class SyncService {
 
   /// Downloads and reconciles remote updates since lastSync
   Future<void> _downloadRemoteUpdates(DateTime lastSync) async {
-    final entityTypes = ['Category', 'Unit', 'Brand', 'Party', 'Item', 'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User'];
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
+    ];
+    final activeFirmId = _dbService.activeFirmId;
 
     for (var entityType in entityTypes) {
       final collectionName = _getFirestoreCollection(entityType);
-      logger.info('Downloading updates for $collectionName...');
+      logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
 
       final querySnapshot = await _firebaseService.firestore
           .collection(collectionName)
@@ -346,54 +434,52 @@ class SyncService {
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        final uuid = data['uuid'] as String;
+        final uuid = data['uuid'] as String?;
+        if (uuid == null) continue;
 
-        // Resolve local record in database
+        // Firm-wise filtering
+        final docFirmId = data['firmId'] as String?;
+        if (docFirmId != null) {
+          if (docFirmId != activeFirmId) {
+            continue; // Skip documents belonging to another firm
+          }
+        } else {
+          if (activeFirmId != 'firm_default') {
+            continue; // Default legacy documents map to firm_default only
+          }
+        }
+
         final isar = _dbService.isar;
         dynamic localRecord;
         
         switch (entityType) {
-          case 'Party':
-            localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Item':
-            localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Category':
-            localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Unit':
-            localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Brand':
-            localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Order':
-            localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'OrderItem':
-            localRecord = await isar.orderItems.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Invoice':
-            localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'InvoiceItem':
-            localRecord = await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'Settings':
-            localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst();
-            break;
-          case 'User':
-            localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst();
-            break;
+          case 'Party': localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Item': localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Category': localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'OrderItem': localRecord = await isar.orderItems.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'InvoiceItem': localRecord = await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'PurchaseItem': localRecord = await isar.purchaseItems.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'CreditNoteItem': localRecord = await isar.creditNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+          case 'DebitNoteItem': localRecord = await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
         }
 
         if (localRecord != null) {
-          // Reconcile conflicts
           final localVersion = localRecord.version;
-          final remoteVersion = data['version'] as int;
+          final remoteVersion = data['version'] as int? ?? 1;
           final localUpdated = localRecord.updatedAt as DateTime;
-          final remoteUpdated = DateTime.parse(data['updatedAt'] as String);
+          final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
 
           bool remoteWins = false;
           if (remoteVersion > localVersion) {
@@ -413,7 +499,6 @@ class SyncService {
             await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
           }
         } else {
-          // Record doesn't exist, create it locally
           logger.info('Inserting new remote record for $entityType UUID: $uuid');
           await _insertLocalRecord(entityType, data);
         }
@@ -435,6 +520,15 @@ class SyncService {
       case 'InvoiceItem': return 'invoice_items';
       case 'Settings': return 'settings';
       case 'User': return 'users';
+      case 'Purchase': return 'purchases';
+      case 'PurchaseItem': return 'purchase_items';
+      case 'Expense': return 'expenses';
+      case 'Transaction': return 'transactions';
+      case 'BankAccount': return 'bank_accounts';
+      case 'CreditNote': return 'credit_notes';
+      case 'CreditNoteItem': return 'credit_note_items';
+      case 'DebitNote': return 'debit_notes';
+      case 'DebitNoteItem': return 'debit_note_items';
       default: return entityType.toLowerCase();
     }
   }
@@ -450,6 +544,7 @@ class SyncService {
       'deviceId': _firebaseService.deviceId,
       'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
       'companyId': _firebaseService.companyId,
+      'firmId': _dbService.activeFirmId,
     };
 
     switch (entityType) {
@@ -626,6 +721,165 @@ class SyncService {
           'email': e.email,
           'role': e.role,
         });
+      case 'Purchase':
+        final e = entity as Purchase;
+        return baseMap..addAll({
+          'purchaseNumber': e.purchaseNumber,
+          'purchaseDate': e.purchaseDate?.toIso8601String(),
+          'partyId': e.partyId,
+          'partyName': e.partyName,
+          'gstNumber': e.gstNumber,
+          'address': e.address,
+          'subtotal': e.subtotal,
+          'discountAmount': e.discountAmount,
+          'taxableAmount': e.taxableAmount,
+          'cgstAmount': e.cgstAmount,
+          'sgstAmount': e.sgstAmount,
+          'igstAmount': e.igstAmount,
+          'totalGST': e.totalGST,
+          'roundOff': e.roundOff,
+          'grandTotal': e.grandTotal,
+          'paymentStatus': e.paymentStatus,
+          'paidAmount': e.paidAmount,
+          'pendingAmount': e.pendingAmount,
+          'remarks': e.remarks,
+          'partyUuid': e.party.value?.uuid,
+        });
+      case 'PurchaseItem':
+        final e = entity as PurchaseItem;
+        return baseMap..addAll({
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'hsnCode': e.hsnCode,
+          'quantity': e.quantity,
+          'rate': e.rate,
+          'discount': e.discount,
+          'taxableAmount': e.taxableAmount,
+          'gstRate': e.gstRate,
+          'gstAmount': e.gstAmount,
+          'totalAmount': e.totalAmount,
+          'purchaseUuid': e.purchase.value?.uuid,
+          'itemUuid': e.item.value?.uuid,
+        });
+      case 'Expense':
+        final e = entity as Expense;
+        return baseMap..addAll({
+          'category': e.category,
+          'amount': e.amount,
+          'expenseDate': e.expenseDate?.toIso8601String(),
+          'paymentMode': e.paymentMode,
+          'remarks': e.remarks,
+        });
+      case 'Transaction':
+        final e = entity as Transaction;
+        return baseMap..addAll({
+          'transactionNumber': e.transactionNumber,
+          'transactionDate': e.transactionDate?.toIso8601String(),
+          'partyUuid': e.partyUuid,
+          'partyName': e.partyName,
+          'transactionType': e.transactionType,
+          'amount': e.amount,
+          'paymentMode': e.paymentMode,
+          'referenceNumber': e.referenceNumber,
+          'remarks': e.remarks,
+          'linkedBillUuid': e.linkedBillUuid,
+          'linkedBillNumber': e.linkedBillNumber,
+          'targetPartyUuid': e.targetPartyUuid,
+          'targetPartyName': e.targetPartyName,
+        });
+      case 'BankAccount':
+        final e = entity as BankAccount;
+        return baseMap..addAll({
+          'accountName': e.accountName,
+          'bankName': e.bankName,
+          'accountNumber': e.accountNumber,
+          'ifscCode': e.ifscCode,
+          'branchName': e.branchName,
+          'openingBalance': e.openingBalance,
+          'currentBalance': e.currentBalance,
+        });
+      case 'CreditNote':
+        final e = entity as CreditNote;
+        return baseMap..addAll({
+          'creditNoteNumber': e.creditNoteNumber,
+          'creditNoteDate': e.creditNoteDate?.toIso8601String(),
+          'originalInvoiceNumber': e.originalInvoiceNumber,
+          'originalInvoiceUuid': e.originalInvoiceUuid,
+          'partyId': e.partyId,
+          'partyName': e.partyName,
+          'gstNumber': e.gstNumber,
+          'address': e.address,
+          'subtotal': e.subtotal,
+          'discountAmount': e.discountAmount,
+          'taxableAmount': e.taxableAmount,
+          'cgstAmount': e.cgstAmount,
+          'sgstAmount': e.sgstAmount,
+          'igstAmount': e.igstAmount,
+          'totalGST': e.totalGST,
+          'roundOff': e.roundOff,
+          'grandTotal': e.grandTotal,
+          'remarks': e.remarks,
+          'createdBy': e.createdBy,
+          'partyUuid': e.party.value?.uuid,
+        });
+      case 'CreditNoteItem':
+        final e = entity as CreditNoteItem;
+        return baseMap..addAll({
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'hsnCode': e.hsnCode,
+          'quantity': e.quantity,
+          'freeQuantity': e.freeQuantity,
+          'rate': e.rate,
+          'discount': e.discount,
+          'taxableAmount': e.taxableAmount,
+          'gstRate': e.gstRate,
+          'gstAmount': e.gstAmount,
+          'totalAmount': e.totalAmount,
+          'creditNoteUuid': e.creditNote.value?.uuid,
+          'itemUuid': e.item.value?.uuid,
+        });
+      case 'DebitNote':
+        final e = entity as DebitNote;
+        return baseMap..addAll({
+          'debitNoteNumber': e.debitNoteNumber,
+          'debitNoteDate': e.debitNoteDate?.toIso8601String(),
+          'originalPurchaseNumber': e.originalPurchaseNumber,
+          'originalPurchaseUuid': e.originalPurchaseUuid,
+          'partyId': e.partyId,
+          'partyName': e.partyName,
+          'gstNumber': e.gstNumber,
+          'address': e.address,
+          'subtotal': e.subtotal,
+          'discountAmount': e.discountAmount,
+          'taxableAmount': e.taxableAmount,
+          'cgstAmount': e.cgstAmount,
+          'sgstAmount': e.sgstAmount,
+          'igstAmount': e.igstAmount,
+          'totalGST': e.totalGST,
+          'roundOff': e.roundOff,
+          'grandTotal': e.grandTotal,
+          'remarks': e.remarks,
+          'createdBy': e.createdBy,
+          'partyUuid': e.party.value?.uuid,
+        });
+      case 'DebitNoteItem':
+        final e = entity as DebitNoteItem;
+        return baseMap..addAll({
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'hsnCode': e.hsnCode,
+          'quantity': e.quantity,
+          'freeQuantity': e.freeQuantity,
+          'rate': e.rate,
+          'discount': e.discount,
+          'taxableAmount': e.taxableAmount,
+          'gstRate': e.gstRate,
+          'gstAmount': e.gstAmount,
+          'totalAmount': e.totalAmount,
+          'debitNoteUuid': e.debitNote.value?.uuid,
+          'itemUuid': e.item.value?.uuid,
+        });
       default:
         return baseMap;
     }
@@ -650,7 +904,7 @@ class SyncService {
           ..pincode = data['pincode']
           ..latitude = data['latitude']
           ..longitude = data['longitude']
-          ..creditLimit = data['creditLimit']
+          ..creditLimit = (data['creditLimit'] as num?)?.toDouble()
           ..paymentTerms = data['paymentTerms']
           ..notes = data['notes'];
         break;
@@ -659,13 +913,13 @@ class SyncService {
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
           ..barcode = data['barcode']
-          ..gstRate = data['gstRate']
-          ..buyRate = data['buyRate']
-          ..sellRate = data['sellRate']
+          ..gstRate = (data['gstRate'] as num?)?.toDouble()
+          ..buyRate = (data['buyRate'] as num?)?.toDouble()
+          ..sellRate = (data['sellRate'] as num?)?.toDouble()
           ..sku = data['sku']
           ..description = data['description']
           ..imagePaths = data['imagePaths'] != null ? List<String>.from(data['imagePaths']) : null
-          ..currentStock = data['currentStock'] ?? data['stock'];
+          ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble();
         break;
       case 'Category':
         entity = Category()
@@ -787,15 +1041,156 @@ class SyncService {
           ..email = data['email']
           ..role = data['role'];
         break;
+      case 'Expense':
+        entity = Expense()
+          ..category = data['category']
+          ..amount = (data['amount'] as num?)?.toDouble()
+          ..expenseDate = data['expenseDate'] != null ? DateTime.parse(data['expenseDate']) : null
+          ..paymentMode = data['paymentMode']
+          ..remarks = data['remarks'];
+        break;
+      case 'Transaction':
+        entity = Transaction()
+          ..transactionNumber = data['transactionNumber']
+          ..transactionDate = data['transactionDate'] != null ? DateTime.parse(data['transactionDate']) : null
+          ..partyUuid = data['partyUuid']
+          ..partyName = data['partyName']
+          ..transactionType = data['transactionType']
+          ..amount = (data['amount'] as num?)?.toDouble()
+          ..paymentMode = data['paymentMode']
+          ..referenceNumber = data['referenceNumber']
+          ..remarks = data['remarks']
+          ..linkedBillUuid = data['linkedBillUuid']
+          ..linkedBillNumber = data['linkedBillNumber']
+          ..targetPartyUuid = data['targetPartyUuid']
+          ..targetPartyName = data['targetPartyName'];
+        break;
+      case 'BankAccount':
+        entity = BankAccount()
+          ..accountName = data['accountName']
+          ..bankName = data['bankName']
+          ..accountNumber = data['accountNumber']
+          ..ifscCode = data['ifscCode']
+          ..branchName = data['branchName']
+          ..openingBalance = (data['openingBalance'] as num?)?.toDouble()
+          ..currentBalance = (data['currentBalance'] as num?)?.toDouble();
+        break;
+      case 'Purchase':
+        entity = Purchase()
+          ..purchaseNumber = data['purchaseNumber']
+          ..purchaseDate = data['purchaseDate'] != null ? DateTime.parse(data['purchaseDate']) : null
+          ..partyId = data['partyId']
+          ..partyName = data['partyName']
+          ..gstNumber = data['gstNumber']
+          ..address = data['address']
+          ..subtotal = (data['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (data['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (data['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (data['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (data['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (data['totalGST'] as num?)?.toDouble()
+          ..roundOff = (data['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (data['grandTotal'] as num?)?.toDouble()
+          ..paymentStatus = data['paymentStatus']
+          ..paidAmount = (data['paidAmount'] as num?)?.toDouble()
+          ..pendingAmount = (data['pendingAmount'] as num?)?.toDouble()
+          ..remarks = data['remarks'];
+        break;
+      case 'PurchaseItem':
+        entity = PurchaseItem()
+          ..itemId = data['itemId']
+          ..itemName = data['itemName']
+          ..hsnCode = data['hsnCode']
+          ..quantity = (data['quantity'] as num?)?.toDouble()
+          ..rate = (data['rate'] as num?)?.toDouble()
+          ..discount = (data['discount'] as num?)?.toDouble()
+          ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (data['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+        break;
+      case 'CreditNote':
+        entity = CreditNote()
+          ..creditNoteNumber = data['creditNoteNumber']
+          ..creditNoteDate = data['creditNoteDate'] != null ? DateTime.parse(data['creditNoteDate']) : null
+          ..originalInvoiceNumber = data['originalInvoiceNumber']
+          ..originalInvoiceUuid = data['originalInvoiceUuid']
+          ..partyId = data['partyId']
+          ..partyName = data['partyName']
+          ..gstNumber = data['gstNumber']
+          ..address = data['address']
+          ..subtotal = (data['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (data['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (data['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (data['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (data['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (data['totalGST'] as num?)?.toDouble()
+          ..roundOff = (data['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (data['grandTotal'] as num?)?.toDouble()
+          ..remarks = data['remarks']
+          ..createdBy = data['createdBy'];
+        break;
+      case 'CreditNoteItem':
+        entity = CreditNoteItem()
+          ..itemId = data['itemId']
+          ..itemName = data['itemName']
+          ..hsnCode = data['hsnCode']
+          ..quantity = (data['quantity'] as num?)?.toDouble()
+          ..freeQuantity = (data['freeQuantity'] as num?)?.toDouble()
+          ..rate = (data['rate'] as num?)?.toDouble()
+          ..discount = (data['discount'] as num?)?.toDouble()
+          ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (data['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+        break;
+      case 'DebitNote':
+        entity = DebitNote()
+          ..debitNoteNumber = data['debitNoteNumber']
+          ..debitNoteDate = data['debitNoteDate'] != null ? DateTime.parse(data['debitNoteDate']) : null
+          ..originalPurchaseNumber = data['originalPurchaseNumber']
+          ..originalPurchaseUuid = data['originalPurchaseUuid']
+          ..partyId = data['partyId']
+          ..partyName = data['partyName']
+          ..gstNumber = data['gstNumber']
+          ..address = data['address']
+          ..subtotal = (data['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (data['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (data['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (data['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (data['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (data['totalGST'] as num?)?.toDouble()
+          ..roundOff = (data['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (data['grandTotal'] as num?)?.toDouble()
+          ..remarks = data['remarks']
+          ..createdBy = data['createdBy'];
+        break;
+      case 'DebitNoteItem':
+        entity = DebitNoteItem()
+          ..itemId = data['itemId']
+          ..itemName = data['itemName']
+          ..hsnCode = data['hsnCode']
+          ..quantity = (data['quantity'] as num?)?.toDouble()
+          ..freeQuantity = (data['freeQuantity'] as num?)?.toDouble()
+          ..rate = (data['rate'] as num?)?.toDouble()
+          ..discount = (data['discount'] as num?)?.toDouble()
+          ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (data['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+        break;
     }
 
     if (entity != null) {
       entity.uuid = data['uuid'];
-      entity.createdAt = DateTime.parse(data['createdAt']);
-      entity.updatedAt = DateTime.parse(data['updatedAt']);
-      entity.isDeleted = data['isDeleted'];
+      entity.createdAt = data['createdAt'] != null ? DateTime.parse(data['createdAt']) : DateTime.now();
+      entity.updatedAt = data['updatedAt'] != null ? DateTime.parse(data['updatedAt']) : DateTime.now();
+      entity.isDeleted = data['isDeleted'] ?? false;
       entity.isSynced = true;
-      entity.version = data['version'];
+      entity.version = data['version'] ?? 1;
     }
 
     return entity;
@@ -804,93 +1199,67 @@ class SyncService {
   /// Overwrites an existing local record with downloaded updates
   Future<void> _overwriteLocalRecord(String entityType, Id localId, Map<String, dynamic> data) async {
     final entity = _mapMapToEntity(entityType, data);
+    if (entity == null) return;
     entity.id = localId;
     
     await _dbService.isar.writeTxn(() async {
       switch (entityType) {
-        case 'Party':
-          await _dbService.isar.partys.put(entity as Party);
-          break;
-        case 'Item':
-          await _dbService.isar.items.put(entity as Item);
-          break;
-        case 'Category':
-          await _dbService.isar.categorys.put(entity as Category);
-          break;
-        case 'Unit':
-          await _dbService.isar.units.put(entity as Unit);
-          break;
-        case 'Brand':
-          await _dbService.isar.brands.put(entity as Brand);
-          break;
-        case 'Order':
-          await _dbService.isar.orders.put(entity as Order);
-          break;
-        case 'OrderItem':
-          await _dbService.isar.orderItems.put(entity as OrderItem);
-          break;
-        case 'Invoice':
-          await _dbService.isar.invoices.put(entity as Invoice);
-          break;
-        case 'InvoiceItem':
-          await _dbService.isar.invoiceItems.put(entity as InvoiceItem);
-          break;
-        case 'Settings':
-          await _dbService.isar.settings.put(entity as Settings);
-          break;
-        case 'User':
-          await _dbService.isar.users.put(entity as User);
-          break;
+        case 'Party': await _dbService.isar.partys.put(entity as Party); break;
+        case 'Item': await _dbService.isar.items.put(entity as Item); break;
+        case 'Category': await _dbService.isar.categorys.put(entity as Category); break;
+        case 'Unit': await _dbService.isar.units.put(entity as Unit); break;
+        case 'Brand': await _dbService.isar.brands.put(entity as Brand); break;
+        case 'Order': await _dbService.isar.orders.put(entity as Order); break;
+        case 'OrderItem': await _dbService.isar.orderItems.put(entity as OrderItem); break;
+        case 'Invoice': await _dbService.isar.invoices.put(entity as Invoice); break;
+        case 'InvoiceItem': await _dbService.isar.invoiceItems.put(entity as InvoiceItem); break;
+        case 'Settings': await _dbService.isar.settings.put(entity as Settings); break;
+        case 'User': await _dbService.isar.users.put(entity as User); break;
+        case 'Purchase': await _dbService.isar.purchases.put(entity as Purchase); break;
+        case 'PurchaseItem': await _dbService.isar.purchaseItems.put(entity as PurchaseItem); break;
+        case 'Expense': await _dbService.isar.expenses.put(entity as Expense); break;
+        case 'Transaction': await _dbService.isar.transactions.put(entity as Transaction); break;
+        case 'BankAccount': await _dbService.isar.bankAccounts.put(entity as BankAccount); break;
+        case 'CreditNote': await _dbService.isar.creditNotes.put(entity as CreditNote); break;
+        case 'CreditNoteItem': await _dbService.isar.creditNoteItems.put(entity as CreditNoteItem); break;
+        case 'DebitNote': await _dbService.isar.debitNotes.put(entity as DebitNote); break;
+        case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
       }
     });
 
-    // Re-resolve remote relationship references asynchronously
     _linkRemoteRelations(entityType, entity, data);
   }
 
   /// Inserts a new remote record downloaded into local database
   Future<void> _insertLocalRecord(String entityType, Map<String, dynamic> data) async {
     final entity = _mapMapToEntity(entityType, data);
-    
+    if (entity == null) return;
+
     await _dbService.isar.writeTxn(() async {
       switch (entityType) {
-        case 'Party':
-          await _dbService.isar.partys.put(entity as Party);
-          break;
-        case 'Item':
-          await _dbService.isar.items.put(entity as Item);
-          break;
-        case 'Category':
-          await _dbService.isar.categorys.put(entity as Category);
-          break;
-        case 'Unit':
-          await _dbService.isar.units.put(entity as Unit);
-          break;
-        case 'Brand':
-          await _dbService.isar.brands.put(entity as Brand);
-          break;
-        case 'Order':
-          await _dbService.isar.orders.put(entity as Order);
-          break;
-        case 'OrderItem':
-          await _dbService.isar.orderItems.put(entity as OrderItem);
-          break;
-        case 'Invoice':
-          await _dbService.isar.invoices.put(entity as Invoice);
-          break;
-        case 'InvoiceItem':
-          await _dbService.isar.invoiceItems.put(entity as InvoiceItem);
-          break;
-        case 'Settings':
-          await _dbService.isar.settings.put(entity as Settings);
-          break;
-        case 'User':
-          await _dbService.isar.users.put(entity as User);
-          break;
+        case 'Party': await _dbService.isar.partys.put(entity as Party); break;
+        case 'Item': await _dbService.isar.items.put(entity as Item); break;
+        case 'Category': await _dbService.isar.categorys.put(entity as Category); break;
+        case 'Unit': await _dbService.isar.units.put(entity as Unit); break;
+        case 'Brand': await _dbService.isar.brands.put(entity as Brand); break;
+        case 'Order': await _dbService.isar.orders.put(entity as Order); break;
+        case 'OrderItem': await _dbService.isar.orderItems.put(entity as OrderItem); break;
+        case 'Invoice': await _dbService.isar.invoices.put(entity as Invoice); break;
+        case 'InvoiceItem': await _dbService.isar.invoiceItems.put(entity as InvoiceItem); break;
+        case 'Settings': await _dbService.isar.settings.put(entity as Settings); break;
+        case 'User': await _dbService.isar.users.put(entity as User); break;
+        case 'Purchase': await _dbService.isar.purchases.put(entity as Purchase); break;
+        case 'PurchaseItem': await _dbService.isar.purchaseItems.put(entity as PurchaseItem); break;
+        case 'Expense': await _dbService.isar.expenses.put(entity as Expense); break;
+        case 'Transaction': await _dbService.isar.transactions.put(entity as Transaction); break;
+        case 'BankAccount': await _dbService.isar.bankAccounts.put(entity as BankAccount); break;
+        case 'CreditNote': await _dbService.isar.creditNotes.put(entity as CreditNote); break;
+        case 'CreditNoteItem': await _dbService.isar.creditNoteItems.put(entity as CreditNoteItem); break;
+        case 'DebitNote': await _dbService.isar.debitNotes.put(entity as DebitNote); break;
+        case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
       }
     });
 
-    // Link remote relationships
     _linkRemoteRelations(entityType, entity, data);
   }
 
@@ -978,6 +1347,75 @@ class SyncService {
           await e.invoice.save();
           await e.item.save();
         });
+      } else if (entityType == 'Purchase') {
+        final e = entity as Purchase;
+        final partyUuid = data['partyUuid'] as String?;
+        if (partyUuid != null) {
+          e.party.value = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+          await isar.writeTxn(() async {
+            await e.party.save();
+          });
+        }
+      } else if (entityType == 'PurchaseItem') {
+        final e = entity as PurchaseItem;
+        final purchaseUuid = data['purchaseUuid'] as String?;
+        final itemUuid = data['itemUuid'] as String?;
+        if (purchaseUuid != null) {
+          e.purchase.value = await isar.purchases.filter().uuidEqualTo(purchaseUuid).findFirst();
+        }
+        if (itemUuid != null) {
+          e.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
+        }
+        await isar.writeTxn(() async {
+          await e.purchase.save();
+          await e.item.save();
+        });
+      } else if (entityType == 'CreditNote') {
+        final e = entity as CreditNote;
+        final partyUuid = data['partyUuid'] as String?;
+        if (partyUuid != null) {
+          e.party.value = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+          await isar.writeTxn(() async {
+            await e.party.save();
+          });
+        }
+      } else if (entityType == 'CreditNoteItem') {
+        final e = entity as CreditNoteItem;
+        final creditNoteUuid = data['creditNoteUuid'] as String?;
+        final itemUuid = data['itemUuid'] as String?;
+        if (creditNoteUuid != null) {
+          e.creditNote.value = await isar.creditNotes.filter().uuidEqualTo(creditNoteUuid).findFirst();
+        }
+        if (itemUuid != null) {
+          e.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
+        }
+        await isar.writeTxn(() async {
+          await e.creditNote.save();
+          await e.item.save();
+        });
+      } else if (entityType == 'DebitNote') {
+        final e = entity as DebitNote;
+        final partyUuid = data['partyUuid'] as String?;
+        if (partyUuid != null) {
+          e.party.value = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+          await isar.writeTxn(() async {
+            await e.party.save();
+          });
+        }
+      } else if (entityType == 'DebitNoteItem') {
+        final e = entity as DebitNoteItem;
+        final debitNoteUuid = data['debitNoteUuid'] as String?;
+        final itemUuid = data['itemUuid'] as String?;
+        if (debitNoteUuid != null) {
+          e.debitNote.value = await isar.debitNotes.filter().uuidEqualTo(debitNoteUuid).findFirst();
+        }
+        if (itemUuid != null) {
+          e.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
+        }
+        await isar.writeTxn(() async {
+          await e.debitNote.save();
+          await e.item.save();
+        });
       }
     } catch (err) {
       logger.error('Failed to link downloaded relations for $entityType UUID: ${entity.uuid}', err);
@@ -994,6 +1432,7 @@ class SyncService {
         'deviceId': _firebaseService.deviceId,
         'user': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
         'companyId': _firebaseService.companyId,
+        'firmId': _dbService.activeFirmId,
       });
     } catch (e) {
       logger.error('Failed to write sync log entry to Firestore', e);
@@ -1016,6 +1455,7 @@ class SyncService {
         'deviceId': _firebaseService.deviceId,
         'user': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
         'companyId': _firebaseService.companyId,
+        'firmId': _dbService.activeFirmId,
       });
     } catch (e) {
       logger.error('Failed to write conflict log entry to Firestore', e);

@@ -33,7 +33,10 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collec
 class DatabaseService {
   Isar? _isar;
   String? initErrorMessage;
+  String _activeFirmId = 'firm_default';
   static const int currentDatabaseVersion = 1;
+
+  String get activeFirmId => _activeFirmId;
 
   Isar get isar {
     if (_isar == null) {
@@ -49,6 +52,7 @@ class DatabaseService {
     }
 
     final activeFirmId = prefs?.getString('active_firm_id') ?? 'firm_default';
+    _activeFirmId = activeFirmId;
 
     try {
       if (kIsWeb) {
@@ -196,6 +200,7 @@ class DatabaseService {
   /// Switch active firm database
   Future<void> switchFirm(String newFirmId, SharedPreferences prefs) async {
     await close();
+    _activeFirmId = newFirmId;
     await prefs.setString('active_firm_id', newFirmId);
     await init(prefs);
   }

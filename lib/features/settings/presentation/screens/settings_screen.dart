@@ -16,6 +16,29 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _isSyncingFirms = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => _syncFirmsFromFirebase());
+  }
+
+  Future<void> _syncFirmsFromFirebase() async {
+    if (_isSyncingFirms) return;
+    setState(() {
+      _isSyncingFirms = true;
+    });
+    try {
+      await ref.read(syncServiceProvider).syncFirms();
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _isSyncingFirms = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentThemeMode = ref.watch(themeProvider);
@@ -137,10 +160,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ],
                         ),
-                        ElevatedButton.icon(
-                          onPressed: () => _showCreateFirmDialog(prefs, firmsList),
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Add Firm'),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: _isSyncingFirms
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Icon(Icons.sync, size: 20),
+                              onPressed: _isSyncingFirms ? null : () => _syncFirmsFromFirebase(),
+                              tooltip: 'Sync Companies with Firebase',
+                            ),
+                            const SizedBox(width: 4),
+                            ElevatedButton.icon(
+                              onPressed: () => _showCreateFirmDialog(prefs, firmsList),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add Firm'),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -655,6 +695,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Set this firm as demo seeded (so it starts completely empty without re-seeding)
               await prefs.setBool('demo_seeded_$newFirmId', true);
 
+              try {
+                await ref.read(syncServiceProvider).syncFirms();
+              } catch (_) {}
+
               if (mounted) {
                 setState(() {});
                 Navigator.pop(context);
@@ -707,6 +751,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (newName.isEmpty) return;
               final prefs = ref.read(sharedPreferencesProvider);
               await prefs.setString('firm_name_$firmId', newName);
+              try {
+                await ref.read(syncServiceProvider).syncFirms();
+              } catch (_) {}
               if (mounted) {
                 setState(() {});
                 Navigator.pop(context);
@@ -760,6 +807,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               await prefs.setStringList('firms_list', updatedFirmsList);
               await prefs.remove('firm_name_$firmId');
               await prefs.remove('demo_seeded_$firmId');
+
+              try {
+                await ref.read(syncServiceProvider).deleteRemoteFirm(firmId);
+              } catch (_) {}
 
               // If deleted firm was active, switch to another firm
               if (firmId == activeFirmId) {
