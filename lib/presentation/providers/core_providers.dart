@@ -9,7 +9,6 @@ import 'package:business_sahaj_erp/core/services/firebase_service.dart';
 import 'package:business_sahaj_erp/core/services/storage_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_manager.dart';
-import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 // Repositories
@@ -126,10 +125,4 @@ final debitNoteRepositoryProvider = Provider<DebitNoteRepository>((ref) {
 final bankAccountsListProvider = FutureProvider<List<BankAccount>>((ref) async {
   final repo = ref.watch(bankAccountRepositoryProvider);
   return await repo.getAll();
-});
-
-// GST Lookup Service Provider
-final gstServiceProvider = Provider<GstService>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return GstService(prefs);
 });

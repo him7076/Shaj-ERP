@@ -130,7 +130,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
   void _onItemNameChanged() {
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () async {
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       final name = _nameController.text.trim();
       if (name.isNotEmpty) {
         final hsnService = ref.read(hsnServiceProvider);
@@ -138,11 +138,6 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         if (mounted) {
           setState(() {
             _suggestedHsnCodes = results;
-            if (results.isNotEmpty && _hsnController.text.trim().isEmpty) {
-              final topHsn = results.first;
-              _hsnController.text = topHsn.hsnCode;
-              _gstRate = topHsn.gstRate;
-            }
           });
         }
       } else {

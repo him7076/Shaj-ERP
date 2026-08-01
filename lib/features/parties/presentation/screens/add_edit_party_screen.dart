@@ -51,7 +51,6 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
   String _category = 'Retail';
 
   bool _isSaving = false;
-  bool _isFetchingGst = false;
 
   List<String> _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier'];
   final List<String> _gstTypes = ['Registered', 'Unregistered', 'Composition'];
@@ -181,60 +180,6 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
         _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines', ...list].toSet().toList();
         _addressLine2Controller.text = newLoc;
       });
-    }
-  }
-
-  Future<void> _fetchGstDetails() async {
-    final gstin = _gstController.text.trim();
-    if (gstin.isEmpty || gstin.length < 15) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid 15-digit GSTIN (e.g. 27AAAAA1111A1Z1)')),
-      );
-      return;
-    }
-
-    setState(() => _isFetchingGst = true);
-    try {
-      final gstService = ref.read(gstServiceProvider);
-      final details = await gstService.fetchPartyDetailsFromGst(gstin);
-
-      if (details != null) {
-        setState(() {
-          _panController.text = details.panNumber;
-          _stateController.text = details.stateName;
-          _gstType = details.gstType;
-
-          if (_nameController.text.trim().isEmpty) {
-            _nameController.text = details.tradeName;
-          }
-          if (_addressLine1Controller.text.trim().isEmpty) {
-            _addressLine1Controller.text = details.addressLine1;
-          }
-          if (_cityController.text.trim().isEmpty) {
-            _cityController.text = details.city;
-          }
-          if (_pincodeController.text.trim().isEmpty) {
-            _pincodeController.text = details.pincode;
-          }
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('⚡ Party details auto-fetched successfully for ${details.stateName}!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid GSTIN format. Please check entry.')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch GST details: $e')),
-      );
-    } finally {
-      if (mounted) setState(() => _isFetchingGst = false);
     }
   }
 
@@ -569,47 +514,20 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _gstController,
-                                textCapitalization: TextCapitalization.characters,
-                                decoration: const InputDecoration(
-                                  labelText: 'GSTIN (GST Number)',
-                                  prefixIcon: Icon(Icons.receipt),
-                                  hintText: 'e.g. 27AAAAA1111A1Z1',
-                                ),
-                                onChanged: (val) {
-                                  if (val.trim().length == 15 && !_isFetchingGst) {
-                                    _fetchGstDetails();
-                                  }
-                                },
-                                validator: (value) {
-                                  if (value != null && value.isNotEmpty) {
-                                    final gstRegExp = RegExp(r'^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$');
-                                    if (!gstRegExp.hasMatch(value.toUpperCase())) {
-                                      return 'Enter a valid GSTIN format (e.g. 27AAAAA1111A1Z1)';
-                                    }
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton.icon(
-                              onPressed: _isFetchingGst ? null : _fetchGstDetails,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              ),
-                              icon: _isFetchingGst
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                  : const Icon(Icons.bolt, color: Colors.amber),
-                              label: const Text('Auto-Fetch'),
-                            ),
-                          ],
+                        TextFormField(
+                          controller: _gstController,
+                          textCapitalization: TextCapitalization.characters,
+                          decoration: const InputDecoration(labelText: 'GSTIN (GST Number)', prefixIcon: Icon(Icons.receipt)),
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              // Regex for standard Indian GST number validation
+                              final gstRegExp = RegExp(r'^\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}[Z]{1}[A-Z\d]{1}$');
+                              if (!gstRegExp.hasMatch(value.toUpperCase())) {
+                                return 'Enter a valid GSTIN format (e.g. 27AAAAA1111A1Z1)';
+                              }
+                            }
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
