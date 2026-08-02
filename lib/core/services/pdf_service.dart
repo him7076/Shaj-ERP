@@ -277,7 +277,7 @@ class PdfService {
 
   // --- Invoice Items Table ---
   pw.Widget _buildInvoiceItemsTable(Invoice invoice, List<InvoiceItem> items) {
-    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (₹)', 'DISC (₹)', 'TOTAL (₹)'];
+    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (Rs.)', 'DISC (Rs.)', 'TOTAL (Rs.)'];
 
     int index = 1;
     final data = items.map<List<dynamic>>((item) {
@@ -287,9 +287,9 @@ class PdfService {
         item.itemName ?? 'Item',
         item.hsnCode ?? '-',
         '${qty % 1 == 0 ? qty.toInt() : qty} ${item.unit ?? "PCS"}',
-        '₹ ${item.rate?.toStringAsFixed(2) ?? "0.00"}',
-        '₹ ${item.discount?.toStringAsFixed(2) ?? "0.00"}',
-        '₹ ${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
+        '${item.rate?.toStringAsFixed(2) ?? "0.00"}',
+        '${item.discount?.toStringAsFixed(2) ?? "0.00"}',
+        '${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
       ];
     }).toList();
 
@@ -308,7 +308,7 @@ class PdfService {
 
   // --- Order Items Table ---
   pw.Widget _buildOrderItemsTable(Order order) {
-    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (₹)', 'DISC (₹)', 'TOTAL (₹)'];
+    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (Rs.)', 'DISC (Rs.)', 'TOTAL (Rs.)'];
 
     int index = 1;
     final data = order.orderItems.map<List<dynamic>>((item) {
@@ -318,9 +318,9 @@ class PdfService {
         item.itemName ?? 'N/A',
         item.hsnCode ?? 'N/A',
         '${qty % 1 == 0 ? qty.toInt() : qty} ${item.unit ?? "PCS"}',
-        '₹ ${item.rate?.toStringAsFixed(2) ?? "0.00"}',
-        '₹ ${item.discountAmount?.toStringAsFixed(2) ?? "0.00"}',
-        '₹ ${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
+        '${item.rate?.toStringAsFixed(2) ?? "0.00"}',
+        '${item.discountAmount?.toStringAsFixed(2) ?? "0.00"}',
+        '${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
       ];
     }).toList();
 
@@ -388,7 +388,7 @@ class PdfService {
                     color: cardBgLight,
                     borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
                   ),
-                  child: pw.Text('GST Tax Division: CGST: ₹${cgst.toStringAsFixed(2)} | SGST: ₹${sgst.toStringAsFixed(2)} | IGST: ₹${igst.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: primaryIndigo)),
+                  child: pw.Text('GST Tax Division: CGST: Rs. ${cgst.toStringAsFixed(2)} | SGST: Rs. ${sgst.toStringAsFixed(2)} | IGST: Rs. ${igst.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: primaryIndigo)),
                 ),
               ],
             ],
@@ -400,10 +400,10 @@ class PdfService {
           flex: 2,
           child: pw.Column(
             children: [
-              _buildSummaryRow('Subtotal (Taxable):', '₹ ${subtotal.toStringAsFixed(2)}'),
-              _buildSummaryRow('Discount Total:', '-₹ ${discount.toStringAsFixed(2)}'),
-              _buildSummaryRow('Tax Amount (GST):', '₹ ${gst.toStringAsFixed(2)}'),
-              _buildSummaryRow('Round Off:', '₹ ${roundOff.toStringAsFixed(2)}'),
+              _buildSummaryRow('Subtotal (Taxable):', 'Rs. ${subtotal.toStringAsFixed(2)}'),
+              _buildSummaryRow('Discount Total:', '-Rs. ${discount.toStringAsFixed(2)}'),
+              _buildSummaryRow('Tax Amount (GST):', 'Rs. ${gst.toStringAsFixed(2)}'),
+              _buildSummaryRow('Round Off:', 'Rs. ${roundOff.toStringAsFixed(2)}'),
               pw.SizedBox(height: 8),
               pw.Container(
                 padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -415,7 +415,7 @@ class PdfService {
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text('GRAND TOTAL:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                    pw.Text('₹ ${grandTotal.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.Text('Rs. ${grandTotal.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
                   ],
                 ),
               ),
