@@ -260,12 +260,13 @@ class PdfService {
     final headers = ['#', 'Item Description', 'HSN', 'Qty', 'Unit', 'Rate (₹)', 'Disc (₹)', 'GST %', 'Total (₹)'];
     
     int index = 1;
-    final data = items.map((item) {
-      final row = [
+    final List<List<dynamic>> data = items.map((item) {
+      final double qty = item.quantity ?? 0.0;
+      final row = <dynamic>[
         '${index++}',
         item.itemName ?? 'Item',
         item.hsnCode ?? '-',
-        '${item.quantity % 1 == 0 ? item.quantity?.toInt() : item.quantity}',
+        '${qty % 1 == 0 ? qty.toInt() : qty}',
         item.unit ?? 'PCS',
         '₹${item.rate?.toStringAsFixed(2) ?? "0.00"}',
         '₹${item.discount?.toStringAsFixed(2) ?? "0.00"}',

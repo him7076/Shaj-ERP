@@ -16,7 +16,7 @@ class PayablesScreen extends ConsumerStatefulWidget {
 class _PayablesScreenState extends ConsumerState<PayablesScreen> {
   String _searchQuery = '';
   DuesSortOption _sortOption = DuesSortOption.highestDues;
-  String _selectedLocality = 'All';
+  String _selectedCity = 'All';
 
   @override
   Widget build(BuildContext context) {
@@ -34,19 +34,18 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
               .where((p) => p.partyType == 'Supplier' && (p.outstandingBalance ?? 0.0) > 0)
               .toList();
 
-          final localities = {'All', ...supplierParties.map((p) => p.locality ?? 'Unassigned').where((l) => l.isNotEmpty)};
+          final cities = {'All', ...supplierParties.map((p) => p.city ?? 'Unassigned').where((l) => l.isNotEmpty)};
 
-          // Filter by search query & locality
+          // Filter by search query & city
           var filtered = supplierParties.where((p) {
             final query = _searchQuery.toLowerCase();
             final matchesQuery = (p.partyName?.toLowerCase().contains(query) ?? false) ||
                 (p.mobileNumber?.contains(query) ?? false) ||
-                (p.city?.toLowerCase().contains(query) ?? false) ||
-                (p.locality?.toLowerCase().contains(query) ?? false);
+                (p.city?.toLowerCase().contains(query) ?? false);
 
-            final matchesLocality = _selectedLocality == 'All' || (p.locality ?? 'Unassigned') == _selectedLocality;
+            final matchesCity = _selectedCity == 'All' || (p.city ?? 'Unassigned') == _selectedCity;
 
-            return matchesQuery && matchesLocality;
+            return matchesQuery && matchesCity;
           }).toList();
 
           // Sort
@@ -86,7 +85,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                     const SizedBox(height: 4),
                     Text(
                       '${supplierParties.length} Suppliers to be paid',
-                      style: const TextStyle(color: Colors.white90, fontSize: 12),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
@@ -99,7 +98,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                   children: [
                     TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search supplier name, phone, city, locality...',
+                        hintText: 'Search supplier name, phone, city...',
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
@@ -116,15 +115,15 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: localities.contains(_selectedLocality) ? _selectedLocality : 'All',
+                            value: cities.contains(_selectedCity) ? _selectedCity : 'All',
                             decoration: const InputDecoration(
-                              labelText: 'Filter Locality',
+                              labelText: 'Filter City / Region',
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
-                            items: localities.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+                            items: cities.map((l) => DropdownMenuItem<String>(value: l, child: Text(l))).toList(),
                             onChanged: (val) {
-                              if (val != null) setState(() => _selectedLocality = val);
+                              if (val != null) setState(() => _selectedCity = val);
                             },
                           ),
                         ),
@@ -191,7 +190,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                               ),
                               title: Text(party.partyName ?? 'Unnamed Supplier', style: const TextStyle(fontWeight: FontWeight.bold)),
                               subtitle: Text(
-                                '${party.mobileNumber ?? "No Phone"} | Locality: ${party.locality ?? "N/A"}',
+                                '${party.mobileNumber ?? "No Phone"} | City: ${party.city ?? "N/A"}',
                                 style: const TextStyle(fontSize: 12),
                               ),
                               trailing: Column(

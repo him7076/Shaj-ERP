@@ -677,7 +677,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   const SizedBox(height: 16),
                   summaryContent,
                 ],
-              ),
+        ),
       ),
     );
   }

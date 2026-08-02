@@ -198,7 +198,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
       await prefs.setStringList(prefKey, list);
       await _loadAllCategories();
     }
-  } }
+  }
 
   @override
   Widget build(BuildContext context) {

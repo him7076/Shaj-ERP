@@ -944,7 +944,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             // Update active Isar Settings object
                             try {
                               final isar = ref.read(databaseServiceProvider).isar;
-                              final settings = await isar.settings.where().findFirst() ?? Settings();
+                              final allSettings = await isar.settings.where().findAll();
+                              final settings = allSettings.isNotEmpty ? allSettings.first : Settings();
                               settings.companyName = name;
                               settings.companyGST = gstController.text.trim();
                               settings.companyPhone = mobileController.text.trim();
