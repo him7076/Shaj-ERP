@@ -56,13 +56,24 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     final brandsAsync = ref.watch(brandsListProvider);
 
     // Responsive grid columns
+    final screenWidth = MediaQuery.of(context).size.width;
     int crossAxisCount = 1;
+    double childAspectRatio = 2.8;
+
     if (ResponsiveLayout.isDesktop(context)) {
       crossAxisCount = 4;
+      childAspectRatio = 1.55;
     } else if (ResponsiveLayout.isTablet(context)) {
       crossAxisCount = 3;
+      childAspectRatio = 1.5;
     } else {
-      crossAxisCount = 2;
+      if (screenWidth > 480) {
+        crossAxisCount = 2;
+        childAspectRatio = 1.6;
+      } else {
+        crossAxisCount = 1;
+        childAspectRatio = 2.8;
+      }
     }
 
     return Scaffold(
@@ -229,7 +240,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                     crossAxisCount: crossAxisCount,
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
-                    childAspectRatio: 1.55,
+                    childAspectRatio: childAspectRatio,
                   ),
                   itemCount: list.length,
                   itemBuilder: (context, index) {
