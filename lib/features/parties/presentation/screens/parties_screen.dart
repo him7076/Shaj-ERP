@@ -5,6 +5,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/core/utils/excel_csv_helper.dart';
 import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
+import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
 import 'party_detail_screen.dart';
 import 'add_edit_party_screen.dart';
 
@@ -342,84 +343,131 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
   Widget _buildPartyCard(Party party, {String? distanceBadge}) {
     final theme = Theme.of(context);
     final balance = party.openingBalance ?? 0.0;
+    final isReceivable = party.balanceType == 'Dr';
+    final glowColor = isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981);
     
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 6.0),
-      child: ListTile(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10.0),
+      child: AnimatedHoverCard(
+        glowColor: glowColor,
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => PartyDetailScreen(partyUuid: party.uuid!),
             ),
           ).then((_) {
-            // Trigger refresh
             ref.read(partySearchProvider.notifier).setQuery(_searchController.text);
           });
         },
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(
-            party.partyName != null && party.partyName!.isNotEmpty
-                ? party.partyName![0].toUpperCase()
-                : 'P',
-            style: TextStyle(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                party.partyName ?? '',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            if (distanceBadge != null)
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.green[100],
+                  color: glowColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  distanceBadge,
-                  style: TextStyle(fontSize: 10, color: Colors.green[800], fontWeight: FontWeight.bold),
+                child: Center(
+                  child: Text(
+                    party.partyName != null && party.partyName!.isNotEmpty
+                        ? party.partyName![0].toUpperCase()
+                        : 'P',
+                    style: TextStyle(
+                      color: glowColor,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
                 ),
               ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Code: ${party.partyCode ?? "N/A"} • Type: ${party.partyType}'),
-              const SizedBox(height: 2),
-              Text(
-                'Phone: ${party.mobileNumber ?? "N/A"}' +
-                (party.city != null && party.city!.isNotEmpty ? ' • City: ${party.city}' : ''),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            party.partyName ?? '',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        if (distanceBadge != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              distanceBadge,
+                              style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            party.partyType ?? 'Customer',
+                            style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Code: ${party.partyCode ?? "N/A"}' +
+                          (party.mobileNumber != null && party.mobileNumber!.isNotEmpty ? ' • 📞 ${party.mobileNumber}' : ''),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${balance.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: glowColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isReceivable ? 'Receivable' : 'Payable',
+                      style: TextStyle(fontSize: 10, color: glowColor, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '₹${balance.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: party.balanceType == 'Dr' ? Colors.red[700] : Colors.green[700],
-              ),
-            ),
-            Text(
-              party.balanceType == 'Dr' ? 'Receivable' : 'Payable',
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
-            ),
-          ],
         ),
       ),
     );

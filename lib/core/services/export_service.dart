@@ -20,84 +20,112 @@ class ExportService {
       logger.info('Generating PDF export for report: $title');
       final pdf = pw.Document();
 
-      // Define Material styling
-      final primaryColor = PdfColor.fromHex('#1E3A8A'); // Blue
-      final secondaryColor = PdfColor.fromHex('#4B5563'); // Grey
-      final rowColorOdd = PdfColor.fromHex('#F9FAFB');
+      // Executive Styling Palette
+      final primaryIndigo = PdfColor.fromHex('#6366F1');
+      final darkNavy = PdfColor.fromHex('#0F172A');
+      final textMuted = PdfColor.fromHex('#64748B');
+      final rowColorOdd = PdfColor.fromHex('#F8FAFC');
       final rowColorEven = PdfColor.fromHex('#FFFFFF');
+      final borderColor = PdfColor.fromHex('#E2E8F0');
 
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(32),
-          build: (context) => [
-            // Company Header
-            pw.Row(
+          margin: const pw.EdgeInsets.all(28),
+          header: (context) => pw.Container(
+            padding: const pw.EdgeInsets.only(bottom: 8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: primaryIndigo, width: 1.5)),
+            ),
+            child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                pw.Row(
                   children: [
+                    pw.Container(
+                      width: 22,
+                      height: 22,
+                      decoration: pw.BoxDecoration(
+                        color: primaryIndigo,
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+                      ),
+                      child: pw.Center(
+                        child: pw.Text('S', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 13)),
+                      ),
+                    ),
+                    pw.SizedBox(width: 8),
                     pw.Text(
                       'BUSINESS SAHAJ ERP',
                       style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: primaryColor,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      pw.SizedBox(height: 4),
-                      pw.Text(
-                        subtitle,
-                        style: pw.TextStyle(
-                          fontSize: 10,
-                          color: secondaryColor,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.end,
-                  children: [
-                    pw.Text(
-                      title.toUpperCase(),
-                      style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
+                        color: darkNavy,
                       ),
                     ),
-                    pw.Text(
-                      'Generated: ${DateTime.now().toIso8601String().substring(0, 10)}',
-                      style: const pw.TextStyle(fontSize: 8),
-                    ),
                   ],
+                ),
+                pw.Text(
+                  title.toUpperCase(),
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: primaryIndigo,
+                  ),
                 ),
               ],
             ),
-            pw.Divider(thickness: 1.5, color: primaryColor),
-            pw.SizedBox(height: 16),
+          ),
+          footer: (context) => pw.Container(
+            padding: const pw.EdgeInsets.only(top: 8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border(top: pw.BorderSide(color: borderColor, width: 0.5)),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Generated on: ${DateTime.now().toIso8601String().substring(0, 10)}', style: pw.TextStyle(fontSize: 8, color: textMuted)),
+                pw.Text('Page ${context.pageNumber} of ${context.pagesCount}', style: pw.TextStyle(fontSize: 8, color: textMuted, fontWeight: pw.FontWeight.bold)),
+              ],
+            ),
+          ),
+          build: (context) => [
+            pw.SizedBox(height: 12),
+            if (subtitle != null) ...[
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: pw.BoxDecoration(
+                  color: rowColorOdd,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                  border: pw.Border.all(color: borderColor, width: 0.5),
+                ),
+                child: pw.Text(
+                  subtitle,
+                  style: pw.TextStyle(fontSize: 9, color: textMuted, fontWeight: pw.FontWeight.w500),
+                ),
+              ),
+              pw.SizedBox(height: 14),
+            ],
 
             // Tabular Grid
             pw.Table.fromTextArray(
               headers: headers,
               data: rows,
-              border: null,
+              border: pw.TableBorder.all(color: borderColor, width: 0.5),
               headerStyle: pw.TextStyle(
                 color: PdfColors.white,
                 fontWeight: pw.FontWeight.bold,
-                fontSize: 9,
+                fontSize: 8.5,
               ),
               headerDecoration: pw.BoxDecoration(
-                color: primaryColor,
+                color: darkNavy,
               ),
               rowDecoration: pw.BoxDecoration(color: rowColorEven),
               cellAlignment: pw.Alignment.centerLeft,
-              cellStyle: const pw.TextStyle(fontSize: 8),
+              cellStyle: pw.TextStyle(fontSize: 8, color: darkNavy),
               oddRowDecoration: pw.BoxDecoration(color: rowColorOdd),
-              cellHeight: 20,
-              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              cellHeight: 22,
+              cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             ),
 
             // Totals Bar if provided
@@ -105,10 +133,10 @@ class ExportService {
               pw.SizedBox(height: 12),
               pw.Container(
                 alignment: pw.Alignment.centerRight,
-                padding: const pw.EdgeInsets.all(8),
+                padding: const pw.EdgeInsets.all(10),
                 decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#E5E7EB'),
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  color: primaryIndigo,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.end,
@@ -119,8 +147,8 @@ class ExportService {
                         totalText,
                         style: pw.TextStyle(
                           fontWeight: pw.FontWeight.bold,
-                          fontSize: 10,
-                          color: primaryColor,
+                          fontSize: 9.5,
+                          color: PdfColors.white,
                         ),
                       ),
                     );
@@ -160,7 +188,6 @@ class ExportService {
       logger.info('Generating Excel sheet for report: $title');
       var excel = Excel.createExcel();
       
-      // Get the default sheet and rename it or add a custom sheet
       final sheetName = title.length > 30 ? title.substring(0, 30) : title;
       final sheet = excel[sheetName];
       excel.delete('Sheet1'); // Remove the default empty sheet

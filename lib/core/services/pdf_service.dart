@@ -11,11 +11,15 @@ import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 class PdfService {
   final AmountToWordsService _amountToWordsService = AmountToWordsService();
 
-  static final PdfColor primaryCyan = PdfColor.fromHex('#00A8E8');
-  static final PdfColor darkNavy = PdfColor.fromHex('#0D1B2A');
-  static final PdfColor oceanBlue = PdfColor.fromHex('#007EA7');
-  static final PdfColor lightGreyBg = PdfColor.fromHex('#F8F9FA');
-  static final PdfColor accentOrange = PdfColor.fromHex('#FF6B35');
+  // Premium SaaS HSL Palette for PDF Documents
+  static final PdfColor primaryIndigo = PdfColor.fromHex('#6366F1');
+  static final PdfColor obsidianDark = PdfColor.fromHex('#0B0F19');
+  static final PdfColor oceanCyan = PdfColor.fromHex('#0EA5E9');
+  static final PdfColor emeraldGreen = PdfColor.fromHex('#10B981');
+  static final PdfColor cardBgLight = PdfColor.fromHex('#F8FAFC');
+  static final PdfColor tableHeaderBg = PdfColor.fromHex('#0F172A');
+  static final PdfColor borderColor = PdfColor.fromHex('#E2E8F0');
+  static final PdfColor textMuted = PdfColor.fromHex('#64748B');
 
   /// Generates an executive PDF document for a Sales Order
   Future<Uint8List> generateOrderPdf(Order order, {String companyName = 'Business Sahaj ERP'}) async {
@@ -158,12 +162,13 @@ class PdfService {
   }) {
     return pw.Container(
       decoration: pw.BoxDecoration(
-        border: pw.Border(bottom: pw.BorderSide(color: primaryCyan, width: 2)),
+        color: obsidianDark,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
       ),
-      padding: const pw.EdgeInsets.only(bottom: 12),
+      padding: const pw.EdgeInsets.all(16),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -171,49 +176,43 @@ class PdfService {
               pw.Row(
                 children: [
                   pw.Container(
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     decoration: pw.BoxDecoration(
-                      color: primaryCyan,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+                      color: primaryIndigo,
+                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
                     ),
                     child: pw.Center(
-                      child: pw.Text('S', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 16)),
+                      child: pw.Text('S', style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 18)),
                     ),
                   ),
-                  pw.SizedBox(width: 10),
-                  pw.Text(companyName.toUpperCase(), style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: darkNavy)),
+                  pw.SizedBox(width: 12),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(companyName.toUpperCase(), style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                      pw.Text(companyAddress, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400)),
+                      pw.Text('GSTIN: $companyGst | Phone: $companyPhone', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: oceanCyan)),
+                    ],
+                  ),
                 ],
               ),
-              pw.SizedBox(height: 6),
-              pw.Text(companyAddress, style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
-              pw.Text('GSTIN: $companyGst | Phone: $companyPhone', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: oceanBlue)),
             ],
           ),
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: pw.BoxDecoration(
-                  color: darkNavy,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  color: primaryIndigo,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
                 ),
-                child: pw.Text(title, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                child: pw.Text(title, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
               ),
-              pw.SizedBox(height: 8),
-              pw.Row(
-                children: [
-                  pw.Text('Invoice No: ', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
-                  pw.Text('#$docNumber', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: darkNavy)),
-                ],
-              ),
-              pw.Row(
-                children: [
-                  pw.Text('Date: ', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
-                  pw.Text(dateStr, style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: darkNavy)),
-                ],
-              ),
+              pw.SizedBox(height: 6),
+              pw.Text('Invoice No: #$docNumber', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+              pw.Text('Date: $dateStr', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey300)),
             ],
           ),
         ],
@@ -230,11 +229,11 @@ class PdfService {
   }) {
     return pw.Container(
       width: double.infinity,
-      padding: const pw.EdgeInsets.all(12),
+      padding: const pw.EdgeInsets.all(14),
       decoration: pw.BoxDecoration(
-        color: lightGreyBg,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+        color: cardBgLight,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+        border: pw.Border.all(color: borderColor, width: 1),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -242,19 +241,21 @@ class PdfService {
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Billed To (Customer):', style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600, fontWeight: pw.FontWeight.bold)),
+              pw.Text('BILLED TO CUSTOMER:', style: pw.TextStyle(fontSize: 8, color: primaryIndigo, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
-              pw.Text(name, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: darkNavy)),
-              if (gst.isNotEmpty && gst != 'N/A')
-                pw.Text('GSTIN: $gst', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: oceanBlue)),
+              pw.Text(name, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
+              if (gst.isNotEmpty && gst != 'N/A') ...[
+                pw.SizedBox(height: 2),
+                pw.Text('GSTIN: $gst', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: oceanCyan)),
+              ],
             ],
           ),
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              pw.Text('Billing Address:', style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600, fontWeight: pw.FontWeight.bold)),
+              pw.Text('BILLING & SHIPPING ADDRESS:', style: pw.TextStyle(fontSize: 8, color: textMuted, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
-              pw.Text(address.isNotEmpty ? address : 'Main Market Area', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey800)),
+              pw.Text(address.isNotEmpty ? address : 'Main Market Area', style: pw.TextStyle(fontSize: 9, color: obsidianDark, fontWeight: pw.FontWeight.w500)),
             ],
           ),
         ],
@@ -264,7 +265,7 @@ class PdfService {
 
   // --- Invoice Items Table ---
   pw.Widget _buildInvoiceItemsTable(Invoice invoice, List<InvoiceItem> items) {
-    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (Rs.)', 'DISC (Rs.)', 'TOTAL (Rs.)'];
+    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (₹)', 'DISC (₹)', 'TOTAL (₹)'];
 
     int index = 1;
     final data = items.map<List<dynamic>>((item) {
@@ -274,27 +275,28 @@ class PdfService {
         item.itemName ?? 'Item',
         item.hsnCode ?? '-',
         '${qty % 1 == 0 ? qty.toInt() : qty} ${item.unit ?? "PCS"}',
-        'Rs. ${item.rate?.toStringAsFixed(2) ?? "0.00"}',
-        'Rs. ${item.discount?.toStringAsFixed(2) ?? "0.00"}',
-        'Rs. ${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
+        '₹ ${item.rate?.toStringAsFixed(2) ?? "0.00"}',
+        '₹ ${item.discount?.toStringAsFixed(2) ?? "0.00"}',
+        '₹ ${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
       ];
     }).toList();
 
     return pw.Table.fromTextArray(
       headers: headers,
       data: data,
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      border: pw.TableBorder.all(color: borderColor, width: 0.5),
       headerStyle: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-      headerDecoration: pw.BoxDecoration(color: primaryCyan),
-      cellStyle: const pw.TextStyle(fontSize: 8.0),
+      headerDecoration: pw.BoxDecoration(color: tableHeaderBg),
+      cellStyle: pw.TextStyle(fontSize: 8.5, color: obsidianDark),
       cellAlignment: pw.Alignment.centerLeft,
       rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+      oddRowDecoration: pw.BoxDecoration(color: cardBgLight),
     );
   }
 
   // --- Order Items Table ---
   pw.Widget _buildOrderItemsTable(Order order) {
-    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (Rs.)', 'DISC (Rs.)', 'TOTAL (Rs.)'];
+    final headers = ['S.NO', 'PRODUCT DESCRIPTION', 'HSN', 'QTY', 'RATE (₹)', 'DISC (₹)', 'TOTAL (₹)'];
 
     int index = 1;
     final data = order.orderItems.map<List<dynamic>>((item) {
@@ -304,21 +306,22 @@ class PdfService {
         item.itemName ?? 'N/A',
         item.hsnCode ?? 'N/A',
         '${qty % 1 == 0 ? qty.toInt() : qty} ${item.unit ?? "PCS"}',
-        'Rs. ${item.rate?.toStringAsFixed(2) ?? "0.00"}',
-        'Rs. ${item.discountAmount?.toStringAsFixed(2) ?? "0.00"}',
-        'Rs. ${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
+        '₹ ${item.rate?.toStringAsFixed(2) ?? "0.00"}',
+        '₹ ${item.discountAmount?.toStringAsFixed(2) ?? "0.00"}',
+        '₹ ${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
       ];
     }).toList();
 
     return pw.Table.fromTextArray(
       headers: headers,
       data: data,
-      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      border: pw.TableBorder.all(color: borderColor, width: 0.5),
       headerStyle: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-      headerDecoration: pw.BoxDecoration(color: primaryCyan),
-      cellStyle: const pw.TextStyle(fontSize: 8.0),
+      headerDecoration: pw.BoxDecoration(color: tableHeaderBg),
+      cellStyle: pw.TextStyle(fontSize: 8.5, color: obsidianDark),
       cellAlignment: pw.Alignment.centerLeft,
       rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
+      oddRowDecoration: pw.BoxDecoration(color: cardBgLight),
     );
   }
 
@@ -336,7 +339,7 @@ class PdfService {
     final words = _amountToWordsService.convertToWords(grandTotal);
 
     return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      cross: pw.CrossAxisAlignment.start,
       children: [
         // Left Column: Words & Payment Details & Terms
         pw.Expanded(
@@ -344,42 +347,63 @@ class PdfService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('Amount in Words:', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: darkNavy)),
-              pw.Text(words, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+              pw.Container(
+                padding: const pw.EdgeInsets.all(10),
+                decoration: pw.BoxDecoration(
+                  color: cardBgLight,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                  border: pw.Border.all(color: borderColor, width: 0.5),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('AMOUNT IN WORDS:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: primaryIndigo)),
+                    pw.SizedBox(height: 2),
+                    pw.Text(words, style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
+                  ],
+                ),
+              ),
               pw.SizedBox(height: 10),
-              pw.Text('Payment Bank Details:', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: darkNavy)),
-              pw.Text('Bank Name: State Bank of India', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
-              pw.Text('A/C No: 1234 5678 9101', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
-              pw.Text('IFSC / Branch: SBIN0001234 / Main Market', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+              pw.Text('Payment Banking Details:', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
+              pw.Text('Bank Name: State Bank of India', style: pw.TextStyle(fontSize: 8, color: textMuted)),
+              pw.Text('A/C No: 1234 5678 9101', style: pw.TextStyle(fontSize: 8, color: textMuted)),
+              pw.Text('IFSC / Branch: SBIN0001234 / Main Market', style: pw.TextStyle(fontSize: 8, color: textMuted)),
               if (cgst > 0 || sgst > 0 || igst > 0) ...[
                 pw.SizedBox(height: 6),
-                pw.Text('Tax Split: CGST: Rs. ${cgst.toStringAsFixed(2)} | SGST: Rs. ${sgst.toStringAsFixed(2)} | IGST: Rs. ${igst.toStringAsFixed(2)}', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: pw.BoxDecoration(
+                    color: cardBgLight,
+                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  ),
+                  child: pw.Text('GST Tax Division: CGST: ₹${cgst.toStringAsFixed(2)} | SGST: ₹${sgst.toStringAsFixed(2)} | IGST: ₹${igst.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: primaryIndigo)),
+                ),
               ],
             ],
           ),
         ),
         pw.SizedBox(width: 20),
-        // Right Column: Summary Table + Solid Cyan Total Box
+        // Right Column: Summary Table + Solid Indigo Total Box
         pw.Expanded(
           flex: 2,
           child: pw.Column(
             children: [
-              _buildSummaryRow('Subtotal:', 'Rs. ${subtotal.toStringAsFixed(2)}'),
-              _buildSummaryRow('Discount:', 'Rs. ${discount.toStringAsFixed(2)}'),
-              _buildSummaryRow('Tax Amount:', 'Rs. ${gst.toStringAsFixed(2)}'),
-              _buildSummaryRow('Round Off:', 'Rs. ${roundOff.toStringAsFixed(2)}'),
-              pw.SizedBox(height: 6),
+              _buildSummaryRow('Subtotal (Taxable):', '₹ ${subtotal.toStringAsFixed(2)}'),
+              _buildSummaryRow('Discount Total:', '-₹ ${discount.toStringAsFixed(2)}'),
+              _buildSummaryRow('Tax Amount (GST):', '₹ ${gst.toStringAsFixed(2)}'),
+              _buildSummaryRow('Round Off:', '₹ ${roundOff.toStringAsFixed(2)}'),
+              pw.SizedBox(height: 8),
               pw.Container(
-                padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: pw.BoxDecoration(
-                  color: primaryCyan,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                  color: primaryIndigo,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
                 ),
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
                     pw.Text('GRAND TOTAL:', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-                    pw.Text('Rs. ${grandTotal.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                    pw.Text('₹ ${grandTotal.toStringAsFixed(2)}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
                   ],
                 ),
               ),
@@ -392,12 +416,12 @@ class PdfService {
 
   pw.Widget _buildSummaryRow(String label, String value) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 2.5),
+      padding: const pw.EdgeInsets.symmetric(vertical: 3.0),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
-          pw.Text(value, style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: darkNavy)),
+          pw.Text(label, style: pw.TextStyle(fontSize: 8.5, color: textMuted)),
+          pw.Text(value, style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
         ],
       ),
     );
@@ -416,9 +440,9 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Terms & Conditions:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: darkNavy)),
-                  pw.SizedBox(height: 2),
-                  pw.Text(remarks, style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                  pw.Text('Terms & Conditions:', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
+                  pw.SizedBox(height: 3),
+                  pw.Text(remarks, style: pw.TextStyle(fontSize: 8, color: textMuted)),
                 ],
               ),
             ),
@@ -426,13 +450,13 @@ class PdfService {
             pw.Column(
               children: [
                 pw.Container(
-                  width: 130,
-                  decoration: const pw.BoxDecoration(
-                    border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey400, width: 1)),
+                  width: 140,
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border(bottom: pw.BorderSide(color: borderColor, width: 1.5)),
                   ),
                 ),
-                pw.SizedBox(height: 4),
-                pw.Text('Authorised Signatory', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: darkNavy)),
+                pw.SizedBox(height: 6),
+                pw.Text('Authorised Signatory', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
               ],
             ),
           ],
