@@ -39,19 +39,35 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final isar = ref.read(databaseServiceProvider).isar;
-      final fetched = await isar.invoices.filter().uuidEqualTo(widget.invoiceUuid).findFirst();
+      final idVal = int.tryParse(widget.invoiceUuid);
+      
+      Invoice? fetched;
+      if (idVal != null) {
+        if (idVal > 100000000) {
+          fetched = await isar.invoices.get(idVal - 100000000);
+        } else {
+          fetched = await isar.invoices.get(idVal);
+        }
+      }
+      fetched ??= await isar.invoices.filter().uuidEqualTo(widget.invoiceUuid).findFirst();
+
       if (fetched != null) {
+        try { await fetched.party.load(); } catch (_) {}
+
         List<InvoiceItem> items = [];
         try {
-          await fetched.party.load();
+          await fetched.invoiceItems.load();
+          items = fetched.invoiceItems.where((i) => !i.isDeleted).toList();
         } catch (_) {}
 
-        items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(fetched.id).findAll();
         if (items.isEmpty) {
-          try {
-            await fetched.invoiceItems.load();
-          } catch (_) {}
-          items = fetched.invoiceItems.toList();
+          final targetId = fetched.id;
+          items = await isar.invoiceItems
+              .filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q.parentInvoiceIdEqualTo(targetId).or().invoice((i) => i.idEqualTo(targetId)))
+              .findAll();
         }
 
         setState(() {

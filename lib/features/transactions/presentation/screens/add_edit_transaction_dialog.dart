@@ -347,6 +347,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       await repo.saveTransaction(txn);
       
       ref.invalidate(filteredTransactionsProvider);
+      ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(partiesListProvider);
       
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(

@@ -597,27 +597,85 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                             icon: const Icon(Icons.delete_outline, color: Colors.red),
                             tooltip: 'Delete Unit',
                             onPressed: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (c) => AlertDialog(
-                                  title: const Text('Delete Unit'),
-                                  content: Text('Are you sure you want to delete unit "${unit.unitName}"?'),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                                    ElevatedButton(onPressed: () => Navigator.pop(c, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text('Delete')),
-                                  ],
-                                ),
-                              );
+                              final isar = ref.read(databaseServiceProvider).isar;
+                              final short = unit.shortName ?? '';
+                              final usedItems = await isar.items.filter().isDeletedEqualTo(false).and().group((q) => q.unit((u) => u.shortNameEqualTo(short))).findAll();
 
-                              if (confirm == true) {
-                                final isar = ref.read(databaseServiceProvider).isar;
-                                await isar.writeTxn(() async {
-                                  unit.isDeleted = true;
-                                  await isar.units.put(unit);
-                                });
-                                await _loadAllCategories();
-                                setSubState(() {});
+                              if (usedItems.isNotEmpty) {
+                                final otherUnits = _units.where((u) => u.shortName != short && !u.isDeleted).toList();
+                                String? replacementUnit = otherUnits.isNotEmpty ? otherUnits.first.shortName : null;
+
+                                final proceed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (c) => StatefulBuilder(
+                                    builder: (ctx, setDlgState) => AlertDialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                      title: Row(
+                                        children: const [
+                                          Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                                          SizedBox(width: 10),
+                                          Text('Unit Currently In Use!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        ],
+                                      ),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Unit "$short" is used in ${usedItems.length} product item(s).'),
+                                          const SizedBox(height: 12),
+                                          const Text('Select a replacement unit to migrate existing records before deleting:'),
+                                          const SizedBox(height: 10),
+                                          DropdownButtonFormField<String>(
+                                            value: replacementUnit,
+                                            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Replacement Unit'),
+                                            items: otherUnits.map((u) => DropdownMenuItem(value: u.shortName, child: Text('${u.unitName ?? u.shortName} (${u.shortName})'))).toList(),
+                                            onChanged: (val) => setDlgState(() => replacementUnit = val),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                        ElevatedButton(
+                                          onPressed: () => Navigator.pop(c, true),
+                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800, foregroundColor: Colors.white),
+                                          child: const Text('Migrate & Delete Unit'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+
+                                if (proceed != true) return;
+                                if (replacementUnit != null) {
+                                  final newUnitObj = otherUnits.firstWhere((u) => u.shortName == replacementUnit);
+                                  await isar.writeTxn(() async {
+                                    for (var it in usedItems) {
+                                      it.unit.value = newUnitObj;
+                                      await isar.items.put(it);
+                                    }
+                                  });
+                                }
+                              } else {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (c) => AlertDialog(
+                                    title: const Text('Delete Unit'),
+                                    content: Text('Are you sure you want to delete unit "${unit.unitName}"?'),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                      ElevatedButton(onPressed: () => Navigator.pop(c, true), style: ElevatedButton.styleFrom(backgroundColor: Colors.red), child: const Text('Delete')),
+                                    ],
+                                  ),
+                                );
+                                if (confirm != true) return;
                               }
+
+                              await isar.writeTxn(() async {
+                                unit.isDeleted = true;
+                                await isar.units.put(unit);
+                              });
+                              await _loadAllCategories();
+                              setSubState(() {});
                             },
                           ),
                         ],

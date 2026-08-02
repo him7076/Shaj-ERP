@@ -1285,13 +1285,70 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: TextFormField(
-                  controller: _hsnController,
-                  decoration: const InputDecoration(
-                    labelText: 'HSN / SAC Code',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.history_edu),
-                  ),
+                child: RawAutocomplete<HsnModel>(
+                  textEditingController: _hsnController,
+                  focusNode: FocusNode(),
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    final query = textEditingValue.text.trim().toLowerCase();
+                    final hsnService = ref.read(hsnServiceProvider);
+                    return hsnService.searchHsnCodes(query);
+                  },
+                  displayStringForOption: (HsnModel option) => option.hsnCode,
+                  onSelected: (HsnModel selection) {
+                    setState(() {
+                      _hsnController.text = selection.hsnCode;
+                      _gstRate = selection.gstRate;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Selected HSN ${selection.hsnCode} (GST ${selection.gstRate}%)'), backgroundColor: Colors.green),
+                    );
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                    return TextFormField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      onEditingComplete: onEditingComplete,
+                      decoration: const InputDecoration(
+                        labelText: 'HSN / SAC Code (Auto Suggest)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.history_edu),
+                        hintText: 'e.g. 8471, 6109, 1006',
+                      ),
+                    );
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 6,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 320,
+                          maxHeight: 250,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: theme.colorScheme.outlineVariant),
+                          ),
+                          child: ListView.separated(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            separatorBuilder: (context, index) => const Divider(height: 1),
+                            itemBuilder: (BuildContext context, int index) {
+                              final option = options.elementAt(index);
+                              return ListTile(
+                                dense: true,
+                                title: Text('${option.hsnCode} - GST ${option.gstRate}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text(option.description, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                onTap: () => onSelected(option),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -1307,31 +1364,29 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 children: [
                   Text(
                     _nameController.text.trim().isEmpty 
-                        ? 'Common HSN Codes Suggestions:' 
-                        : 'Online HSN Suggestions for "${_nameController.text.trim()}":',
+                        ? 'Common Indian HSN Code Suggestions:' 
+                        : 'Suggested HSN Codes for "${_nameController.text.trim()}":',
                     style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   _suggestedHsnCodes.isEmpty
-                      ? const Text('Type product name above to fetch suggested HSN codes', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic))
+                      ? const Text('Type product name above to auto-suggest matching HSN codes', style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic))
                       : Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _suggestedHsnCodes.take(8).map((hsn) {
+                          children: _suggestedHsnCodes.take(10).map((hsn) {
                             return ActionChip(
-                              avatar: CircleAvatar(
-                                radius: 10,
-                                backgroundColor: theme.colorScheme.primary,
-                                child: Text('${hsn.gstRate.toInt()}', style: const TextStyle(fontSize: 8, color: Colors.white)),
-                              ),
-                              label: Text('${hsn.hsnCode} - ${hsn.description.split(' ').first}'),
+                              avatar: const Icon(Icons.bolt, size: 14, color: Colors.amber),
+                              label: Text('${hsn.hsnCode} (${hsn.description.split(" ").first}) - ${hsn.gstRate}% GST'),
+                              backgroundColor: theme.colorScheme.surface,
                               onPressed: () {
                                 setState(() {
                                   _hsnController.text = hsn.hsnCode;
                                   _gstRate = hsn.gstRate;
-                                  _cessRate = hsn.cessRate;
                                 });
-                                hsnService.addToRecent(hsn);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Selected HSN ${hsn.hsnCode} with ${hsn.gstRate}% GST rate!'), backgroundColor: Colors.green),
+                                );
                               },
                             );
                           }).toList(),

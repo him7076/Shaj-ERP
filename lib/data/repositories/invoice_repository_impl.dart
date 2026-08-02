@@ -119,6 +119,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         if (!isNew) {
           final oldItems = await isar.invoiceItems
               .filter()
+              .parentInvoiceIdEqualTo(invoiceId)
+              .or()
               .invoice((q) => q.idEqualTo(invoiceId))
               .findAll();
           

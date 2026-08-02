@@ -430,6 +430,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       await repo.saveInvoice(invoice, invoiceItems);
 
       ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(filteredTransactionsProvider);
       ref.invalidate(dashboardAnalyticsProvider);
       ref.read(unsavedChangesProvider.notifier).state = false;
 
