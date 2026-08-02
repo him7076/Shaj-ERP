@@ -101,7 +101,7 @@ class ExportService {
                 ),
                 child: pw.Text(
                   subtitle,
-                  style: pw.TextStyle(fontSize: 9, color: textMuted, fontWeight: pw.FontWeight.w500),
+                  style: pw.TextStyle(fontSize: 9, color: textMuted, fontWeight: pw.FontWeight.bold),
                 ),
               ),
               pw.SizedBox(height: 14),

@@ -267,7 +267,7 @@ class PdfService {
             children: [
               pw.Text('BILLING & SHIPPING ADDRESS:', style: pw.TextStyle(fontSize: 8, color: textMuted, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
-              pw.Text(address.isNotEmpty ? address : 'Main Market Area', style: pw.TextStyle(fontSize: 9, color: obsidianDark, fontWeight: pw.FontWeight.w500)),
+              pw.Text(address.isNotEmpty ? address : 'Main Market Area', style: pw.TextStyle(fontSize: 9, color: obsidianDark, fontWeight: pw.FontWeight.bold)),
             ],
           ),
         ],
@@ -351,7 +351,7 @@ class PdfService {
     final words = _amountToWordsService.convertToWords(grandTotal);
 
     return pw.Row(
-      cross: pw.CrossAxisAlignment.start,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         // Left Column: Words & Payment Details & Terms
         pw.Expanded(
