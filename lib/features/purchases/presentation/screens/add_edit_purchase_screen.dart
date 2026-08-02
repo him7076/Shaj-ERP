@@ -123,7 +123,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   void _initValues() async {
     final repo = ref.read(purchaseRepositoryProvider);
     final isar = ref.read(databaseServiceProvider).isar;
-    final settings = await isar.settings.where().idGreaterThan(-1).findFirst();
+    final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
     _companyGst = settings?.companyGST;
 
     if (widget.purchaseUuid != null) {
