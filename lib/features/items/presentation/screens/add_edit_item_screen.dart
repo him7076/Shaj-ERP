@@ -1324,7 +1324,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           width: 320,
-                          maxHeight: 250,
+                          constraints: const BoxConstraints(maxHeight: 250),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),

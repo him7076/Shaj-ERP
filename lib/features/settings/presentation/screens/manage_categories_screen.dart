@@ -6,6 +6,7 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 
@@ -599,7 +600,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                             onPressed: () async {
                               final isar = ref.read(databaseServiceProvider).isar;
                               final short = unit.shortName ?? '';
-                              final usedItems = await isar.items.filter().isDeletedEqualTo(false).and().group((q) => q.unit((u) => u.shortNameEqualTo(short))).findAll();
+                              final usedItems = await isar.collection<Item>().filter().isDeletedEqualTo(false).and().group((q) => q.unit((u) => u.shortNameEqualTo(short))).findAll();
 
                               if (usedItems.isNotEmpty) {
                                 final otherUnits = _units.where((u) => u.shortName != short && !u.isDeleted).toList();
@@ -651,7 +652,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                                   await isar.writeTxn(() async {
                                     for (var it in usedItems) {
                                       it.unit.value = newUnitObj;
-                                      await isar.items.put(it);
+                                      await isar.collection<Item>().put(it);
                                     }
                                   });
                                 }

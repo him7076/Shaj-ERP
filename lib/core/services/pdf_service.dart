@@ -160,7 +160,7 @@ class PdfService {
       decoration: pw.BoxDecoration(
         border: pw.Border(bottom: pw.BorderSide(color: primaryCyan, width: 2)),
       ),
-      padding: const pw.EdgeInsets.bottom(12),
+      padding: const pw.EdgeInsets.only(bottom: 12),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         crossAxisAlignment: pw.CrossAxisAlignment.start,
