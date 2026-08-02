@@ -46,12 +46,17 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     _loadPreviewNumber();
   }
 
+  String? _companyGst;
+
   Future<void> _loadPreviewNumber() async {
     final repo = ref.read(debitNoteRepositoryProvider);
     final num = await repo.generateNextDebitNoteNumber();
+    final isar = ref.read(databaseServiceProvider).isar;
+    final companySettings = await isar.settings.filter().idGreaterThan(-1).findFirst();
     if (mounted) {
       setState(() {
         _previewNumber = num;
+        _companyGst = companySettings?.companyGST;
       });
     }
   }
@@ -650,11 +655,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   }
 
   List<Widget> _buildTaxBreakdownSummary(ThemeData theme) {
-    final isar = ref.read(databaseServiceProvider).isar;
-    final companySettings = isar.settings.where().findFirstSync();
-    final companyGst = companySettings?.companyGST;
-
-    final gstSplit = _calculateGstBreakdown(companyGst);
+    final gstSplit = _calculateGstBreakdown(_companyGst);
 
     if (gstSplit['igst']! > 0) {
       return [
