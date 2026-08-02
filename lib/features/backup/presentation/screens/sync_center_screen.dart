@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/sync_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/connectivity_provider.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
