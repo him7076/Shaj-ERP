@@ -20,7 +20,7 @@ flutter --version
 echo "Installing Flutter pub packages..."
 flutter pub get
 
-echo "Compiling Flutter Web (Release mode, PWA cache disabled)..."
-flutter build web --release --pwa-strategy=none
+echo "Compiling Flutter Web (Release mode)..."
+flutter build web --release
 
 echo "=== Vercel Flutter Web Build Completed Successfully ==="
