@@ -158,7 +158,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final pdfService = PdfService();
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().anyId().findFirst();
+      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().build().findFirst();
       final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
       final companyGst = companySettings?.companyGST ?? '27AAAAA1111A1Z1';
       final companyAddr = companySettings?.companyAddress ?? '123 Business Hub, Mumbai, MH';

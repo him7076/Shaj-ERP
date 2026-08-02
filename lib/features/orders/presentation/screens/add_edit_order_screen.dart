@@ -234,7 +234,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       final userEmail = authState.email ?? 'salesman@sahaj.com';
 
       final repo = ref.read(orderRepositoryProvider);
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().anyId().findFirst();
+      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().build().findFirst();
       final companyGst = companySettings?.companyGST;
 
       final totals = ref.read(cartProvider.notifier).calculateTotals(companyGst);
@@ -770,7 +770,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
   Widget _buildTotalsSummaryPanel(ThemeData theme) {
     final cart = ref.watch(cartProvider);
     return FutureBuilder<Settings?>(
-      future: ref.read(databaseServiceProvider).isar.settings.where().anyId().findFirst(),
+      future: ref.read(databaseServiceProvider).isar.settings.where().build().findFirst(),
       builder: (context, snapshot) {
         final companyGst = snapshot.data?.companyGST;
         final totals = ref.read(cartProvider.notifier).calculateTotals(companyGst);

@@ -168,7 +168,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
 
     try {
       final isar = ref.read(databaseServiceProvider).isar;
-      final companySettings = await isar.settings.where().anyId().findFirst();
+      final companySettings = await isar.settings.where().build().findFirst();
       final companyGst = companySettings?.companyGST;
 
       final gstSplit = _calculateGstBreakdown(companyGst);

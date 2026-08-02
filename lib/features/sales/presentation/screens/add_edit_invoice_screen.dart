@@ -287,7 +287,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       final userEmail = authState.email ?? 'salesman@sahaj.com';
 
       final repo = ref.read(invoiceRepositoryProvider);
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().anyId().findFirst();
+      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().build().findFirst();
       final companyGst = companySettings?.companyGST;
 
       final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(companyGst);
@@ -1001,7 +1001,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   Widget _buildTotalsSummaryPanel(ThemeData theme) {
     final cart = ref.watch(invoiceCartProvider);
     return FutureBuilder<Settings?>(
-      future: ref.read(databaseServiceProvider).isar.settings.where().anyId().findFirst(),
+      future: ref.read(databaseServiceProvider).isar.settings.where().build().findFirst(),
       builder: (context, snapshot) {
         final companyGst = snapshot.data?.companyGST;
         final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(companyGst);
