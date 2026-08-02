@@ -130,6 +130,5 @@ final bankAccountsListProvider = FutureProvider<List<BankAccount>>((ref) async {
 
 // GST Lookup Service Provider
 final gstServiceProvider = Provider<GstService>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return GstService(prefs);
+  return GstService();
 });
