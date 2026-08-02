@@ -4,6 +4,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
@@ -260,9 +261,9 @@ class PdfService {
     final headers = ['#', 'Item Description', 'HSN', 'Qty', 'Unit', 'Rate (₹)', 'Disc (₹)', 'GST %', 'Total (₹)'];
     
     int index = 1;
-    final List<List<dynamic>> data = items.map((item) {
+    final data = items.map<List<dynamic>>((item) {
       final double qty = item.quantity ?? 0.0;
-      final row = <dynamic>[
+      return [
         '${index++}',
         item.itemName ?? 'Item',
         item.hsnCode ?? '-',
@@ -273,7 +274,6 @@ class PdfService {
         '${item.gstRate?.toInt() ?? 0}%',
         '₹${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
       ];
-      return row;
     }).toList();
 
     return pw.Table.fromTextArray(
