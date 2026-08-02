@@ -465,6 +465,9 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         }
 
         // Link items
+        if (!kIsWeb) {
+          invoice.invoiceItems.addAll(invoiceItems);
+        }
         await invoice.invoiceItems.save();
 
         // 6. Sync logs for Invoice

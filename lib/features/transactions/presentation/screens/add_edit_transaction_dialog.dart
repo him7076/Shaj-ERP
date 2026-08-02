@@ -372,11 +372,11 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     final partiesAsync = ref.watch(partiesListProvider);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 12,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Container(
-        width: 500,
+        width: 520,
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -388,18 +388,30 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      widget.transaction != null ? 'Edit Transaction' : 'Record Transaction',
-                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.account_balance_wallet_rounded, color: theme.colorScheme.primary, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          widget.transaction != null ? 'Edit Transaction' : 'Record Transaction',
+                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                      ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close_rounded),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-                const Divider(),
-                const SizedBox(height: 16),
+                const Divider(height: 28, thickness: 0.5),
 
                 // Transaction Type Dropdown
                 DropdownButtonFormField<String>(

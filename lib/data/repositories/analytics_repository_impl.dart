@@ -9,53 +9,80 @@ import 'package:business_sahaj_erp/data/local/collections/order_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+
 class AnalyticsRepositoryImpl implements AnalyticsRepository {
   final DatabaseService _dbService;
 
   AnalyticsRepositoryImpl(this._dbService);
 
   @override
-  Future<DashboardAnalyticsSummary> getDashboardAnalytics() async {
+  Future<DashboardAnalyticsSummary> getDashboardAnalytics({DateTime? startDate, DateTime? endDate}) async {
     try {
       final isar = _dbService.isar;
-    final now = DateTime.now();
-    
-    final startOfToday = DateTime(now.year, now.month, now.day);
-    final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
-    
-    final startOfMonth = DateTime(now.year, now.month, 1);
-    final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+      final now = DateTime.now();
+      
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      
+      final rangeStart = startDate ?? DateTime(now.year, now.month, 1);
+      final rangeEnd = endDate ?? DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
-    // 1. Today's Sales
-    final todayInvoices = await isar.invoices
-        .filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceDateBetween(startOfToday, endOfToday)
-        .findAll();
-    final todaySales = todayInvoices
-        .where((inv) => inv.paymentStatus != 'Cancelled')
-        .fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
+      // Fetch all non-deleted Invoices, Purchases, and Transactions
+      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final allPurchases = await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll();
+      final allTransactions = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
 
-    // 2. Monthly Sales
-    final monthlyInvoices = await isar.invoices
-        .filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceDateBetween(startOfMonth, endOfMonth)
-        .findAll();
-    final monthlySales = monthlyInvoices
-        .where((inv) => inv.paymentStatus != 'Cancelled')
-        .fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
+      bool isWithin(DateTime? dt, DateTime s, DateTime e) {
+        if (dt == null) return false;
+        return (dt.isAfter(s.subtract(const Duration(seconds: 1))) &&
+                dt.isBefore(e.add(const Duration(seconds: 1))));
+      }
 
-    // Monthly Purchases
-    final monthlyPurchasesInvoices = await isar.collection<Purchase>()
-        .filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .purchaseDateBetween(startOfMonth, endOfMonth)
-        .findAll();
-    final monthlyPurchases = monthlyPurchasesInvoices.fold(0.0, (sum, p) => sum + (p.grandTotal ?? 0.0));
+      // 1. Today's Sales
+      double todaySales = 0.0;
+      for (var inv in allInvoices) {
+        if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, startOfToday, endOfToday)) {
+          todaySales += (inv.grandTotal ?? 0.0);
+        }
+      }
+      for (var txn in allTransactions) {
+        if (txn.transactionType == 'Sales' && isWithin(txn.transactionDate ?? txn.createdAt, startOfToday, endOfToday)) {
+          if (!allInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
+            todaySales += (txn.amount ?? 0.0);
+          }
+        }
+      }
+
+      // 2. Period Sales (Selected Range)
+      double monthlySales = 0.0;
+      for (var inv in allInvoices) {
+        if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, rangeStart, rangeEnd)) {
+          monthlySales += (inv.grandTotal ?? 0.0);
+        }
+      }
+      for (var txn in allTransactions) {
+        if (txn.transactionType == 'Sales' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
+          if (!allInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
+            monthlySales += (txn.amount ?? 0.0);
+          }
+        }
+      }
+
+      // 3. Period Purchases (Selected Range)
+      double monthlyPurchases = 0.0;
+      for (var pur in allPurchases) {
+        if (pur.paymentStatus != 'Cancelled' && isWithin(pur.purchaseDate ?? pur.createdAt, rangeStart, rangeEnd)) {
+          monthlyPurchases += (pur.grandTotal ?? 0.0);
+        }
+      }
+      for (var txn in allTransactions) {
+        if (txn.transactionType == 'Purchase' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
+          if (!allPurchases.any((p) => p.uuid == txn.uuid || p.purchaseNumber == txn.transactionNumber)) {
+            monthlyPurchases += (txn.amount ?? 0.0);
+          }
+        }
+      }
 
     // 3. Pending Orders Count
     final pendingOrdersCount = await isar.orders

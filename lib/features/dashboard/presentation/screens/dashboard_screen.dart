@@ -14,6 +14,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final dateFilter = ref.watch(dashboardDateFilterProvider);
     final analyticsAsync = ref.watch(dashboardAnalyticsProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
@@ -72,23 +73,101 @@ class DashboardScreen extends ConsumerWidget {
                 _buildQuickActionsGrid(context),
                 const SizedBox(height: 32),
 
-                // Section Header for KPIs
+                // Section Header for KPIs & Period Filter Dropdown
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      width: 4,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 18,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Key Business Analytics',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Key Business Analytics',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
+                    // Period Filter Selection Dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_month_rounded, size: 16, color: theme.colorScheme.primary),
+                          const SizedBox(width: 6),
+                          DropdownButtonHideUnderline(
+                            child: DropdownButton<DashboardPeriodPreset>(
+                              value: dateFilter.preset,
+                              isDense: true,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: DashboardPeriodPreset.today,
+                                  child: Text('Today'),
+                                ),
+                                DropdownMenuItem(
+                                  value: DashboardPeriodPreset.weekly,
+                                  child: Text('Weekly (This Week)'),
+                                ),
+                                DropdownMenuItem(
+                                  value: DashboardPeriodPreset.monthly,
+                                  child: Text('Monthly (This Month)'),
+                                ),
+                                DropdownMenuItem(
+                                  value: DashboardPeriodPreset.yearly,
+                                  child: Text('Yearly (This Year)'),
+                                ),
+                                DropdownMenuItem(
+                                  value: DashboardPeriodPreset.custom,
+                                  child: Text('Custom Date Range...'),
+                                ),
+                              ],
+                              onChanged: (preset) async {
+                                if (preset == null) return;
+                                if (preset == DashboardPeriodPreset.custom) {
+                                  final picked = await showDateRangePicker(
+                                    context: context,
+                                    initialDateRange: DateTimeRange(
+                                      start: dateFilter.startDate,
+                                      end: dateFilter.endDate,
+                                    ),
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2030),
+                                  );
+                                  if (picked != null) {
+                                    ref.read(dashboardDateFilterProvider.notifier).state =
+                                        DashboardDateFilter.fromPreset(
+                                      DashboardPeriodPreset.custom,
+                                      customStart: picked.start,
+                                      customEnd: DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59),
+                                    );
+                                  }
+                                } else {
+                                  ref.read(dashboardDateFilterProvider.notifier).state =
+                                      DashboardDateFilter.fromPreset(preset);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -108,7 +187,7 @@ class DashboardScreen extends ConsumerWidget {
                       context: context,
                       title: 'Sales Invoices',
                       value: currencyFormat.format(analytics.monthlySales),
-                      trend: 'This Month Total',
+                      trend: '${dateFilter.label} Total',
                       trendColor: const Color(0xFF10B981),
                       icon: Icons.point_of_sale_rounded,
                       iconColor: const Color(0xFF10B981),
@@ -118,7 +197,7 @@ class DashboardScreen extends ConsumerWidget {
                       context: context,
                       title: 'Purchase Bills',
                       value: currencyFormat.format(analytics.monthlyPurchases),
-                      trend: 'This Month Total',
+                      trend: '${dateFilter.label} Total',
                       trendColor: const Color(0xFF6366F1),
                       icon: Icons.shopping_bag_rounded,
                       iconColor: const Color(0xFF6366F1),

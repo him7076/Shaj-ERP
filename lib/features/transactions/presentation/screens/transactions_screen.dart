@@ -7,7 +7,9 @@ import 'package:business_sahaj_erp/features/transactions/presentation/screens/ad
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/add_edit_order_screen.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
@@ -49,12 +51,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     if (txn.transactionType == 'Sales') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => AddEditInvoiceScreen(invoiceUuid: txn.uuid)),
+        MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: txn.uuid ?? txn.id.toString())),
       ).then((_) => ref.invalidate(filteredTransactionsProvider));
     } else if (txn.transactionType == 'Sales Order') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => AddEditOrderScreen(orderUuid: txn.uuid)),
+        MaterialPageRoute(builder: (context) => OrderDetailScreen(orderUuid: txn.uuid ?? txn.id.toString())),
       ).then((_) => ref.invalidate(filteredTransactionsProvider));
     } else if (txn.transactionType == 'Purchase') {
       Navigator.push(

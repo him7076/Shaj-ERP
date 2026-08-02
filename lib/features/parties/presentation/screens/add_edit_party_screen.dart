@@ -6,6 +6,8 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
+import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
+import 'package:business_sahaj_erp/core/widgets/modern_text_field.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
 
@@ -956,32 +958,14 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
     required IconData icon,
     required List<Widget> children,
   }) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 10),
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            ...children,
-          ],
-        ),
+    return ModernFormSection(
+      title: title,
+      icon: icon,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
       ),
     );
   }
 }
+

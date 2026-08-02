@@ -44,12 +44,89 @@ final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {
   return AnalyticsRepositoryImpl(dbService);
 });
 
-// --- Future State Providers ---
+enum DashboardPeriodPreset {
+  today,
+  weekly,
+  monthly,
+  yearly,
+  custom,
+}
+
+class DashboardDateFilter {
+  final DashboardPeriodPreset preset;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  DashboardDateFilter({
+    required this.preset,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  factory DashboardDateFilter.fromPreset(DashboardPeriodPreset preset, {DateTime? customStart, DateTime? customEnd}) {
+    final now = DateTime.now();
+    DateTime start = DateTime(now.year, now.month, 1);
+    DateTime end = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+
+    switch (preset) {
+      case DashboardPeriodPreset.today:
+        start = DateTime(now.year, now.month, now.day);
+        end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case DashboardPeriodPreset.weekly:
+        final daysToSubtract = now.weekday - 1;
+        start = DateTime(now.year, now.month, now.day).subtract(Duration(days: daysToSubtract));
+        end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        break;
+      case DashboardPeriodPreset.monthly:
+        start = DateTime(now.year, now.month, 1);
+        end = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+        break;
+      case DashboardPeriodPreset.yearly:
+        start = DateTime(now.year, 1, 1);
+        end = DateTime(now.year, 12, 31, 23, 59, 59);
+        break;
+      case DashboardPeriodPreset.custom:
+        start = customStart ?? start;
+        end = customEnd ?? end;
+        break;
+    }
+
+    return DashboardDateFilter(
+      preset: preset,
+      startDate: start,
+      endDate: end,
+    );
+  }
+
+  String get label {
+    switch (preset) {
+      case DashboardPeriodPreset.today:
+        return 'Today';
+      case DashboardPeriodPreset.weekly:
+        return 'This Week';
+      case DashboardPeriodPreset.monthly:
+        return 'This Month';
+      case DashboardPeriodPreset.yearly:
+        return 'This Year';
+      case DashboardPeriodPreset.custom:
+        return 'Custom Range';
+    }
+  }
+}
+
+final dashboardDateFilterProvider = StateProvider<DashboardDateFilter>((ref) {
+  return DashboardDateFilter.fromPreset(DashboardPeriodPreset.monthly);
+});
 
 // 1. Dashboard Analytics Summary
 final dashboardAnalyticsProvider = FutureProvider.autoDispose<DashboardAnalyticsSummary>((ref) async {
+  final dateFilter = ref.watch(dashboardDateFilterProvider);
   final repository = ref.watch(analyticsRepositoryProvider);
-  return await repository.getDashboardAnalytics();
+  return await repository.getDashboardAnalytics(
+    startDate: dateFilter.startDate,
+    endDate: dateFilter.endDate,
+  );
 });
 
 // 2. Sales Report Summary

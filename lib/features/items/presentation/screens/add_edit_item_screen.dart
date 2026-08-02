@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/hsn_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
 
 class AddEditItemScreen extends ConsumerStatefulWidget {
   final String? itemUuid;
@@ -696,63 +697,15 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     required List<Widget> children,
     Color? color,
   }) {
-    final theme = Theme.of(context);
-    final indicatorColor = color ?? theme.colorScheme.primary;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 24),
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.02),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.4),
-          width: 1,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 6,
-                color: indicatorColor,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: indicatorColor.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(icon, color: indicatorColor, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            title,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      ...children,
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: ModernFormSection(
+        title: title,
+        icon: icon,
+        iconColor: color,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
         ),
       ),
     );

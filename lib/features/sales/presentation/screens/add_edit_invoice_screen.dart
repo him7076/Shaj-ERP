@@ -212,9 +212,20 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             : invoice.party.value;
 
         if (party != null) {
-          final List<InvoiceItem> itemsList = kIsWeb
-              ? await db.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll()
-              : invoice.invoiceItems.toList();
+          List<InvoiceItem> itemsList = [];
+          if (!kIsWeb) {
+            try { await invoice.invoiceItems.load(); } catch (_) {}
+            itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList();
+          }
+          if (itemsList.isEmpty) {
+            final targetId = invoice.id;
+            itemsList = await db.invoiceItems
+                .filter()
+                .isDeletedEqualTo(false)
+                .and()
+                .group((q) => q.parentInvoiceIdEqualTo(targetId).or().invoice((i) => i.idEqualTo(targetId)))
+                .findAll();
+          }
 
           final List<CartItemState> cartItems = [];
           for (var item in itemsList) {
