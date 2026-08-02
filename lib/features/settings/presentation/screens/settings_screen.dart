@@ -46,6 +46,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final currentThemeMode = ref.watch(themeProvider);
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final prefs = ref.watch(sharedPreferencesProvider);
 
     final activeFirmId = prefs.getString('active_firm_id') ?? 'firm_default';
