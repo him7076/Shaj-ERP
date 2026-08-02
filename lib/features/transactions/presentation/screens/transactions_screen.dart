@@ -647,23 +647,45 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      // Status Badge (Paid / Unpaid / Linked)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
-                                              ? Colors.green.withOpacity(0.12)
-                                              : Colors.blue.withOpacity(0.12),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED',
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.bold,
-                                            color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? Colors.green.shade800 : Colors.blue.shade800,
-                                          ),
-                                        ),
+                                      // Status Badge (PAID / UNPAID / PARTIALLY PAID / LINKED)
+                                      Builder(
+                                        builder: (context) {
+                                          final statusStr = txn.paymentStatus ?? 
+                                              (txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED');
+                                          
+                                          Color statusBg = Colors.blue.withOpacity(0.12);
+                                          Color statusFg = Colors.blue.shade800;
+
+                                          if (statusStr.toUpperCase() == 'PAID' || statusStr.toUpperCase() == 'LINKED') {
+                                            statusBg = Colors.green.withOpacity(0.15);
+                                            statusFg = Colors.green.shade800;
+                                          } else if (statusStr.toUpperCase() == 'PARTIALLY PAID') {
+                                            statusBg = Colors.orange.withOpacity(0.15);
+                                            statusFg = Colors.orange.shade900;
+                                          } else if (statusStr.toUpperCase() == 'UNPAID') {
+                                            statusBg = Colors.red.withOpacity(0.15);
+                                            statusFg = Colors.red.shade800;
+                                          } else if (statusStr.toUpperCase() == 'PENDING') {
+                                            statusBg = Colors.amber.withOpacity(0.15);
+                                            statusFg = Colors.amber.shade900;
+                                          }
+
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: statusBg,
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              statusStr.toUpperCase(),
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                                color: statusFg,
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),

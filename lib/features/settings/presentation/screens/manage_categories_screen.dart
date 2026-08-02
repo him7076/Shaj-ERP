@@ -442,14 +442,12 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                             },
                           ),
                           IconButton(
-                            icon: Icon(Icons.delete_outline, color: isDefault ? Colors.grey : Colors.red),
-                            tooltip: isDefault ? 'Cannot delete default item' : 'Delete Item',
-                            onPressed: isDefault
-                                ? null
-                                : () async {
-                                    await _deletePrefItem(prefKey, item, defaultItems);
-                                    setSubState(() {});
-                                  },
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            tooltip: 'Delete Item',
+                            onPressed: () async {
+                              await _deletePrefItem(prefKey, item, defaultItems);
+                              setSubState(() {});
+                            },
                           ),
                         ],
                       ),

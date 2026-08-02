@@ -31,22 +31,22 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .filter()
         .isDeletedEqualTo(false)
         .and()
-        .invoiceStatusEqualTo('Active')
-        .and()
         .invoiceDateBetween(startOfToday, endOfToday)
         .findAll();
-    final todaySales = todayInvoices.fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
+    final todaySales = todayInvoices
+        .where((inv) => inv.paymentStatus != 'Cancelled')
+        .fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
 
     // 2. Monthly Sales
     final monthlyInvoices = await isar.invoices
         .filter()
         .isDeletedEqualTo(false)
         .and()
-        .invoiceStatusEqualTo('Active')
-        .and()
         .invoiceDateBetween(startOfMonth, endOfMonth)
         .findAll();
-    final monthlySales = monthlyInvoices.fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
+    final monthlySales = monthlyInvoices
+        .where((inv) => inv.paymentStatus != 'Cancelled')
+        .fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
 
     // Monthly Purchases
     final monthlyPurchasesInvoices = await isar.collection<Purchase>()
@@ -91,14 +91,12 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
     // 6. Top Customers (last 30 days)
     final date30DaysAgo = now.subtract(const Duration(days: 30));
-    final recentInvoices = await isar.invoices
+    final recentInvoices = (await isar.invoices
         .filter()
         .isDeletedEqualTo(false)
         .and()
-        .invoiceStatusEqualTo('Active')
-        .and()
         .invoiceDateBetween(date30DaysAgo, now)
-        .findAll();
+        .findAll()).where((i) => i.paymentStatus != 'Cancelled').toList();
 
     final Map<String, _CustomerAggregate> customerMap = {};
     for (var inv in recentInvoices) {
@@ -172,14 +170,12 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       final dateStart = DateTime(date.year, date.month, date.day);
       final dateEnd = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
-      final dayInvoices = await isar.invoices
+      final dayInvoices = (await isar.invoices
           .filter()
           .isDeletedEqualTo(false)
           .and()
-          .invoiceStatusEqualTo('Active')
-          .and()
           .invoiceDateBetween(dateStart, dateEnd)
-          .findAll();
+          .findAll()).where((i) => i.paymentStatus != 'Cancelled').toList();
 
       final daySum = dayInvoices.fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
       dailySalesPoints.add(DailySalesPoint(date: date, salesAmount: daySum));

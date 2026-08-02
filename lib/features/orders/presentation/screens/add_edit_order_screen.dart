@@ -228,6 +228,62 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       return;
     }
 
+    final prefs = ref.read(sharedPreferencesProvider);
+    final enableNegStockWarning = prefs.getBool('enable_negative_stock_warning') ?? true;
+
+    if (enableNegStockWarning) {
+      final insufficientItems = <String>[];
+      for (var cartItem in cart.items) {
+        final availStock = cartItem.item.currentStock ?? 0.0;
+        if (cartItem.quantity > availStock) {
+          insufficientItems.add('${cartItem.item.itemName ?? "Item"} (Available: ${availStock.toInt()}, Required: ${cartItem.quantity.toInt()})');
+        }
+      }
+
+      if (insufficientItems.isNotEmpty) {
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: const [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text('Negative Stock Warning', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('The following items exceed available stock inventory:'),
+                const SizedBox(height: 10),
+                ...insufficientItems.map((msg) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text('• $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                )),
+                const SizedBox(height: 12),
+                const Text('Do you want to proceed and save this sales order anyway?'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel & Fix'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
+                child: const Text('Save Anyway'),
+              ),
+            ],
+          ),
+        );
+
+        if (confirm != true) return;
+      }
+    }
+
     setState(() => _isSaving = true);
     try {
       final authState = ref.read(authProvider);

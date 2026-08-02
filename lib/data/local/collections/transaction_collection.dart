@@ -28,6 +28,7 @@ class Transaction implements IsarModel {
   double? amount;
 
   String? paymentMode; // 'Cash', 'Bank', 'UPI', 'Cheque', 'Credit'
+  String? paymentStatus; // 'Paid', 'Partially Paid', 'Unpaid', 'Cancelled'
   String? referenceNumber;
   String? remarks;
 

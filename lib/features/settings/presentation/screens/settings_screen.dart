@@ -281,6 +281,98 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
+            // Transaction & Warning Settings Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, color: theme.colorScheme.primary),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Transaction Settings & Warning Alerts',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    const Text(
+                      'Configure operational warnings and validation alerts for sales, purchases, and stock movements.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+                    StatefulBuilder(
+                      builder: (context, setCardState) {
+                        final bool negStock = prefs.getBool('enable_negative_stock_warning') ?? true;
+                        final bool creditLimit = prefs.getBool('enable_credit_limit_warning') ?? true;
+                        final bool lowStock = prefs.getBool('enable_low_stock_alert') ?? true;
+                        final bool dupCheck = prefs.getBool('enable_duplicate_bill_no_check') ?? true;
+
+                        return Column(
+                          children: [
+                            SwitchListTile(
+                              title: const Text('Negative Stock Warning', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              subtitle: const Text('Show warning prompt when selling items with zero or insufficient inventory stock.', style: TextStyle(fontSize: 12)),
+                              value: negStock,
+                              activeColor: theme.colorScheme.primary,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_negative_stock_warning', val);
+                                setCardState(() {});
+                              },
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              title: const Text('Credit Limit Warning', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              subtitle: const Text('Warn when customer outstanding balance exceeds allowed credit limit.', style: TextStyle(fontSize: 12)),
+                              value: creditLimit,
+                              activeColor: theme.colorScheme.primary,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_credit_limit_warning', val);
+                                setCardState(() {});
+                              },
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              title: const Text('Low Stock Badge Alert', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              subtitle: const Text('Highlight items reaching reorder stock levels in catalog lists.', style: TextStyle(fontSize: 12)),
+                              value: lowStock,
+                              activeColor: theme.colorScheme.primary,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_low_stock_alert', val);
+                                setCardState(() {});
+                              },
+                            ),
+                            const Divider(height: 1),
+                            SwitchListTile(
+                              title: const Text('Duplicate Invoice / Bill Check', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                              subtitle: const Text('Alert when entering a reference bill number that already exists.', style: TextStyle(fontSize: 12)),
+                              value: dupCheck,
+                              activeColor: theme.colorScheme.primary,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_duplicate_bill_no_check', val);
+                                setCardState(() {});
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
             // Testing & Demo Data Card
             Card(
               elevation: 0,

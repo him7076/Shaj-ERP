@@ -63,6 +63,15 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       pMode = 'Cash';
     }
 
+    String pStatus = inv.paymentStatus ?? 'Unpaid';
+    final paid = inv.paidAmount ?? 0.0;
+    final grand = inv.grandTotal ?? 0.0;
+    if (paid >= grand && grand > 0) {
+      pStatus = 'Paid';
+    } else if (paid > 0) {
+      pStatus = 'Partially Paid';
+    }
+
     return Transaction()
       ..id = 100000000 + (inv.id ?? 0)
       ..uuid = inv.uuid
@@ -73,6 +82,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       ..partyName = inv.partyName ?? 'Party'
       ..partyUuid = inv.party.value?.uuid ?? (inv.partyId != null ? inv.partyId.toString() : null)
       ..paymentMode = pMode
+      ..paymentStatus = pStatus
       ..remarks = inv.remarks
       ..createdAt = inv.createdAt ?? DateTime.now();
   }).toList();
@@ -89,7 +99,8 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       ..amount = ord.grandTotal ?? 0.0
       ..partyName = ord.partyName ?? 'Party'
       ..partyUuid = ord.party.value?.uuid ?? (ord.partyId != null ? ord.partyId.toString() : null)
-      ..paymentMode = 'Order (${ord.status ?? "Pending"})'
+      ..paymentMode = 'Order'
+      ..paymentStatus = ord.status ?? 'Pending'
       ..remarks = ord.remarks
       ..createdAt = ord.createdAt ?? DateTime.now();
   }).toList();
@@ -97,6 +108,15 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   // 4. Fetch Purchases (Purchase Bills)
   final rawPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
   final purchaseTransactions = rawPurchases.map((pur) {
+    String pStatus = pur.paymentStatus ?? 'Unpaid';
+    final paid = pur.paidAmount ?? 0.0;
+    final grand = pur.grandTotal ?? 0.0;
+    if (paid >= grand && grand > 0) {
+      pStatus = 'Paid';
+    } else if (paid > 0) {
+      pStatus = 'Partially Paid';
+    }
+
     return Transaction()
       ..id = 300000000 + (pur.id ?? 0)
       ..uuid = pur.uuid
@@ -107,6 +127,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       ..partyName = pur.partyName ?? 'Supplier'
       ..partyUuid = pur.party.value?.uuid ?? (pur.partyId != null ? pur.partyId.toString() : null)
       ..paymentMode = 'Bill'
+      ..paymentStatus = pStatus
       ..remarks = pur.remarks
       ..createdAt = pur.createdAt ?? DateTime.now();
   }).toList();
