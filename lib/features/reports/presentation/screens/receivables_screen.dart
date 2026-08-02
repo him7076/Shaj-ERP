@@ -1,0 +1,222 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+
+enum DuesSortOption { highestDues, lowestDues, partyName }
+
+class ReceivablesScreen extends ConsumerStatefulWidget {
+  const ReceivablesScreen({Key? key}) : super(key: key);
+
+  @override
+  ConsumerState<ReceivablesScreen> createState() => _ReceivablesScreenState();
+}
+
+class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
+  String _searchQuery = '';
+  DuesSortOption _sortOption = DuesSortOption.highestDues;
+  String _selectedLocality = 'All';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final partiesAsync = ref.watch(partiesListProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Accounts Receivable (Customer Dues)'),
+        elevation: 0,
+      ),
+      body: partiesAsync.when(
+        data: (allParties) {
+          final customerParties = allParties
+              .where((p) => p.partyType != 'Supplier' && (p.outstandingBalance ?? 0.0) > 0)
+              .toList();
+
+          final localities = {'All', ...customerParties.map((p) => p.locality ?? 'Unassigned').where((l) => l.isNotEmpty)};
+
+          // Filter by search query & locality
+          var filtered = customerParties.where((p) {
+            final query = _searchQuery.toLowerCase();
+            final matchesQuery = (p.partyName?.toLowerCase().contains(query) ?? false) ||
+                (p.mobileNumber?.contains(query) ?? false) ||
+                (p.city?.toLowerCase().contains(query) ?? false) ||
+                (p.locality?.toLowerCase().contains(query) ?? false);
+
+            final matchesLocality = _selectedLocality == 'All' || (p.locality ?? 'Unassigned') == _selectedLocality;
+
+            return matchesQuery && matchesLocality;
+          }).toList();
+
+          // Sort
+          if (_sortOption == DuesSortOption.highestDues) {
+            filtered.sort((a, b) => (b.outstandingBalance ?? 0.0).compareTo(a.outstandingBalance ?? 0.0));
+          } else if (_sortOption == DuesSortOption.lowestDues) {
+            filtered.sort((a, b) => (a.outstandingBalance ?? 0.0).compareTo(b.outstandingBalance ?? 0.0));
+          } else if (_sortOption == DuesSortOption.partyName) {
+            filtered.sort((a, b) => (a.partyName ?? '').compareTo(b.partyName ?? ''));
+          }
+
+          final totalReceivables = customerParties.fold(0.0, (sum, p) => sum + (p.outstandingBalance ?? 0.0));
+
+          return Column(
+            children: [
+              // Summary Banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'TOTAL PENDING RECEIVABLES',
+                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '₹${totalReceivables.toStringAsFixed(2)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${customerParties.length} Customers with pending dues',
+                      style: const TextStyle(color: Colors.white90, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Search & Filter Toolbar
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search customer name, phone, city, locality...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () => setState(() => _searchQuery = ''),
+                              )
+                            : null,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: localities.contains(_selectedLocality) ? _selectedLocality : 'All',
+                            decoration: const InputDecoration(
+                              labelText: 'Filter Locality',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            items: localities.map((l) => DropdownMenuItem(value: l, child: Text(l))).toList(),
+                            onChanged: (val) {
+                              if (val != null) setState(() => _selectedLocality = val);
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<DuesSortOption>(
+                            value: _sortOption,
+                            decoration: const InputDecoration(
+                              labelText: 'Sort By',
+                              border: OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: DuesSortOption.highestDues, child: Text('Highest Due Amount')),
+                              DropdownMenuItem(value: DuesSortOption.lowestDues, child: Text('Lowest Due Amount')),
+                              DropdownMenuItem(value: DuesSortOption.partyName, child: Text('Party Name (A-Z)')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setState(() => _sortOption = val);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Party Dues List
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 64, color: Colors.green.shade400),
+                            const SizedBox(height: 16),
+                            const Text('No pending customer receivables!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: filtered.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final party = filtered[index];
+                          final due = party.outstandingBalance ?? 0.0;
+                          final initial = (party.partyName?.isNotEmpty == true) ? party.partyName![0].toUpperCase() : 'C';
+
+                          return Card(
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                            ),
+                            child: ListTile(
+                              onTap: () {
+                                context.push('/parties/detail/${party.id}');
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor: theme.colorScheme.primaryContainer,
+                                child: Text(initial, style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                              ),
+                              title: Text(party.partyName ?? 'Unnamed Customer', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text(
+                                '${party.mobileNumber ?? "No Phone"} | Locality: ${party.locality ?? "N/A"}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '₹${due.toStringAsFixed(2)}',
+                                    style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text('DUE RECEIVABLE', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green)),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error loading receivables: $e')),
+      ),
+    );
+  }
+}

@@ -46,13 +46,8 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           await fetched.party.load();
         } catch (_) {}
 
-        if (kIsWeb) {
-          items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(fetched.id).findAll();
-          if (items.isEmpty) {
-            final allItems = await isar.invoiceItems.where().findAll();
-            items = allItems.where((i) => i.invoice.value?.id == fetched.id || i.itemId != null).toList();
-          }
-        } else {
+        items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(fetched.id).findAll();
+        if (items.isEmpty) {
           try {
             await fetched.invoiceItems.load();
           } catch (_) {}
@@ -171,6 +166,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       
       final pdfData = await pdfService.generateInvoicePdf(
         _invoice!,
+        items: _invoiceItems,
         companyName: companyName,
         companyGst: companyGst,
         companyAddress: companyAddr,

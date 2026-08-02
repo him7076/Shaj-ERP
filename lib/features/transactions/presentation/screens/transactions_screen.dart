@@ -617,18 +617,18 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                   onTap: () => _openTransaction(context, txn),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   leading: CircleAvatar(
-                                    backgroundColor: badgeColor.withOpacity(0.08),
-                                    child: Icon(
-                                      isIncoming ? Icons.arrow_downward : (isOutgoing ? Icons.arrow_upward : Icons.swap_horiz),
-                                      color: badgeColor,
-                                      size: 20,
+                                    radius: 20,
+                                    backgroundColor: badgeColor.withOpacity(0.12),
+                                    child: Text(
+                                      (txn.partyName?.isNotEmpty == true) ? txn.partyName![0].toUpperCase() : 'T',
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor, fontSize: 16),
                                     ),
                                   ),
                                   title: Row(
                                     children: [
                                       Text(
                                         txn.transactionNumber ?? '',
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                       ),
                                       const SizedBox(width: 8),
                                       Container(
@@ -643,6 +643,25 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
                                             color: badgeColor,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      // Status Badge (Paid / Unpaid / Linked)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty
+                                              ? Colors.green.withOpacity(0.12)
+                                              : Colors.blue.withOpacity(0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? Colors.green.shade800 : Colors.blue.shade800,
                                           ),
                                         ),
                                       ),

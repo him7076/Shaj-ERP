@@ -625,10 +625,41 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       ),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.invoiceUuid != null ? 'Edit Sales Invoice' : 'Direct Tax Invoice'),
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (cart.items.isEmpty) {
+          Navigator.of(context).pop();
+          return;
+        }
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Unsaved Changes Warning'),
+            content: const Text('You have unsaved items in this invoice. Are you sure you want to exit and discard changes?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Continue Editing'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text('Discard & Exit'),
+              ),
+            ],
+          ),
+        );
+        if (shouldPop == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.invoiceUuid != null ? 'Edit Sales Invoice' : 'Direct Tax Invoice'),
+        ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: isDesktop
@@ -983,15 +1014,35 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         final sgst = isLocal ? totalGst / 2.0 : 0.0;
         final igst = isLocal ? 0.0 : totalGst;
 
+        // Dynamic Tax Slab Calculation
+        final gstRates = cart.items.map((i) => i.gstPercent).toSet().toList();
+        String cgstLabel = 'CGST';
+        String sgstLabel = 'SGST';
+        String igstLabel = 'IGST';
+
+        if (gstRates.length == 1) {
+          final singleRate = gstRates.first;
+          final halfRate = singleRate / 2.0;
+          final halfStr = halfRate % 1 == 0 ? halfRate.toInt().toString() : halfRate.toStringAsFixed(1);
+          final rateStr = singleRate % 1 == 0 ? singleRate.toInt().toString() : singleRate.toStringAsFixed(1);
+          cgstLabel = 'CGST ($halfStr%)';
+          sgstLabel = 'SGST ($halfStr%)';
+          igstLabel = 'IGST ($rateStr%)';
+        } else if (gstRates.length > 1) {
+          cgstLabel = 'CGST (Multiple Tax Rates)';
+          sgstLabel = 'SGST (Multiple Tax Rates)';
+          igstLabel = 'IGST (Multiple Tax Rates)';
+        }
+
         return Column(
           children: [
             _buildSummaryRow('Subtotal (Taxable Value)', totals['subtotal']!, theme),
             _buildSummaryRow('Discounts Total', -totals['discountAmount']!, theme),
             if (isLocal) ...[
-              _buildSummaryRow('CGST (9%)', cgst, theme),
-              _buildSummaryRow('SGST (9%)', sgst, theme),
+              _buildSummaryRow(cgstLabel, cgst, theme),
+              _buildSummaryRow(sgstLabel, sgst, theme),
             ] else ...[
-              _buildSummaryRow('IGST (18%)', igst, theme),
+              _buildSummaryRow(igstLabel, igst, theme),
             ],
             _buildSummaryRow('Round Off', totals['roundOff']!, theme),
             const Divider(),

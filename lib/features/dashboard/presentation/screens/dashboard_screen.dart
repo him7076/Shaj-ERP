@@ -83,6 +83,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: Colors.green,
                       icon: Icons.monetization_on_rounded,
                       iconColor: Colors.green,
+                      onTap: () => context.go('/sales'),
                     ),
                     _buildStatCard(
                       context: context,
@@ -92,6 +93,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: Colors.blue,
                       icon: Icons.shopping_bag_rounded,
                       iconColor: Colors.blue,
+                      onTap: () => context.go('/purchases'),
                     ),
                     _buildStatCard(
                       context: context,
@@ -101,6 +103,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: Colors.orange,
                       icon: Icons.assignment_returned_rounded,
                       iconColor: Colors.purple,
+                      onTap: () => context.go('/reports/receivables'),
                     ),
                     _buildStatCard(
                       context: context,
@@ -110,6 +113,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: Colors.red,
                       icon: Icons.assignment_return_rounded,
                       iconColor: Colors.teal,
+                      onTap: () => context.go('/reports/payables'),
                     ),
                   ],
                 ),
@@ -422,29 +426,23 @@ class DashboardScreen extends ConsumerWidget {
     required Color trendColor,
     required IconData icon,
     required Color iconColor,
+    VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
     
     return Card(
       elevation: 0,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.surface,
-              iconColor.withOpacity(0.01),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Column(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -507,6 +505,7 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

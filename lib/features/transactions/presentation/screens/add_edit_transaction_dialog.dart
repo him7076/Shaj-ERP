@@ -716,8 +716,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                     ];
 
                     // Safety fallback check to prevent dropdown value crash
-                    if (_paymentMode != null && !dropdownItems.any((item) => item.value == _paymentMode)) {
-                      dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode!)));
+                    if (!dropdownItems.any((item) => item.value == _paymentMode)) {
+                      dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                     }
 
                     return DropdownButtonFormField<String>(

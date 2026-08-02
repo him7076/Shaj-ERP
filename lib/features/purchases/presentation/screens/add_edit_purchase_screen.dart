@@ -835,16 +835,36 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     final sgst = isLocal ? totalGst / 2.0 : 0.0;
     final igst = isLocal ? 0.0 : totalGst;
 
+    // Dynamic Tax Slab Calculation
+    final gstRates = _draftItems.map((i) => i.gstRate ?? 18.0).toSet().toList();
+    String cgstLabel = 'CGST';
+    String sgstLabel = 'SGST';
+    String igstLabel = 'IGST';
+
+    if (gstRates.length == 1) {
+      final singleRate = gstRates.first;
+      final halfRate = singleRate / 2.0;
+      final halfStr = halfRate % 1 == 0 ? halfRate.toInt().toString() : halfRate.toStringAsFixed(1);
+      final rateStr = singleRate % 1 == 0 ? singleRate.toInt().toString() : singleRate.toStringAsFixed(1);
+      cgstLabel = 'CGST ($halfStr%)';
+      sgstLabel = 'SGST ($halfStr%)';
+      igstLabel = 'IGST ($rateStr%)';
+    } else if (gstRates.length > 1) {
+      cgstLabel = 'CGST (Multiple Tax Rates)';
+      sgstLabel = 'SGST (Multiple Tax Rates)';
+      igstLabel = 'IGST (Multiple Tax Rates)';
+    }
+
     return Column(
       children: [
         _buildSummaryRow('Subtotal (Before Discount)', _subtotal, theme),
         _buildSummaryRow('Discounts Total', -_discountAmount, theme),
         _buildSummaryRow('Taxable Value', _taxableAmount, theme),
         if (isLocal) ...[
-          _buildSummaryRow('CGST (9%)', cgst, theme),
-          _buildSummaryRow('SGST (9%)', sgst, theme),
+          _buildSummaryRow(cgstLabel, cgst, theme),
+          _buildSummaryRow(sgstLabel, sgst, theme),
         ] else ...[
-          _buildSummaryRow('IGST (18%)', igst, theme),
+          _buildSummaryRow(igstLabel, igst, theme),
         ],
         const Divider(),
         _buildSummaryRow('GRAND TOTAL', _grandTotal, theme, isBold: true),

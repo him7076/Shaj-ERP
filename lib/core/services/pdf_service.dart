@@ -57,6 +57,7 @@ class PdfService {
 
   /// Generates a professional GST Tax Invoice PDF
   Future<Uint8List> generateInvoicePdf(Invoice invoice, {
+    List<InvoiceItem>? items,
     String companyName = 'Business Sahaj ERP',
     String companyGst = '27AAAAA1111A1Z1',
     String companyAddress = '123 Business Hub, MG Road, Mumbai, MH, 400001',
@@ -65,51 +66,66 @@ class PdfService {
     try {
       final pdf = pw.Document();
 
+      final actualItems = items ?? invoice.invoiceItems.toList();
+
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(24),
           build: (context) {
             return [
-              // Company Header info
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(companyName, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
-                      pw.Text(companyAddress, style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text('GSTIN: $companyGst', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Phone: $companyPhone', style: const pw.TextStyle(fontSize: 10)),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text(invoice.invoiceType ?? 'Tax Invoice', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blueGrey)),
-                      pw.Text('Invoice No: ${invoice.invoiceNumber ?? "N/A"}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Date: ${invoice.invoiceDate?.toIso8601String().substring(0, 10) ?? "N/A"}', style: const pw.TextStyle(fontSize: 10)),
-                      if (invoice.sourceOrderNumber != null)
-                        pw.Text('Ref Order: ${invoice.sourceOrderNumber}', style: const pw.TextStyle(fontSize: 9)),
-                    ],
-                  ),
-                ],
+              // Vibrant Top Header Banner
+              pw.Container(
+                padding: const pw.EdgeInsets.all(16),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.indigo900,
+                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(companyName.toUpperCase(), style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                        pw.SizedBox(height: 4),
+                        pw.Text(companyAddress, style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
+                        pw.Text('GSTIN: $companyGst | Phone: $companyPhone', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.amber100)),
+                      ],
+                    ),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        pw.Container(
+                          padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: const pw.BoxDecoration(
+                            color: PdfColors.amber400,
+                            borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                          ),
+                          child: pw.Text(invoice.invoiceType?.toUpperCase() ?? 'TAX INVOICE', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900)),
+                        ),
+                        pw.SizedBox(height: 6),
+                        pw.Text('#${invoice.invoiceNumber ?? "N/A"}', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+                        pw.Text('Date: ${invoice.invoiceDate?.toIso8601String().substring(0, 10) ?? "N/A"}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white)),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              pw.Divider(thickness: 1.5, color: PdfColors.blueGrey),
-              pw.SizedBox(height: 15),
+              pw.SizedBox(height: 14),
 
-              // Party Billing Info
+              // Party Billing Info Box
               _buildPartyDetailsSection(
                 name: invoice.partyName ?? 'N/A',
                 gst: invoice.gstNumber ?? 'N/A',
                 mobile: 'N/A',
                 address: invoice.address ?? 'N/A',
               ),
-              pw.SizedBox(height: 15),
+              pw.SizedBox(height: 14),
 
               // Items Table
-              _buildInvoiceItemsTable(invoice),
-              pw.SizedBox(height: 15),
+              _buildInvoiceItemsTable(invoice, actualItems),
+              pw.SizedBox(height: 14),
 
               // Summary
               _buildFinancialSummary(
@@ -122,7 +138,7 @@ class PdfService {
                 sgst: invoice.sgstAmount ?? 0.0,
                 igst: invoice.igstAmount ?? 0.0,
               ),
-              pw.SizedBox(height: 25),
+              pw.SizedBox(height: 20),
 
               // Signatures
               _buildFooterSection(invoice.remarks ?? 'Goods once sold will not be taken back.'),
@@ -183,19 +199,31 @@ class PdfService {
   }) {
     return pw.Container(
       decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfColors.grey400),
+        color: PdfColors.grey100,
+        border: pw.Border.all(color: PdfColors.indigo200, width: 1),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
       ),
       padding: const pw.EdgeInsets.all(10),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text('BILL TO:', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
-          pw.SizedBox(height: 4),
-          pw.Text(name, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-          pw.Text('GSTIN: $gst', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-          if (mobile != 'N/A') pw.Text('Mobile: $mobile', style: const pw.TextStyle(fontSize: 10)),
-          pw.Text('Address: $address', style: const pw.TextStyle(fontSize: 9)),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('BILLED TO (CUSTOMER DETAILS)', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900)),
+              pw.SizedBox(height: 3),
+              pw.Text(name, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+              pw.Text('GSTIN: $gst', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.grey800)),
+            ],
+          ),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Text('Billing Address:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.indigo900)),
+              pw.SizedBox(height: 3),
+              pw.Text(address.isNotEmpty ? address : 'Main Market Area', style: const pw.TextStyle(fontSize: 9)),
+            ],
+          ),
         ],
       ),
     );
@@ -220,32 +248,42 @@ class PdfService {
       headers: headers,
       data: data,
       border: pw.TableBorder.all(color: PdfColors.grey300),
-      headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+      headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.indigo900),
       cellStyle: const pw.TextStyle(fontSize: 9),
+      rowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
     );
   }
 
   // Invoice Table Builder
-  pw.Widget _buildInvoiceItemsTable(Invoice invoice) {
-    final headers = ['Item Name', 'HSN', 'Qty', 'Rate', 'Disc Amt', 'GST Rate', 'Total'];
-    final data = invoice.invoiceItems.map((item) {
-      return [
-        item.itemName ?? 'N/A',
-        item.hsnCode ?? 'N/A',
-        item.quantity?.toStringAsFixed(0) ?? '0',
+  pw.Widget _buildInvoiceItemsTable(Invoice invoice, List<InvoiceItem> items) {
+    final headers = ['#', 'Item Description', 'HSN', 'Qty', 'Unit', 'Rate (₹)', 'Disc (₹)', 'GST %', 'Total (₹)'];
+    
+    int index = 1;
+    final data = items.map((item) {
+      final row = [
+        '${index++}',
+        item.itemName ?? 'Item',
+        item.hsnCode ?? '-',
+        '${item.quantity % 1 == 0 ? item.quantity?.toInt() : item.quantity}',
+        item.unit ?? 'PCS',
         '₹${item.rate?.toStringAsFixed(2) ?? "0.00"}',
         '₹${item.discount?.toStringAsFixed(2) ?? "0.00"}',
-        '${item.gstRate?.toStringAsFixed(0) ?? "0"}%',
+        '${item.gstRate?.toInt() ?? 0}%',
         '₹${item.totalAmount?.toStringAsFixed(2) ?? "0.00"}',
       ];
+      return row;
     }).toList();
 
     return pw.Table.fromTextArray(
       headers: headers,
       data: data,
-      border: pw.TableBorder.all(color: PdfColors.grey300),
-      headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
-      cellStyle: const pw.TextStyle(fontSize: 9),
+      border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+      headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.indigo900),
+      cellStyle: const pw.TextStyle(fontSize: 8.5),
+      cellAlignment: pw.Alignment.centerLeft,
+      rowDecoration: const pw.BoxDecoration(color: PdfColors.white),
     );
   }
 

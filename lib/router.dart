@@ -19,6 +19,8 @@ import 'package:business_sahaj_erp/features/backup/presentation/screens/sync_cen
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/screens/receivables_screen.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/screens/payables_screen.dart';
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
@@ -177,6 +179,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/cash-and-bank',
             name: 'cash-and-bank',
             builder: (context, state) => const ManageCashAndBankScreen(),
+          ),
+          GoRoute(
+            path: '/reports/receivables',
+            name: 'receivables',
+            builder: (context, state) => const ReceivablesScreen(),
+          ),
+          GoRoute(
+            path: '/reports/payables',
+            name: 'payables',
+            builder: (context, state) => const PayablesScreen(),
           ),
         ],
       ),

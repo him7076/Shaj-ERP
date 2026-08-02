@@ -36,24 +36,29 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     super.initState();
     _loadAllCategories();
   }
-
   Future<void> _loadAllCategories() async {
     setState(() => _isLoading = true);
     try {
       final prefs = ref.read(sharedPreferencesProvider);
       final isar = ref.read(databaseServiceProvider).isar;
 
-      final customPT = prefs.getStringList('custom_party_types_list') ?? [];
-      _partyTypes = [..._defaultPartyTypes, ...customPT].toSet().toList();
+      if (!prefs.containsKey('custom_party_types_list')) {
+        await prefs.setStringList('custom_party_types_list', _defaultPartyTypes);
+      }
+      if (!prefs.containsKey('custom_salesmen_list')) {
+        await prefs.setStringList('custom_salesmen_list', _defaultSalesmen);
+      }
+      if (!prefs.containsKey('custom_localities_list')) {
+        await prefs.setStringList('custom_localities_list', _defaultLocalities);
+      }
+      if (!prefs.containsKey('party_business_categories')) {
+        await prefs.setStringList('party_business_categories', _defaultCategories);
+      }
 
-      final customS = prefs.getStringList('custom_salesmen_list') ?? [];
-      _salesmen = [..._defaultSalesmen, ...customS].toSet().toList();
-
-      final customL = prefs.getStringList('custom_localities_list') ?? [];
-      _localities = [..._defaultLocalities, ...customL].toSet().toList();
-
-      final customBC = prefs.getStringList('party_business_categories') ?? [];
-      _businessCategories = [..._defaultCategories, ...customBC].toSet().toList();
+      _partyTypes = prefs.getStringList('custom_party_types_list') ?? _defaultPartyTypes;
+      _salesmen = prefs.getStringList('custom_salesmen_list') ?? _defaultSalesmen;
+      _localities = prefs.getStringList('custom_localities_list') ?? _defaultLocalities;
+      _businessCategories = prefs.getStringList('party_business_categories') ?? _defaultCategories;
 
       _units = await isar.units.filter().isDeletedEqualTo(false).findAll();
     } catch (_) {
@@ -96,7 +101,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                 Navigator.pop(ctx, controller.text.trim());
               }
             },
-            child: const Text('Save'),
+            child: const Text('Add'),
           ),
         ],
       ),
@@ -157,16 +162,11 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
       final prefs = ref.read(sharedPreferencesProvider);
       final list = prefs.getStringList(prefKey) ?? [];
 
-      if (defaultItems.contains(oldItem)) {
-        // If system default item is edited, save customized override into list
-        if (!list.contains(result)) list.add(result);
+      final index = list.indexOf(oldItem);
+      if (index != -1) {
+        list[index] = result;
       } else {
-        final index = list.indexOf(oldItem);
-        if (index != -1) {
-          list[index] = result;
-        } else {
-          list.add(result);
-        }
+        list.add(result);
       }
       await prefs.setStringList(prefKey, list);
       await _loadAllCategories();
@@ -174,13 +174,6 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
   }
 
   Future<void> _deletePrefItem(String prefKey, String item, List<String> defaultItems) async {
-    if (defaultItems.contains(item)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cannot delete system default item "$item". You can edit it instead.')),
-      );
-      return;
-    }
-
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -205,7 +198,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
       await prefs.setStringList(prefKey, list);
       await _loadAllCategories();
     }
-  }
+  } }
 
   @override
   Widget build(BuildContext context) {
