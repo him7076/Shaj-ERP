@@ -208,6 +208,16 @@ class SyncService {
 
   /// Triggers full synchronization of all collections: upload edits, download changes, resolve conflicts
   Future<void> syncAll() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      logger.info('Firebase Cloud Sync is turned OFF by user. Bypassing cloud sync.');
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
     if (_currentState.status == SyncStatus.syncing) {
       logger.warning('Sync already in progress. Ignoring request.');
       return;

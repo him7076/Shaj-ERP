@@ -38,39 +38,65 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       elevation: 1,
       shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
       actions: [
-        // Internet Connectivity status widget
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Tooltip(
-            message: isOnline ? 'Network Connection: Online' : 'Network Connection: Offline',
-            child: isMobile
-                ? IconButton(
-                    icon: Icon(
-                      isOnline ? Icons.wifi : Icons.wifi_off,
-                      size: 20,
-                      color: isOnline ? Colors.green : Colors.red,
+        // Cloud vs Local Storage Mode status widget
+        Consumer(
+          builder: (context, ref, _) {
+            final prefs = ref.watch(sharedPreferencesProvider);
+            final isCloudSyncEnabled = prefs.getBool('enable_firebase_cloud_sync') ?? true;
+
+            if (!isCloudSyncEnabled) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Tooltip(
+                  message: 'Local Offline Mode Active (Firebase Cloud Sync OFF)',
+                  child: Chip(
+                    avatar: const Icon(Icons.sd_storage_rounded, size: 16, color: Colors.brown),
+                    label: const Text(
+                      'Local Mode (Cloud OFF)',
+                      style: TextStyle(color: Colors.brown, fontWeight: FontWeight.bold, fontSize: 11),
                     ),
-                    onPressed: null,
-                  )
-                : Chip(
-                    avatar: Icon(
-                      isOnline ? Icons.wifi : Icons.wifi_off,
-                      size: 16,
-                      color: isOnline ? Colors.green[800] : Colors.grey[800],
-                    ),
-                    label: Text(
-                      isOnline ? 'Online' : 'Offline',
-                      style: TextStyle(
-                        color: isOnline ? Colors.green[800] : Colors.grey[800],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    backgroundColor: isOnline ? Colors.green[100] : Colors.grey[200],
+                    backgroundColor: Colors.orange.shade100,
                     side: BorderSide.none,
                     visualDensity: VisualDensity.compact,
                   ),
-          ),
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Tooltip(
+                message: isOnline ? 'Network Connection: Online (Cloud Sync Enabled)' : 'Network Connection: Offline',
+                child: isMobile
+                    ? IconButton(
+                        icon: Icon(
+                          isOnline ? Icons.wifi : Icons.wifi_off,
+                          size: 20,
+                          color: isOnline ? Colors.green : Colors.red,
+                        ),
+                        onPressed: null,
+                      )
+                    : Chip(
+                        avatar: Icon(
+                          isOnline ? Icons.wifi : Icons.wifi_off,
+                          size: 16,
+                          color: isOnline ? Colors.green[800] : Colors.grey[800],
+                        ),
+                        label: Text(
+                          isOnline ? 'Cloud Online' : 'Offline',
+                          style: TextStyle(
+                            color: isOnline ? Colors.green[800] : Colors.grey[800],
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        backgroundColor: isOnline ? Colors.green[100] : Colors.grey[200],
+                        side: BorderSide.none,
+                        visualDensity: VisualDensity.compact,
+                      ),
+              ),
+            );
+          },
         ),
 
         // Firebase Synchronization Action Button

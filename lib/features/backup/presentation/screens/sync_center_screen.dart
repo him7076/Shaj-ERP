@@ -77,38 +77,112 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Network Connection Banner
-              Card(
-                color: isOnline
-                    ? theme.colorScheme.primaryContainer.withOpacity(0.4)
-                    : theme.colorScheme.errorContainer.withOpacity(0.4),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isOnline ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
-                        color: isOnline ? theme.colorScheme.primary : theme.colorScheme.error,
+              // Top Firebase Sync Master Control Card
+              Consumer(
+                builder: (context, ref, _) {
+                  final prefs = ref.watch(sharedPreferencesProvider);
+                  final isCloudSyncEnabled = prefs.getBool('enable_firebase_cloud_sync') ?? true;
+
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: isCloudSyncEnabled ? Colors.blue.withOpacity(0.3) : Colors.orange.withOpacity(0.4),
+                        width: 1.5,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          isOnline
-                              ? 'Device is Connected. Auto-sync is active.'
-                              : 'Device is Offline. All edits are being saved locally.',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: isOnline
-                                ? theme.colorScheme.onPrimaryContainer
-                                : theme.colorScheme.onErrorContainer,
+                    ),
+                    color: isCloudSyncEnabled
+                        ? theme.colorScheme.primaryContainer.withOpacity(0.2)
+                        : Colors.orange.withOpacity(0.08),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isCloudSyncEnabled ? Colors.blue.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              isCloudSyncEnabled ? Icons.cloud_sync_rounded : Icons.cloud_off_rounded,
+                              color: isCloudSyncEnabled ? Colors.blue : Colors.orange.shade800,
+                              size: 32,
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Firebase Cloud Synchronization',
+                                      style: theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isCloudSyncEnabled ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        isCloudSyncEnabled ? 'ONLINE CLOUD SYNC' : '100% LOCAL STORAGE MODE',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: isCloudSyncEnabled ? Colors.green.shade800 : Colors.orange.shade900,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  isCloudSyncEnabled
+                                      ? 'Firebase cloud database active. All entries are auto-synced across devices.'
+                                      : 'Firebase cloud sync is turned OFF. All invoices, items, and parties save exclusively to local offline storage.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Switch.adaptive(
+                            value: isCloudSyncEnabled,
+                            activeColor: Colors.blue,
+                            onChanged: (bool val) async {
+                              await prefs.setBool('enable_firebase_cloud_sync', val);
+                              if (val) {
+                                ref.read(syncServiceProvider).syncAll();
+                              }
+                              setState(() {});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    val
+                                        ? '🌐 Firebase Cloud Sync Enabled! Automatic syncing activated.'
+                                        : '💾 Firebase Cloud Sync Turned OFF! Operating in 100% Local Storage Mode.',
+                                  ),
+                                  backgroundColor: val ? Colors.green : Colors.orange.shade800,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               // Re-evaluate State
               syncStateAsync.when(
