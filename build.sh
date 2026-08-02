@@ -21,6 +21,6 @@ echo "Installing Flutter pub packages..."
 flutter pub get
 
 echo "Compiling Flutter Web (Release mode)..."
-flutter build web --release
+flutter build web --release --no-pub
 
 echo "=== Vercel Flutter Web Build Completed Successfully ==="
