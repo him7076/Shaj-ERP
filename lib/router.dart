@@ -6,6 +6,7 @@ import 'package:business_sahaj_erp/features/auth/presentation/screens/splash_scr
 import 'package:business_sahaj_erp/features/auth/presentation/screens/login_screen.dart';
 import 'package:business_sahaj_erp/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/screens/parties_screen.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/screens/party_detail_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/items_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/orders_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/sales_screen.dart';
@@ -58,6 +59,22 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/parties',
             name: 'parties',
             builder: (context, state) => const PartiesScreen(),
+          ),
+          GoRoute(
+            path: '/parties/detail/:id',
+            name: 'party-detail-id',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return PartyDetailScreen(partyUuid: id);
+            },
+          ),
+          GoRoute(
+            path: '/parties/:uuid',
+            name: 'party-detail-uuid',
+            builder: (context, state) {
+              final uuid = state.pathParameters['uuid'] ?? '';
+              return PartyDetailScreen(partyUuid: uuid);
+            },
           ),
           GoRoute(
             path: '/items',

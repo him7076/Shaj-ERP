@@ -75,11 +75,15 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
   void _loadCustomPartyTypesAndLocalities() {
     try {
       final prefs = ref.read(sharedPreferencesProvider);
-      final savedPartyTypes = prefs.getStringList('custom_party_types_list') ?? [];
-      final savedLocalities = prefs.getStringList('custom_localities_list') ?? [];
+      final List<String> defaultPartyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier'];
+      final List<String> defaultLocalities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines'];
+
+      final savedPartyTypes = prefs.getStringList('custom_party_types_list');
+      final savedLocalities = prefs.getStringList('custom_localities_list');
+
       setState(() {
-        _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier', ...savedPartyTypes].toSet().toList();
-        _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines', ...savedLocalities].toSet().toList();
+        _partyTypes = savedPartyTypes ?? defaultPartyTypes;
+        _localities = savedLocalities ?? defaultLocalities;
       });
     } catch (_) {}
   }
@@ -123,13 +127,13 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
 
     if (newType != null && newType.isNotEmpty) {
       final prefs = ref.read(sharedPreferencesProvider);
-      final list = prefs.getStringList('custom_party_types_list') ?? [];
+      final list = prefs.getStringList('custom_party_types_list') ?? List<String>.from(_partyTypes);
       if (!list.contains(newType)) {
         list.add(newType);
         await prefs.setStringList('custom_party_types_list', list);
       }
       setState(() {
-        _partyTypes = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Supplier', ...list].toSet().toList();
+        _partyTypes = list;
         _partyType = newType;
       });
     }
@@ -174,13 +178,13 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
 
     if (newLoc != null && newLoc.isNotEmpty) {
       final prefs = ref.read(sharedPreferencesProvider);
-      final list = prefs.getStringList('custom_localities_list') ?? [];
+      final list = prefs.getStringList('custom_localities_list') ?? List<String>.from(_localities);
       if (!list.contains(newLoc)) {
         list.add(newLoc);
         await prefs.setStringList('custom_localities_list', list);
       }
       setState(() {
-        _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines', ...list].toSet().toList();
+        _localities = list;
         _addressLine2Controller.text = newLoc;
       });
     }
@@ -200,44 +204,102 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       final gstService = ref.read(gstServiceProvider);
       final details = await gstService.fetchPartyDetailsFromGst(gstin);
 
-      if (details != null) {
-        setState(() {
-          _panController.text = details.panNumber;
-          _stateController.text = details.stateName;
-          _gstType = details.gstType;
-
-          if (_nameController.text.trim().isEmpty) {
-            _nameController.text = details.tradeName;
-          }
-          if (_addressLine1Controller.text.trim().isEmpty) {
-            _addressLine1Controller.text = details.addressLine1;
-          }
-          if (_cityController.text.trim().isEmpty) {
-            _cityController.text = details.city;
-          }
-          if (_pincodeController.text.trim().isEmpty) {
-            _pincodeController.text = details.pincode;
-          }
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('⚡ Party details auto-fetched successfully for ${details.stateName}!'),
-            backgroundColor: Colors.green,
+      if (details != null && mounted) {
+        final confirmFill = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: const [
+                Icon(Icons.verified_outlined, color: Colors.green, size: 28),
+                SizedBox(width: 10),
+                Text('GST Taxpayer Details Found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Verified GST taxpayer information retrieved. Review before auto-filling:'),
+                  const SizedBox(height: 12),
+                  _buildPreviewRow('Trade Name:', details.tradeName),
+                  _buildPreviewRow('Legal Name:', details.legalName.isNotEmpty ? details.legalName : details.tradeName),
+                  _buildPreviewRow('GSTIN:', details.gstin),
+                  _buildPreviewRow('PAN Number:', details.panNumber),
+                  _buildPreviewRow('Entity Type:', details.entityType),
+                  _buildPreviewRow('State & Code:', '${details.stateName} (${details.stateCode})'),
+                  _buildPreviewRow('Address:', details.addressLine1),
+                  _buildPreviewRow('City:', details.city),
+                  _buildPreviewRow('Pincode:', details.pincode),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.bolt),
+                label: const Text('Auto-Fill Form Data'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade800, foregroundColor: Colors.white),
+              ),
+            ],
           ),
         );
-      } else {
+
+        if (confirmFill == true && mounted) {
+          setState(() {
+            _nameController.text = details.tradeName.isNotEmpty ? details.tradeName : details.legalName;
+            _contactPersonController.text = details.legalName;
+            _panController.text = details.panNumber;
+            _stateController.text = details.stateName;
+            _addressLine1Controller.text = details.addressLine1;
+            _cityController.text = details.city;
+            _pincodeController.text = details.pincode;
+            _gstType = 'Registered';
+            if (details.entityType.isNotEmpty && !_categories.contains(details.entityType)) {
+              _categories.add(details.entityType);
+              _category = details.entityType;
+            }
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚡ Form auto-filled with GST taxpayer details for ${details.tradeName}!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid GSTIN format. Please check entry.')),
+          const SnackBar(content: Text('Could not retrieve GST details for this number. Check GSTIN entry.')),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to fetch GST details: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to fetch GST details: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isFetchingGst = false);
     }
+  }
+
+  Widget _buildPreviewRow(String label, String val) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 95, child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+          Expanded(child: Text(val.isNotEmpty ? val : 'N/A', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12))),
+        ],
+      ),
+    );
   }
 
   void _loadCustomCategories() {

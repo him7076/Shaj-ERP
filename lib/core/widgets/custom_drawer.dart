@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provider.dart';
 
 class CustomDrawer extends ConsumerWidget {
   final bool isPermanent;
@@ -359,7 +360,42 @@ class CustomDrawer extends ConsumerWidget {
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
           minLeadingWidth: 20,
           dense: true,
-          onTap: () {
+          onTap: () async {
+            final hasUnsaved = ref.read(unsavedChangesProvider);
+            if (hasUnsaved && !isActive) {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  title: Row(
+                    children: const [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                      SizedBox(width: 10),
+                      Text('Unsaved Changes!', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  content: const Text(
+                    'You have unsaved changes in your current transaction form. Navigating away will discard your changes.\n\nDo you want to discard changes and leave?',
+                    style: TextStyle(height: 1.4),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Stay & Continue Editing'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child: const Text('Discard & Navigate'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm != true) return;
+              ref.read(unsavedChangesProvider.notifier).state = false;
+            }
+
             if (!isPermanent) {
               Navigator.of(context).pop();
             }

@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provider.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:isar/isar.dart';
@@ -430,6 +431,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
       ref.invalidate(filteredInvoicesProvider);
       ref.invalidate(dashboardAnalyticsProvider);
+      ref.read(unsavedChangesProvider.notifier).state = false;
 
       if (mounted) {
         Navigator.pop(context);
