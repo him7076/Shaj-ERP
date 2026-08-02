@@ -183,6 +183,13 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerHeader('MANAGEMENT'),
                   _buildDrawerItem(
                     context: context,
+                    icon: Icons.account_balance_rounded,
+                    label: 'Manage Cash & Bank',
+                    routePath: '/cash-and-bank',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
                     icon: Icons.category_rounded,
                     label: 'Manage Categories',
                     routePath: '/categories',
@@ -283,6 +290,7 @@ class CustomDrawer extends ConsumerWidget {
   Color _getItemColor(String routePath) {
     switch (routePath) {
       case '/dashboard': return const Color(0xFF1E88E5); // Rich blue
+      case '/cash-and-bank': return const Color(0xFF1E88E5); // Ocean Blue
       case '/categories': return const Color(0xFFE91E63); // Vivid Pink
       case '/transactions': return const Color(0xFF673AB7); // Deep Purple
       case '/sales': return const Color(0xFF43A047); // Rich emerald green

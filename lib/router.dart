@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/features/sales/presentation/screens/sales_scr
 import 'package:business_sahaj_erp/features/reports/presentation/screens/reports_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/settings_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/manage_categories_screen.dart';
+import 'package:business_sahaj_erp/features/bank/presentation/screens/manage_cash_and_bank_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/sync_center_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
@@ -171,6 +172,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/categories',
             name: 'categories',
             builder: (context, state) => const ManageCategoriesScreen(),
+          ),
+          GoRoute(
+            path: '/cash-and-bank',
+            name: 'cash-and-bank',
+            builder: (context, state) => const ManageCashAndBankScreen(),
           ),
         ],
       ),
