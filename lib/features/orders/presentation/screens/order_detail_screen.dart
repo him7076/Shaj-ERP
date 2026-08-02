@@ -313,7 +313,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final pdfService = PdfService();
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().build().findFirst();
+      final companySettings = await ref.read(databaseServiceProvider).isar.settings.where().idGreaterThan(-1).findFirst();
       final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
       
       final pdfData = await pdfService.generateOrderPdf(_order!, companyName: companyName);
