@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
@@ -100,18 +99,14 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
     setState(() => _isCapturingLocation = false);
   }
 
-  Future<void> _launchWhatsApp(String phone) async {
+  void _launchWhatsApp(String phone) {
     final cleanPhone = phone.replaceAll(RegExp(r'\D'), '');
-    final uri = Uri.parse('https://wa.me/91$cleanPhone');
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      Clipboard.setData(ClipboardData(text: phone));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('WhatsApp link copied: $phone')),
-        );
-      }
+    final urlStr = 'https://wa.me/91$cleanPhone';
+    Clipboard.setData(ClipboardData(text: urlStr));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('WhatsApp link copied: $urlStr')),
+      );
     }
   }
 

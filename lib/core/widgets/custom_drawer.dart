@@ -98,6 +98,7 @@ class CustomDrawer extends ConsumerWidget {
                 children: [
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.dashboard_rounded,
                     label: 'Dashboard',
                     routePath: '/dashboard',
@@ -106,6 +107,7 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerHeader('ACCOUNTS'),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.shopping_cart_rounded,
                     label: 'Sales Orders',
                     routePath: '/orders',
@@ -113,6 +115,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.receipt_long_rounded,
                     label: 'All Transactions',
                     routePath: '/transactions',
@@ -120,6 +123,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.monetization_on_rounded,
                     label: 'Sales (Invoices)',
                     routePath: '/sales',
@@ -127,6 +131,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.shopping_bag_rounded,
                     label: 'Purchases (Bills)',
                     routePath: '/purchases',
@@ -134,6 +139,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.account_balance_wallet_rounded,
                     label: 'Expenses',
                     routePath: '/expenses',
@@ -141,6 +147,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.arrow_downward_rounded,
                     label: 'Receipts (Payment In)',
                     routePath: '/receipts',
@@ -148,6 +155,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.arrow_upward_rounded,
                     label: 'Payments (Payment Out)',
                     routePath: '/payments',
@@ -155,6 +163,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.assignment_return_rounded,
                     label: 'Credit Notes',
                     routePath: '/credit-notes',
@@ -162,6 +171,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.assignment_returned_rounded,
                     label: 'Debit Notes',
                     routePath: '/debit-notes',
@@ -169,6 +179,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.swap_horiz_rounded,
                     label: 'Party Transfers',
                     routePath: '/party-transfers',
@@ -176,6 +187,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.monetization_on_rounded,
                     label: 'Other Income',
                     routePath: '/other-incomes',
@@ -184,6 +196,7 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerHeader('MANAGEMENT'),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.account_balance_rounded,
                     label: 'Manage Cash & Bank',
                     routePath: '/cash-and-bank',
@@ -191,6 +204,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.category_rounded,
                     label: 'Manage Categories',
                     routePath: '/categories',
@@ -198,6 +212,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.people_alt_rounded,
                     label: 'Parties & Contacts',
                     routePath: '/parties',
@@ -205,6 +220,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.inventory_2_rounded,
                     label: 'Items & Inventory',
                     routePath: '/items',
@@ -213,6 +229,7 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerHeader('SYSTEM'),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.analytics_rounded,
                     label: 'Reports & Analytics',
                     routePath: '/reports',
@@ -220,6 +237,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.cloud_sync_rounded,
                     label: 'Sync Center',
                     routePath: '/sync-center',
@@ -227,6 +245,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.sd_storage_rounded,
                     label: 'Local Backup',
                     routePath: '/backup',
@@ -234,6 +253,7 @@ class CustomDrawer extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     context: context,
+                    ref: ref,
                     icon: Icons.settings_rounded,
                     label: 'Settings',
                     routePath: '/settings',
@@ -316,6 +336,7 @@ class CustomDrawer extends ConsumerWidget {
 
   Widget _buildDrawerItem({
     required BuildContext context,
+    required WidgetRef ref,
     required IconData icon,
     required String label,
     required String routePath,
