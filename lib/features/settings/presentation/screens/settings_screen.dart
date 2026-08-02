@@ -57,68 +57,89 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Application Settings',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Application & Enterprise Settings',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              'Configure layouts, manage multiple firms, and wipe data.',
+              'Manage your multi-firm workspace, appearance mode, database sync, and validation controls.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             
             // Appearance Card
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.palette_outlined, color: theme.colorScheme.primary),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.palette_rounded, color: theme.colorScheme.primary, size: 20),
+                        ),
                         const SizedBox(width: 12),
                         Text(
-                          'Appearance',
+                          'Appearance & Theme Mode',
                           style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
                     ),
-                    const Divider(height: 24),
+                    const Divider(height: 28, thickness: 0.5),
                     const Text(
-                      'Choose Theme Mode',
-                      style: TextStyle(fontWeight: FontWeight.w500),
+                      'Choose your preferred visual theme for Shaj ERP:',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     
                     SegmentedButton<ThemeMode>(
                       segments: const <ButtonSegment<ThemeMode>>[
                         ButtonSegment<ThemeMode>(
                           value: ThemeMode.light,
-                          label: Text('Light'),
-                          icon: Icon(Icons.light_mode_outlined),
+                          label: Text('Light Mode'),
+                          icon: Icon(Icons.light_mode_rounded),
                         ),
                         ButtonSegment<ThemeMode>(
                           value: ThemeMode.dark,
-                          label: Text('Dark'),
-                          icon: Icon(Icons.dark_mode_outlined),
+                          label: Text('Obsidian Dark'),
+                          icon: Icon(Icons.dark_mode_rounded),
                         ),
                         ButtonSegment<ThemeMode>(
                           value: ThemeMode.system,
-                          label: Text('System'),
-                          icon: Icon(Icons.settings_suggest_outlined),
+                          label: Text('System Default'),
+                          icon: Icon(Icons.settings_suggest_rounded),
                         ),
                       ],
                       selected: <ThemeMode>{currentThemeMode},
@@ -137,10 +158,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -153,12 +174,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.business_center_outlined, color: theme.colorScheme.primary),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0EA5E9).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.business_center_rounded, color: Color(0xFF0EA5E9), size: 20),
+                            ),
                             const SizedBox(width: 12),
                             Text(
-                              'Company / Firm Manager',
+                              'Company / Multi-Firm Manager',
                               style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],

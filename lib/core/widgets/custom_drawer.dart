@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provider.dart';
+import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
 
 class CustomDrawer extends ConsumerWidget {
   final bool isPermanent;
@@ -17,34 +18,43 @@ class CustomDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final String location = GoRouterState.of(context).matchedLocation;
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final activeFirmId = ref.watch(activeFirmIdProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final firmName = prefs.getString('firm_name_$activeFirmId') ?? (activeFirmId == 'firm_default' ? 'Default Company' : 'New Company');
 
     return Drawer(
-      elevation: isPermanent ? 0 : 6,
+      elevation: isPermanent ? 0 : 8,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
       ),
       child: Container(
-        color: theme.colorScheme.surface,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          border: isPermanent
+              ? Border(
+                  right: BorderSide(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    width: 1.0,
+                  ),
+                )
+              : null,
+        ),
         child: Column(
           children: [
-            // Premium Header Visual with gradient background
+            // Executive Header Banner with mesh gradient
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
               width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
                   colors: [
-                    Color(0xFF1E3C72),
-                    Color(0xFF2A5298),
+                    Color(0xFF1E1B4B),
+                    Color(0xFF312E81),
+                    Color(0xFF4338CA),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomRight: Radius.circular(24),
                 ),
               ),
               child: Column(
@@ -53,58 +63,109 @@ class CustomDrawer extends ConsumerWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white24, width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: const Icon(
-                          Icons.business_center_rounded,
+                          Icons.apartment_rounded,
                           color: Colors.white,
-                          size: 28,
+                          size: 24,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Sahaj ERP',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 0.8,
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sahaj ERP',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF10B981).withOpacity(0.4)),
+                              ),
+                              child: const Text(
+                                'ENTERPRISE PRO',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF6EE7B7),
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    firmName.toUpperCase(),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+                  const SizedBox(height: 18),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white.withOpacity(0.15)),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.business_center_rounded, color: Color(0xFFA5B4FC), size: 14),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            firmName.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                              letterSpacing: 0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
 
-            // Navigation List
+            // Navigation Menu List
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
-                    icon: Icons.dashboard_rounded,
+                    icon: Icons.grid_view_rounded,
                     label: 'Dashboard',
                     routePath: '/dashboard',
                     currentPath: location,
                   ),
-                  _buildDrawerHeader('ACCOUNTS'),
+                  _buildDrawerHeader('FINANCIAL ACCOUNTS'),
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
@@ -124,7 +185,7 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
-                    icon: Icons.monetization_on_rounded,
+                    icon: Icons.point_of_sale_rounded,
                     label: 'Sales (Invoices)',
                     routePath: '/sales',
                     currentPath: location,
@@ -148,7 +209,7 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
-                    icon: Icons.arrow_downward_rounded,
+                    icon: Icons.arrow_circle_down_rounded,
                     label: 'Receipts (Payment In)',
                     routePath: '/receipts',
                     currentPath: location,
@@ -156,7 +217,7 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
-                    icon: Icons.arrow_upward_rounded,
+                    icon: Icons.arrow_circle_up_rounded,
                     label: 'Payments (Payment Out)',
                     routePath: '/payments',
                     currentPath: location,
@@ -193,12 +254,12 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/other-incomes',
                     currentPath: location,
                   ),
-                  _buildDrawerHeader('MANAGEMENT'),
+                  _buildDrawerHeader('BUSINESS MASTERS'),
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
                     icon: Icons.account_balance_rounded,
-                    label: 'Manage Cash & Bank',
+                    label: 'Cash & Bank',
                     routePath: '/cash-and-bank',
                     currentPath: location,
                   ),
@@ -206,7 +267,7 @@ class CustomDrawer extends ConsumerWidget {
                     context: context,
                     ref: ref,
                     icon: Icons.category_rounded,
-                    label: 'Manage Categories',
+                    label: 'Categories',
                     routePath: '/categories',
                     currentPath: location,
                   ),
@@ -214,7 +275,7 @@ class CustomDrawer extends ConsumerWidget {
                     context: context,
                     ref: ref,
                     icon: Icons.people_alt_rounded,
-                    label: 'Parties & Contacts',
+                    label: 'Parties & Customers',
                     routePath: '/parties',
                     currentPath: location,
                   ),
@@ -222,15 +283,15 @@ class CustomDrawer extends ConsumerWidget {
                     context: context,
                     ref: ref,
                     icon: Icons.inventory_2_rounded,
-                    label: 'Items & Inventory',
+                    label: 'Items & Stock',
                     routePath: '/items',
                     currentPath: location,
                   ),
-                  _buildDrawerHeader('SYSTEM'),
+                  _buildDrawerHeader('REPORTS & SYSTEM'),
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
-                    icon: Icons.analytics_rounded,
+                    icon: Icons.bar_chart_rounded,
                     label: 'Reports & Analytics',
                     routePath: '/reports',
                     currentPath: location,
@@ -262,26 +323,47 @@ class CustomDrawer extends ConsumerWidget {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 0.5),
 
-            // Footer
+            Divider(height: 1, thickness: 0.5, color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+
+            // Footer Badge
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.offline_pin_rounded,
-                    size: 14,
-                    color: theme.colorScheme.primary,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.shield_rounded,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Offline Sync Core v1.0',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Offline First Engine',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          'Encrypted Isar DB v1.0',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -295,14 +377,14 @@ class CustomDrawer extends ConsumerWidget {
 
   Widget _buildDrawerHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.0,
-          color: Colors.grey,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          color: Color(0xFF94A3B8),
         ),
       ),
     );
@@ -310,27 +392,27 @@ class CustomDrawer extends ConsumerWidget {
 
   Color _getItemColor(String routePath) {
     switch (routePath) {
-      case '/dashboard': return const Color(0xFF1E88E5); // Rich blue
-      case '/cash-and-bank': return const Color(0xFF1E88E5); // Ocean Blue
-      case '/categories': return const Color(0xFFE91E63); // Vivid Pink
-      case '/transactions': return const Color(0xFF673AB7); // Deep Purple
-      case '/sales': return const Color(0xFF43A047); // Rich emerald green
-      case '/purchases': return const Color(0xFF5E35B1); // Premium indigo
-      case '/expenses': return const Color(0xFFE53935); // Clean red
-      case '/receipts': return const Color(0xFF43A047); // Emerald green
-      case '/payments': return const Color(0xFFE53935); // Clean red
-      case '/credit-notes': return const Color(0xFF3F51B5); // Indigo
-      case '/debit-notes': return const Color(0xFFFB8C00); // Deep orange
-      case '/party-transfers': return const Color(0xFF009688); // Teal
-      case '/other-incomes': return const Color(0xFF2196F3); // Blue
-      case '/parties': return const Color(0xFFD81B60); // Magenta/pink
-      case '/items': return const Color(0xFFF57C00); // Amber orange
-      case '/orders': return const Color(0xFF00897B); // Clean teal
-      case '/reports': return const Color(0xFF00ACC1); // Vivid cyan
-      case '/sync-center': return const Color(0xFF00897B); // Teal
-      case '/backup': return const Color(0xFF795548); // Brown
-      case '/settings': return const Color(0xFF757575); // Slate grey
-      default: return const Color(0xFF1E88E5);
+      case '/dashboard': return const Color(0xFF6366F1);
+      case '/orders': return const Color(0xFF0EA5E9);
+      case '/transactions': return const Color(0xFF8B5CF6);
+      case '/sales': return const Color(0xFF10B981);
+      case '/purchases': return const Color(0xFF6366F1);
+      case '/expenses': return const Color(0xFFF43F5E);
+      case '/receipts': return const Color(0xFF10B981);
+      case '/payments': return const Color(0xFFF43F5E);
+      case '/credit-notes': return const Color(0xFF6366F1);
+      case '/debit-notes': return const Color(0xFFF59E0B);
+      case '/party-transfers': return const Color(0xFF14B8A6);
+      case '/other-incomes': return const Color(0xFF3B82F6);
+      case '/cash-and-bank': return const Color(0xFF0EA5E9);
+      case '/categories': return const Color(0xFFEC4899);
+      case '/parties': return const Color(0xFFD946EF);
+      case '/items': return const Color(0xFFF97316);
+      case '/reports': return const Color(0xFF06B6D4);
+      case '/sync-center': return const Color(0xFF10B981);
+      case '/backup': return const Color(0xFF8B5CF6);
+      case '/settings': return const Color(0xFF64748B);
+      default: return const Color(0xFF6366F1);
     }
   }
 
@@ -343,44 +425,63 @@ class CustomDrawer extends ConsumerWidget {
     required String currentPath,
   }) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isActive = currentPath == routePath;
     final itemColor = _getItemColor(routePath);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 3.0),
-      child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           color: isActive 
-              ? itemColor.withOpacity(0.08) 
+              ? itemColor.withOpacity(isDark ? 0.18 : 0.1) 
               : Colors.transparent,
         ),
         child: ListTile(
-          leading: Icon(
-            icon,
-            color: isActive 
-                ? itemColor 
-                : itemColor.withOpacity(0.7),
-            size: 20,
+          dense: true,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          leading: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: isActive ? itemColor.withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: isActive ? itemColor : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+              size: 18,
+            ),
           ),
           title: Text(
             label,
             style: TextStyle(
-              fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+              fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
               fontSize: 13.0,
               color: isActive 
-                  ? itemColor 
-                  : theme.colorScheme.onSurface.withOpacity(0.8),
+                  ? (isDark ? Colors.white : itemColor)
+                  : theme.colorScheme.onSurface.withOpacity(0.85),
             ),
           ),
-          selected: isActive,
-          hoverColor: itemColor.withOpacity(0.04),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-          minLeadingWidth: 20,
-          dense: true,
+          trailing: isActive
+              ? Container(
+                  width: 6,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: itemColor,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: itemColor.withOpacity(0.6),
+                        blurRadius: 6,
+                      ),
+                    ],
+                  ),
+                )
+              : null,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          minLeadingWidth: 24,
           onTap: () async {
             final hasUnsaved = ref.read(unsavedChangesProvider);
             if (hasUnsaved && !isActive) {
@@ -429,3 +530,4 @@ class CustomDrawer extends ConsumerWidget {
     );
   }
 }
+

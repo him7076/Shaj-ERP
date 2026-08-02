@@ -155,6 +155,20 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
             ? await isar.purchaseItems.filter().purchase((q) => q.idEqualTo(purchase.id)).findAll()
             : purchase.purchaseItems.toList();
 
+        for (var pi in itemsList) {
+          if (!kIsWeb) {
+            try { await pi.item.load(); } catch (_) {}
+          }
+          if (pi.item.value == null && pi.itemId != null) {
+            try {
+              pi.item.value = await isar.items.get(pi.itemId!);
+            } catch (_) {}
+          }
+          if (pi.item.value != null) {
+            try { await pi.item.value!.unit.load(); } catch (_) {}
+          }
+        }
+
         _draftItems = List<PurchaseItem>.from(itemsList);
         _recalculateTotals();
       }
@@ -206,7 +220,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     });
   }
 
-  void _addItemLine(Item item) {
+  void _addItemLine(Item item) async {
     // Check if item is already added
     final exists = _draftItems.any((element) => element.itemId == item.id);
     if (exists) {
@@ -218,18 +232,23 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       return;
     }
 
+    try {
+      await item.unit.load();
+    } catch (_) {}
+
+    final primaryUnitName = item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+
     final newItem = PurchaseItem()
       ..itemId = item.id
       ..itemName = item.itemName
       ..hsnCode = item.hsnCode
       ..quantity = 1.0
+      ..unit = primaryUnitName
       ..rate = item.buyRate ?? item.sellRate ?? 0.0
       ..discount = 0.0
       ..gstRate = item.gstRate ?? 18.0;
       
-    if (!kIsWeb) {
-      newItem.item.value = item;
-    }
+    newItem.item.value = item;
 
     setState(() {
       _draftItems.add(newItem);
@@ -904,7 +923,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   }
 }
 
-class PurchaseCartItemRow extends StatefulWidget {
+class PurchaseCartItemRow extends ConsumerStatefulWidget {
   final PurchaseItem item;
   final VoidCallback onDelete;
   final Function(double qty, double rate, double discount, double gstRate) onChanged;
@@ -917,10 +936,10 @@ class PurchaseCartItemRow extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<PurchaseCartItemRow> createState() => _PurchaseCartItemRowState();
+  ConsumerState<PurchaseCartItemRow> createState() => _PurchaseCartItemRowState();
 }
 
-class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
+class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   late TextEditingController _qtyController;
   late TextEditingController _rateExclController;
   late TextEditingController _rateInclController;
@@ -928,6 +947,7 @@ class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
   late TextEditingController _gstController;
 
   bool _isUpdatingLocally = false;
+  Item? _resolvedDbItem;
 
   @override
   void initState() {
@@ -942,11 +962,41 @@ class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
     _rateInclController = TextEditingController(text: incl.toStringAsFixed(2));
     _discController = TextEditingController(text: item.discount?.toString() ?? '0.0');
     _gstController = TextEditingController(text: gstPct.toString());
+
+    _loadDbItem();
+  }
+
+  Future<void> _loadDbItem() async {
+    final item = widget.item;
+    if (item.item.value != null) {
+      _resolvedDbItem = item.item.value;
+      if (_resolvedDbItem?.unit.value == null) {
+        try { await _resolvedDbItem?.unit.load(); } catch (_) {}
+      }
+      if (mounted) setState(() {});
+    } else if (item.itemId != null) {
+      try {
+        final isar = ref.read(databaseServiceProvider).isar;
+        final fetched = await isar.items.get(item.itemId!);
+        if (fetched != null) {
+          try { await fetched.unit.load(); } catch (_) {}
+          item.item.value = fetched;
+          if (mounted) {
+            setState(() {
+              _resolvedDbItem = fetched;
+            });
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   @override
   void didUpdateWidget(PurchaseCartItemRow oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.itemId != widget.item.itemId || widget.item.item.value != _resolvedDbItem) {
+      _loadDbItem();
+    }
     if (_isUpdatingLocally) return;
 
     final item = widget.item;
@@ -989,13 +1039,16 @@ class _PurchaseCartItemRowState extends State<PurchaseCartItemRow> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    final dbItem = item.item.value;
-    final primaryUnit = dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? 'PCS';
+    final dbItem = _resolvedDbItem ?? item.item.value;
+    final primaryUnit = dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? item.unit ?? 'PCS';
     final secondaryUnit = dbItem?.secondaryUnit;
     final List<String> availableUnits = [
       primaryUnit,
       if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit) secondaryUnit,
     ];
+    if (item.unit != null && item.unit!.isNotEmpty && !availableUnits.contains(item.unit)) {
+      availableUnits.add(item.unit!);
+    }
     final selectedUnit = item.unit ?? primaryUnit;
 
     return Column(
