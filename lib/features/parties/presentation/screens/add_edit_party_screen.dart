@@ -309,8 +309,8 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
     _pincodeController.text = p.pincode ?? '';
     _openingBalanceController.text = (p.openingBalance ?? 0.0).toString();
     _creditLimitController.text = (p.creditLimit ?? 0.0).toString();
-    _dueDaysController.text = (p.paymentDueDays ?? 0).toString();
-    _contactPersonController.text = p.contactPersonName ?? '';
+    _dueDaysController.text = (p.dueDays ?? 0).toString();
+    _contactPersonController.text = p.contactPerson ?? '';
     _notesController.text = p.notes ?? '';
 
     _partyType = p.partyType ?? 'Customer';
@@ -364,8 +364,8 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       party.balanceType = _balanceType;
       party.creditLimit = double.tryParse(_creditLimitController.text.trim()) ?? 0.0;
       party.paymentTerms = _paymentTerms;
-      party.paymentDueDays = int.tryParse(_dueDaysController.text.trim()) ?? 0;
-      party.contactPersonName = _contactPersonController.text.trim();
+      party.dueDays = int.tryParse(_dueDaysController.text.trim()) ?? 0;
+      party.contactPerson = _contactPersonController.text.trim();
       party.businessCategory = _category;
       party.notes = _notesController.text.trim();
       party.updatedAt = DateTime.now();

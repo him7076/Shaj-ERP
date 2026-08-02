@@ -427,11 +427,11 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
 
     // Sorting
     if (_sortBy == 'Newest First') {
-      list.sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+      list.sort((a, b) => (b.transactionDate ?? DateTime(2000)).compareTo(a.transactionDate ?? DateTime(2000)));
     } else if (_sortBy == 'Oldest First') {
-      list.sort((a, b) => a.transactionDate.compareTo(b.transactionDate));
+      list.sort((a, b) => (a.transactionDate ?? DateTime(2000)).compareTo(b.transactionDate ?? DateTime(2000)));
     } else if (_sortBy == 'Highest Amount') {
-      list.sort((a, b) => b.amount.compareTo(a.amount));
+      list.sort((a, b) => (b.amount ?? 0.0).compareTo(a.amount ?? 0.0));
     }
 
     return list;
@@ -442,8 +442,8 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
     final theme = Theme.of(context);
     final txns = _filteredTransactions;
 
-    final double totalInflow = txns.where((t) => t.transactionType == 'Receipt' || t.transactionType == 'Other Income').fold(0.0, (s, t) => s + t.amount);
-    final double totalOutflow = txns.where((t) => t.transactionType == 'Payment' || t.transactionType == 'Expense').fold(0.0, (s, t) => s + t.amount);
+    final double totalInflow = txns.where((t) => t.transactionType == 'Receipt' || t.transactionType == 'Other Income').fold(0.0, (s, t) => s + (t.amount ?? 0.0));
+    final double totalOutflow = txns.where((t) => t.transactionType == 'Payment' || t.transactionType == 'Expense').fold(0.0, (s, t) => s + (t.amount ?? 0.0));
 
     return Scaffold(
       appBar: AppBar(
@@ -560,9 +560,9 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                                 child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? Colors.green : Colors.red),
                               ),
                               title: Text('#${t.transactionNumber} - ${t.partyName ?? "Party"}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('Type: ${t.transactionType} • ${DateFormat('dd-MM-yyyy').format(t.transactionDate)}'),
+                              subtitle: Text('Type: ${t.transactionType} • ${t.transactionDate != null ? DateFormat('dd-MM-yyyy').format(t.transactionDate!) : "N/A"}'),
                               trailing: Text(
-                                '${isCredit ? "+" : "-"}${currencyFormat.format(t.amount)}',
+                                '${isCredit ? "+" : "-"}${currencyFormat.format(t.amount ?? 0.0)}',
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isCredit ? Colors.green : Colors.red),
                               ),
                             ),
