@@ -330,6 +330,28 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     }
   }
 
+  Future<void> _sharePdf() async {
+    if (_order == null) return;
+    setState(() => _isLoading = true);
+    try {
+      final pdfService = PdfService();
+      final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
+      final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
+      
+      final pdfData = await pdfService.generateOrderPdf(_order!, companyName: companyName);
+      await pdfService.sharePdf(pdfData, 'Order_${_order!.orderNumber}.pdf');
+    } catch (e) {
+      logger.error('Failed to share PDF', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share PDF: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -357,9 +379,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(Icons.share_rounded, color: Color(0xFF25D366)),
+            onPressed: _sharePdf,
+            tooltip: 'Share Order PDF via WhatsApp / Apps',
+          ),
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
             onPressed: _generatePdf,
-            tooltip: 'Share/Print PDF',
+            tooltip: 'Print / Download PDF',
           ),
           if (!isLocked) ...[
             IconButton(
@@ -412,48 +439,48 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: isLocked
-          ? null
-          : BottomAppBar(
-              elevation: 8,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.cancel_outlined),
-                      label: const Text('Cancel Order'),
-                      onPressed: _cancelOrder,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+      bottomNavigationBar: BottomAppBar(
+        elevation: 8,
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _sharePdf,
+                icon: const Icon(Icons.share_rounded, color: Colors.white),
+                label: const Text('Share PDF (WhatsApp)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            if (!isLocked) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: userRoleAsync.when(
+                  data: (role) {
+                    final canConvert = role == 'Owner' || role == 'Staff';
+                    return ElevatedButton.icon(
+                      icon: const Icon(Icons.receipt_long_outlined),
+                      label: const Text('Convert to Sale'),
+                      onPressed: canConvert ? _convertToSale : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: userRoleAsync.when(
-                      data: (role) {
-                        final canConvert = role == 'Owner' || role == 'Staff';
-                        return ElevatedButton.icon(
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Convert to Sale'),
-                          onPressed: canConvert ? _convertToSale : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: theme.colorScheme.primary,
-                            foregroundColor: theme.colorScheme.onPrimary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                        );
-                      },
-                      loading: () => const Center(child: LinearProgressIndicator()),
-                      error: (_, __) => const SizedBox.shrink(),
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                  loading: () => const Center(child: LinearProgressIndicator()),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
               ),
-            ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 

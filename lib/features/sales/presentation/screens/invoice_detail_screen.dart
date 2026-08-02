@@ -201,6 +201,38 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     }
   }
 
+  Future<void> _sharePdf() async {
+    if (_invoice == null) return;
+    setState(() => _isLoading = true);
+    try {
+      final pdfService = PdfService();
+      final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
+      final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
+      final companyGst = companySettings?.companyGST ?? '27AAAAA1111A1Z1';
+      final companyAddr = companySettings?.companyAddress ?? '123 Business Hub, Mumbai, MH';
+      final companyPhone = companySettings?.companyPhone ?? '+91 98765 43210';
+      
+      final pdfData = await pdfService.generateInvoicePdf(
+        _invoice!,
+        items: _invoiceItems,
+        companyName: companyName,
+        companyGst: companyGst,
+        companyAddress: companyAddr,
+        companyPhone: companyPhone,
+      );
+      await pdfService.sharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
+    } catch (e) {
+      logger.error('Failed to share PDF', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to share PDF: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -227,9 +259,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
+            icon: const Icon(Icons.share_rounded, color: Color(0xFF25D366)),
+            onPressed: _sharePdf,
+            tooltip: 'Share PDF via WhatsApp / Apps',
+          ),
+          IconButton(
+            icon: const Icon(Icons.print_outlined),
             onPressed: _generatePdf,
-            tooltip: 'Share/Print Invoice PDF',
+            tooltip: 'Print / Download PDF',
           ),
           if (!isCancelled) ...[
             IconButton(
@@ -283,6 +320,37 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               const SizedBox(height: 32),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        elevation: 8,
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _sharePdf,
+                icon: const Icon(Icons.share_rounded, color: Colors.white),
+                label: const Text('Share PDF (WhatsApp)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _generatePdf,
+                icon: const Icon(Icons.print_outlined),
+                label: const Text('Print / Preview'),
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

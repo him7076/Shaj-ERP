@@ -138,7 +138,7 @@ class PdfService {
     }
   }
 
-  /// Helper to share or print PDF directly using printing package
+  /// Helper to print PDF directly using printing package
   Future<void> printOrSharePdf(Uint8List pdfData, String filename) async {
     try {
       await Printing.layoutPdf(
@@ -147,6 +147,18 @@ class PdfService {
       );
     } catch (e) {
       throw PDFException('Failed to layout/print PDF: $e');
+    }
+  }
+
+  /// Shares PDF directly via native system share sheet (WhatsApp, Email, Files, etc.)
+  Future<void> sharePdf(Uint8List pdfData, String filename) async {
+    try {
+      await Printing.sharePdf(
+        bytes: pdfData,
+        filename: filename,
+      );
+    } catch (e) {
+      throw PDFException('Failed to share PDF: $e');
     }
   }
 
