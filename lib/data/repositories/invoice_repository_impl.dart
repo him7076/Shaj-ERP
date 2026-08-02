@@ -330,7 +330,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         ..version = 1;
 
       // Split CGST/SGST/IGST based on state
-      final companySettings = await isar.settings.where().findFirst();
+      final companySettings = await isar.settings.where().anyId().findFirst();
       final companyGst = companySettings?.companyGST;
       final cleanCompany = companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
       final cleanParty = order.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';

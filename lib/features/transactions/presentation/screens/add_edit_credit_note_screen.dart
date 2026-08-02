@@ -168,7 +168,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
 
     try {
       final isar = ref.read(databaseServiceProvider).isar;
-      final companySettings = await isar.settings.where().findFirst();
+      final companySettings = await isar.settings.where().anyId().findFirst();
       final companyGst = companySettings?.companyGST;
 
       final gstSplit = _calculateGstBreakdown(companyGst);
