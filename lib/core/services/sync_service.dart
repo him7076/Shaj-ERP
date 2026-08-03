@@ -372,12 +372,13 @@ class SyncService {
 
   /// Helper to enqueue unsynced or all local records into SyncQueue
   Future<void> _enqueueAllLocalRecordsForUpload() async {
+    const uuidGen = Uuid();
     final isar = _dbService.isar;
     await isar.writeTxn(() async {
       final parties = await isar.partys.filter().isSyncedEqualTo(false).findAll();
       for (var p in parties) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Party'
           ..entityId = p.id
           ..entityUuid = p.uuid
@@ -389,7 +390,7 @@ class SyncService {
       final items = await isar.items.filter().isSyncedEqualTo(false).findAll();
       for (var i in items) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Item'
           ..entityId = i.id
           ..entityUuid = i.uuid
@@ -401,7 +402,7 @@ class SyncService {
       final invoices = await isar.invoices.filter().isSyncedEqualTo(false).findAll();
       for (var inv in invoices) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Invoice'
           ..entityId = inv.id
           ..entityUuid = inv.uuid
@@ -413,7 +414,7 @@ class SyncService {
       final orders = await isar.orders.filter().isSyncedEqualTo(false).findAll();
       for (var ord in orders) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Order'
           ..entityId = ord.id
           ..entityUuid = ord.uuid
@@ -425,7 +426,7 @@ class SyncService {
       final purchases = await isar.purchases.filter().isSyncedEqualTo(false).findAll();
       for (var pur in purchases) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Purchase'
           ..entityId = pur.id
           ..entityUuid = pur.uuid
@@ -437,7 +438,7 @@ class SyncService {
       final expenses = await isar.expenses.filter().isSyncedEqualTo(false).findAll();
       for (var exp in expenses) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Expense'
           ..entityId = exp.id
           ..entityUuid = exp.uuid
@@ -449,7 +450,7 @@ class SyncService {
       final txns = await isar.transactions.filter().isSyncedEqualTo(false).findAll();
       for (var t in txns) {
         final q = SyncQueue()
-          ..uuid = const Uuid().v4()
+          ..uuid = uuidGen.v4()
           ..entityType = 'Transaction'
           ..entityId = t.id
           ..entityUuid = t.uuid
