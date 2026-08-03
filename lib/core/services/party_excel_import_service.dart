@@ -127,7 +127,7 @@ class PartyExcelImportService {
 
         final gstType = (gstNumber.isNotEmpty && gstNumber.length >= 15) ? 'Registered' : 'Unregistered';
 
-        final allParties = await isar.partys.where().findAll();
+        final allParties = await isar.partys.filter().idGreaterThan(-1).findAll();
 
         try {
           // Check if party exists by partyName, gstNumber, or mobileNumber
