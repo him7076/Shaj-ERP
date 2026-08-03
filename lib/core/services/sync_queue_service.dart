@@ -47,20 +47,21 @@ class SyncQueueService {
     }
   }
 
-  /// Resets retries on all failed items to trigger another sync phase
+  /// Resets retries on all unsynced queue items to trigger sync retry phase
   Future<void> resetAllRetries() async {
     try {
-      final failedItems = await _queueCollection.filter().retryCountGreaterThan(0).findAll();
-      if (failedItems.isEmpty) return;
+      final pendingItems = await _queueCollection.filter().isSyncedEqualTo(false).findAll();
+      if (pendingItems.isEmpty) return;
 
       await _dbService.isar.writeTxn(() async {
-        for (var item in failedItems) {
+        for (var item in pendingItems) {
           item.retryCount = 0;
           item.lastAttempt = null;
+          item.lastError = null;
           await _queueCollection.put(item);
         }
       });
-      logger.info('Reset retry counters on ${failedItems.length} failed sync tasks.');
+      logger.info('Reset retry counters on ${pendingItems.length} sync queue tasks.');
     } catch (e) {
       logger.error('Failed to reset sync queue retries', e);
     }

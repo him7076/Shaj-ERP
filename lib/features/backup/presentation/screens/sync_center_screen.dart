@@ -233,42 +233,77 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               const SizedBox(height: 24),
 
               // Action Buttons
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
                 children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: isSyncing || !isOnline
-                          ? null
-                          : () async {
-                              await ref.read(syncServiceProvider).syncAll();
-                              await _refreshQueue();
-                            },
-                      icon: isSyncing
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.sync_rounded),
-                      label: Text(isSyncing ? 'Syncing...' : 'Force Sync Now'),
+                  ElevatedButton.icon(
+                    onPressed: isSyncing || !isOnline
+                        ? null
+                        : () async {
+                            await ref.read(syncServiceProvider).syncDataFromCloud();
+                            await _refreshQueue();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('⚡ Remote cloud data downloaded successfully!')),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
+                    icon: isSyncing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.cloud_download_rounded),
+                    label: const Text('Sync Data from Cloud'),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: isSyncing || totalPending == 0
-                          ? null
-                          : () async {
-                              await ref.read(syncQueueServiceProvider).resetAllRetries();
-                              await ref.read(syncServiceProvider).syncAll();
-                              await _refreshQueue();
-                            },
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Reset Retries'),
+                  ElevatedButton.icon(
+                    onPressed: isSyncing || !isOnline
+                        ? null
+                        : () async {
+                            await ref.read(syncServiceProvider).forceLocalDataToCloud();
+                            await _refreshQueue();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('🚀 Local database records pushed to cloud!')),
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.tertiaryContainer,
+                      foregroundColor: theme.colorScheme.onTertiaryContainer,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
+                    icon: isSyncing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.cloud_upload_rounded),
+                    label: const Text('Force Local Data to Cloud'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: isSyncing
+                        ? null
+                        : () async {
+                            await ref.read(syncQueueServiceProvider).resetAllRetries();
+                            await _refreshQueue();
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('🔄 Sync Queue Retries reset successfully!')),
+                              );
+                            }
+                          },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Reset Retries'),
                   ),
                 ],
               ),

@@ -549,13 +549,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: const TextStyle(fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.delete_forever, color: Colors.red),
-                      label: const Text('Wipe Current Firm Data', style: TextStyle(color: Colors.red)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                      ),
-                      onPressed: () => _showWipeDataDialog(prefs, activeFirmId),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.delete_forever, color: Colors.red),
+                          label: const Text('Wipe Current Firm Data (Local)', style: TextStyle(color: Colors.red)),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                          ),
+                          onPressed: () => _showWipeDataDialog(prefs, activeFirmId),
+                        ),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.cloud_off_rounded),
+                          label: const Text('Wipe Current Firm Data from Cloud'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () => _showWipeCloudDataDialog(prefs, activeFirmId),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1304,6 +1319,58 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }
             },
             child: const Text('Wipe Data', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWipeCloudDataDialog(dynamic prefs, String activeFirmId) {
+    final firmName = prefs.getString('firm_name_$activeFirmId') ?? "Default Company";
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.cloud_off_rounded, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Wipe Cloud Data from Firebase?'),
+          ],
+        ),
+        content: Text(
+          'This will permanently delete all remote Firestore records and cloud database documents for the company "$firmName" from Firebase Cloud.\n\nNote: This only deletes cloud records. Local device data will not be wiped unless you also click Local Wipe.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            icon: const Icon(Icons.cloud_off_rounded, size: 18),
+            label: const Text('Wipe Cloud Data'),
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                final syncService = ref.read(syncServiceProvider);
+                await syncService.clearCloudData();
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('☁️ All remote data for "$firmName" cleared successfully from Firebase Cloud!'),
+                      backgroundColor: Colors.red.shade800,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to wipe cloud data: $e')),
+                  );
+                }
+              }
+            },
           ),
         ],
       ),

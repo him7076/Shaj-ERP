@@ -279,6 +279,188 @@ class SyncService {
     }
   }
 
+  /// Downloads remote updates from Firestore into local Isar DB (Pull Cloud -> Local)
+  Future<void> syncDataFromCloud() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) return;
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    logger.info('Downloading data from Firebase Cloud...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Downloading data from Cloud...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      await syncFirms();
+      final epochStart = DateTime.fromMillisecondsSinceEpoch(0);
+      final newSyncTime = DateTime.now();
+      await _downloadRemoteUpdates(epochStart);
+      await _saveLastSyncTime(newSyncTime);
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Downloaded cloud data successfully',
+        lastSyncTime: newSyncTime,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Failed to download cloud data', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Cloud download failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Forces all local records to be uploaded to Firebase Cloud (Push Local -> Cloud)
+  Future<void> forceLocalDataToCloud() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) return;
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    logger.info('Enqueuing all local records & uploading to Firebase Cloud...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Pushing local data to Cloud...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      await _queueService.resetAllRetries();
+      await _enqueueAllLocalRecordsForUpload();
+      await _uploadLocalChanges();
+
+      final newSyncTime = DateTime.now();
+      await _saveLastSyncTime(newSyncTime);
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Pushed local data to cloud successfully',
+        lastSyncTime: newSyncTime,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Failed to push local data to cloud', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Cloud upload failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Helper to enqueue unsynced or all local records into SyncQueue
+  Future<void> _enqueueAllLocalRecordsForUpload() async {
+    final isar = _dbService.isar;
+    await isar.writeTxn(() async {
+      final parties = await isar.partys.filter().isSyncedEqualTo(false).findAll();
+      for (var p in parties) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Party'
+          ..entityId = p.id
+          ..entityUuid = p.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final items = await isar.items.filter().isSyncedEqualTo(false).findAll();
+      for (var i in items) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Item'
+          ..entityId = i.id
+          ..entityUuid = i.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final invoices = await isar.invoices.filter().isSyncedEqualTo(false).findAll();
+      for (var inv in invoices) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Invoice'
+          ..entityId = inv.id
+          ..entityUuid = inv.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final orders = await isar.orders.filter().isSyncedEqualTo(false).findAll();
+      for (var ord in orders) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Order'
+          ..entityId = ord.id
+          ..entityUuid = ord.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final purchases = await isar.purchases.filter().isSyncedEqualTo(false).findAll();
+      for (var pur in purchases) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Purchase'
+          ..entityId = pur.id
+          ..entityUuid = pur.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final expenses = await isar.expenses.filter().isSyncedEqualTo(false).findAll();
+      for (var exp in expenses) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Expense'
+          ..entityId = exp.id
+          ..entityUuid = exp.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final txns = await isar.transactions.filter().isSyncedEqualTo(false).findAll();
+      for (var t in txns) {
+        final q = SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'Transaction'
+          ..entityId = t.id
+          ..entityUuid = t.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+    });
+  }
+
   /// Deletes all documents belonging to the active company context from Firestore.
   Future<void> clearCloudData() async {
     await _firebaseService.ensureAuthenticated();
