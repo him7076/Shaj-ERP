@@ -118,11 +118,12 @@ class SyncService {
       logger.info('Syncing company/firm definitions with Firebase Firestore...');
       final companyId = _firebaseService.companyId;
 
-      // 1. Download remote firms from Firestore
+      // 1. Download remote firms from Firestore with 5s timeout
       final querySnapshot = await _firebaseService.firestore
           .collection('firms')
           .where('companyId', isEqualTo: companyId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 5));
 
       final localFirms = List<String>.from(_prefs.getStringList('firms_list') ?? ['firm_default']);
       final Set<String> updatedFirmsSet = Set.from(localFirms);
@@ -618,15 +619,17 @@ class SyncService {
       final collectionName = _getFirestoreCollection(entityType);
       logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
 
-      final querySnapshot = await _firebaseService.firestore
-          .collection(collectionName)
-          .where('companyId', isEqualTo: _firebaseService.companyId)
-          .where('updatedAt', isGreaterThan: lastSync.toIso8601String())
-          .get();
+      try {
+        final querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: _firebaseService.companyId)
+            .where('updatedAt', isGreaterThan: lastSync.toIso8601String())
+            .get()
+            .timeout(const Duration(seconds: 4));
 
-      if (querySnapshot.docs.isEmpty) continue;
+        if (querySnapshot.docs.isEmpty) continue;
 
-      for (var doc in querySnapshot.docs) {
+        for (var doc in querySnapshot.docs) {
         final data = doc.data();
         final uuid = data['uuid'] as String?;
         if (uuid == null) continue;
@@ -696,6 +699,8 @@ class SyncService {
           logger.info('Inserting new remote record for $entityType UUID: $uuid');
           await _insertLocalRecord(entityType, data);
         }
+      } catch (e) {
+        logger.warning('Skipped $entityType sync query due to timeout or network: $e');
       }
     }
   }

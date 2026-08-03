@@ -23,10 +23,8 @@
   <link rel="manifest" href="manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for (let registration of registrations) {
-          registration.unregister();
-        }
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('flutter_service_worker.js');
       });
     }
   </script>

@@ -40,6 +40,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
     try {
       await ref.read(syncServiceProvider).syncFirms();
+      ref.invalidate(activeFirmIdProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
     } catch (_) {}
     if (mounted) {
       setState(() {
@@ -1289,12 +1291,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 final db = ref.read(databaseServiceProvider);
                 await db.clearDatabase();
 
+                // Automatically re-seed standard commercial units (PCS, BOX, KG, LTR, etc.)
+                await DemoDataSeeder.seedStandardUnits(db);
+
                 // Prevent demo seeding by marking as seeded
                 await prefs.setBool('demo_seeded_$activeFirmId', true);
 
                 ref.invalidate(dashboardAnalyticsProvider);
                 ref.invalidate(filteredPartiesProvider);
                 ref.invalidate(filteredItemsProvider);
+                ref.invalidate(unitsListProvider);
                 ref.invalidate(purchaseListProvider);
                 ref.invalidate(filteredInvoicesProvider);
                 ref.invalidate(filteredOrdersProvider);

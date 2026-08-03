@@ -266,4 +266,57 @@ class DemoDataSeeder {
       await db.isar.collection<Expense>().putAll([expense1, expense2, expense3]);
     });
   }
+
+  static Future<void> seedStandardUnits(DatabaseService db) async {
+    final standardUnits = [
+      {'name': 'Pieces', 'short': 'PCS'},
+      {'name': 'Boxes', 'short': 'BOX'},
+      {'name': 'Packets', 'short': 'PKT'},
+      {'name': 'Kilograms', 'short': 'KG'},
+      {'name': 'Grams', 'short': 'GM'},
+      {'name': 'Liters', 'short': 'LTR'},
+      {'name': 'Milliliters', 'short': 'ML'},
+      {'name': 'Meters', 'short': 'MTR'},
+      {'name': 'Feet', 'short': 'FT'},
+      {'name': 'Sets', 'short': 'SET'},
+      {'name': 'Bags', 'short': 'BAG'},
+      {'name': 'Bottles', 'short': 'BTL'},
+      {'name': 'Cans', 'short': 'CAN'},
+      {'name': 'Dozen', 'short': 'DOZ'},
+      {'name': 'Pairs', 'short': 'PAIR'},
+      {'name': 'Square Feet', 'short': 'SQFT'},
+      {'name': 'Tonnes', 'short': 'TON'},
+      {'name': 'Quintals', 'short': 'QTL'},
+      {'name': 'Rolls', 'short': 'ROL'},
+      {'name': 'Tubes', 'short': 'TUBE'},
+      {'name': 'Numbers', 'short': 'NOS'},
+    ];
+
+    try {
+      final existingUnits = await db.isar.units.filter().idGreaterThan(-1).findAll();
+      final existingShorts = existingUnits.map((u) => u.shortName?.toUpperCase().trim()).toSet();
+
+      final unitsToPut = <Unit>[];
+      for (var u in standardUnits) {
+        final short = u['short']!;
+        if (!existingShorts.contains(short)) {
+          unitsToPut.add(
+            Unit()
+              ..uuid = _generateUuid()
+              ..unitName = u['name']!
+              ..shortName = short
+              ..isSynced = false
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now(),
+          );
+        }
+      }
+
+      if (unitsToPut.isNotEmpty) {
+        await db.isar.writeTxn(() async {
+          await db.isar.units.putAll(unitsToPut);
+        });
+      }
+    } catch (_) {}
+  }
 }
