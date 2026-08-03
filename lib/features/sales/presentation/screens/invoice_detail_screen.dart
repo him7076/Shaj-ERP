@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/pdf_service.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/models/firm_info.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 
 class InvoiceDetailScreen extends ConsumerStatefulWidget {
@@ -174,19 +175,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final pdfService = PdfService();
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
-      final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
-      final companyGst = companySettings?.companyGST ?? '27AAAAA1111A1Z1';
-      final companyAddr = companySettings?.companyAddress ?? '123 Business Hub, Mumbai, MH';
-      final companyPhone = companySettings?.companyPhone ?? '+91 98765 43210';
+      final prefs = ref.read(sharedPreferencesProvider);
+      final isar = ref.read(databaseServiceProvider).isar;
+      final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
       
       final pdfData = await pdfService.generateInvoicePdf(
         _invoice!,
         items: _invoiceItems,
-        companyName: companyName,
-        companyGst: companyGst,
-        companyAddress: companyAddr,
-        companyPhone: companyPhone,
+        firmInfo: firmInfo,
       );
       await pdfService.printOrSharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
     } catch (e) {
@@ -206,19 +202,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final pdfService = PdfService();
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
-      final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
-      final companyGst = companySettings?.companyGST ?? '27AAAAA1111A1Z1';
-      final companyAddr = companySettings?.companyAddress ?? '123 Business Hub, Mumbai, MH';
-      final companyPhone = companySettings?.companyPhone ?? '+91 98765 43210';
+      final prefs = ref.read(sharedPreferencesProvider);
+      final isar = ref.read(databaseServiceProvider).isar;
+      final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
       
       final pdfData = await pdfService.generateInvoicePdf(
         _invoice!,
         items: _invoiceItems,
-        companyName: companyName,
-        companyGst: companyGst,
-        companyAddress: companyAddr,
-        companyPhone: companyPhone,
+        firmInfo: firmInfo,
       );
       await pdfService.sharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
     } catch (e) {

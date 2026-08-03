@@ -561,11 +561,15 @@ class SyncService {
       case 'Party':
         final e = entity as Party;
         return baseMap..addAll({
+          'partyCode': e.partyCode,
           'partyName': e.partyName,
-          'gstNumber': e.gstNumber,
+          'partyType': e.partyType,
           'mobileNumber': e.mobileNumber,
           'whatsappNumber': e.whatsappNumber,
           'email': e.email,
+          'gstType': e.gstType,
+          'gstNumber': e.gstNumber,
+          'panNumber': e.panNumber,
           'addressLine1': e.addressLine1,
           'addressLine2': e.addressLine2,
           'city': e.city,
@@ -573,23 +577,48 @@ class SyncService {
           'pincode': e.pincode,
           'latitude': e.latitude,
           'longitude': e.longitude,
+          'locationAddress': e.locationAddress,
+          'googleMapUrl': e.googleMapUrl,
+          'openingBalance': e.openingBalance,
+          'balanceType': e.balanceType,
           'creditLimit': e.creditLimit,
+          'outstandingBalance': e.outstandingBalance,
           'paymentTerms': e.paymentTerms,
+          'dueDays': e.dueDays,
+          'contactPerson': e.contactPerson,
+          'businessCategory': e.businessCategory,
           'notes': e.notes,
+          'shopPhotos': e.shopPhotos,
+          'shopPhotoUrls': e.shopPhotoUrls,
         });
       case 'Item':
         final e = entity as Item;
         return baseMap..addAll({
+          'itemCode': e.itemCode,
           'itemName': e.itemName,
-          'hsnCode': e.hsnCode,
-          'barcode': e.barcode,
-          'gstRate': e.gstRate,
-          'buyRate': e.buyRate,
-          'sellRate': e.sellRate,
-          'sku': e.sku,
+          'shortName': e.shortName,
           'description': e.description,
-          'imagePaths': e.imagePaths,
+          'hsnCode': e.hsnCode,
+          'gstApplicable': e.gstApplicable,
+          'gstRate': e.gstRate,
+          'cessRate': e.cessRate,
+          'buyRate': e.buyRate,
+          'mrp': e.mrp,
+          'sellRate': e.sellRate,
+          'wholesaleRate': e.wholesaleRate,
+          'minimumSellingPrice': e.minimumSellingPrice,
+          'openingStock': e.openingStock,
           'currentStock': e.currentStock,
+          'reorderLevel': e.reorderLevel,
+          'minimumStock': e.minimumStock,
+          'secondaryUnit': e.secondaryUnit,
+          'conversionFactor': e.conversionFactor,
+          'barcode': e.barcode,
+          'sku': e.sku,
+          'skuCode': e.skuCode,
+          'imagePaths': e.imagePaths,
+          'firebaseImageUrls': e.firebaseImageUrls,
+          'thumbnailImage': e.thumbnailImage,
           'categoryUuid': e.category.value?.uuid,
           'unitUuid': e.unit.value?.uuid,
           'brandUuid': e.brand.value?.uuid,
@@ -902,34 +931,63 @@ class SyncService {
     switch (entityType) {
       case 'Party':
         entity = Party()
+          ..partyCode = data['partyCode']
           ..partyName = data['partyName']
-          ..gstNumber = data['gstNumber']
+          ..partyType = data['partyType']
           ..mobileNumber = data['mobileNumber']
           ..whatsappNumber = data['whatsappNumber']
           ..email = data['email']
+          ..gstType = data['gstType']
+          ..gstNumber = data['gstNumber']
+          ..panNumber = data['panNumber']
           ..addressLine1 = data['addressLine1']
           ..addressLine2 = data['addressLine2']
           ..city = data['city']
           ..state = data['state']
           ..pincode = data['pincode']
-          ..latitude = data['latitude']
-          ..longitude = data['longitude']
+          ..latitude = (data['latitude'] as num?)?.toDouble()
+          ..longitude = (data['longitude'] as num?)?.toDouble()
+          ..locationAddress = data['locationAddress']
+          ..googleMapUrl = data['googleMapUrl']
+          ..openingBalance = (data['openingBalance'] as num?)?.toDouble()
+          ..balanceType = data['balanceType']
           ..creditLimit = (data['creditLimit'] as num?)?.toDouble()
+          ..outstandingBalance = (data['outstandingBalance'] as num?)?.toDouble()
           ..paymentTerms = data['paymentTerms']
-          ..notes = data['notes'];
+          ..dueDays = (data['dueDays'] as num?)?.toInt()
+          ..contactPerson = data['contactPerson']
+          ..businessCategory = data['businessCategory']
+          ..notes = data['notes']
+          ..shopPhotos = data['shopPhotos'] != null ? List<String>.from(data['shopPhotos']) : null
+          ..shopPhotoUrls = data['shopPhotoUrls'] != null ? List<String>.from(data['shopPhotoUrls']) : null;
         break;
       case 'Item':
         entity = Item()
+          ..itemCode = data['itemCode']
           ..itemName = data['itemName']
-          ..hsnCode = data['hsnCode']
-          ..barcode = data['barcode']
-          ..gstRate = (data['gstRate'] as num?)?.toDouble()
-          ..buyRate = (data['buyRate'] as num?)?.toDouble()
-          ..sellRate = (data['sellRate'] as num?)?.toDouble()
-          ..sku = data['sku']
+          ..shortName = data['shortName']
           ..description = data['description']
+          ..hsnCode = data['hsnCode']
+          ..gstApplicable = data['gstApplicable'] as bool? ?? true
+          ..gstRate = (data['gstRate'] as num?)?.toDouble()
+          ..cessRate = (data['cessRate'] as num?)?.toDouble()
+          ..buyRate = (data['buyRate'] as num?)?.toDouble()
+          ..mrp = (data['mrp'] as num?)?.toDouble()
+          ..sellRate = (data['sellRate'] as num?)?.toDouble()
+          ..wholesaleRate = (data['wholesaleRate'] as num?)?.toDouble()
+          ..minimumSellingPrice = (data['minimumSellingPrice'] as num?)?.toDouble()
+          ..openingStock = (data['openingStock'] as num?)?.toDouble()
+          ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble()
+          ..reorderLevel = (data['reorderLevel'] as num?)?.toDouble()
+          ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
+          ..secondaryUnit = data['secondaryUnit']
+          ..conversionFactor = (data['conversionFactor'] as num?)?.toDouble()
+          ..barcode = data['barcode']
+          ..sku = data['sku']
+          ..skuCode = data['skuCode']
           ..imagePaths = data['imagePaths'] != null ? List<String>.from(data['imagePaths']) : null
-          ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble();
+          ..firebaseImageUrls = data['firebaseImageUrls'] != null ? List<String>.from(data['firebaseImageUrls']) : null
+          ..thumbnailImage = data['thumbnailImage'];
         break;
       case 'Category':
         entity = Category()

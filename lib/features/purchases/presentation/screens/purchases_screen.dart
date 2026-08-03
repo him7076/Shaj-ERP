@@ -1,9 +1,14 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:printing/printing.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -38,6 +43,125 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
     super.dispose();
   }
 
+  Future<void> _downloadSampleExcel() async {
+    try {
+      final sampleBytes = PurchaseExcelImportService.generateSampleTemplate();
+      if (sampleBytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate sample template.')),
+        );
+        return;
+      }
+
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(sampleBytes),
+        filename: 'Purchase_Import_Sample_Template.xlsx',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📥 Sample Purchase Excel Template downloaded! Fill details in Sheet 1 & Sheet 2.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating sample Excel: $e')),
+      );
+    }
+  }
+
+  Future<void> _importPurchaseExcel() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final fileBytes = result.files.first.bytes;
+      if (fileBytes == null || fileBytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read the selected Excel file.')),
+        );
+        return;
+      }
+
+      // Show loading overlay
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Importing Purchases & Items...'),
+            ],
+          ),
+        ),
+      );
+
+      final dbService = ref.read(databaseServiceProvider);
+      final importResult = await PurchaseExcelImportService.importPurchasesFromBytes(fileBytes, dbService);
+
+      if (mounted) Navigator.pop(context); // Close loading dialog
+
+      ref.invalidate(purchaseListProvider);
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(
+                  importResult.totalBillsImported > 0 ? Icons.check_circle : Icons.warning_amber_rounded,
+                  color: importResult.totalBillsImported > 0 ? Colors.green : Colors.amber,
+                  size: 28,
+                ),
+                const SizedBox(width: 10),
+                const Text('Purchase Excel Import', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✅ Purchase Bills Imported: ${importResult.totalBillsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text('📦 Purchase Items Recorded: ${importResult.totalItemsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (importResult.errors.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import Excel file: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -49,11 +173,29 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       appBar: AppBar(
         title: const Text('Purchases & Inward Goods'),
         actions: [
+          TextButton.icon(
+            onPressed: _downloadSampleExcel,
+            icon: const Icon(Icons.file_download_outlined, size: 18),
+            label: const Text('Sample Sheet', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 4),
+          ElevatedButton.icon(
+            onPressed: _importPurchaseExcel,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+            ),
+            icon: const Icon(Icons.upload_file_rounded, size: 18),
+            label: const Text('Import Excel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => ref.invalidate(purchaseListProvider),
             tooltip: 'Refresh',
           ),
+          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

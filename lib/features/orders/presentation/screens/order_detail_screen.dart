@@ -14,6 +14,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/pdf_service.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/models/firm_info.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
@@ -313,10 +314,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final pdfService = PdfService();
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
-      final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
+      final prefs = ref.read(sharedPreferencesProvider);
+      final isar = ref.read(databaseServiceProvider).isar;
+      final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
       
-      final pdfData = await pdfService.generateOrderPdf(_order!, companyName: companyName);
+      final pdfData = await pdfService.generateOrderPdf(_order!, firmInfo: firmInfo);
       await pdfService.printOrSharePdf(pdfData, 'Order_${_order!.orderNumber}.pdf');
     } catch (e) {
       logger.error('Failed to print PDF', e);
@@ -335,10 +337,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final pdfService = PdfService();
-      final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
-      final companyName = companySettings?.companyName ?? 'Business Sahaj ERP';
+      final prefs = ref.read(sharedPreferencesProvider);
+      final isar = ref.read(databaseServiceProvider).isar;
+      final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
       
-      final pdfData = await pdfService.generateOrderPdf(_order!, companyName: companyName);
+      final pdfData = await pdfService.generateOrderPdf(_order!, firmInfo: firmInfo);
       await pdfService.sharePdf(pdfData, 'Order_${_order!.orderNumber}.pdf');
     } catch (e) {
       logger.error('Failed to share PDF', e);

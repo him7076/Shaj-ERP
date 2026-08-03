@@ -66,7 +66,9 @@ class DatabaseService {
 
         final key = 'demo_seeded_$activeFirmId';
         final alreadySeeded = prefs?.getBool(key) ?? false;
-        if (!alreadySeeded && activeFirmId == 'firm_default') {
+        final bool hasExistingData = _isar!.collection<Party>().countSync() > 0 || _isar!.collection<Item>().countSync() > 0;
+
+        if (!alreadySeeded && !hasExistingData && activeFirmId == 'firm_default') {
           try {
             await DemoDataSeeder.seedDemoData(this);
             await prefs?.setBool(key, true);
@@ -74,6 +76,8 @@ class DatabaseService {
           } catch (e) {
             logger.error('Failed to auto-seed demo data on web startup', e);
           }
+        } else if (hasExistingData && !alreadySeeded) {
+          await prefs?.setBool(key, true);
         }
         return;
       }

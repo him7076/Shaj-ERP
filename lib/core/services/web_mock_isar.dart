@@ -35,6 +35,15 @@ class WebMockIsar implements Isar {
     }
   }
 
+  Future<void> autoSave() async {
+    try {
+      final p = prefs ?? await SharedPreferences.getInstance();
+      await saveToPrefs(p);
+    } catch (e) {
+      print('WebMockIsar autoSave failed: $e');
+    }
+  }
+
   Map<String, List<dynamic>> get _db => _dbs[firmId] ??= {};
 
   // Forces dart2js compilation to keep the Query inheritance relation
@@ -156,12 +165,30 @@ class WebMockIsar implements Isar {
 
   Future<void> saveToPrefs(SharedPreferences prefsInstance) async {
     try {
-      final data = <String, List<Map<String, dynamic>>>{};
+      // 1. Save per-collection to prevent single-key 5MB browser localStorage QuotaExceededError
       _db.forEach((collectionName, list) {
-        data[collectionName] = list.map((item) => _entityToMap(item)).toList();
+        try {
+          final collectionMaps = list.map((item) => _entityToMap(item)).toList();
+          final colJson = jsonEncode(collectionMaps);
+          prefsInstance.setString('web_mock_col_${firmId}_$collectionName', colJson);
+        } catch (colError) {
+          print('Error saving web collection $collectionName: $colError');
+        }
       });
-      final jsonStr = jsonEncode(data);
-      await prefsInstance.setString('web_mock_db_$firmId', jsonStr);
+
+      // 2. Also save master index list of non-empty collections
+      final collectionNames = _db.keys.toList();
+      await prefsInstance.setStringList('web_mock_cols_$firmId', collectionNames);
+
+      // 3. Save backward-compatible full DB snapshot if within safe size limit (< 1.5MB)
+      final fullData = <String, List<Map<String, dynamic>>>{};
+      _db.forEach((collectionName, list) {
+        fullData[collectionName] = list.map((item) => _entityToMap(item)).toList();
+      });
+      final jsonStr = jsonEncode(fullData);
+      if (jsonStr.length < 1500000) {
+        await prefsInstance.setString('web_mock_db_$firmId', jsonStr);
+      }
     } catch (e) {
       print('Error saving web mock DB to SharedPreferences: $e');
     }
@@ -169,13 +196,35 @@ class WebMockIsar implements Isar {
 
   void loadFromPrefs(SharedPreferences prefsInstance) {
     try {
-      final jsonStr = prefsInstance.getString('web_mock_db_$firmId');
-      if (jsonStr != null && jsonStr.isNotEmpty) {
-        final data = jsonDecode(jsonStr) as Map<String, dynamic>;
-        data.forEach((collectionName, listData) {
-          final list = listData as List<dynamic>;
-          _db[collectionName] = list.map((itemMap) => _mapToEntity(itemMap as Map<String, dynamic>)).toList();
-        });
+      bool loadedAnyCollection = false;
+      final collectionNames = prefsInstance.getStringList('web_mock_cols_$firmId') ?? [
+        'categorys', 'units', 'brands', 'partys', 'items', 'orderItems', 'orders',
+        'invoiceItems', 'invoices', 'settings', 'users', 'syncQueues', 'purchases',
+        'purchaseItems', 'expenses', 'transactions', 'bankAccounts', 'creditNotes',
+        'creditNoteItems', 'debitNotes', 'debitNoteItems'
+      ];
+
+      for (var colName in collectionNames) {
+        final colJson = prefsInstance.getString('web_mock_col_${firmId}_$colName');
+        if (colJson != null && colJson.isNotEmpty) {
+          try {
+            final listData = jsonDecode(colJson) as List<dynamic>;
+            _db[colName] = listData.map((itemMap) => _mapToEntity(itemMap as Map<String, dynamic>)).toList();
+            loadedAnyCollection = true;
+          } catch (_) {}
+        }
+      }
+
+      // Fallback: If per-collection loading found nothing, attempt loading legacy master string key
+      if (!loadedAnyCollection) {
+        final jsonStr = prefsInstance.getString('web_mock_db_$firmId');
+        if (jsonStr != null && jsonStr.isNotEmpty) {
+          final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+          data.forEach((collectionName, listData) {
+            final list = listData as List<dynamic>;
+            _db[collectionName] = list.map((itemMap) => _mapToEntity(itemMap as Map<String, dynamic>)).toList();
+          });
+        }
       }
     } catch (e) {
       print('Error loading web mock DB from SharedPreferences: $e');
@@ -1256,9 +1305,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     }
     _attachEntity(entity);
 
-    if (isarInstance.prefs != null) {
-      await isarInstance.saveToPrefs(isarInstance.prefs!);
-    }
+    await isarInstance.autoSave();
     return entity.id as int;
   }
 
@@ -1297,8 +1344,8 @@ class WebMockCollection<T> extends IsarCollection<T> {
     final len = _list.length;
     _list.removeWhere((e) => e.id == id);
     final deleted = _list.length < len;
-    if (deleted && isarInstance.prefs != null) {
-      await isarInstance.saveToPrefs(isarInstance.prefs!);
+    if (deleted) {
+      await isarInstance.autoSave();
     }
     return deleted;
   }
@@ -1317,9 +1364,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
   @override
   Future<void> clear() async {
     _list.clear();
-    if (isarInstance.prefs != null) {
-      await isarInstance.saveToPrefs(isarInstance.prefs!);
-    }
+    await isarInstance.autoSave();
   }
 
   @override

@@ -1,11 +1,16 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:printing/printing.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/excel_csv_helper.dart';
 import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
+import 'package:business_sahaj_erp/core/services/party_excel_import_service.dart';
 import 'party_detail_screen.dart';
 import 'add_edit_party_screen.dart';
 
@@ -24,6 +29,129 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _downloadPartySampleExcel() async {
+    try {
+      final sampleBytes = PartyExcelImportService.generateSampleTemplate();
+      if (sampleBytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate sample template.')),
+        );
+        return;
+      }
+
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(sampleBytes),
+        filename: 'Party_Import_Sample_Template.xlsx',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📥 Sample Party & Customer Excel Template downloaded! Fill details and click Import Excel.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating sample Excel: $e')),
+      );
+    }
+  }
+
+  Future<void> _importPartyExcel() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final fileBytes = result.files.first.bytes;
+      if (fileBytes == null || fileBytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read the selected Excel file.')),
+        );
+        return;
+      }
+
+      // Show loading overlay
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16),
+              Text('Importing Parties & Customers...'),
+            ],
+          ),
+        ),
+      );
+
+      final dbService = ref.read(databaseServiceProvider);
+      final importResult = await PartyExcelImportService.importPartiesFromBytes(fileBytes, dbService);
+
+      if (mounted) Navigator.pop(context); // Close loading dialog
+
+      ref.read(partySearchProvider.notifier).setQuery('');
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(
+                  (importResult.totalPartiesImported + importResult.totalPartiesUpdated) > 0
+                      ? Icons.check_circle
+                      : Icons.warning_amber_rounded,
+                  color: (importResult.totalPartiesImported + importResult.totalPartiesUpdated) > 0
+                      ? Colors.green
+                      : Colors.amber,
+                  size: 28,
+                ),
+                const SizedBox(width: 10),
+                const Text('Party Excel Import', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✨ New Parties Registered: ${importResult.totalPartiesImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text('🔄 Existing Parties Updated: ${importResult.totalPartiesUpdated}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (importResult.errors.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import Excel file: $e')),
+        );
+      }
+    }
   }
 
   void _importCsvDemo() {
@@ -101,6 +229,24 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       appBar: AppBar(
         title: const Text('Parties Directory'),
         actions: [
+          TextButton.icon(
+            onPressed: _downloadPartySampleExcel,
+            icon: const Icon(Icons.file_download_outlined, size: 18),
+            label: const Text('Sample Sheet', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 4),
+          ElevatedButton.icon(
+            onPressed: _importPartyExcel,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundColor: theme.colorScheme.onPrimaryContainer,
+            ),
+            icon: const Icon(Icons.upload_file_rounded, size: 18),
+            label: const Text('Import Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 6),
+
           // GPS Location nearby filter button
           IconButton(
             tooltip: _isNearbyMode ? 'Show All Parties' : 'Find Nearby Parties',
@@ -134,13 +280,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
               });
             },
           ),
-
-          // Import CSV
-          IconButton(
-            tooltip: 'Import CSV',
-            icon: const Icon(Icons.file_upload_outlined),
-            onPressed: _importCsvDemo,
-          ),
+          const SizedBox(width: 6),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
