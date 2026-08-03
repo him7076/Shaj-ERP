@@ -567,18 +567,34 @@ class PurchaseExcelImportService {
 
   static DateTime _parseDate(String dateStr) {
     if (dateStr.isEmpty) return DateTime.now();
+    final clean = dateStr.trim();
     try {
-      if (dateStr.contains('/')) {
-        final parts = dateStr.split('/');
+      if (clean.contains('/')) {
+        final parts = clean.split('/');
         if (parts.length == 3) {
-          final d = int.parse(parts[0]);
-          final m = int.parse(parts[1]);
-          final y = int.parse(parts[2]);
+          int d = int.parse(parts[0]);
+          int m = int.parse(parts[1]);
+          int y = int.parse(parts[2]);
+          if (y < 100) y += 2000;
           return DateTime(y, m, d);
         }
-      } else if (dateStr.contains('-')) {
-        return DateTime.parse(dateStr);
       }
+      if (clean.contains('-')) {
+        final parts = clean.split('-');
+        if (parts.length == 3) {
+          if (parts[0].length == 4) {
+            return DateTime.parse(clean);
+          } else {
+            int d = int.parse(parts[0]);
+            int m = int.parse(parts[1]);
+            int y = int.parse(parts[2]);
+            if (y < 100) y += 2000;
+            return DateTime(y, m, d);
+          }
+        }
+      }
+      final parsed = DateTime.tryParse(clean);
+      if (parsed != null) return parsed;
     } catch (_) {}
     return DateTime.now();
   }
