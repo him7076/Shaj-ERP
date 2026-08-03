@@ -10,6 +10,12 @@ import 'package:business_sahaj_erp/features/reports/presentation/providers/repor
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);

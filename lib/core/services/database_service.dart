@@ -32,6 +32,7 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collec
 
 class DatabaseService {
   Isar? _isar;
+  SharedPreferences? _prefs;
   String? initErrorMessage;
   String _activeFirmId = 'firm_default';
   static const int currentDatabaseVersion = 1;
@@ -46,6 +47,7 @@ class DatabaseService {
   }
 
   Future<void> init([SharedPreferences? prefs]) async {
+    _prefs = prefs;
     if (_isar != null) {
       logger.warning('DatabaseService has already been initialized.');
       return;
