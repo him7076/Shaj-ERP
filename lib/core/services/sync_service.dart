@@ -1015,6 +1015,9 @@ class SyncService {
           'gstRate': e.gstRate,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
+          'batchNumber': e.batchNumber,
+          'expiryDate': e.expiryDate,
+          'mfgDate': e.mfgDate,
           'purchaseUuid': e.purchase.value?.uuid,
           'itemUuid': e.item.value?.uuid,
         });
@@ -1394,7 +1397,10 @@ class SyncService {
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
           ..gstRate = (data['gstRate'] as num?)?.toDouble()
           ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble()
+          ..batchNumber = data['batchNumber']
+          ..expiryDate = data['expiryDate']
+          ..mfgDate = data['mfgDate'];
         break;
       case 'CreditNote':
         entity = CreditNote()

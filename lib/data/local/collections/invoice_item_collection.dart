@@ -32,6 +32,11 @@ class InvoiceItem implements IsarModel {
   double? gstAmount;
   double? totalAmount; // maps to amount line total
 
+  // Batch Tracking
+  String? batchNumber;
+  String? expiryDate;
+  String? mfgDate;
+
   // Isar Links
   final invoice = IsarLink<Invoice>();
   final item = IsarLink<Item>();

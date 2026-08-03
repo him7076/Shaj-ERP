@@ -107,9 +107,16 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       final dbService = ref.read(databaseServiceProvider);
       final importResult = await PurchaseExcelImportService.importPurchasesFromBytes(fileBytes, dbService);
 
-      if (mounted) Navigator.pop(context); // Close loading dialog
+      // Instantly trigger cloud sync to push newly imported purchases & items to Firestore
+      ref.read(syncServiceProvider).syncAll();
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
+      }
 
       ref.invalidate(purchaseListProvider);
+      ref.invalidate(filteredItemsProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
 
       if (mounted) {
         showDialog(

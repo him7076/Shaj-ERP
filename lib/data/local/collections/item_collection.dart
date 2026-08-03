@@ -62,6 +62,10 @@ class Item implements IsarModel {
   String? dimensions;
   String? notes;
 
+  // Batch Tracking
+  bool enableBatchTracking = false;
+  String? defaultBatchNumber;
+
   // Isar Links
   final category = IsarLink<Category>();
   final unit = IsarLink<Unit>();

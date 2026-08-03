@@ -28,6 +28,11 @@ class PurchaseItem implements IsarModel {
   double? gstAmount;
   double? totalAmount;
 
+  // Batch Tracking
+  String? batchNumber;
+  String? expiryDate;
+  String? mfgDate;
+
   // Isar Links
   final purchase = IsarLink<Purchase>();
   final item = IsarLink<Item>();

@@ -415,6 +415,7 @@ class PurchaseExcelImportService {
                 await isar.writeTxn(() async {
                   catalogItem!.id = await isar.items.put(catalogItem!);
                 });
+                allItems.add(catalogItem!);
               } else {
                 // Update stock level for existing item
                 catalogItem.currentStock = (catalogItem.currentStock ?? 0.0) + qty;
@@ -445,6 +446,9 @@ class PurchaseExcelImportService {
               ..gstRate = gstRatePercent
               ..gstAmount = gstAmount
               ..totalAmount = lineTotal > 0 ? lineTotal : totalAmount
+              ..batchNumber = itemMap['batchNo'] as String?
+              ..expiryDate = itemMap['expDate'] as String?
+              ..mfgDate = itemMap['mfgDate'] as String?
               ..createdAt = DateTime.now()
               ..updatedAt = DateTime.now();
 

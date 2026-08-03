@@ -9,6 +9,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/screens/stock_r
 import 'package:business_sahaj_erp/features/reports/presentation/screens/outstanding_report_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/party_ledger_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/salesman_report_screen.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/screens/batch_report_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
@@ -299,26 +300,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       description: 'Operational outflows, salaries & overheads',
                       icon: Icons.account_balance_wallet_rounded,
                       color: const Color(0xFFF97316),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ExpensesScreen()),
-                      ),
-                    ),
-                    _buildReportMenuCard(
-                      title: 'Salesman Performance',
-                      description: 'Salesperson wise revenue, orders & invoices',
-                      icon: Icons.badge_outlined,
-                      color: const Color(0xFFD946EF),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SalesmanReportScreen()),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stackTrace) => Center(

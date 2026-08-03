@@ -30,6 +30,10 @@ class OrderItem implements IsarModel {
   double? gstAmount;
   double? totalAmount; // Line total totalAmount
 
+  // Batch Tracking
+  String? batchNumber;
+  String? expiryDate;
+
   // Isar Links
   final order = IsarLink<Order>();
   final item = IsarLink<Item>();
