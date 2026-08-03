@@ -141,7 +141,7 @@ class ItemExcelImportService {
           if (isTaxInclusive) 'Tax Inclusive: Yes',
         ].join(' | ');
 
-        final allItems = await isar.items.filter().idGreaterThan(-1).findAll();
+        final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
         try {
           // Check if item exists by itemCode or itemName

@@ -211,8 +211,8 @@ class PurchaseExcelImportService {
         }
       }
 
-      final allParties = await isar.partys.filter().idGreaterThan(-1).findAll();
-      final allItems = await isar.items.filter().idGreaterThan(-1).findAll();
+      final allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+      final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
       // 2. Parse Sheet 1 Header Bills and create Purchases
       for (int r = 1; r < headerSheet.rows.length; r++) {
