@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/party_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ImportPartyResult {
@@ -128,17 +127,19 @@ class PartyExcelImportService {
 
         final gstType = (gstNumber.isNotEmpty && gstNumber.length >= 15) ? 'Registered' : 'Unregistered';
 
+        final allParties = await isar.partys.where().findAll();
+
         try {
           // Check if party exists by partyName, gstNumber, or mobileNumber
           Party? existingParty;
           if (gstNumber.isNotEmpty) {
-            existingParty = await isar.partys.filter().gstNumberEqualTo(gstNumber).findFirst();
+            existingParty = allParties.where((p) => p.gstNumber?.trim() == gstNumber).firstOrNull;
           }
           if (existingParty == null && partyName.isNotEmpty) {
-            existingParty = await isar.partys.filter().partyNameEqualTo(effectiveName).findFirst();
+            existingParty = allParties.where((p) => p.partyName?.trim().toLowerCase() == effectiveName.toLowerCase()).firstOrNull;
           }
           if (existingParty == null && mobile.isNotEmpty) {
-            existingParty = await isar.partys.filter().mobileNumberEqualTo(mobile).findFirst();
+            existingParty = allParties.where((p) => p.mobileNumber?.trim() == mobile).firstOrNull;
           }
 
           if (existingParty != null) {

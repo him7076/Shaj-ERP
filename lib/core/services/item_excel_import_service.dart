@@ -4,7 +4,6 @@ import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/item_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ImportItemResult {
@@ -142,13 +141,15 @@ class ItemExcelImportService {
           if (isTaxInclusive) 'Tax Inclusive: Yes',
         ].join(' | ');
 
+        final allItems = await isar.items.where().findAll();
+
         try {
           // Check if item exists by itemCode or itemName
           Item? existingItem;
           if (itemCode.isNotEmpty) {
-            existingItem = await isar.items.filter().itemCodeEqualTo(itemCode).findFirst();
+            existingItem = allItems.where((i) => i.itemCode?.trim() == itemCode).firstOrNull;
           }
-          existingItem ??= await isar.items.filter().itemNameEqualTo(effectiveName).findFirst();
+          existingItem ??= allItems.where((i) => i.itemName?.trim().toLowerCase() == effectiveName.toLowerCase()).firstOrNull;
 
           if (existingItem != null) {
             // Update existing Item

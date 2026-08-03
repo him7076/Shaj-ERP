@@ -6,9 +6,7 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/party_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/item_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ImportPurchaseResult {
@@ -213,6 +211,9 @@ class PurchaseExcelImportService {
         }
       }
 
+      final allParties = await isar.partys.where().findAll();
+      final allItems = await isar.items.where().findAll();
+
       // 2. Parse Sheet 1 Header Bills and create Purchases
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
@@ -242,7 +243,7 @@ class PurchaseExcelImportService {
           // Find or create Party
           Party? party;
           if (partyName.isNotEmpty) {
-            party = await isar.partys.filter().partyNameEqualTo(partyName).findFirst();
+            party = allParties.where((p) => p.partyName?.trim().toLowerCase() == partyName.toLowerCase()).firstOrNull;
             if (party == null) {
               party = Party()
                 ..uuid = const Uuid().v4()
@@ -305,7 +306,7 @@ class PurchaseExcelImportService {
             // Find or create Item
             Item? catalogItem;
             if (itemName.isNotEmpty) {
-              catalogItem = await isar.items.filter().itemNameEqualTo(itemName).findFirst();
+              catalogItem = allItems.where((i) => i.itemName?.trim().toLowerCase() == itemName.toLowerCase()).firstOrNull;
               if (catalogItem == null) {
                 catalogItem = Item()
                   ..uuid = const Uuid().v4()
