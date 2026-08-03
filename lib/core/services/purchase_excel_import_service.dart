@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:uuid/uuid.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
