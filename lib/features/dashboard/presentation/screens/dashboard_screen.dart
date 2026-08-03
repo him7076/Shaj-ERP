@@ -510,12 +510,64 @@ class DashboardScreen extends ConsumerWidget {
       },
     ];
 
-    int gridColumns = 1;
-    if (ResponsiveLayout.isDesktop(context)) {
-      gridColumns = 5;
-    } else if (ResponsiveLayout.isTablet(context)) {
-      gridColumns = 3;
+    final isMobile = ResponsiveLayout.isMobile(context);
+
+    if (isMobile) {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: actions.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.85,
+        ),
+        itemBuilder: (ctx, idx) {
+          final act = actions[idx];
+          final Color col = act['color'] as Color;
+          return InkWell(
+            onTap: () => context.go(act['path'] as String),
+            borderRadius: BorderRadius.circular(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: col.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: col.withOpacity(0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(act['icon'] as IconData, color: col, size: 24),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  act['title'] as String,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          );
+        },
+      );
     }
+
+    int gridColumns = ResponsiveLayout.isDesktop(context) ? 5 : 3;
 
     return GridView.builder(
       shrinkWrap: true,
@@ -525,7 +577,7 @@ class DashboardScreen extends ConsumerWidget {
         crossAxisCount: gridColumns,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
-        childAspectRatio: ResponsiveLayout.isMobile(context) ? 2.8 : 2.2,
+        childAspectRatio: 2.2,
       ),
       itemBuilder: (ctx, idx) {
         final act = actions[idx];

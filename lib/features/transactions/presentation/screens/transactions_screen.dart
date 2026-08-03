@@ -326,15 +326,57 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               }
 
               return Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isMobile = constraints.maxWidth < 600;
-                    return Flex(
-                      direction: isMobile ? Axis.vertical : Axis.horizontal,
+                    if (isMobile) {
+                      return SizedBox(
+                        height: 96,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              width: 250,
+                              child: _buildMetricCard(
+                                theme: theme,
+                                title: 'Total Inflow',
+                                value: currencyFormat.format(totalIn),
+                                icon: Icons.arrow_downward,
+                                color: Colors.green,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 250,
+                              child: _buildMetricCard(
+                                theme: theme,
+                                title: 'Total Outflow',
+                                value: currencyFormat.format(totalOut),
+                                icon: Icons.arrow_upward,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 250,
+                              child: _buildMetricCard(
+                                theme: theme,
+                                title: 'Net Cash Flow',
+                                value: currencyFormat.format(totalIn - totalOut),
+                                icon: Icons.swap_vert,
+                                color: (totalIn - totalOut) >= 0 ? Colors.blue : Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Row(
                       children: [
                         Expanded(
-                          flex: isMobile ? 0 : 1,
                           child: _buildMetricCard(
                             theme: theme,
                             title: 'Total Inflow (Receipts & Sales)',
@@ -343,9 +385,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             color: Colors.green,
                           ),
                         ),
-                        const SizedBox(width: 16, height: 16),
+                        const SizedBox(width: 16),
                         Expanded(
-                          flex: isMobile ? 0 : 1,
                           child: _buildMetricCard(
                             theme: theme,
                             title: 'Total Outflow (Payments & Expenses)',
@@ -354,9 +395,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             color: Colors.red,
                           ),
                         ),
-                        const SizedBox(width: 16, height: 16),
+                        const SizedBox(width: 16),
                         Expanded(
-                          flex: isMobile ? 0 : 1,
                           child: _buildMetricCard(
                             theme: theme,
                             title: 'Net Cash Flow',
