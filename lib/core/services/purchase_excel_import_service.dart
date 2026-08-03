@@ -178,37 +178,96 @@ class PurchaseExcelImportService {
         );
       }
 
-      // 1. Parse Sheet 2 Items into a Map grouped by Invoice Number
+      // Build Header Column Map for Sheet 1
+      Map<String, int> s1ColMap = {};
+      if (headerSheet.rows.isNotEmpty) {
+        s1ColMap = _buildColumnMap(headerSheet.rows[0]);
+      }
+
+      final colS1Date = _findCol(s1ColMap, ['date', 'bill date', 'invoice date'], 0);
+      final colS1Party = _findCol(s1ColMap, ['party name', 'party', 'supplier name', 'supplier'], 1);
+      final colS1Phone = _findCol(s1ColMap, ['phone', 'mobile', 'contact'], 2);
+      final colS1Gst = _findCol(s1ColMap, ['party gst', 'gst number', 'gstin', 'gst'], 3);
+      final colS1OrderNo = _findCol(s1ColMap, ['order number', 'order no', 'po number'], 4);
+      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'bill no', 'invoice no', 'voucher no', 'invoice'], 5);
+      final colS1TxnType = _findCol(s1ColMap, ['transaction type', 'txn type', 'type'], 6);
+      final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 7);
+      final colS1PayType = _findCol(s1ColMap, ['payment type', 'pay mode', 'mode'], 8);
+      final colS1PaidAmt = _findCol(s1ColMap, ['paid amount', 'paid'], 9);
+      final colS1BalAmt = _findCol(s1ColMap, ['balance amount', 'balance', 'pending'], 10);
+      final colS1Desc = _findCol(s1ColMap, ['description', 'remarks', 'notes'], 11);
+      final colS1ItemName = _findCol(s1ColMap, ['item name', 'product name', 'item', 'product'], -1);
+
+      // Build Item Column Map for Sheet 2
+      Map<String, int> s2ColMap = {};
+      if (itemSheet != null && itemSheet.rows.isNotEmpty) {
+        s2ColMap = _buildColumnMap(itemSheet.rows[0]);
+      }
+
+      final colS2Date = _findCol(s2ColMap, ['date', 'bill date', 'invoice date'], 0);
+      final colS2Party = _findCol(s2ColMap, ['party name', 'party', 'supplier name', 'supplier'], 1);
+      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'bill no', 'invoice no', 'voucher no', 'invoice'], 2);
+      final colS2ItemName = _findCol(s2ColMap, ['item name', 'product name', 'item', 'product', 'description'], 3);
+      final colS2BatchNo = _findCol(s2ColMap, ['batch number', 'batch no', 'batch'], 4);
+      final colS2ExpDate = _findCol(s2ColMap, ['expire date', 'exp date', 'expiry'], 5);
+      final colS2MfgDate = _findCol(s2ColMap, ['mfg date', 'manufacturing date'], 6);
+      final colS2ItemCode = _findCol(s2ColMap, ['item code', 'code', 'barcode'], 7);
+      final colS2Hsn = _findCol(s2ColMap, ['hsn/sac', 'hsn', 'sac'], 8);
+      final colS2Qty = _findCol(s2ColMap, ['qty', 'quantity', 'count'], 9);
+      final colS2Unit = _findCol(s2ColMap, ['unit', 'uom', 'pack'], 10);
+      final colS2Rate = _findCol(s2ColMap, ['price per unit', 'purchase price', 'rate', 'unit price', 'price'], 11);
+      final colS2Disc = _findCol(s2ColMap, ['discount', 'disc'], 12);
+      final colS2Gst = _findCol(s2ColMap, ['gst', 'tax rate', 'tax %', 'tax'], 13);
+      final colS2Amount = _findCol(s2ColMap, ['amount', 'total', 'line total'], 14);
+
+      // 1. Parse Sheet 2 Items into Multi-Key Lookup Maps
       final Map<String, List<Map<String, dynamic>>> itemsByBillNo = {};
+      final Map<String, List<Map<String, dynamic>>> itemsByPartyName = {};
+      final Map<String, List<Map<String, dynamic>>> itemsByComboKey = {};
+
       if (itemSheet != null && itemSheet.rows.length > 1) {
         for (int r = 1; r < itemSheet.rows.length; r++) {
           final row = itemSheet.rows[r];
           if (row.isEmpty) continue;
 
-          final billNo = _getCellValue(row, 2).trim(); // Column C: Invoice Number
-          final itemName = _getCellValue(row, 3).trim(); // Column D: Item Name
+          final billNo = _getCellValue(row, colS2BillNo).trim();
+          final itemName = _getCellValue(row, colS2ItemName).trim();
+          final partyName = _getCellValue(row, colS2Party).trim();
+          final dateStr = _getCellValue(row, colS2Date).trim();
 
-          if (billNo.isEmpty || itemName.isEmpty) continue;
+          if (itemName.isEmpty) continue;
 
           final itemData = {
-            'date': _getCellValue(row, 0),
-            'partyName': _getCellValue(row, 1),
+            'date': dateStr,
+            'partyName': partyName,
             'billNo': billNo,
             'itemName': itemName,
-            'batchNo': _getCellValue(row, 4),
-            'expDate': _getCellValue(row, 5),
-            'mfgDate': _getCellValue(row, 6),
-            'itemCode': _getCellValue(row, 7),
-            'hsnCode': _getCellValue(row, 8),
-            'qty': _parseDouble(_getCellValue(row, 9)),
-            'unit': _getCellValue(row, 10).isNotEmpty ? _getCellValue(row, 10) : 'PCS',
-            'rate': _parseDouble(_getCellValue(row, 11)),
-            'discount': _parseDouble(_getCellValue(row, 12)),
-            'gstStr': _getCellValue(row, 13),
-            'amount': _parseDouble(_getCellValue(row, 14)),
+            'batchNo': _getCellValue(row, colS2BatchNo),
+            'expDate': _getCellValue(row, colS2ExpDate),
+            'mfgDate': _getCellValue(row, colS2MfgDate),
+            'itemCode': _getCellValue(row, colS2ItemCode),
+            'hsnCode': _getCellValue(row, colS2Hsn),
+            'qty': _parseDouble(_getCellValue(row, colS2Qty)),
+            'unit': _getCellValue(row, colS2Unit).isNotEmpty ? _getCellValue(row, colS2Unit) : 'PCS',
+            'rate': _parseDouble(_getCellValue(row, colS2Rate)),
+            'discount': _parseDouble(_getCellValue(row, colS2Disc)),
+            'gstStr': _getCellValue(row, colS2Gst),
+            'amount': _parseDouble(_getCellValue(row, colS2Amount)),
           };
 
-          itemsByBillNo.putIfAbsent(billNo, () => []).add(itemData);
+          final normBillNo = _normalizeKey(billNo);
+          final normParty = _normalizeKey(partyName);
+          final normCombo = _normalizeKey('${partyName}_$dateStr');
+
+          if (normBillNo.isNotEmpty) {
+            itemsByBillNo.putIfAbsent(normBillNo, () => []).add(itemData);
+          }
+          if (normParty.isNotEmpty) {
+            itemsByPartyName.putIfAbsent(normParty, () => []).add(itemData);
+          }
+          if (normCombo.isNotEmpty) {
+            itemsByComboKey.putIfAbsent(normCombo, () => []).add(itemData);
+          }
         }
       }
 
@@ -220,8 +279,8 @@ class PurchaseExcelImportService {
         final row = headerSheet.rows[r];
         if (row.isEmpty) continue;
 
-        final partyName = _getCellValue(row, 1).trim(); // Column B: Party Name
-        final billNo = _getCellValue(row, 5).trim(); // Column F: Bill Number
+        final partyName = _getCellValue(row, colS1Party).trim();
+        final billNo = _getCellValue(row, colS1BillNo).trim();
 
         if (partyName.isEmpty && billNo.isEmpty) continue;
 
@@ -229,16 +288,16 @@ class PurchaseExcelImportService {
             ? billNo
             : 'PUR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r';
 
-        final dateStr = _getCellValue(row, 0); // Column A: Date
-        final phone = _getCellValue(row, 2); // Column C: Phone No.
-        final gstNo = _getCellValue(row, 3); // Column D: Party GST Number
-        final orderNo = _getCellValue(row, 4); // Column E: Order Number
-        final txnType = _getCellValue(row, 6); // Column G: Transaction Type
-        final totalAmount = _parseDouble(_getCellValue(row, 7)); // Column H: Total Amount
-        final paymentType = _getCellValue(row, 8); // Column I: Payment Type
-        final paidAmount = _parseDouble(_getCellValue(row, 9)); // Column J: Paid Amount
-        final balanceAmount = _parseDouble(_getCellValue(row, 10)); // Column K: Balance Amount
-        final description = _getCellValue(row, 11); // Column L: Description
+        final dateStr = _getCellValue(row, colS1Date);
+        final phone = _getCellValue(row, colS1Phone);
+        final gstNo = _getCellValue(row, colS1Gst);
+        final orderNo = _getCellValue(row, colS1OrderNo);
+        final txnType = _getCellValue(row, colS1TxnType);
+        final totalAmount = _parseDouble(_getCellValue(row, colS1TotalAmt));
+        final paymentType = _getCellValue(row, colS1PayType);
+        final paidAmount = _parseDouble(_getCellValue(row, colS1PaidAmt));
+        final balanceAmount = _parseDouble(_getCellValue(row, colS1BalAmt));
+        final description = _getCellValue(row, colS1Desc);
 
         try {
           // Find or create Party
@@ -288,8 +347,40 @@ class PurchaseExcelImportService {
           double calcSubtotal = 0.0;
           double calcTotalGST = 0.0;
 
-          // Get items linked to this bill from Sheet 2
-          final rawItems = itemsByBillNo[effectiveBillNo] ?? [];
+          // Retrieve items linked to this bill from Sheet 2 using multi-key lookup
+          final normBillNo = _normalizeKey(billNo);
+          final normEffBillNo = _normalizeKey(effectiveBillNo);
+          final normParty = _normalizeKey(partyName);
+          final normCombo = _normalizeKey('${partyName}_$dateStr');
+
+          List<Map<String, dynamic>> rawItems = [];
+          if (normBillNo.isNotEmpty && itemsByBillNo.containsKey(normBillNo)) {
+            rawItems = itemsByBillNo[normBillNo]!;
+          } else if (normEffBillNo.isNotEmpty && itemsByBillNo.containsKey(normEffBillNo)) {
+            rawItems = itemsByBillNo[normEffBillNo]!;
+          } else if (normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
+            rawItems = itemsByComboKey[normCombo]!;
+          } else if (normParty.isNotEmpty && itemsByPartyName.containsKey(normParty)) {
+            rawItems = itemsByPartyName[normParty]!;
+          }
+
+          // Fallback: If no Sheet 2 items, check if Sheet 1 itself has an Item Name column
+          if (rawItems.isEmpty && colS1ItemName != -1) {
+            final s1ItemName = _getCellValue(row, colS1ItemName).trim();
+            if (s1ItemName.isNotEmpty) {
+              rawItems = [{
+                'itemName': s1ItemName,
+                'itemCode': '',
+                'hsnCode': '',
+                'qty': 1.0,
+                'unit': 'PCS',
+                'rate': totalAmount,
+                'discount': 0.0,
+                'gstStr': '0%',
+                'amount': totalAmount,
+              }];
+            }
+          }
 
           for (var itemMap in rawItems) {
             final itemName = itemMap['itemName'] as String;
@@ -315,7 +406,7 @@ class PurchaseExcelImportService {
                   ..itemName = itemName
                   ..hsnCode = hsn
                   ..buyRate = rate
-                  ..sellRate = rate * 1.2
+                  ..sellRate = rate > 0 ? rate * 1.2 : 0.0
                   ..currentStock = qty
                   ..openingStock = qty
                   ..createdAt = DateTime.now()
@@ -346,14 +437,14 @@ class PurchaseExcelImportService {
               ..itemId = catalogItem?.id
               ..itemName = itemName
               ..hsnCode = hsn
-              ..quantity = qty
+              ..quantity = qty > 0 ? qty : 1.0
               ..unit = unit
               ..rate = rate
               ..discount = discount
-              ..taxableAmount = taxable
+              ..taxableAmount = taxable > 0 ? taxable : lineTotal
               ..gstRate = gstRatePercent
               ..gstAmount = gstAmount
-              ..totalAmount = lineTotal
+              ..totalAmount = lineTotal > 0 ? lineTotal : totalAmount
               ..createdAt = DateTime.now()
               ..updatedAt = DateTime.now();
 
@@ -418,6 +509,38 @@ class PurchaseExcelImportService {
       totalItemsImported: totalItemsImported,
       errors: errors,
     );
+  }
+
+  static String _normalizeKey(String key) {
+    if (key.isEmpty) return '';
+    var s = key.trim().toLowerCase();
+    if (s.endsWith('.0')) {
+      s = s.substring(0, s.length - 2);
+    }
+    return s.replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+
+  static Map<String, int> _buildColumnMap(List<Data?> headerRow) {
+    final Map<String, int> colMap = {};
+    for (int i = 0; i < headerRow.length; i++) {
+      final cellVal = headerRow[i]?.value?.toString().trim().toLowerCase() ?? '';
+      if (cellVal.isNotEmpty) {
+        colMap[cellVal] = i;
+      }
+    }
+    return colMap;
+  }
+
+  static int _findCol(Map<String, int> colMap, List<String> possibleNames, int fallbackIndex) {
+    for (var name in possibleNames) {
+      final key = name.toLowerCase();
+      for (var entry in colMap.entries) {
+        if (entry.key == key || entry.key.contains(key)) {
+          return entry.value;
+        }
+      }
+    }
+    return fallbackIndex;
   }
 
   static String _getCellValue(List<Data?> row, int colIndex) {

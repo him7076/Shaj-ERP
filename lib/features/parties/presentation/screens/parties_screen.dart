@@ -92,12 +92,14 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
         ),
       );
 
+      final nav = Navigator.of(context);
       final dbService = ref.read(databaseServiceProvider);
       final importResult = await PartyExcelImportService.importPartiesFromBytes(fileBytes, dbService);
 
-      if (mounted) Navigator.pop(context); // Close loading dialog
+      nav.pop(); // Close loading dialog cleanly
 
       ref.read(partySearchProvider.notifier).setQuery('');
+      ref.invalidate(filteredPartiesProvider);
 
       if (mounted) {
         showDialog(
