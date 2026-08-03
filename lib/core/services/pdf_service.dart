@@ -373,7 +373,7 @@ class PdfService {
     final words = _amountToWordsService.convertToWords(grandTotal);
 
     return pw.Row(
-      cross: pw.CrossAxisAlignment.start,
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         // Left Column: Words & Payment Details & Terms
         pw.Expanded(

@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/data/local/collections/settings_collection.da
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/services/pdf_service.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';

@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ImportPartyResult {

@@ -6,7 +6,9 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.g.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ImportPurchaseResult {
@@ -22,7 +24,7 @@ class ImportPurchaseResult {
 }
 
 class PurchaseExcelImportService {
-  static const String _uuidGen = Uuid();
+  static const Uuid _uuidGen = Uuid();
 
   /// Generates the sample Excel template (.xlsx) with 2 sheets as specified
   static List<int>? generateSampleTemplate() {
