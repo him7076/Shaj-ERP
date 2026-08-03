@@ -96,6 +96,9 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
       final dbService = ref.read(databaseServiceProvider);
       final importResult = await PartyExcelImportService.importPartiesFromBytes(fileBytes, dbService);
 
+      // Instantly trigger cloud sync to push newly imported parties to Firestore
+      ref.read(syncServiceProvider).syncAll();
+
       nav.pop(); // Close loading dialog cleanly
 
       ref.read(partySearchProvider.notifier).setQuery('');

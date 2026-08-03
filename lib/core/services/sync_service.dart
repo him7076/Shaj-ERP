@@ -620,19 +620,26 @@ class SyncService {
       logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
 
       try {
-        final querySnapshot = await _firebaseService.firestore
+        final localCount = await _getLocalRecordCount(entityType);
+        final isar = _dbService.isar;
+
+        Query<Map<String, dynamic>> query = _firebaseService.firestore
             .collection(collectionName)
-            .where('companyId', isEqualTo: _firebaseService.companyId)
-            .where('updatedAt', isGreaterThan: lastSync.toIso8601String())
-            .get()
-            .timeout(const Duration(seconds: 4));
+            .where('companyId', isEqualTo: _firebaseService.companyId);
+
+        // If local database has records and lastSync is valid, filter by updatedAt diff
+        if (localCount > 0 && lastSync.millisecondsSinceEpoch > 0) {
+          query = query.where('updatedAt', isGreaterThan: lastSync.toIso8601String());
+        }
+
+        final querySnapshot = await query.get().timeout(const Duration(seconds: 5));
 
         if (querySnapshot.docs.isEmpty) continue;
 
         for (var doc in querySnapshot.docs) {
-        final data = doc.data();
-        final uuid = data['uuid'] as String?;
-        if (uuid == null) continue;
+          final data = doc.data();
+          final uuid = data['uuid'] as String?;
+          if (uuid == null) continue;
 
         // Firm-wise filtering
         final docFirmId = data['firmId'] as String?;
@@ -704,6 +711,27 @@ class SyncService {
       logger.warning('Skipped $entityType sync query due to timeout or network: $e');
     }
   }
+
+  /// Helper to check count of local records for an entity
+  Future<int> _getLocalRecordCount(String entityType) async {
+    final isar = _dbService.isar;
+    try {
+      switch (entityType) {
+        case 'Party': return await isar.partys.filter().idGreaterThan(-1).count();
+        case 'Item': return await isar.items.filter().idGreaterThan(-1).count();
+        case 'Category': return await isar.categorys.filter().idGreaterThan(-1).count();
+        case 'Unit': return await isar.units.filter().idGreaterThan(-1).count();
+        case 'Brand': return await isar.brands.filter().idGreaterThan(-1).count();
+        case 'Order': return await isar.orders.filter().idGreaterThan(-1).count();
+        case 'Invoice': return await isar.invoices.filter().idGreaterThan(-1).count();
+        case 'Purchase': return await isar.purchases.filter().idGreaterThan(-1).count();
+        case 'Expense': return await isar.expenses.filter().idGreaterThan(-1).count();
+        case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
+        default: return 0;
+      }
+    } catch (_) {
+      return 0;
+    }
   }
 
   /// Helper mapping collection class names to firestore endpoints

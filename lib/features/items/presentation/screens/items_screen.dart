@@ -98,6 +98,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       final dbService = ref.read(databaseServiceProvider);
       final importResult = await ItemExcelImportService.importItemsFromBytes(fileBytes, dbService);
 
+      // Instantly trigger cloud sync to push newly imported items to Firestore
+      ref.read(syncServiceProvider).syncAll();
+
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
       }
