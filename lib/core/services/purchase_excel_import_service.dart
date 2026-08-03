@@ -23,7 +23,7 @@ class ImportPurchaseResult {
 }
 
 class PurchaseExcelImportService {
-  static const Uuid _uuidGen = Uuid();
+  static final Uuid _uuidGen = Uuid();
 
   /// Generates the sample Excel template (.xlsx) with 2 sheets as specified
   static List<int>? generateSampleTemplate() {
@@ -306,7 +306,7 @@ class PurchaseExcelImportService {
             party = allParties.where((p) => p.partyName?.trim().toLowerCase() == partyName.toLowerCase()).firstOrNull;
             if (party == null) {
               party = Party()
-                ..uuid = const Uuid().v4()
+                ..uuid = Uuid().v4()
                 ..partyName = partyName
                 ..partyCode = 'P-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
                 ..partyType = 'Supplier'
@@ -323,7 +323,7 @@ class PurchaseExcelImportService {
 
           // Create Purchase Record
           final purchase = Purchase()
-            ..uuid = const Uuid().v4()
+            ..uuid = Uuid().v4()
             ..purchaseNumber = effectiveBillNo
             ..purchaseDate = _parseDate(dateStr)
             ..partyId = party?.id
@@ -401,7 +401,7 @@ class PurchaseExcelImportService {
               catalogItem = allItems.where((i) => i.itemName?.trim().toLowerCase() == itemName.toLowerCase()).firstOrNull;
               if (catalogItem == null) {
                 catalogItem = Item()
-                  ..uuid = const Uuid().v4()
+                  ..uuid = Uuid().v4()
                   ..itemCode = itemCode.isNotEmpty ? itemCode : 'ITM-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
                   ..itemName = itemName
                   ..hsnCode = hsn
@@ -433,7 +433,7 @@ class PurchaseExcelImportService {
             calcTotalGST += gstAmount;
 
             final pItem = PurchaseItem()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..itemId = catalogItem?.id
               ..itemName = itemName
               ..hsnCode = hsn
@@ -481,7 +481,7 @@ class PurchaseExcelImportService {
 
           // Enqueue for Sync
           final queueItem = SyncQueue()
-            ..uuid = const Uuid().v4()
+            ..uuid = Uuid().v4()
             ..entityType = 'Purchase'
             ..entityId = purchase.id
             ..entityUuid = purchase.uuid

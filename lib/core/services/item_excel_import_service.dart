@@ -171,7 +171,7 @@ class ItemExcelImportService {
 
             // Enqueue for Sync
             final queueItem = SyncQueue()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..entityType = 'Item'
               ..entityId = existingItem.id
               ..entityUuid = existingItem.uuid
@@ -187,7 +187,7 @@ class ItemExcelImportService {
           } else {
             // Create New Item
             final newItem = Item()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..itemCode = effectiveCode
               ..itemName = effectiveName
               ..hsnCode = hsn
@@ -209,7 +209,7 @@ class ItemExcelImportService {
 
             // Enqueue for Sync
             final queueItem = SyncQueue()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..entityType = 'Item'
               ..entityId = newItem.id
               ..entityUuid = newItem.uuid

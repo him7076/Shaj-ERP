@@ -162,7 +162,7 @@ class PartyExcelImportService {
 
             // Enqueue for Sync
             final queueItem = SyncQueue()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..entityType = 'Party'
               ..entityId = existingParty.id
               ..entityUuid = existingParty.uuid
@@ -178,7 +178,7 @@ class PartyExcelImportService {
           } else {
             // Create New Party
             final newParty = Party()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..partyCode = 'P-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r'
               ..partyName = effectiveName
               ..partyType = partyType
@@ -199,7 +199,7 @@ class PartyExcelImportService {
 
             // Enqueue for Sync
             final queueItem = SyncQueue()
-              ..uuid = const Uuid().v4()
+              ..uuid = Uuid().v4()
               ..entityType = 'Party'
               ..entityId = newParty.id
               ..entityUuid = newParty.uuid
