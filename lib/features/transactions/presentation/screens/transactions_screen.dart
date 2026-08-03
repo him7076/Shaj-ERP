@@ -33,7 +33,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType);
       }
       if (widget.createImmediately) {
-        AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+        if (widget.lockedType == 'Credit Note') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
+          ).then((_) => ref.invalidate(filteredTransactionsProvider));
+        } else if (widget.lockedType == 'Debit Note') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+          ).then((_) => ref.invalidate(filteredTransactionsProvider));
+        } else {
+          AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+        }
       }
     });
   }

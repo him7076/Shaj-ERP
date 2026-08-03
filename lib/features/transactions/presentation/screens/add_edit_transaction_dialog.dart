@@ -671,24 +671,62 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   const SizedBox(height: 16),
                 ],
 
-                // Amount
-                TextFormField(
-                  controller: _amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
-                    labelText: 'Amount (₹) *',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.attach_money),
-                  ),
-                  onChanged: (val) {
-                    setState(() {});
-                  },
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return 'Enter amount';
-                    final parsed = double.tryParse(val);
-                    if (parsed == null || parsed <= 0) return 'Enter a valid amount';
-                    return null;
-                  },
+                // Amount & Direct Link Bills Button Row
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _amountController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Amount (₹) *',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.currency_rupee_rounded),
+                        ),
+                        onChanged: (val) {
+                          setState(() {});
+                        },
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'Enter amount';
+                          final parsed = double.tryParse(val);
+                          if (parsed == null || parsed <= 0) return 'Enter a valid amount';
+                          return null;
+                        },
+                      ),
+                    ),
+                    if (_transactionType == 'Receipt' || _transactionType == 'Payment' || _transactionType == 'Credit Note' || _transactionType == 'Debit Note') ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          if (_selectedParty == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please select a Party first to link bills.')),
+                            );
+                            return;
+                          }
+                          await _fetchPendingBills();
+                          _autoAllocate();
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Auto-allocated to ${_linkedAllocations.length} pending bill(s)!'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                          foregroundColor: theme.colorScheme.onPrimaryContainer,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.link_rounded, size: 18),
+                        label: const Text('Link Bills', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 16),
 

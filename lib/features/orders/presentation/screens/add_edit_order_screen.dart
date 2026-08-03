@@ -605,8 +605,8 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                       }
                     },
                     child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Order Date', border: OutlineInputBorder()),
-                      child: Text(DateFormat('dd-MM-yyyy').format(_orderDate)),
+                      decoration: const InputDecoration(labelText: 'Order Date', border: OutlineInputBorder(), isDense: true),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_orderDate), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                   ),
                 ),
@@ -617,13 +617,16 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
                           value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
                           decoration: const InputDecoration(
                             labelText: 'Salesman Name',
                             border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             prefixIcon: Icon(Icons.badge_outlined),
                           ),
-                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
                           onChanged: (val) {
                             if (val != null) setState(() => _selectedSalesman = val);
                           },
@@ -815,6 +818,23 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   isGstInclusive: cart.isGstInclusive,
                 );
               },
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final newlyCreated = await AddItemSheet.show(context);
+                if (newlyCreated != null) {
+                  ref.read(cartProvider.notifier).addItem(newlyCreated);
+                  ref.invalidate(filteredItemsProvider);
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                side: BorderSide(color: theme.colorScheme.primary),
+              ),
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+              label: const Text('+ Add Another Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             ),
           ],
         ),
@@ -1037,8 +1057,14 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
-                decoration: const InputDecoration(labelText: 'Unit', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  border: OutlineInputBorder(),
+                ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
                   if (val != null) {

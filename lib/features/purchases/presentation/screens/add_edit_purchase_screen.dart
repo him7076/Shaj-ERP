@@ -638,9 +638,16 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       }
                     },
                     child: InputDecorator(
-                      decoration: const InputDecoration(labelText: 'Purchase Date', border: OutlineInputBorder()),
-                      child: Text(DateFormat('dd-MM-yyyy').format(_purchaseDate)),
+                      decoration: const InputDecoration(labelText: 'Purchase Date', border: OutlineInputBorder(), isDense: true),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_purchaseDate), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _billNumberController,
+                    decoration: const InputDecoration(labelText: 'Purchase Bill Number', border: OutlineInputBorder(), isDense: true),
                   ),
                 ),
               ],
@@ -835,6 +842,23 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   },
                 );
               },
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final newlyCreated = await AddItemSheet.show(context);
+                if (newlyCreated != null) {
+                  _addItemLine(newlyCreated);
+                  ref.invalidate(filteredItemsProvider);
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                side: BorderSide(color: theme.colorScheme.primary),
+              ),
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+              label: const Text('+ Add Another Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             ),
           ],
         ),
@@ -1088,8 +1112,14 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
             const SizedBox(width: 8),
             Expanded(
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
-                decoration: const InputDecoration(labelText: 'Unit', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  border: OutlineInputBorder(),
+                ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
                   if (val != null) {

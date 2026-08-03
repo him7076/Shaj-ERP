@@ -181,10 +181,10 @@ class DashboardScreen extends ConsumerWidget {
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: ResponsiveLayout.isMobile(context) ? 10 : 18,
-                  mainAxisSpacing: ResponsiveLayout.isMobile(context) ? 10 : 18,
-                  childAspectRatio: ResponsiveLayout.isMobile(context) ? 2.1 : 1.6,
+                  crossAxisCount: ResponsiveLayout.isMobile(context) ? 2 : crossAxisCount,
+                  crossAxisSpacing: ResponsiveLayout.isMobile(context) ? 8 : 18,
+                  mainAxisSpacing: ResponsiveLayout.isMobile(context) ? 8 : 18,
+                  childAspectRatio: ResponsiveLayout.isMobile(context) ? 2.8 : 1.6,
                   children: [
                     _buildStatCard(
                       context: context,
@@ -659,7 +659,7 @@ class DashboardScreen extends ConsumerWidget {
     return AnimatedHoverCard(
       glowColor: iconColor,
       onTap: onTap,
-      padding: EdgeInsets.all(isMobile ? 12.0 : 20.0),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.0 : 20.0, vertical: isMobile ? 8.0 : 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -673,7 +673,7 @@ class DashboardScreen extends ConsumerWidget {
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
-                    fontSize: isMobile ? 11 : 13,
+                    fontSize: isMobile ? 10 : 13,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -700,7 +700,7 @@ class DashboardScreen extends ConsumerWidget {
                 value,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  fontSize: isMobile ? 15 : 20,
+                  fontSize: isMobile ? 13.5 : 20,
                   color: theme.colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),

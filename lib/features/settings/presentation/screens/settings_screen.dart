@@ -228,50 +228,67 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       style: TextStyle(fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 16),
-                    ListView.builder(
+                    ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: firmsList.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final firmId = firmsList[index];
                         final firmName = prefs.getString('firm_name_$firmId') ?? 
                             (firmId == 'firm_default' ? 'Default Company' : 'New Company');
                         final isActive = firmId == activeFirmId;
 
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            firmName,
-                            style: TextStyle(
-                              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                              color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                        return Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isActive 
+                                ? theme.colorScheme.primaryContainer.withOpacity(0.12)
+                                : theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isActive ? theme.colorScheme.primary : theme.dividerColor.withOpacity(0.4),
+                              width: isActive ? 1.5 : 1.0,
                             ),
                           ),
-                          subtitle: Text('ID: $firmId'),
-                          leading: CircleAvatar(
-                            backgroundColor: isActive ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceVariant,
-                            child: Icon(
-                              Icons.business,
-                              color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 20),
-                                onPressed: () => _showEditFirmDialog(firmId, firmName),
-                                tooltip: 'Edit Name',
-                              ),
-                              if (firmsList.length > 1)
-                                IconButton(
-                                  icon: Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
-                                  onPressed: () => _showDeleteFirmDialog(firmId, firmName),
-                                  tooltip: 'Delete Company',
-                                ),
-                              const SizedBox(width: 8),
-                              isActive
-                                  ? Container(
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: isActive ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceVariant,
+                                    child: Icon(
+                                      Icons.business_rounded,
+                                      size: 18,
+                                      color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          firmName,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          'ID: $firmId',
+                                          style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isActive)
+                                    Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
                                         color: Colors.green.withOpacity(0.15),
@@ -283,28 +300,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                         style: TextStyle(
                                           color: Colors.green,
                                           fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                          fontSize: 11,
                                         ),
                                       ),
-                                    )
-                                   : OutlinedButton(
-                                       onPressed: () async {
-                                         final db = ref.read(databaseServiceProvider);
-                                         await db.switchFirm(firmId, prefs);
-                                         ref.read(activeFirmIdProvider.notifier).state = firmId;
-                                         ref.invalidate(dashboardAnalyticsProvider);
-                                         if (context.mounted) {
-                                           ScaffoldMessenger.of(context).showSnackBar(
-                                             SnackBar(
-                                               content: Text('Switched to company: $firmName'),
-                                               backgroundColor: Colors.green,
-                                             ),
-                                           );
-                                           context.go('/dashboard');
-                                         }
-                                       },
-                                       child: const Text('Switch'),
-                                     ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, size: 18),
+                                    onPressed: () => _showEditFirmDialog(firmId, firmName),
+                                    tooltip: 'Edit Name',
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                  if (firmsList.length > 1)
+                                    IconButton(
+                                      icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+                                      onPressed: () => _showDeleteFirmDialog(firmId, firmName),
+                                      tooltip: 'Delete Company',
+                                      visualDensity: VisualDensity.compact,
+                                    ),
+                                  if (!isActive) ...[
+                                    const SizedBox(width: 6),
+                                    ElevatedButton(
+                                      onPressed: () async {
+                                        final db = ref.read(databaseServiceProvider);
+                                        await db.switchFirm(firmId, prefs);
+                                        ref.read(activeFirmIdProvider.notifier).state = firmId;
+                                        ref.invalidate(dashboardAnalyticsProvider);
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Switched to company: $firmName'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                          setState(() {});
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      ),
+                                      child: const Text('Switch Firm', style: TextStyle(fontSize: 12)),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ],
                           ),
                         );
