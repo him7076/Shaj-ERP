@@ -1227,6 +1227,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 await prefs.setBool('demo_seeded_$activeFirmId', true);
 
                 ref.invalidate(dashboardAnalyticsProvider);
+                ref.invalidate(filteredPartiesProvider);
+                ref.invalidate(filteredItemsProvider);
+                ref.invalidate(purchaseListProvider);
+                ref.invalidate(invoiceListProvider);
+                ref.invalidate(orderListProvider);
+                ref.invalidate(expenseListProvider);
+                ref.invalidate(bankAccountsListProvider);
 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

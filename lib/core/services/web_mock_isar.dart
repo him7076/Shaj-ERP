@@ -44,6 +44,18 @@ class WebMockIsar implements Isar {
     }
   }
 
+  void clearAllData() {
+    _db.clear();
+    if (prefs != null) {
+      final keys = prefs!.getKeys().where((k) => k.contains(firmId)).toList();
+      for (var k in keys) {
+        if (!k.startsWith('firm_name_') && !k.startsWith('firm_gst_') && !k.startsWith('firm_mobile_')) {
+          prefs!.remove(k);
+        }
+      }
+    }
+  }
+
   Map<String, List<dynamic>> get _db => _dbs[firmId] ??= {};
 
   // Forces dart2js compilation to keep the Query inheritance relation

@@ -167,6 +167,10 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               )
             else
+              const Spacer(),
+
+            const SizedBox(width: 12),
+
             if (isMobile) ...[
               const Spacer(),
               PopupMenuButton<String>(

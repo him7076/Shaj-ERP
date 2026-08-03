@@ -211,11 +211,26 @@ class DatabaseService {
 
   /// Purges all data in all collections
   Future<void> clearDatabase() async {
-    logger.warning('Purging local database...');
+    logger.warning('Purging local database for $_activeFirmId...');
     try {
       await isar.writeTxn(() async {
         await isar.clear();
       });
+
+      if (kIsWeb) {
+        final webIsar = isar as WebMockIsar;
+        webIsar.clearAllData();
+      }
+
+      if (_prefs != null) {
+        await _prefs!.setBool('demo_seeded_$_activeFirmId', true);
+        final keys = _prefs!.getKeys().where((k) => k.contains(_activeFirmId)).toList();
+        for (var k in keys) {
+          if (!k.startsWith('firm_name_') && !k.startsWith('firm_gst_') && !k.startsWith('firm_mobile_') && k != 'demo_seeded_$_activeFirmId') {
+            await _prefs!.remove(k);
+          }
+        }
+      }
       logger.info('Local database purged successfully.');
     } catch (e, stackTrace) {
       logger.error('Failed to purge local database', e, stackTrace);
