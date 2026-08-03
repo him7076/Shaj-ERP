@@ -623,7 +623,7 @@ class SyncService {
         final localCount = await _getLocalRecordCount(entityType);
         final isar = _dbService.isar;
 
-        Query<Map<String, dynamic>> query = _firebaseService.firestore
+        var query = _firebaseService.firestore
             .collection(collectionName)
             .where('companyId', isEqualTo: _firebaseService.companyId);
 
