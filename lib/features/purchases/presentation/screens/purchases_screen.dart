@@ -8,6 +8,8 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_collection.da
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {

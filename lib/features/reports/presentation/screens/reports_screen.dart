@@ -99,124 +99,115 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       child: AnimatedHoverCard(
                         glowColor: theme.colorScheme.primary,
                         enableScale: false,
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(20.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary.withOpacity(0.12),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Icon(Icons.show_chart_rounded, color: theme.colorScheme.primary, size: 20),
-                                ),
-                                const SizedBox(width: 12),
                                 Text(
-                                  '30-Day Revenue Trend',
+                                  'Revenue Trend (Last 30 Days)',
                                   style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'Daily Overview',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 24),
                             SizedBox(
-                              height: 220,
-                              child: spots.isEmpty
-                                  ? const Center(child: Text('Insufficient historical sales data.'))
-                                  : LineChart(
-                                      LineChartData(
-                                        gridData: const FlGridData(show: false),
-                                        titlesData: const FlTitlesData(
-                                          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                        ),
-                                        borderData: FlBorderData(show: false),
-                                        lineBarsData: [
-                                          LineChartBarData(
-                                            spots: spots,
-                                            isCurved: true,
-                                            color: theme.colorScheme.primary,
-                                            barWidth: 3.5,
-                                            isStrokeCapRound: true,
-                                            dotData: const FlDotData(show: false),
-                                            belowBarData: BarAreaData(
-                                              show: true,
-                                              color: theme.colorScheme.primary.withOpacity(0.15),
+                              height: 250,
+                              child: LineChart(
+                                LineChartData(
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawVerticalLine: false,
+                                    getDrawingHorizontalLine: (value) => FlLine(
+                                      color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+                                      strokeWidth: 1,
+                                    ),
+                                  ),
+                                  titlesData: FlTitlesData(
+                                    show: true,
+                                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 30,
+                                        interval: 5,
+                                        getTitlesWidget: (val, meta) => Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Text(
+                                            'Day ${val.toInt()}',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: theme.colorScheme.onSurfaceVariant,
                                             ),
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
+                                    leftTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        reservedSize: 42,
+                                        getTitlesWidget: (val, meta) => Text(
+                                          '₹${(val / 1000).toStringAsFixed(0)}k',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: spots.isEmpty ? [const FlSpot(0, 0)] : spots,
+                                      isCurved: true,
+                                      color: theme.colorScheme.primary,
+                                      barWidth: 3.5,
+                                      isStrokeCapRound: true,
+                                      dotData: const FlDotData(show: false),
+                                      belowBarData: BarAreaData(
+                                        show: true,
+                                        color: theme.colorScheme.primary.withOpacity(0.12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    if (MediaQuery.of(context).size.width > 900) ...[
-                      const SizedBox(width: 24),
-                      // Doughnut Chart of Top Customers
-                      Expanded(
-                        flex: 1,
-                        child: AnimatedHoverCard(
-                          glowColor: const Color(0xFF0EA5E9),
-                          enableScale: false,
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0EA5E9).withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Icon(Icons.pie_chart_rounded, color: Color(0xFF0EA5E9), size: 20),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Top Customer Share',
-                                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                height: 220,
-                                child: analytics.topCustomers.isEmpty
-                                    ? const Center(child: Text('No customer logs found.'))
-                                    : PieChart(
-                                        PieChartData(
-                                          sections: chartService.mapToPieSections(analytics.topCustomers),
-                                          centerSpaceRadius: 40,
-                                          sectionsSpace: 3,
-                                        ),
-                                      ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 32),
 
-                // Reports Menu Grid Header
+                // Reports Navigation Section Header
                 Row(
                   children: [
-                    Container(
-                      width: 4,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
+                    Icon(
+                      Icons.analytics_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 22,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -300,6 +291,36 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       description: 'Operational outflows, salaries & overheads',
                       icon: Icons.account_balance_wallet_rounded,
                       color: const Color(0xFFF97316),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ExpensesScreen()),
+                      ),
+                    ),
+                    _buildReportMenuCard(
+                      title: 'Salesman Performance',
+                      description: 'Salesperson wise revenue, orders & invoices',
+                      icon: Icons.badge_outlined,
+                      color: const Color(0xFFD946EF),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SalesmanReportScreen()),
+                      ),
+                    ),
+                    _buildReportMenuCard(
+                      title: 'Batch & Expiry Tracking',
+                      description: 'Batch numbers, mfg & expiry date tracking logs',
+                      icon: Icons.qr_code_2_rounded,
+                      color: const Color(0xFFA855F7),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const BatchReportScreen()),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stackTrace) => Center(
