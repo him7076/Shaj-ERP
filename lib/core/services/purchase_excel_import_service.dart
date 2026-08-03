@@ -360,8 +360,6 @@ class PurchaseExcelImportService {
             rawItems = itemsByBillNo[normEffBillNo]!;
           } else if (normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
             rawItems = itemsByComboKey[normCombo]!;
-          } else if (normParty.isNotEmpty && itemsByPartyName.containsKey(normParty)) {
-            rawItems = itemsByPartyName[normParty]!;
           }
 
           // Fallback: If no Sheet 2 items, check if Sheet 1 itself has an Item Name column
@@ -541,10 +539,14 @@ class PurchaseExcelImportService {
   }
 
   static String _getCellValue(List<Data?> row, int colIndex) {
-    if (colIndex >= row.length || row[colIndex] == null) return '';
+    if (colIndex < 0 || colIndex >= row.length || row[colIndex] == null) return '';
     final val = row[colIndex]?.value;
     if (val == null) return '';
-    return val.toString().trim();
+    String str = val.toString().trim();
+    if (str.endsWith('.0')) {
+      str = str.substring(0, str.length - 2);
+    }
+    return str;
   }
 
   static double _parseDouble(String val) {
