@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 
 class AddEditTransactionDialog extends ConsumerStatefulWidget {
   final Transaction? transaction;

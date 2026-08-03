@@ -742,25 +742,6 @@ class DashboardScreen extends ConsumerWidget {
                 ),
               ],
             ],
-          ),
-        ],
-      ),
-    );
-                      trend,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
