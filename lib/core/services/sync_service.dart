@@ -372,7 +372,7 @@ class SyncService {
 
   /// Helper to enqueue unsynced or all local records into SyncQueue
   Future<void> _enqueueAllLocalRecordsForUpload() async {
-    const uuidGen = Uuid();
+    final uuidGen = const Uuid();
     final isar = _dbService.isar;
     await isar.writeTxn(() async {
       final parties = await isar.partys.filter().isSyncedEqualTo(false).findAll();
