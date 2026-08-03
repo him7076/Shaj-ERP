@@ -62,6 +62,45 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
   List<String> _categories = ['Retail', 'Wholesale', 'Contractor', 'Manufacturing', 'Services'];
   List<String> _localities = ['Main Market', 'Ring Road', 'Industrial Area', 'Civil Lines'];
 
+  static const List<String> _indianStates = [
+    'Andaman & Nicobar Islands',
+    'Andhra Pradesh',
+    'Arunachal Pradesh',
+    'Assam',
+    'Bihar',
+    'Chandigarh',
+    'Chhattisgarh',
+    'Dadra & Nagar Haveli and Daman & Diu',
+    'Delhi',
+    'Goa',
+    'Gujarat',
+    'Haryana',
+    'Himachal Pradesh',
+    'Jammu & Kashmir',
+    'Jharkhand',
+    'Karnataka',
+    'Kerala',
+    'Ladakh',
+    'Lakshadweep',
+    'Madhya Pradesh',
+    'Maharashtra',
+    'Manipur',
+    'Meghalaya',
+    'Mizoram',
+    'Nagaland',
+    'Odisha',
+    'Puducherry',
+    'Punjab',
+    'Rajasthan',
+    'Sikkim',
+    'Tamil Nadu',
+    'Telangana',
+    'Tripura',
+    'Uttar Pradesh',
+    'Uttarakhand',
+    'West Bengal',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -786,9 +825,34 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
-                                    child: TextFormField(
-                                      controller: _stateController,
-                                      decoration: const InputDecoration(labelText: 'State', border: OutlineInputBorder()),
+                                    child: Autocomplete<String>(
+                                      initialValue: TextEditingValue(text: _stateController.text),
+                                      optionsBuilder: (textEditingValue) {
+                                        if (textEditingValue.text.isEmpty) return _indianStates;
+                                        return _indianStates.where((st) => st.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                                      },
+                                      onSelected: (val) {
+                                        setState(() {
+                                          _stateController.text = val;
+                                        });
+                                      },
+                                      fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                                        if (_stateController.text != controller.text && _stateController.text.isNotEmpty && controller.text.isEmpty) {
+                                          controller.text = _stateController.text;
+                                        }
+                                        return TextFormField(
+                                          controller: controller,
+                                          focusNode: focusNode,
+                                          onEditingComplete: onEditingComplete,
+                                          onChanged: (v) => _stateController.text = v,
+                                          decoration: const InputDecoration(
+                                            labelText: 'State *',
+                                            hintText: 'Select or type state',
+                                            prefixIcon: Icon(Icons.map_outlined),
+                                            border: OutlineInputBorder(),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
                                 ],
