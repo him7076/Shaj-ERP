@@ -371,13 +371,15 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     final theme = Theme.of(context);
     final partiesAsync = ref.watch(partiesListProvider);
 
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 12,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 24, vertical: isMobile ? 12 : 24),
       child: Container(
-        width: 520,
-        padding: const EdgeInsets.all(24),
+        width: isMobile ? MediaQuery.of(context).size.width * 0.95 : 520,
+        padding: EdgeInsets.all(isMobile ? 14 : 24),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(

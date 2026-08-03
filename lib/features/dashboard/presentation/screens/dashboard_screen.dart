@@ -59,22 +59,24 @@ class DashboardScreen extends ConsumerWidget {
         ),
         data: (analytics) {
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(28.0),
+            padding: EdgeInsets.all(ResponsiveLayout.isMobile(context) ? 14.0 : 28.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Executive Hero Banner Greeting Header
                 _buildHeroHeader(context),
-                const SizedBox(height: 28),
+                SizedBox(height: ResponsiveLayout.isMobile(context) ? 16 : 28),
 
                 // Quick Actions Header & Grid
                 _buildQuickActionsHeader(context),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 _buildQuickActionsGrid(context),
-                const SizedBox(height: 32),
+                SizedBox(height: ResponsiveLayout.isMobile(context) ? 20 : 32),
 
                 // Section Header for KPIs & Period Filter Dropdown
-                Row(
+                Flex(
+                  direction: ResponsiveLayout.isMobile(context) ? Axis.vertical : Axis.horizontal,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
@@ -97,6 +99,7 @@ class DashboardScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+                    if (ResponsiveLayout.isMobile(context)) const SizedBox(height: 10),
                     // Period Filter Selection Dropdown
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -172,16 +175,16 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Responsive Stats Grid with AnimatedHoverCard
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 18,
-                  mainAxisSpacing: 18,
-                  childAspectRatio: ResponsiveLayout.isMobile(context) ? 1.5 : 1.6,
+                  crossAxisSpacing: ResponsiveLayout.isMobile(context) ? 10 : 18,
+                  mainAxisSpacing: ResponsiveLayout.isMobile(context) ? 10 : 18,
+                  childAspectRatio: ResponsiveLayout.isMobile(context) ? 2.1 : 1.6,
                   children: [
                     _buildStatCard(
                       context: context,
@@ -315,10 +318,11 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final todayDateStr = DateFormat('EEEE, MMMM dd, yyyy').format(DateTime.now());
+    final isMobile = ResponsiveLayout.isMobile(context);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 14 : 24),
       decoration: BoxDecoration(
         gradient: AppDecorations.primaryIndigoGradient,
         borderRadius: BorderRadius.circular(20),
@@ -337,7 +341,7 @@ class DashboardScreen extends ConsumerWidget {
             bottom: -20,
             child: Icon(
               Icons.auto_graph_rounded,
-              size: 160,
+              size: isMobile ? 100 : 160,
               color: Colors.white.withOpacity(0.08),
             ),
           ),
@@ -348,7 +352,7 @@ class DashboardScreen extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12, vertical: isMobile ? 4 : 6),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(20),
@@ -361,10 +365,10 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Text(
                           todayDateStr,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
-                            fontSize: 12,
+                            fontSize: isMobile ? 10 : 12,
                           ),
                         ),
                       ],
@@ -383,25 +387,27 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: isMobile ? 10 : 16),
+              Text(
                 'Good Morning, Executive! ✨',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
+                  fontSize: isMobile ? 16 : 22,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'Here is your business financial overview and quick record actions for today.',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+              if (!isMobile) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Here is your business financial overview and quick record actions for today.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],
@@ -648,12 +654,12 @@ class DashboardScreen extends ConsumerWidget {
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isMobile = ResponsiveLayout.isMobile(context);
 
     return AnimatedHoverCard(
       glowColor: iconColor,
       onTap: onTap,
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.all(isMobile ? 12.0 : 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -667,22 +673,22 @@ class DashboardScreen extends ConsumerWidget {
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: isMobile ? 11 : 13,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(isMobile ? 6 : 10),
                 decoration: BoxDecoration(
                   color: iconColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
                   color: iconColor,
-                  size: 20,
+                  size: isMobile ? 16 : 20,
                 ),
               ),
             ],
@@ -692,36 +698,54 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               Text(
                 value,
-                style: theme.textTheme.headlineSmall?.copyWith(
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
+                  fontSize: isMobile ? 15 : 20,
                   color: theme.colorScheme.onSurface,
                   letterSpacing: -0.5,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: trendColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
+              if (!isMobile) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: trendColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.trending_up_rounded, size: 12, color: trendColor),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Live',
+                            style: TextStyle(color: trendColor, fontSize: 10, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.trending_up_rounded, size: 12, color: trendColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Live',
-                          style: TextStyle(color: trendColor, fontSize: 10, fontWeight: FontWeight.w800),
-                        ),
-                      ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        trend,
+                        style: theme.textTheme.bodySmall?.copyWith(fontSize: 10),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
                       trend,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
