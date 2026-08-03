@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
-import 'package:isar/isar.dart';
+import 'package:isar/isar.dart' hide Query;
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order, Settings, Transaction;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
