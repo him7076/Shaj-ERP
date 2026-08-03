@@ -469,17 +469,10 @@ class PurchaseExcelImportService {
           // Save Purchase & PurchaseItems in transaction
           await isar.writeTxn(() async {
             purchase.id = await isar.purchases.put(purchase);
-            if (party != null) {
-              await purchase.party.save();
-            }
 
             for (var pItem in createdItems) {
               pItem.purchase.value = purchase;
               pItem.id = await isar.purchaseItems.put(pItem);
-              await pItem.purchase.save();
-              if (pItem.item.value != null) {
-                await pItem.item.save();
-              }
             }
           });
 
