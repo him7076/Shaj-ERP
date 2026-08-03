@@ -699,10 +699,11 @@ class SyncService {
           logger.info('Inserting new remote record for $entityType UUID: $uuid');
           await _insertLocalRecord(entityType, data);
         }
-      } catch (e) {
-        logger.warning('Skipped $entityType sync query due to timeout or network: $e');
       }
+    } catch (e) {
+      logger.warning('Skipped $entityType sync query due to timeout or network: $e');
     }
+  }
   }
 
   /// Helper mapping collection class names to firestore endpoints
