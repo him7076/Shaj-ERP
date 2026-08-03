@@ -621,7 +621,6 @@ class SyncService {
 
       try {
         final localCount = await _getLocalRecordCount(entityType);
-        final isar = _dbService.isar;
 
         var query = _firebaseService.firestore
             .collection(collectionName)
@@ -641,74 +640,75 @@ class SyncService {
           final uuid = data['uuid'] as String?;
           if (uuid == null) continue;
 
-        // Firm-wise filtering
-        final docFirmId = data['firmId'] as String?;
-        if (docFirmId != null) {
-          if (docFirmId != activeFirmId) {
-            continue; // Skip documents belonging to another firm
-          }
-        } else {
-          if (activeFirmId != 'firm_default') {
-            continue; // Default legacy documents map to firm_default only
-          }
-        }
-
-        final isar = _dbService.isar;
-        dynamic localRecord;
-        
-        switch (entityType) {
-          case 'Party': localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Item': localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Category': localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'OrderItem': localRecord = await isar.orderItems.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'InvoiceItem': localRecord = await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'PurchaseItem': localRecord = await isar.purchaseItems.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'CreditNoteItem': localRecord = await isar.creditNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
-          case 'DebitNoteItem': localRecord = await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
-        }
-
-        if (localRecord != null) {
-          final localVersion = localRecord.version;
-          final remoteVersion = data['version'] as int? ?? 1;
-          final localUpdated = localRecord.updatedAt as DateTime;
-          final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
-
-          bool remoteWins = false;
-          if (remoteVersion > localVersion) {
-            remoteWins = true;
-          } else if (remoteVersion == localVersion) {
-            if (remoteUpdated.isAfter(localUpdated)) {
-              remoteWins = true;
+          // Firm-wise filtering
+          final docFirmId = data['firmId'] as String?;
+          if (docFirmId != null) {
+            if (docFirmId != activeFirmId) {
+              continue; // Skip documents belonging to another firm
+            }
+          } else {
+            if (activeFirmId != 'firm_default') {
+              continue; // Default legacy documents map to firm_default only
             }
           }
 
-          if (remoteWins) {
-            logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
-            await _overwriteLocalRecord(entityType, localRecord.id, data);
-            await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
-          } else {
-            logger.info('Conflict: Local wins for $entityType UUID: $uuid. Keeping local modifications.');
-            await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
+          final isar = _dbService.isar;
+          dynamic localRecord;
+
+          switch (entityType) {
+            case 'Party': localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Item': localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Category': localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'OrderItem': localRecord = await isar.orderItems.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'InvoiceItem': localRecord = await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'PurchaseItem': localRecord = await isar.purchaseItems.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'CreditNoteItem': localRecord = await isar.creditNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'DebitNoteItem': localRecord = await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
           }
-        } else {
-          logger.info('Inserting new remote record for $entityType UUID: $uuid');
-          await _insertLocalRecord(entityType, data);
+
+          if (localRecord != null) {
+            final localVersion = localRecord.version;
+            final remoteVersion = data['version'] as int? ?? 1;
+            final localUpdated = localRecord.updatedAt as DateTime;
+            final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
+
+            bool remoteWins = false;
+            if (remoteVersion > localVersion) {
+              remoteWins = true;
+            } else if (remoteVersion == localVersion) {
+              if (remoteUpdated.isAfter(localUpdated)) {
+                remoteWins = true;
+              }
+            }
+
+            if (remoteWins) {
+              logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
+              await _overwriteLocalRecord(entityType, localRecord.id, data);
+              await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
+            } else {
+              logger.info('Conflict: Local wins for $entityType UUID: $uuid. Keeping local modifications.');
+              await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
+            }
+          } else {
+            logger.info('Inserting new remote record for $entityType UUID: $uuid');
+            await _insertLocalRecord(entityType, data);
+          }
         }
+      } catch (e) {
+        logger.warning('Skipped $entityType sync query due to timeout or network: $e');
       }
-    } catch (e) {
-      logger.warning('Skipped $entityType sync query due to timeout or network: $e');
     }
   }
 
