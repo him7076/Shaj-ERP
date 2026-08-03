@@ -394,7 +394,86 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward_ios, size: 14),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded, color: theme.colorScheme.onSurfaceVariant),
+                onSelected: (val) async {
+                  final dbService = ref.read(databaseServiceProvider);
+                  final isar = dbService.isar;
+
+                  if (val == 'edit') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AddEditOrderScreen(orderUuid: order.uuid),
+                      ),
+                    ).then((_) => ref.invalidate(filteredOrdersProvider));
+                  } else if (val == 'cancel') {
+                    final newStatus = order.status == 'Cancelled' ? 'Pending' : 'Cancelled';
+                    await isar.writeTxn(() async {
+                      order.status = newStatus;
+                      order.updatedAt = DateTime.now();
+                      await isar.orders.put(order);
+                    });
+                    ref.invalidate(filteredOrdersProvider);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Order ${order.orderNumber} status set to $newStatus.'),
+                          backgroundColor: newStatus == 'Cancelled' ? Colors.orange : Colors.green,
+                        ),
+                      );
+                    }
+                  } else if (val == 'delete') {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete Sales Order?'),
+                        content: Text('Are you sure you want to delete Order ${order.orderNumber}?'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      await isar.writeTxn(() async {
+                        order.isDeleted = true;
+                        order.updatedAt = DateTime.now();
+                        await isar.orders.put(order);
+                      });
+                      ref.invalidate(filteredOrdersProvider);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sales order deleted.')),
+                        );
+                      }
+                    }
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit Order')]),
+                  ),
+                  PopupMenuItem(
+                    value: 'cancel',
+                    child: Row(children: [
+                      Icon(order.status == 'Cancelled' ? Icons.check_circle_outline : Icons.block_outlined, size: 18, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text(order.status == 'Cancelled' ? 'Reactivate Order' : 'Cancel Order', style: const TextStyle(color: Colors.orange)),
+                    ]),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(children: [Icon(Icons.delete_outline, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete Order', style: TextStyle(color: Colors.red))]),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

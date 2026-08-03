@@ -433,46 +433,91 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                             ],
                                           ),
                                         ),
-                              onLongPress: () {
-                                // Confirm Delete
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Delete Purchase Record?'),
-                                    content: const Text(
-                                      'Are you sure you want to delete this purchase bill? This will not restore the auto-incremented stock levels adjusted during logging.',
+                                        trailing: PopupMenuButton<String>(
+                                          icon: Icon(Icons.more_vert_rounded, color: theme.colorScheme.onSurfaceVariant),
+                                          onSelected: (val) async {
+                                            final dbService = ref.read(databaseServiceProvider);
+                                            final isar = dbService.isar;
+
+                                            if (val == 'edit') {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
+                                                ),
+                                              ).then((_) => ref.invalidate(purchaseListProvider));
+                                            } else if (val == 'cancel') {
+                                              final newStatus = purchase.paymentStatus == 'Cancelled' ? 'Unpaid' : 'Cancelled';
+                                              await isar.writeTxn(() async {
+                                                purchase.paymentStatus = newStatus;
+                                                purchase.updatedAt = DateTime.now();
+                                                await isar.purchases.put(purchase);
+                                              });
+                                              ref.invalidate(purchaseListProvider);
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Purchase Bill ${purchase.purchaseNumber} status set to $newStatus.'),
+                                                    backgroundColor: newStatus == 'Cancelled' ? Colors.orange : Colors.green,
+                                                  ),
+                                                );
+                                              }
+                                            } else if (val == 'delete') {
+                                              final confirm = await showDialog<bool>(
+                                                context: context,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: const Text('Delete Purchase Bill?'),
+                                                  content: Text('Are you sure you want to delete Purchase Bill ${purchase.purchaseNumber}?'),
+                                                  actions: [
+                                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                                    ElevatedButton(
+                                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                                      onPressed: () => Navigator.pop(ctx, true),
+                                                      child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+
+                                              if (confirm == true) {
+                                                final success = await ref
+                                                    .read(purchaseNotifierProvider.notifier)
+                                                    .deletePurchase(purchase.id);
+                                                if (success && mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('Purchase record deleted.')),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          },
+                                          itemBuilder: (ctx) => [
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit Purchase')]),
+                                            ),
+                                            PopupMenuItem(
+                                              value: 'cancel',
+                                              child: Row(children: [
+                                                Icon(purchase.paymentStatus == 'Cancelled' ? Icons.check_circle_outline : Icons.block_outlined, size: 18, color: Colors.orange),
+                                                const SizedBox(width: 8),
+                                                Text(purchase.purchaseNumber == 'Cancelled' ? 'Reactivate Bill' : 'Cancel Bill', style: const TextStyle(color: Colors.orange)),
+                                              ]),
+                                            ),
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Row(children: [Icon(Icons.delete_outline, size: 18, color: Colors.red), SizedBox(width: 8), Text('Delete Bill', style: TextStyle(color: Colors.red))]),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () async {
-                                          Navigator.pop(context);
-                                          final success = await ref
-                                              .read(purchaseNotifierProvider.notifier)
-                                              .deletePurchase(purchase.id);
-                                          if (success && mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Purchase record deleted.')),
-                                            );
-                                          }
-                                        },
-                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
+                          );
+                        },
                       ),
                     ),
                   ],
