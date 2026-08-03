@@ -14,6 +14,7 @@ import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 
 class AddEditCreditNoteScreen extends ConsumerStatefulWidget {
   const AddEditCreditNoteScreen({Key? key}) : super(key: key);
@@ -371,9 +372,18 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton.icon(
-                          onPressed: _addItem,
-                          icon: const Icon(Icons.add_shopping_cart),
-                          label: const Text('Add Item to Return list'),
+                          onPressed: () async {
+                            final selected = await ItemSearchPickerModal.show(context);
+                            if (selected != null) {
+                              setState(() {
+                                _selectedItemForAdd = selected;
+                                _rateController.text = (selected.sellRate ?? 0.0).toString();
+                              });
+                              _addItem();
+                            }
+                          },
+                          icon: const Icon(Icons.add_shopping_cart_rounded),
+                          label: const Text('+ Select Product from Catalog'),
                         ),
                       ),
                     ],

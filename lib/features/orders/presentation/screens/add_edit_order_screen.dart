@@ -18,6 +18,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edi
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
@@ -745,11 +746,12 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                 ),
                 const SizedBox(width: 8),
                 IconButton.filledTonal(
-                  icon: const Icon(Icons.add),
+                  icon: const Icon(Icons.add_shopping_cart_rounded),
+                  tooltip: 'Search & Pick Item from Catalog',
                   onPressed: () async {
-                    final newlyCreated = await AddItemSheet.show(context);
-                    if (newlyCreated != null) {
-                      ref.read(cartProvider.notifier).addItem(newlyCreated);
+                    final selectedItem = await ItemSearchPickerModal.show(context);
+                    if (selectedItem != null) {
+                      ref.read(cartProvider.notifier).addItem(selectedItem);
                       ref.invalidate(filteredItemsProvider);
                     }
                   },
@@ -822,9 +824,9 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () async {
-                final newlyCreated = await AddItemSheet.show(context);
-                if (newlyCreated != null) {
-                  ref.read(cartProvider.notifier).addItem(newlyCreated);
+                final selectedItem = await ItemSearchPickerModal.show(context);
+                if (selectedItem != null) {
+                  ref.read(cartProvider.notifier).addItem(selectedItem);
                   ref.invalidate(filteredItemsProvider);
                 }
               },
@@ -834,7 +836,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                 side: BorderSide(color: theme.colorScheme.primary),
               ),
               icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-              label: const Text('+ Add Another Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              label: const Text('+ Add Another Item from Catalog', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             ),
           ],
         ),

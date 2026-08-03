@@ -10,14 +10,15 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 
 class AddItemSheet extends ConsumerStatefulWidget {
-  const AddItemSheet({Key? key}) : super(key: key);
+  final String? initialName;
+  const AddItemSheet({Key? key, this.initialName}) : super(key: key);
 
-  static Future<Item?> show(BuildContext context) {
-    return Navigator.push<Item>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AddEditItemScreen(),
-      ),
+  static Future<Item?> show(BuildContext context, {String? initialName}) {
+    return showModalBottomSheet<Item>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddItemSheet(initialName: initialName),
     );
   }
 
@@ -27,7 +28,7 @@ class AddItemSheet extends ConsumerStatefulWidget {
 
 class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
+  late final TextEditingController _nameController;
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _sellRateController = TextEditingController();
   
@@ -41,6 +42,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   @override
   void initState() {
     super.initState();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
     _loadNextCode();
   }
 
