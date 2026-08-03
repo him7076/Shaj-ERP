@@ -327,22 +327,70 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     ),
                                   if (!isActive) ...[
                                     const SizedBox(width: 6),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        final db = ref.read(databaseServiceProvider);
-                                        await db.switchFirm(firmId, prefs);
-                                        ref.read(activeFirmIdProvider.notifier).state = firmId;
-                                        ref.invalidate(dashboardAnalyticsProvider);
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: Text('Switched to company: $firmName'),
-                                              backgroundColor: Colors.green,
-                                            ),
-                                          );
-                                          setState(() {});
-                                        }
-                                      },
+                                     ElevatedButton(
+                                       onPressed: () async {
+                                         // Show switching indicator dialog
+                                         showDialog(
+                                           context: context,
+                                           barrierDismissible: false,
+                                           builder: (ctx) => AlertDialog(
+                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                             content: Row(
+                                               children: [
+                                                 const CircularProgressIndicator(),
+                                                 const SizedBox(width: 16),
+                                                 Expanded(
+                                                   child: Text(
+                                                     'Switching to "$firmName" & loading data...',
+                                                     style: const TextStyle(fontWeight: FontWeight.bold),
+                                                   ),
+                                                 ),
+                                               ],
+                                             ),
+                                           ),
+                                         );
+
+                                         try {
+                                           final db = ref.read(databaseServiceProvider);
+                                           await db.switchFirm(firmId, prefs);
+                                           ref.read(activeFirmIdProvider.notifier).state = firmId;
+
+                                           // 1. Pull cloud data for the new firm from Firebase
+                                           try {
+                                             await ref.read(syncServiceProvider).syncDataFromCloud();
+                                           } catch (_) {}
+
+                                           // 2. Invalidate all local data providers
+                                           ref.invalidate(sharedPreferencesProvider);
+                                           ref.invalidate(dashboardAnalyticsProvider);
+                                           ref.invalidate(filteredPartiesProvider);
+                                           ref.invalidate(filteredItemsProvider);
+                                           ref.invalidate(unitsListProvider);
+                                           ref.invalidate(purchaseListProvider);
+                                           ref.invalidate(filteredInvoicesProvider);
+                                           ref.invalidate(filteredOrdersProvider);
+                                           ref.invalidate(expenseListProvider);
+                                           ref.invalidate(bankAccountsListProvider);
+
+                                           if (context.mounted) {
+                                             Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+                                             ScaffoldMessenger.of(context).showSnackBar(
+                                               SnackBar(
+                                                 content: Text('⚡ Switched to company: $firmName'),
+                                                 backgroundColor: Colors.green,
+                                               ),
+                                             );
+                                             context.go('/dashboard');
+                                           }
+                                         } catch (e) {
+                                           if (context.mounted) {
+                                             Navigator.of(context, rootNavigator: true).pop();
+                                             ScaffoldMessenger.of(context).showSnackBar(
+                                               SnackBar(content: Text('Failed to switch firm: $e')),
+                                             );
+                                           }
+                                         }
+                                       },
                                       style: ElevatedButton.styleFrom(
                                         visualDensity: VisualDensity.compact,
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

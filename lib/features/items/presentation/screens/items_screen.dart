@@ -98,9 +98,15 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       final dbService = ref.read(databaseServiceProvider);
       final importResult = await ItemExcelImportService.importItemsFromBytes(fileBytes, dbService);
 
-      if (mounted) Navigator.pop(context); // Close loading dialog
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
+      }
 
+      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(query: ''));
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(lowStockAlertProvider);
+      ref.invalidate(categoriesListProvider);
+      ref.invalidate(brandsListProvider);
 
       if (mounted) {
         showDialog(
