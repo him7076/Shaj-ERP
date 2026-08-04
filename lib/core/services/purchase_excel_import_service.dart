@@ -10,20 +10,68 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
+enum DuplicateBillAction {
+  overwrite,
+  skip,
+}
+
 class ImportPurchaseResult {
   final int totalBillsImported;
   final int totalItemsImported;
+  final int skippedBills;
   final List<String> errors;
 
   ImportPurchaseResult({
     required this.totalBillsImported,
     required this.totalItemsImported,
+    this.skippedBills = 0,
     required this.errors,
   });
 }
 
 class PurchaseExcelImportService {
   static final Uuid _uuidGen = const Uuid();
+
+  /// Checks Excel bytes for bill numbers that already exist in database
+  static Future<List<String>> checkForDuplicateBills(
+    Uint8List bytes,
+    DatabaseService dbService,
+  ) async {
+    final List<String> duplicates = [];
+    try {
+      final excel = Excel.decodeBytes(bytes);
+      final isar = dbService.isar;
+
+      final sheetKeys = excel.tables.keys.toList();
+      if (sheetKeys.isEmpty) return duplicates;
+
+      final Sheet? headerSheet = excel.tables['Sheet1'] ?? excel.tables[sheetKeys.first];
+      if (headerSheet == null || headerSheet.rows.length <= 1) return duplicates;
+
+      final s1ColMap = _buildColumnMap(headerSheet.rows[0]);
+      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'invoice'], 5);
+
+      final existingPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final existingNumbers = existingPurchases.map((p) => _normalizeKey(p.purchaseNumber ?? '')).toSet();
+
+      for (int r = 1; r < headerSheet.rows.length; r++) {
+        final row = headerSheet.rows[r];
+        if (row.isEmpty) continue;
+        final billNo = _getCellValue(row, colS1BillNo).trim();
+        if (billNo.isEmpty) continue;
+
+        final norm = _normalizeKey(billNo);
+        if (norm.isNotEmpty && existingNumbers.contains(norm)) {
+          if (!duplicates.contains(billNo)) {
+            duplicates.add(billNo);
+          }
+        }
+      }
+    } catch (e) {
+      logger.error('Error checking duplicate bills in excel', e);
+    }
+    return duplicates;
+  }
 
   /// Generates sample Excel template (.xlsx) with 2 sheets exactly matching commercial format
   static List<int>? generateSampleTemplate() {
@@ -140,11 +188,13 @@ class PurchaseExcelImportService {
   /// Imports Purchase Bills and Purchase Items from decoded Excel bytes
   static Future<ImportPurchaseResult> importPurchasesFromBytes(
     Uint8List bytes,
-    DatabaseService dbService,
-  ) async {
+    DatabaseService dbService, {
+    DuplicateBillAction duplicateAction = DuplicateBillAction.overwrite,
+  }) async {
     final List<String> errors = [];
     int totalBillsImported = 0;
     int totalItemsImported = 0;
+    int skippedBills = 0;
 
     try {
       final excel = Excel.decodeBytes(bytes);
@@ -155,6 +205,7 @@ class PurchaseExcelImportService {
         return ImportPurchaseResult(
           totalBillsImported: 0,
           totalItemsImported: 0,
+          skippedBills: 0,
           errors: ['The selected Excel file contains no worksheets.'],
         );
       }
@@ -171,6 +222,7 @@ class PurchaseExcelImportService {
         return ImportPurchaseResult(
           totalBillsImported: 0,
           totalItemsImported: 0,
+          skippedBills: 0,
           errors: ['Could not find Purchase Header worksheet.'],
         );
       }
@@ -284,6 +336,50 @@ class PurchaseExcelImportService {
         final description = _getCellValue(row, colS1Desc);
 
         try {
+          final normEffBillNoCheck = _normalizeKey(effectiveBillNo);
+
+          // Check if purchase bill number already exists
+          List<Purchase> matchingPurchases = await isar.purchases.filter().purchaseNumberEqualTo(effectiveBillNo).findAll();
+          if (matchingPurchases.isEmpty && normEffBillNoCheck.isNotEmpty) {
+            final allExisting = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+            matchingPurchases = allExisting.where((p) => _normalizeKey(p.purchaseNumber ?? '') == normEffBillNoCheck).toList();
+          }
+
+          if (matchingPurchases.isNotEmpty) {
+            if (duplicateAction == DuplicateBillAction.skip) {
+              skippedBills++;
+              errors.add('Bill "$effectiveBillNo" already exists in database (Skipped as requested).');
+              continue;
+            }
+
+            // DuplicateAction.overwrite: Clean up old purchase & items, and adjust item stock
+            for (var oldP in matchingPurchases) {
+              final oldItems = await isar.purchaseItems
+                  .filter()
+                  .purchaseUuidEqualTo(oldP.uuid)
+                  .or()
+                  .purchaseIdEqualTo(oldP.id)
+                  .or()
+                  .purchase((q) => q.idEqualTo(oldP.id))
+                  .findAll();
+
+              await isar.writeTxn(() async {
+                for (var oi in oldItems) {
+                  // Deduct stock for deleted old purchase items
+                  if (oi.itemId != null) {
+                    final targetItem = await isar.items.get(oi.itemId!);
+                    if (targetItem != null) {
+                      targetItem.currentStock = (targetItem.currentStock ?? 0.0) - (oi.quantity ?? 0.0);
+                      await isar.items.put(targetItem);
+                    }
+                  }
+                  await isar.purchaseItems.delete(oi.id);
+                }
+                await isar.purchases.delete(oldP.id);
+              });
+            }
+          }
+
           // Find or create Supplier Party
           Party? party;
           if (partyName.isNotEmpty) {
@@ -304,25 +400,6 @@ class PurchaseExcelImportService {
               });
               allParties.add(party!);
             }
-          }
-
-          // Clean up old duplicate purchase bill if re-importing identical bill number
-          final existingPurchases = await isar.purchases.filter().purchaseNumberEqualTo(effectiveBillNo).findAll();
-          for (var oldP in existingPurchases) {
-            await isar.writeTxn(() async {
-              final oldItems = await isar.purchaseItems
-                  .filter()
-                  .purchaseUuidEqualTo(oldP.uuid)
-                  .or()
-                  .purchaseIdEqualTo(oldP.id)
-                  .or()
-                  .purchase((q) => q.idEqualTo(oldP.id))
-                  .findAll();
-              for (var oi in oldItems) {
-                await isar.purchaseItems.delete(oi.id);
-              }
-              await isar.purchases.delete(oldP.id);
-            });
           }
 
           final purchaseUuid = _uuidGen.v4();
@@ -351,16 +428,18 @@ class PurchaseExcelImportService {
 
           // Retrieve items matching THIS SPECIFIC BILL NUMBER
           final normBillNo = _normalizeKey(billNo);
-          final normEffBillNo = _normalizeKey(effectiveBillNo);
           final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
 
           List<Map<String, dynamic>> rawItems = [];
           if (normBillNo.isNotEmpty && itemsByBillNo.containsKey(normBillNo)) {
             rawItems = itemsByBillNo[normBillNo]!;
-          } else if (normEffBillNo.isNotEmpty && itemsByBillNo.containsKey(normEffBillNo)) {
-            rawItems = itemsByBillNo[normEffBillNo]!;
+          } else if (normEffBillNoCheck.isNotEmpty && itemsByBillNo.containsKey(normEffBillNoCheck)) {
+            rawItems = itemsByBillNo[normEffBillNoCheck]!;
           } else if (colS2BillNo == -1 && normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
             rawItems = itemsByComboKey[normCombo]!;
+          } else if (headerSheet.rows.length == 2 && itemsByBillNo.isNotEmpty) {
+            // Fallback: If only 1 purchase header, assign all Sheet2 items to it!
+            rawItems = itemsByBillNo.values.expand((element) => element).toList();
           }
 
           final List<PurchaseItem> createdItems = [];
@@ -497,6 +576,7 @@ class PurchaseExcelImportService {
     return ImportPurchaseResult(
       totalBillsImported: totalBillsImported,
       totalItemsImported: totalItemsImported,
+      skippedBills: skippedBills,
       errors: errors,
     );
   }
@@ -541,7 +621,9 @@ class PurchaseExcelImportService {
   }
 
   static String _normalizeKey(String raw) {
-    return raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (raw.trim().isEmpty) return '';
+    final cleaned = raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return cleaned.replaceAllMapped(RegExp(r'([a-z]+)0+([1-9][0-9]*)'), (m) => '${m[1]}${m[2]}');
   }
 
   static double _parseDouble(String valStr) {

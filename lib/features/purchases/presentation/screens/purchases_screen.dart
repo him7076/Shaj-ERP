@@ -91,23 +91,87 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         return;
       }
 
-      // Show loading overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Importing Purchases & Items...'),
+      final dbService = ref.read(databaseServiceProvider);
+
+      // 1. Check for existing duplicate bills in database
+      final duplicateBills = await PurchaseExcelImportService.checkForDuplicateBills(fileBytes, dbService);
+
+      DuplicateBillAction selectedAction = DuplicateBillAction.overwrite;
+
+      if (duplicateBills.isNotEmpty && mounted) {
+        final choice = await showDialog<DuplicateBillAction>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text('Existing Invoice Found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'The following purchase bill(s) already exist in your database:\n${duplicateBills.map((b) => '• $b').join('\n')}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'What would you like to do with these existing bills?',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.skip),
+                icon: const Icon(Icons.skip_next_rounded, size: 18),
+                label: const Text('Skip Existing'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.overwrite),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                icon: const Icon(Icons.sync, size: 18),
+                label: const Text('Rewrite / Overwrite'),
+              ),
             ],
           ),
-        ),
-      );
+        );
 
-      final dbService = ref.read(databaseServiceProvider);
-      final importResult = await PurchaseExcelImportService.importPurchasesFromBytes(fileBytes, dbService);
+        if (choice == null) return; // User cancelled
+        selectedAction = choice;
+      }
+
+      // Show loading overlay
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text('Importing Purchases & Items...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final importResult = await PurchaseExcelImportService.importPurchasesFromBytes(
+        fileBytes,
+        dbService,
+        duplicateAction: selectedAction,
+      );
 
       // Instantly trigger cloud sync to push newly imported purchases & items to Firestore
       ref.read(syncServiceProvider).syncAll();
@@ -144,9 +208,13 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                   Text('✅ Purchase Bills Imported: ${importResult.totalBillsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   const SizedBox(height: 4),
                   Text('📦 Purchase Items Recorded: ${importResult.totalItemsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (importResult.skippedBills > 0) ...[
+                    const SizedBox(height: 4),
+                    Text('⏭️ Bills Skipped: ${importResult.skippedBills}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15)),
+                  ],
                   if (importResult.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const Text('Warnings / Logs:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
                   ],
