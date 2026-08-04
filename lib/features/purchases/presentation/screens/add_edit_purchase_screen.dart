@@ -167,13 +167,16 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         try { await purchase.purchaseItems.load(); } catch (_) {}
         var itemsList = purchase.purchaseItems.toList();
 
+        final pId = purchase.id;
+        final pUuid = purchase.uuid;
+
         final queriedItems = await isar.purchaseItems
             .filter()
-            .purchaseUuidEqualTo(purchase.uuid)
+            .purchaseUuidEqualTo(pUuid)
             .or()
-            .purchaseIdEqualTo(purchase.id)
+            .purchaseIdEqualTo(pId)
             .or()
-            .purchase((q) => q.idEqualTo(purchase.id))
+            .purchase((q) => q.idEqualTo(pId))
             .findAll();
 
         if (queriedItems.isNotEmpty) {
