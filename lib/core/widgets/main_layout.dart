@@ -7,6 +7,7 @@ import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
+  static final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   const MainLayout({
     Key? key,
@@ -56,6 +57,7 @@ class MainLayout extends StatelessWidget {
     } else {
       // Mobile / Tablet Layout: Modern Floating Bottom Bar + FAB + Slider Drawer
       return Scaffold(
+        key: _scaffoldKey,
         appBar: const CustomAppBar(),
         drawer: const CustomDrawer(isPermanent: false),
         backgroundColor: theme.colorScheme.background,
@@ -136,7 +138,7 @@ class MainLayout extends StatelessWidget {
                   label: 'More',
                   isSelected: selectedIndex == 3,
                   onTap: () {
-                    Scaffold.of(context).openDrawer();
+                    _scaffoldKey.currentState?.openDrawer();
                   },
                 ),
               ],

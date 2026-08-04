@@ -1105,6 +1105,206 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     ];
     final selectedUnit = item.unit ?? primaryUnit;
 
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    final theme = Theme.of(context);
+
+    if (!isDesktop) {
+      // Mobile-optimized order item card
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Index, Item Name, Delete Button
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '#${widget.index + 1}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.item.itemName ?? '',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                    onPressed: () {
+                      ref.read(cartProvider.notifier).removeItemAt(widget.index);
+                    },
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+
+              // Qty Stepper & Unit Selector
+              Row(
+                children: [
+                  // Qty Stepper
+                  Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
+                          onPressed: () {
+                            final current = item.quantity;
+                            if (current > 1) {
+                              final next = current - 1;
+                              _qtyController.text = next.toInt().toString();
+                              ref.read(cartProvider.notifier).updateItemAt(widget.index, quantity: next);
+                            }
+                          },
+                        ),
+                        SizedBox(
+                          width: 44,
+                          child: TextFormField(
+                            controller: _qtyController,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
+                            onChanged: (val) {
+                              final double? qty = double.tryParse(val);
+                              if (qty != null && qty >= 0) {
+                                ref.read(cartProvider.notifier).updateItemAt(widget.index, quantity: qty);
+                              }
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
+                          onPressed: () {
+                            final next = item.quantity + 1;
+                            _qtyController.text = next.toInt().toString();
+                            ref.read(cartProvider.notifier).updateItemAt(widget.index, quantity: next);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Unit Selector
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                      decoration: const InputDecoration(
+                        labelText: 'Unit',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          ref.read(cartProvider.notifier).updateItemAt(widget.index, unit: val);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Rate & Discount Inputs
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      controller: widget.isGstInclusive ? _rateInclController : _rateExclController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        labelText: widget.isGstInclusive ? 'Rate Incl (₹)' : 'Rate Excl (₹)',
+                        isDense: true,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        final double? parsed = double.tryParse(val);
+                        if (parsed != null) {
+                          ref.read(cartProvider.notifier).updateItemAt(widget.index, rate: parsed);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      controller: _discPercentController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Disc %',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        final double? pct = double.tryParse(val);
+                        if (pct != null) {
+                          ref.read(cartProvider.notifier).updateItemAt(widget.index, discountPercent: pct);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Line Total Summary Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('GST: ${item.gstPercent.toInt()}%', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                    Text(
+                      'Total: ₹${item.itemTotal.toStringAsFixed(2)}',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
