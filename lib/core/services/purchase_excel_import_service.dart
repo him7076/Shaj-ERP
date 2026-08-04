@@ -475,6 +475,8 @@ class PurchaseExcelImportService {
             purchase.id = await isar.purchases.put(purchase);
 
             for (var pItem in createdItems) {
+              pItem.purchaseId = purchase.id;
+              pItem.purchaseUuid = purchase.uuid;
               pItem.purchase.value = purchase;
               pItem.id = await isar.purchaseItems.put(pItem);
               try { await pItem.purchase.save(); } catch (_) {}

@@ -14,6 +14,11 @@ class PurchaseItem implements IsarModel {
   @Index(unique: true)
   String? uuid;
 
+  @Index()
+  int? purchaseId;
+  @Index()
+  String? purchaseUuid;
+
   int? itemId;
   String? itemName;
   String? hsnCode;
