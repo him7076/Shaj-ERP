@@ -1356,7 +1356,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ref.invalidate(expenseListProvider);
                 ref.invalidate(bankAccountsListProvider);
                 ref.invalidate(filteredTransactionsProvider);
-                ref.invalidate(transactionListProvider);
 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
