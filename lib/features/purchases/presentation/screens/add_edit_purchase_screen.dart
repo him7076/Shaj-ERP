@@ -147,6 +147,15 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
         try { await purchase.party.load(); } catch (_) {}
         _selectedParty = purchase.party.value ?? (purchase.partyId != null ? await isar.partys.get(purchase.partyId!) : null);
+        if (_selectedParty == null && purchase.partyName != null && purchase.partyName!.isNotEmpty) {
+          _selectedParty = await isar.partys.filter().partyNameEqualTo(purchase.partyName!).findFirst();
+          if (_selectedParty == null) {
+            _selectedParty = Party()
+              ..partyName = purchase.partyName
+              ..gstNumber = purchase.gstNumber
+              ..addressLine1 = purchase.address;
+          }
+        }
 
         try { await purchase.purchaseItems.load(); } catch (_) {}
         var itemsList = purchase.purchaseItems.toList();
@@ -175,12 +184,17 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
         _draftItems = List<PurchaseItem>.from(itemsList);
         _recalculateTotals();
+        if (mounted) {
+          setState(() {});
+        }
       }
     } else {
       final numStr = await repo.generateNextPurchaseNumber();
       _billNumberController.text = numStr;
+      if (mounted) {
+        setState(() {});
+      }
     }
-    setState(() {});
   }
 
   @override
@@ -225,21 +239,6 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   }
 
   void _addItemLine(Item item) async {
-    // Check if item is already added
-    final existingIndex = _draftItems.indexWhere((element) {
-      if (item.id != null && item.id != 0 && element.itemId != null && element.itemId != 0) {
-        return element.itemId == item.id;
-      }
-      return element.itemName?.trim().toLowerCase() == item.itemName?.trim().toLowerCase();
-    });
-
-    if (existingIndex != -1) {
-      setState(() {
-        _draftItems[existingIndex].quantity = (_draftItems[existingIndex].quantity ?? 0.0) + 1.0;
-      });
-      _recalculateTotals();
-      return;
-    }
 
     try {
       await item.unit.load();
@@ -629,9 +628,9 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
                       return SearchablePartyDropdown(
                         parties: supplierParties,
-                        selectedParty: _selectedParty != null && supplierParties.any((p) => p.uuid == _selectedParty!.uuid)
-                            ? supplierParties.firstWhere((p) => p.uuid == _selectedParty!.uuid)
-                            : null,
+                        selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                            ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                            : _selectedParty,
                         labelText: 'Select Supplier Account',
                         onChanged: (party) {
                           setState(() {

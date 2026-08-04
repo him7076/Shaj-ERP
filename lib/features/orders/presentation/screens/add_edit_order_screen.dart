@@ -1120,7 +1120,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: () {
-                ref.read(cartProvider.notifier).removeItem(item.item.uuid!);
+                ref.read(cartProvider.notifier).removeItemAt(widget.index);
               },
             ),
           ],
@@ -1136,7 +1136,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
-                    ref.read(cartProvider.notifier).updateItem(item.item.uuid!, quantity: qty);
+                    ref.read(cartProvider.notifier).updateItemAt(widget.index, quantity: qty);
                   }
                 },
               ),
@@ -1181,14 +1181,14 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                         _rateInclController.text = rateIncl.toStringAsFixed(2);
                         _isUpdatingLocally = false;
 
-                        ref.read(cartProvider.notifier).updateItem(
-                          item.item.uuid!,
+                        ref.read(cartProvider.notifier).updateItemAt(
+                          widget.index,
                           unit: newUnit,
                           rate: newRate,
                         );
                       } else {
-                        ref.read(cartProvider.notifier).updateItem(
-                          item.item.uuid!,
+                        ref.read(cartProvider.notifier).updateItemAt(
+                          widget.index,
                           unit: newUnit,
                         );
                       }
@@ -1206,7 +1206,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null) {
-                    ref.read(cartProvider.notifier).updateItem(item.item.uuid!, freeQuantity: qty);
+                    ref.read(cartProvider.notifier).updateItemAt(widget.index, freeQuantity: qty);
                   }
                 },
               ),
@@ -1228,8 +1228,8 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                   _rateInclController.text = incl.toStringAsFixed(2);
                   
                   final targetRate = widget.isGstInclusive ? incl : excl;
-                  ref.read(cartProvider.notifier).updateItem(
-                    item.item.uuid!,
+                  ref.read(cartProvider.notifier).updateItemAt(
+                    widget.index,
                     rate: targetRate,
                   );
                   _isUpdatingLocally = false;
@@ -1253,8 +1253,8 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                   _rateExclController.text = excl.toStringAsFixed(2);
                   
                   final targetRate = widget.isGstInclusive ? incl : excl;
-                  ref.read(cartProvider.notifier).updateItem(
-                    item.item.uuid!,
+                  ref.read(cartProvider.notifier).updateItemAt(
+                    widget.index,
                     rate: targetRate,
                   );
                   _isUpdatingLocally = false;
@@ -1274,7 +1274,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                 onChanged: (val) {
                   final double? pct = double.tryParse(val);
                   if (pct != null) {
-                    ref.read(cartProvider.notifier).updateItem(item.item.uuid!, discountPercent: pct);
+                    ref.read(cartProvider.notifier).updateItemAt(widget.index, discountPercent: pct);
                   }
                 },
               ),
@@ -1288,7 +1288,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {
-                    ref.read(cartProvider.notifier).updateItem(item.item.uuid!, discountAmount: amt);
+                    ref.read(cartProvider.notifier).updateItemAt(widget.index, discountAmount: amt);
                   }
                 },
               ),

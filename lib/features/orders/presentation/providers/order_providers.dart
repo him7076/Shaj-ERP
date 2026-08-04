@@ -127,24 +127,6 @@ class CartNotifier extends StateNotifier<OrderCart> {
   }
 
   void addItem(Item item, {double qty = 1.0}) {
-    final existingIndex = state.items.indexWhere((element) {
-      if (item.uuid != null && item.uuid!.isNotEmpty && element.item.uuid != null && element.item.uuid!.isNotEmpty) {
-        return element.item.uuid == item.uuid;
-      }
-      if (item.id != 0 && element.item.id != 0) {
-        return element.item.id == item.id;
-      }
-      return element.item.itemName == item.itemName;
-    });
-    if (existingIndex != -1) {
-      final current = state.items[existingIndex];
-      final targetKey = current.item.uuid ?? item.uuid ?? '';
-      if (targetKey.isNotEmpty) {
-        updateItem(targetKey, quantity: current.quantity + qty);
-        return;
-      }
-    }
-
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
     final defaultUnit = item.unit.value?.shortName ?? item.unit.value?.unitName;
@@ -160,8 +142,8 @@ class CartNotifier extends StateNotifier<OrderCart> {
     state = state.copyWith(items: [...state.items, newItem]);
   }
 
-  void updateItem(
-    String itemUuid, {
+  void updateItemAt(
+    int index, {
     double? quantity,
     double? freeQuantity,
     String? unit,
@@ -169,8 +151,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
     double? discountPercent,
     double? discountAmount,
   }) {
-    final index = state.items.indexWhere((element) => element.item.uuid == itemUuid);
-    if (index == -1) return;
+    if (index < 0 || index >= state.items.length) return;
 
     final current = state.items[index];
 
@@ -200,6 +181,35 @@ class CartNotifier extends StateNotifier<OrderCart> {
 
     final updatedList = List<CartItemState>.from(state.items);
     updatedList[index] = updated;
+    state = state.copyWith(items: updatedList);
+  }
+
+  void updateItem(
+    String itemUuid, {
+    double? quantity,
+    double? freeQuantity,
+    String? unit,
+    double? rate,
+    double? discountPercent,
+    double? discountAmount,
+  }) {
+    final index = state.items.indexWhere((element) => element.item.uuid == itemUuid);
+    if (index == -1) return;
+    updateItemAt(
+      index,
+      quantity: quantity,
+      freeQuantity: freeQuantity,
+      unit: unit,
+      rate: rate,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
+    );
+  }
+
+  void removeItemAt(int index) {
+    if (index < 0 || index >= state.items.length) return;
+    final updatedList = List<CartItemState>.from(state.items);
+    updatedList.removeAt(index);
     state = state.copyWith(items: updatedList);
   }
 
