@@ -26,6 +26,7 @@ class AddEditDebitNoteScreen extends ConsumerStatefulWidget {
 class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
+  final ScrollController _itemsScrollController = ScrollController();
 
   Party? _selectedParty;
   DateTime _debitNoteDate = DateTime.now();
@@ -417,38 +418,45 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                           ),
                         )
                       else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _items.length,
-                          separatorBuilder: (context, index) => const Divider(),
-                          itemBuilder: (context, index) {
-                            final it = _items[index];
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(it.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text(
-                                '${it.quantity} Qty x ₹${it.rate} | Taxable: ₹${it.taxableAmount?.toStringAsFixed(2)} | GST (${it.gstRate}%): ₹${it.gstAmount?.toStringAsFixed(2)}',
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '₹${it.totalAmount?.toStringAsFixed(2)}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 400),
+                          child: Scrollbar(
+                            thumbVisibility: true,
+                            controller: _itemsScrollController,
+                            child: ListView.separated(
+                              controller: _itemsScrollController,
+                              shrinkWrap: true,
+                              itemCount: _items.length,
+                              separatorBuilder: (context, index) => const Divider(),
+                              itemBuilder: (context, index) {
+                                final it = _items[index];
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(it.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  subtitle: Text(
+                                    '${it.quantity} Qty x ₹${it.rate} | Taxable: ₹${it.taxableAmount?.toStringAsFixed(2)} | GST (${it.gstRate}%): ₹${it.gstAmount?.toStringAsFixed(2)}',
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                    onPressed: () {
-                                      setState(() {
-                                        _items.removeAt(index);
-                                      });
-                                    },
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '₹${it.totalAmount?.toStringAsFixed(2)}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                        onPressed: () {
+                                          setState(() {
+                                            _items.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            );
-                          },
+                                );
+                              },
+                            ),
+                          ),
                         ),
                     ],
                   ),

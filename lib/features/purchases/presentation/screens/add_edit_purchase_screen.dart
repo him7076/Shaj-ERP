@@ -37,6 +37,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   final _paidAmountController = TextEditingController(text: '0.0');
   final _discountController = TextEditingController(text: '0.0');
   final _productSearchController = TextEditingController();
+  final ScrollController _itemsScrollController = ScrollController();
 
   Party? _selectedParty;
   List<PurchaseItem> _draftItems = [];
@@ -541,8 +542,56 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
+                  const SizedBox(height: 80),
                 ],
               ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Grand Total (${_draftItems.length} items)',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                Text(
+                  '₹${_grandTotal.toStringAsFixed(2)}',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Save Purchase Bill', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: _saveBill,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -823,33 +872,40 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
             children: [
               Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _draftItems.length,
-              separatorBuilder: (context, index) => const Divider(height: 24),
-              itemBuilder: (context, index) {
-                final item = _draftItems[index];
-                return PurchaseCartItemRow(
-                  item: item,
-                  onDelete: () {
-                    setState(() {
-                      _draftItems.removeAt(index);
-                    });
-                    _recalculateTotals();
-                  },
-                  onChanged: (qty, rate, discount, gstRate) {
-                    setState(() {
-                      item.quantity = qty;
-                      item.rate = rate;
-                      item.discount = discount;
-                      item.gstRate = gstRate;
-                    });
-                    _recalculateTotals();
-                  },
-                );
-              },
-            ),
+             ConstrainedBox(
+               constraints: const BoxConstraints(maxHeight: 450),
+               child: Scrollbar(
+                 thumbVisibility: true,
+                 controller: _itemsScrollController,
+                 child: ListView.separated(
+                   controller: _itemsScrollController,
+                   shrinkWrap: true,
+                   itemCount: _draftItems.length,
+                   separatorBuilder: (context, index) => const Divider(height: 24),
+                   itemBuilder: (context, index) {
+                     final item = _draftItems[index];
+                     return PurchaseCartItemRow(
+                       item: item,
+                       onDelete: () {
+                         setState(() {
+                           _draftItems.removeAt(index);
+                         });
+                         _recalculateTotals();
+                       },
+                       onChanged: (qty, rate, discount, gstRate) {
+                         setState(() {
+                           item.quantity = qty;
+                           item.rate = rate;
+                           item.discount = discount;
+                           item.gstRate = gstRate;
+                         });
+                         _recalculateTotals();
+                       },
+                     );
+                   },
+                 ),
+               ),
+             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () async {

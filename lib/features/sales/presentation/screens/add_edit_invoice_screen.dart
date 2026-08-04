@@ -38,6 +38,7 @@ class AddEditInvoiceScreen extends ConsumerStatefulWidget {
 class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
+  final ScrollController _itemsScrollController = ScrollController();
 
   final TextEditingController _remarksController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
@@ -748,9 +749,69 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
+                  const SizedBox(height: 80),
                 ],
               ),
         ),
+      ),
+      bottomNavigationBar: Builder(
+        builder: (context) {
+          final cart = ref.watch(invoiceCartProvider);
+          return FutureBuilder<Settings?>(
+            future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
+            builder: (context, snapshot) {
+              final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(snapshot.data?.companyGST);
+              final grandTotal = totals['grandTotal'] ?? 0.0;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Grand Total (${cart.items.length} items)',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                        Text(
+                          '₹${grandTotal.toStringAsFixed(2)}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Save Sales Invoice', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: _saveInvoice,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -1054,19 +1115,26 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             children: [
               Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: cart.items.length,
-              separatorBuilder: (context, index) => const Divider(height: 24),
-              itemBuilder: (context, index) {
-                final cartItem = cart.items[index];
-                return InvoiceCartItemRow(
-                  cartItem: cartItem,
-                  isGstInclusive: cart.isGstInclusive,
-                );
-              },
-            ),
+             ConstrainedBox(
+               constraints: const BoxConstraints(maxHeight: 450),
+               child: Scrollbar(
+                 thumbVisibility: true,
+                 controller: _itemsScrollController,
+                 child: ListView.separated(
+                   controller: _itemsScrollController,
+                   shrinkWrap: true,
+                   itemCount: cart.items.length,
+                   separatorBuilder: (context, index) => const Divider(height: 24),
+                   itemBuilder: (context, index) {
+                     final cartItem = cart.items[index];
+                     return InvoiceCartItemRow(
+                       cartItem: cartItem,
+                       isGstInclusive: cart.isGstInclusive,
+                     );
+                   },
+                 ),
+               ),
+             ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () async {

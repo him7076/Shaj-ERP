@@ -352,7 +352,7 @@ class PurchaseExcelImportService {
             rawItems = itemsByBillNo[normBillNo]!;
           } else if (normEffBillNo.isNotEmpty && itemsByBillNo.containsKey(normEffBillNo)) {
             rawItems = itemsByBillNo[normEffBillNo]!;
-          } else if (normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
+          } else if (colS2BillNo == -1 && normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
             rawItems = itemsByComboKey[normCombo]!;
           }
 
