@@ -170,14 +170,19 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         final pId = purchase.id;
         final pUuid = purchase.uuid;
 
-        final queriedItems = await isar.purchaseItems
-            .filter()
-            .purchaseUuidEqualTo(pUuid)
-            .or()
-            .purchaseIdEqualTo(pId)
-            .or()
-            .purchase((q) => q.idEqualTo(pId))
-            .findAll();
+        List<PurchaseItem> queriedItems = [];
+        if (pUuid != null && pUuid.isNotEmpty) {
+          queriedItems = await isar.purchaseItems
+              .filter()
+              .purchaseUuidEqualTo(pUuid)
+              .findAll();
+        }
+        if (queriedItems.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
+          queriedItems = await isar.purchaseItems
+              .filter()
+              .purchaseIdEqualTo(pId)
+              .findAll();
+        }
 
         if (queriedItems.isNotEmpty) {
           itemsList = queriedItems;
@@ -308,10 +313,12 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
       final purchase = _existingPurchase ?? Purchase();
       if (_existingPurchase == null) {
+        purchase.uuid ??= const Uuid().v4();
         purchase.purchaseNumber = _billNumberController.text.trim();
         purchase.createdAt = DateTime.now();
         purchase.version = 1;
       } else {
+        purchase.uuid ??= const Uuid().v4();
         purchase.version = _existingPurchase!.version + 1;
       }
 

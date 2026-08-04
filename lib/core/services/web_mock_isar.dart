@@ -1549,6 +1549,18 @@ class WebMockCollection<T> extends IsarCollection<T> {
       if (prop == 'partyid') return item.partyId;
       if (prop == 'paymentstatus') return item.paymentStatus;
     }
+    if (item is PurchaseItem) {
+      if (prop == 'purchaseid') return item.purchaseId;
+      if (prop == 'purchaseuuid') return item.purchaseUuid;
+      if (prop == 'itemid') return item.itemId;
+      if (prop == 'itemname') return item.itemName;
+    }
+    if (item is OrderItem) {
+      if (prop == 'orderid') return item.orderId;
+      if (prop == 'orderuuid') return item.orderUuid;
+      if (prop == 'itemid') return item.itemId;
+      if (prop == 'itemname') return item.itemName;
+    }
     if (item is InvoiceItem) {
       if (prop == 'parentinvoiceid') return item.parentInvoiceId;
     }
