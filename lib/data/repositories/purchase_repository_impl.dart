@@ -121,17 +121,40 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
         // 4. Save new purchase items & adjust stocks
         for (var item in items) {
-          item.uuid ??= _generateUuid();
-          item.purchaseId = purchaseId;
-          item.purchaseUuid = purchase.uuid;
-          item.purchase.value = purchase;
-          
-          final itemId = await isar.collection<PurchaseItem>().put(item);
-          item.id = itemId;
-          try { await item.purchase.save(); } catch (_) {}
+          final newItem = PurchaseItem()
+            ..uuid = _generateUuid()
+            ..purchaseId = purchaseId
+            ..purchaseUuid = purchase.uuid
+            ..itemId = item.itemId
+            ..itemName = item.itemName
+            ..hsnCode = item.hsnCode
+            ..quantity = item.quantity ?? 1.0
+            ..unit = item.unit
+            ..rate = item.rate ?? 0.0
+            ..discount = item.discount ?? 0.0
+            ..taxableAmount = item.taxableAmount ?? 0.0
+            ..gstRate = item.gstRate ?? 18.0
+            ..gstAmount = item.gstAmount ?? 0.0
+            ..totalAmount = item.totalAmount ?? 0.0
+            ..batchNumber = item.batchNumber
+            ..expiryDate = item.expiryDate
+            ..mfgDate = item.mfgDate
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+
+          if (!kIsWeb) {
+            newItem.item.value = item.item.value;
+            newItem.purchase.value = purchase;
+          }
+
+          final itemId = await isar.collection<PurchaseItem>().put(newItem);
+          newItem.id = itemId;
+          if (!kIsWeb) {
+            try { await newItem.purchase.save(); } catch (_) {}
+            try { await newItem.item.save(); } catch (_) {}
+          }
           try {
-            purchase.purchaseItems.add(item);
-            await purchase.purchaseItems.save();
+            purchase.purchaseItems.add(newItem);
           } catch (_) {}
 
           // Update product stock balance (Stock IN)
@@ -149,6 +172,10 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             await isar.items.put(targetItem);
           }
         }
+
+        try {
+          await purchase.purchaseItems.save();
+        } catch (_) {}
 
         // 5. Create Sync Queue record
         final queueItem = SyncQueue()

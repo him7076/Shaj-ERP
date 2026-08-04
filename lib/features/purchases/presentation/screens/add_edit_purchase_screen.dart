@@ -128,8 +128,15 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
     _companyGst = settings?.companyGST;
 
-    if (widget.purchaseUuid != null) {
-      final purchase = await isar.purchases.filter().uuidEqualTo(widget.purchaseUuid).findFirst();
+    if (widget.purchaseUuid != null && widget.purchaseUuid!.isNotEmpty) {
+      Purchase? purchase = await isar.purchases.filter().uuidEqualTo(widget.purchaseUuid).findFirst();
+      if (purchase == null) {
+        final idVal = int.tryParse(widget.purchaseUuid!);
+        if (idVal != null) {
+          purchase = await isar.purchases.get(idVal);
+        }
+      }
+
       if (purchase != null) {
         _existingPurchase = purchase;
         _billNumberController.text = purchase.purchaseNumber ?? '';
@@ -159,13 +166,18 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
         try { await purchase.purchaseItems.load(); } catch (_) {}
         var itemsList = purchase.purchaseItems.toList();
-        if (itemsList.isEmpty || itemsList.any((i) => (i.purchaseUuid != null && i.purchaseUuid != purchase.uuid) || (i.purchaseId != null && i.purchaseId != purchase.id))) {
-          itemsList = await isar.purchaseItems
-              .filter()
-              .purchaseUuidEqualTo(purchase.uuid)
-              .or()
-              .purchaseIdEqualTo(purchase.id)
-              .findAll();
+
+        final queriedItems = await isar.purchaseItems
+            .filter()
+            .purchaseUuidEqualTo(purchase.uuid)
+            .or()
+            .purchaseIdEqualTo(purchase.id)
+            .or()
+            .purchase((q) => q.idEqualTo(purchase.id))
+            .findAll();
+
+        if (queriedItems.isNotEmpty) {
+          itemsList = queriedItems;
         }
 
         for (var pi in itemsList) {
