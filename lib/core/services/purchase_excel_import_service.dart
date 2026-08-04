@@ -23,9 +23,9 @@ class ImportPurchaseResult {
 }
 
 class PurchaseExcelImportService {
-  static final Uuid _uuidGen = Uuid();
+  static final Uuid _uuidGen = const Uuid();
 
-  /// Generates the sample Excel template (.xlsx) with 2 sheets as specified
+  /// Generates sample Excel template (.xlsx) with 2 sheets exactly matching commercial format
   static List<int>? generateSampleTemplate() {
     final excel = Excel.createExcel();
 
@@ -46,36 +46,35 @@ class PurchaseExcelImportService {
       TextCellValue('Description'),
     ]);
 
-    // Sample Row 1 for Sheet 1
+    // Sample Rows for Sheet 1
     sheet1.appendRow([
-      TextCellValue('03/08/2026'),
-      TextCellValue('Shree Krishna Traders'),
-      TextCellValue('9876543210'),
-      TextCellValue('27AAACS1234A1Z5'),
-      TextCellValue('PO-2026-01'),
-      TextCellValue('PUR-2026-101'),
+      TextCellValue('13/07/2026'),
+      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
+      TextCellValue(''),
+      TextCellValue('24ABEFP1587E1ZB'),
+      TextCellValue('PU-01'),
+      TextCellValue('PU-01'),
       TextCellValue('Purchase'),
-      DoubleCellValue(14595.00),
+      DoubleCellValue(164220.33),
       TextCellValue('Cash'),
-      DoubleCellValue(14595.00),
       DoubleCellValue(0.00),
-      TextCellValue('Raw material stock batch purchase'),
+      DoubleCellValue(164220.33),
+      TextCellValue('Received stock batch'),
     ]);
 
-    // Sample Row 2 for Sheet 1
     sheet1.appendRow([
-      TextCellValue('03/08/2026'),
-      TextCellValue('Apex Wholesale Pvt Ltd'),
-      TextCellValue('9123456789'),
-      TextCellValue('27AAACA9876B1Z2'),
-      TextCellValue('PO-2026-02'),
-      TextCellValue('PUR-2026-102'),
-      TextCellValue('Credit Purchase'),
-      DoubleCellValue(25200.00),
-      TextCellValue('Credit'),
+      TextCellValue('11/07/2026'),
+      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
+      TextCellValue(''),
+      TextCellValue('24ABEFP1587E1ZB'),
+      TextCellValue('PU-02'),
+      TextCellValue('PU-02'),
+      TextCellValue('Purchase'),
+      DoubleCellValue(216623.14),
+      TextCellValue('Cash'),
       DoubleCellValue(0.00),
-      DoubleCellValue(25200.00),
-      TextCellValue('Apparel goods batch inward'),
+      DoubleCellValue(216623.14),
+      TextCellValue('These stock received from halol depo'),
     ]);
 
     // Sheet 2: Item Details
@@ -83,7 +82,7 @@ class PurchaseExcelImportService {
     sheet2.appendRow([
       TextCellValue('Date'),
       TextCellValue('Party Name'),
-      TextCellValue('Invoice Number.'),
+      TextCellValue('Invoice Number'),
       TextCellValue('Item Name'),
       TextCellValue('Batch Number'),
       TextCellValue('Expire Date'),
@@ -98,42 +97,41 @@ class PurchaseExcelImportService {
       TextCellValue('Amount'),
     ]);
 
-    // Sample Row 1 for Sheet 2 (Linked to PUR-2026-101)
+    // Sample Rows for Sheet 2
     sheet2.appendRow([
-      TextCellValue('03/08/2026'),
-      TextCellValue('Shree Krishna Traders'),
-      TextCellValue('PUR-2026-101'),
-      TextCellValue('Premium Cotton Fabric'),
-      TextCellValue('B-101'),
-      TextCellValue('2028-12-31'),
-      TextCellValue('2026-01-15'),
-      TextCellValue('FAB-001'),
-      TextCellValue('5208'),
-      DoubleCellValue(20.0),
-      TextCellValue('MTR'),
-      DoubleCellValue(700.00),
-      DoubleCellValue(100.00),
+      TextCellValue('13/07/2026'),
+      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
+      TextCellValue('PU-01'),
+      TextCellValue('ENERGY+ (RS. 5)'),
+      TextCellValue('KB010526'),
+      TextCellValue('11/2026'),
+      TextCellValue('05/2026'),
+      TextCellValue(''),
+      TextCellValue('19053100'),
+      DoubleCellValue(25.0),
+      TextCellValue('Crt'),
+      DoubleCellValue(536.10),
+      TextCellValue('0.00(0.0%)'),
       TextCellValue('5%'),
-      DoubleCellValue(14595.00),
+      DoubleCellValue(14072.63),
     ]);
 
-    // Sample Row 2 for Sheet 2 (Linked to PUR-2026-102)
     sheet2.appendRow([
-      TextCellValue('03/08/2026'),
-      TextCellValue('Apex Wholesale Pvt Ltd'),
-      TextCellValue('PUR-2026-102'),
-      TextCellValue('Men Casual Denim Jeans'),
-      TextCellValue('B-205'),
-      TextCellValue('2030-01-01'),
-      TextCellValue('2025-11-20'),
-      TextCellValue('JNS-002'),
-      TextCellValue('6203'),
-      DoubleCellValue(30.0),
-      TextCellValue('PCS'),
-      DoubleCellValue(800.00),
-      DoubleCellValue(0.00),
+      TextCellValue('11/07/2026'),
+      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
+      TextCellValue('PU-02'),
+      TextCellValue('CL CHOCOLATE (RS 5)'),
+      TextCellValue(''),
+      TextCellValue(''),
+      TextCellValue(''),
+      TextCellValue(''),
+      TextCellValue('19053100'),
+      DoubleCellValue(24.0),
+      TextCellValue('CRT'),
+      DoubleCellValue(536.10),
+      TextCellValue('0.00(0.0%)'),
       TextCellValue('5%'),
-      DoubleCellValue(25200.00),
+      DoubleCellValue(13509.72),
     ]);
 
     return excel.encode();
@@ -152,7 +150,6 @@ class PurchaseExcelImportService {
       final excel = Excel.decodeBytes(bytes);
       final isar = dbService.isar;
 
-      // Identify Sheet 1 (Headers) and Sheet 2 (Items)
       final sheetKeys = excel.tables.keys.toList();
       if (sheetKeys.isEmpty) {
         return ImportPurchaseResult(
@@ -178,35 +175,28 @@ class PurchaseExcelImportService {
         );
       }
 
-      // Build Header Column Map for Sheet 1
-      Map<String, int> s1ColMap = {};
-      if (headerSheet.rows.isNotEmpty) {
-        s1ColMap = _buildColumnMap(headerSheet.rows[0]);
-      }
+      // Column mapping helper for Sheet 1
+      final s1ColMap = headerSheet.rows.isNotEmpty ? _buildColumnMap(headerSheet.rows[0]) : <String, int>{};
 
       final colS1Date = _findCol(s1ColMap, ['date', 'bill date', 'invoice date'], 0);
       final colS1Party = _findCol(s1ColMap, ['party name', 'party', 'supplier name', 'supplier'], 1);
       final colS1Phone = _findCol(s1ColMap, ['phone', 'mobile', 'contact'], 2);
       final colS1Gst = _findCol(s1ColMap, ['party gst', 'gst number', 'gstin', 'gst'], 3);
       final colS1OrderNo = _findCol(s1ColMap, ['order number', 'order no', 'po number'], 4);
-      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'voucher no', 'invoice #', 'bill #', 'ref no', 'ref', 'reference', 'invoice'], 5);
+      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'invoice'], 5);
       final colS1TxnType = _findCol(s1ColMap, ['transaction type', 'txn type', 'type'], 6);
       final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 7);
       final colS1PayType = _findCol(s1ColMap, ['payment type', 'pay mode', 'mode'], 8);
       final colS1PaidAmt = _findCol(s1ColMap, ['paid amount', 'paid'], 9);
       final colS1BalAmt = _findCol(s1ColMap, ['balance amount', 'balance', 'pending'], 10);
       final colS1Desc = _findCol(s1ColMap, ['description', 'remarks', 'notes'], 11);
-      final colS1ItemName = _findCol(s1ColMap, ['item name', 'product name', 'item', 'product'], -1);
 
-      // Build Item Column Map for Sheet 2
-      Map<String, int> s2ColMap = {};
-      if (itemSheet != null && itemSheet.rows.isNotEmpty) {
-        s2ColMap = _buildColumnMap(itemSheet.rows[0]);
-      }
+      // Column mapping helper for Sheet 2
+      final s2ColMap = (itemSheet != null && itemSheet.rows.isNotEmpty) ? _buildColumnMap(itemSheet.rows[0]) : <String, int>{};
 
       final colS2Date = _findCol(s2ColMap, ['date', 'bill date', 'invoice date'], 0);
       final colS2Party = _findCol(s2ColMap, ['party name', 'party', 'supplier name', 'supplier'], 1);
-      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'voucher no', 'invoice #', 'bill #', 'ref no', 'ref', 'reference', 'invoice'], 2);
+      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'invoice'], 2);
       final colS2ItemName = _findCol(s2ColMap, ['item name', 'product name', 'item', 'product', 'description'], 3);
       final colS2BatchNo = _findCol(s2ColMap, ['batch number', 'batch no', 'batch'], 4);
       final colS2ExpDate = _findCol(s2ColMap, ['expire date', 'exp date', 'expiry'], 5);
@@ -220,7 +210,7 @@ class PurchaseExcelImportService {
       final colS2Gst = _findCol(s2ColMap, ['gst', 'tax rate', 'tax %', 'tax'], 13);
       final colS2Amount = _findCol(s2ColMap, ['amount', 'total', 'line total'], 14);
 
-      // 1. Parse Sheet 2 Items into Multi-Key Lookup Maps
+      // 1. Index Sheet 2 Items strictly by Normalized Invoice Number
       final Map<String, List<Map<String, dynamic>>> itemsByBillNo = {};
       final Map<String, List<Map<String, dynamic>>> itemsByComboKey = {};
 
@@ -249,7 +239,7 @@ class PurchaseExcelImportService {
             'qty': _parseDouble(_getCellValue(row, colS2Qty)),
             'unit': _getCellValue(row, colS2Unit).isNotEmpty ? _getCellValue(row, colS2Unit) : 'PCS',
             'rate': _parseDouble(_getCellValue(row, colS2Rate)),
-            'discount': _parseDouble(_getCellValue(row, colS2Disc)),
+            'discount': _parseDiscountVal(_getCellValue(row, colS2Disc)),
             'gstStr': _getCellValue(row, colS2Gst),
             'amount': _parseDouble(_getCellValue(row, colS2Amount)),
           };
@@ -269,7 +259,7 @@ class PurchaseExcelImportService {
       final allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
       final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
-      // 2. Parse Sheet 1 Header Bills and create Purchases
+      // 2. Iterate Sheet 1 Headers & Create Purchase Bills
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
         if (row.isEmpty) continue;
@@ -289,19 +279,18 @@ class PurchaseExcelImportService {
         final orderNo = _getCellValue(row, colS1OrderNo);
         final txnType = _getCellValue(row, colS1TxnType);
         final totalAmount = _parseDouble(_getCellValue(row, colS1TotalAmt));
-        final paymentType = _getCellValue(row, colS1PayType);
         final paidAmount = _parseDouble(_getCellValue(row, colS1PaidAmt));
         final balanceAmount = _parseDouble(_getCellValue(row, colS1BalAmt));
         final description = _getCellValue(row, colS1Desc);
 
         try {
-          // Find or create Party
+          // Find or create Supplier Party
           Party? party;
           if (partyName.isNotEmpty) {
             party = allParties.where((p) => p.partyName?.trim().toLowerCase() == partyName.toLowerCase()).firstOrNull;
             if (party == null) {
               party = Party()
-                ..uuid = Uuid().v4()
+                ..uuid = _uuidGen.v4()
                 ..partyName = partyName
                 ..partyCode = 'P-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
                 ..partyType = 'Supplier'
@@ -313,10 +302,11 @@ class PurchaseExcelImportService {
               await isar.writeTxn(() async {
                 party!.id = await isar.partys.put(party!);
               });
+              allParties.add(party!);
             }
           }
 
-          // Delete existing old purchase bill if re-importing same bill number
+          // Clean up old duplicate purchase bill if re-importing identical bill number
           final existingPurchases = await isar.purchases.filter().purchaseNumberEqualTo(effectiveBillNo).findAll();
           for (var oldP in existingPurchases) {
             await isar.writeTxn(() async {
@@ -335,15 +325,17 @@ class PurchaseExcelImportService {
             });
           }
 
+          final purchaseUuid = _uuidGen.v4();
+
           // Create Purchase Record
           final purchase = Purchase()
-            ..uuid = Uuid().v4()
+            ..uuid = purchaseUuid
             ..purchaseNumber = effectiveBillNo
             ..purchaseDate = _parseDate(dateStr)
             ..partyId = party?.id
             ..partyName = partyName
             ..gstNumber = gstNo
-            ..remarks = description.isNotEmpty ? '$description (Order: $orderNo, Txn: $txnType)' : 'Imported via Excel'
+            ..remarks = description.isNotEmpty ? description : 'Imported via Excel (Order: $orderNo)'
             ..grandTotal = totalAmount
             ..paidAmount = paidAmount
             ..pendingAmount = balanceAmount > 0 ? balanceAmount : (totalAmount - paidAmount)
@@ -357,11 +349,7 @@ class PurchaseExcelImportService {
             purchase.party.value = party;
           }
 
-          final List<PurchaseItem> createdItems = [];
-          double calcSubtotal = 0.0;
-          double calcTotalGST = 0.0;
-
-          // Retrieve items linked to this bill from Sheet 2 using multi-key lookup
+          // Retrieve items matching THIS SPECIFIC BILL NUMBER
           final normBillNo = _normalizeKey(billNo);
           final normEffBillNo = _normalizeKey(effectiveBillNo);
           final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
@@ -375,23 +363,9 @@ class PurchaseExcelImportService {
             rawItems = itemsByComboKey[normCombo]!;
           }
 
-          // Fallback: If no Sheet 2 items, check if Sheet 1 itself has an Item Name column
-          if (rawItems.isEmpty && colS1ItemName != -1) {
-            final s1ItemName = _getCellValue(row, colS1ItemName).trim();
-            if (s1ItemName.isNotEmpty) {
-              rawItems = [{
-                'itemName': s1ItemName,
-                'itemCode': '',
-                'hsnCode': '',
-                'qty': 1.0,
-                'unit': 'PCS',
-                'rate': totalAmount,
-                'discount': 0.0,
-                'gstStr': '0%',
-                'amount': totalAmount,
-              }];
-            }
-          }
+          final List<PurchaseItem> createdItems = [];
+          double calcSubtotal = 0.0;
+          double calcTotalGST = 0.0;
 
           for (var itemMap in rawItems) {
             final itemName = itemMap['itemName'] as String;
@@ -406,18 +380,18 @@ class PurchaseExcelImportService {
 
             final gstRatePercent = _parseGstPercent(gstStr);
 
-            // Find or create Item
+            // Find or create Catalog Item
             Item? catalogItem;
             if (itemName.isNotEmpty) {
               catalogItem = allItems.where((i) => i.itemName?.trim().toLowerCase() == itemName.toLowerCase()).firstOrNull;
               if (catalogItem == null) {
                 catalogItem = Item()
-                  ..uuid = Uuid().v4()
+                  ..uuid = _uuidGen.v4()
                   ..itemCode = itemCode.isNotEmpty ? itemCode : 'ITM-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
                   ..itemName = itemName
                   ..hsnCode = hsn
                   ..buyRate = rate
-                  ..sellRate = rate > 0 ? rate * 1.2 : 0.0
+                  ..sellRate = rate > 0 ? (rate * 1.2) : 0.0
                   ..currentStock = qty
                   ..openingStock = qty
                   ..createdAt = DateTime.now()
@@ -444,8 +418,11 @@ class PurchaseExcelImportService {
             calcSubtotal += taxable;
             calcTotalGST += gstAmount;
 
+            // Instantiating FRESH PurchaseItem with purchaseId and purchaseUuid explicitly attached!
             final pItem = PurchaseItem()
-              ..uuid = Uuid().v4()
+              ..uuid = _uuidGen.v4()
+              ..purchaseId = null // set after putting purchase
+              ..purchaseUuid = purchaseUuid
               ..itemId = catalogItem?.id
               ..itemName = itemName
               ..hsnCode = hsn
@@ -477,7 +454,7 @@ class PurchaseExcelImportService {
             purchase.grandTotal = calcSubtotal + calcTotalGST;
           }
 
-          // Save Purchase & PurchaseItems in transaction
+          // Save Purchase & PurchaseItems with explicit links
           await isar.writeTxn(() async {
             purchase.id = await isar.purchases.put(purchase);
 
@@ -494,7 +471,7 @@ class PurchaseExcelImportService {
 
           // Enqueue for Sync
           final queueItem = SyncQueue()
-            ..uuid = Uuid().v4()
+            ..uuid = _uuidGen.v4()
             ..entityType = 'Purchase'
             ..entityId = purchase.id
             ..entityUuid = purchase.uuid
@@ -524,96 +501,92 @@ class PurchaseExcelImportService {
     );
   }
 
-  static String _normalizeKey(String key) {
-    if (key.isEmpty) return '';
-    var s = key.trim().toLowerCase();
-    if (s.endsWith('.0')) {
-      s = s.substring(0, s.length - 2);
-    }
-    return s.replaceAll(RegExp(r'[^a-z0-9]'), '');
-  }
+  // --- Helper Methods ---
 
-  static Map<String, int> _buildColumnMap(List<Data?> headerRow) {
-    final Map<String, int> colMap = {};
+  static Map<String, int> _buildColumnMap(List<CellValue?> headerRow) {
+    final Map<String, int> map = {};
     for (int i = 0; i < headerRow.length; i++) {
-      final cellVal = headerRow[i]?.value?.toString().trim().toLowerCase() ?? '';
-      if (cellVal.isNotEmpty) {
-        colMap[cellVal] = i;
+      final cell = headerRow[i];
+      if (cell != null && cell.value != null) {
+        final val = cell.value.toString().trim().toLowerCase();
+        if (val.isNotEmpty) {
+          map[val] = i;
+        }
       }
     }
-    return colMap;
+    return map;
   }
 
-  static int _findCol(Map<String, int> colMap, List<String> possibleNames, int fallbackIndex) {
-    for (var name in possibleNames) {
-      final key = name.toLowerCase();
-      for (var entry in colMap.entries) {
-        if (entry.key == key || entry.key.contains(key)) {
+  static int _findCol(Map<String, int> colMap, List<String> candidates, int defaultIndex) {
+    for (var cand in candidates) {
+      if (colMap.containsKey(cand)) {
+        return colMap[cand]!;
+      }
+    }
+    for (var entry in colMap.entries) {
+      for (var cand in candidates) {
+        if (entry.key.contains(cand)) {
           return entry.value;
         }
       }
     }
-    return fallbackIndex;
+    return defaultIndex;
   }
 
-  static String _getCellValue(List<Data?> row, int colIndex) {
-    if (colIndex < 0 || colIndex >= row.length || row[colIndex] == null) return '';
-    final val = row[colIndex]?.value;
-    if (val == null) return '';
-    String str = val.toString().trim();
-    if (str.endsWith('.0')) {
-      str = str.substring(0, str.length - 2);
-    }
-    return str;
+  static String _getCellValue(List<CellValue?> row, int colIndex) {
+    if (colIndex < 0 || colIndex >= row.length) return '';
+    final cell = row[colIndex];
+    if (cell == null || cell.value == null) return '';
+    return cell.value.toString().trim();
   }
 
-  static double _parseDouble(String val) {
-    if (val.isEmpty) return 0.0;
-    final clean = val.replaceAll('₹', '').replaceAll(',', '').trim();
-    return double.tryParse(clean) ?? 0.0;
+  static String _normalizeKey(String raw) {
+    return raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
   }
 
-  static double _parseGstPercent(String str) {
-    if (str.isEmpty) return 0.0;
-    final regExp = RegExp(r'(\d+(?:\.\d+)?)%');
-    final match = regExp.firstMatch(str);
+  static double _parseDouble(String valStr) {
+    if (valStr.isEmpty) return 0.0;
+    final cleaned = valStr.replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(cleaned) ?? 0.0;
+  }
+
+  static double _parseDiscountVal(String discStr) {
+    if (discStr.isEmpty) return 0.0;
+    // Handle formats like "0.00(0.0%)" or "10.0" or "50"
+    final match = RegExp(r'^([0-9.]+)\s*\(').firstMatch(discStr);
     if (match != null) {
       return double.tryParse(match.group(1)!) ?? 0.0;
     }
-    return double.tryParse(str.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+    final cleaned = discStr.replaceAll(RegExp(r'[^0-9.]'), '');
+    return double.tryParse(cleaned) ?? 0.0;
+  }
+
+  static double _parseGstPercent(String gstStr) {
+    if (gstStr.isEmpty) return 0.0;
+    final cleaned = gstStr.replaceAll(RegExp(r'[^0-9.]'), '');
+    final val = double.tryParse(cleaned) ?? 0.0;
+    return val > 0 ? val : 0.0;
   }
 
   static DateTime _parseDate(String dateStr) {
     if (dateStr.isEmpty) return DateTime.now();
-    final clean = dateStr.trim();
     try {
-      if (clean.contains('/')) {
-        final parts = clean.split('/');
-        if (parts.length == 3) {
-          int d = int.parse(parts[0]);
-          int m = int.parse(parts[1]);
-          int y = int.parse(parts[2]);
-          if (y < 100) y += 2000;
-          return DateTime(y, m, d);
+      final parts = dateStr.split(RegExp(r'[/.-]'));
+      if (parts.length == 3) {
+        int day, month, year;
+        if (parts[0].length == 4) {
+          year = int.parse(parts[0]);
+          month = int.parse(parts[1]);
+          day = int.parse(parts[2]);
+        } else {
+          day = int.parse(parts[0]);
+          month = int.parse(parts[1]);
+          year = int.parse(parts[2]);
+          if (year < 100) year += 2000;
         }
+        return DateTime(year, month, day);
       }
-      if (clean.contains('-')) {
-        final parts = clean.split('-');
-        if (parts.length == 3) {
-          if (parts[0].length == 4) {
-            return DateTime.parse(clean);
-          } else {
-            int d = int.parse(parts[0]);
-            int m = int.parse(parts[1]);
-            int y = int.parse(parts[2]);
-            if (y < 100) y += 2000;
-            return DateTime(y, m, d);
-          }
-        }
-      }
-      final parsed = DateTime.tryParse(clean);
-      if (parsed != null) return parsed;
     } catch (_) {}
-    return DateTime.now();
+    return DateTime.tryParse(dateStr) ?? DateTime.now();
   }
 }

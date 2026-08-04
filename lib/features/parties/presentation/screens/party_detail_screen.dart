@@ -485,8 +485,8 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     return transactionsAsync.when(
       data: (allTransactions) {
         final partyTransactions = allTransactions.where((t) {
-          final matchesUuid = t.partyUuid == _party!.uuid;
-          final matchesName = t.partyName?.toLowerCase() == _party!.partyName?.toLowerCase();
+          final matchesUuid = t.partyUuid != null && t.partyUuid!.isNotEmpty && _party!.uuid != null && t.partyUuid == _party!.uuid;
+          final matchesName = t.partyName != null && t.partyName!.isNotEmpty && _party!.partyName != null && t.partyName?.trim().toLowerCase() == _party!.partyName?.trim().toLowerCase();
           return matchesUuid || matchesName;
         }).toList();
 

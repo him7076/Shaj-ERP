@@ -580,16 +580,22 @@ class WebMockIsar implements Isar {
         'type': 'PurchaseItem',
         'id': entity.id,
         'uuid': entity.uuid,
+        'purchaseId': entity.purchaseId,
+        'purchaseUuid': entity.purchaseUuid,
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
         'quantity': entity.quantity,
+        'unit': entity.unit,
         'rate': entity.rate,
         'discount': entity.discount,
         'taxableAmount': entity.taxableAmount,
         'gstRate': entity.gstRate,
         'gstAmount': entity.gstAmount,
         'totalAmount': entity.totalAmount,
+        'batchNumber': entity.batchNumber,
+        'expiryDate': entity.expiryDate,
+        'mfgDate': entity.mfgDate,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -1070,16 +1076,22 @@ class WebMockIsar implements Isar {
         return PurchaseItem()
           ..id = map['id'] as int
           ..uuid = map['uuid'] as String?
+          ..purchaseId = map['purchaseId'] as int?
+          ..purchaseUuid = map['purchaseUuid'] as String?
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
           ..quantity = map['quantity'] as double?
+          ..unit = map['unit'] as String?
           ..rate = map['rate'] as double?
           ..discount = map['discount'] as double?
           ..taxableAmount = map['taxableAmount'] as double?
           ..gstRate = map['gstRate'] as double?
           ..gstAmount = map['gstAmount'] as double?
           ..totalAmount = map['totalAmount'] as double?
+          ..batchNumber = map['batchNumber'] as String?
+          ..expiryDate = map['expiryDate'] as String?
+          ..mfgDate = map['mfgDate'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
