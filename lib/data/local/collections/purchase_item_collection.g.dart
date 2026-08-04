@@ -478,6 +478,65 @@ extension PurchaseItemQueryWhere
 extension PurchaseItemQueryFilter
     on QueryBuilder<PurchaseItem, PurchaseItem, QFilterCondition> {
   QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      purchaseIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'purchaseId',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      purchaseIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'purchaseId',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      purchaseIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'purchaseId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      purchaseUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'purchaseUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      purchaseUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'purchaseUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      purchaseUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'purchaseUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
       createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
