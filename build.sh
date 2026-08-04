@@ -15,15 +15,15 @@ fi
 export PATH="$PATH:$FLUTTER_DIR/bin"
 export DART_VM_OPTIONS="--old_gen_heap_size=3072"
 
+flutter config --no-analytics
+
 echo "Checking Flutter version..."
 flutter --version
 
-echo "Installing Flutter pub packages..."
-flutter pub get
-
 echo "Compiling Flutter Web (Release mode)..."
-flutter build web --release --no-pub --no-tree-shaking-icons
+flutter build web --release --no-tree-shaking-icons
 
 echo "=== Vercel Flutter Web Build Completed Successfully ==="
+
 
 
