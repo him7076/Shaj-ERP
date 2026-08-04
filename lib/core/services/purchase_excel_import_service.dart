@@ -477,7 +477,10 @@ class PurchaseExcelImportService {
             for (var pItem in createdItems) {
               pItem.purchase.value = purchase;
               pItem.id = await isar.purchaseItems.put(pItem);
+              try { await pItem.purchase.save(); } catch (_) {}
+              purchase.purchaseItems.add(pItem);
             }
+            try { await purchase.purchaseItems.save(); } catch (_) {}
           });
 
           // Enqueue for Sync

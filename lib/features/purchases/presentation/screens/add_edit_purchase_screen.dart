@@ -145,17 +145,14 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         _paidAmountController.text = purchase.paidAmount?.toString() ?? '0.0';
         _discountController.text = purchase.discountAmount?.toString() ?? '0.0';
 
-        if (!kIsWeb) {
-          await purchase.party.load();
-          await purchase.purchaseItems.load();
-        }
-        _selectedParty = kIsWeb
-            ? (purchase.partyId != null ? await isar.partys.get(purchase.partyId!) : null)
-            : purchase.party.value;
+        try { await purchase.party.load(); } catch (_) {}
+        _selectedParty = purchase.party.value ?? (purchase.partyId != null ? await isar.partys.get(purchase.partyId!) : null);
 
-        final itemsList = kIsWeb
-            ? await isar.purchaseItems.filter().purchase((q) => q.idEqualTo(purchase.id)).findAll()
-            : purchase.purchaseItems.toList();
+        try { await purchase.purchaseItems.load(); } catch (_) {}
+        var itemsList = purchase.purchaseItems.toList();
+        if (itemsList.isEmpty) {
+          itemsList = await isar.purchaseItems.filter().purchase((q) => q.idEqualTo(purchase.id)).findAll();
+        }
 
         for (var pi in itemsList) {
           if (!kIsWeb) {
