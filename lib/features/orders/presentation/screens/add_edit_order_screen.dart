@@ -1106,7 +1106,6 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     final selectedUnit = item.unit ?? primaryUnit;
 
     final isDesktop = ResponsiveLayout.isDesktop(context);
-    final theme = Theme.of(context);
 
     if (!isDesktop) {
       // Mobile-optimized order item card

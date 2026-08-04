@@ -1296,9 +1296,9 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
                           onPressed: () {
-                            final current = item.quantity;
+                            final current = item.quantity ?? 1.0;
                             if (current > 1) {
-                              final next = current - 1;
+                              final next = current - 1.0;
                               _qtyController.text = next.toInt().toString();
                               _triggerChanged(qty: next);
                             }
@@ -1325,7 +1325,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
                           onPressed: () {
-                            final next = item.quantity + 1;
+                            final next = (item.quantity ?? 1.0) + 1.0;
                             _qtyController.text = next.toInt().toString();
                             _triggerChanged(qty: next);
                           },
@@ -1413,7 +1413,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                   children: [
                     Text('GST: ${_gstController.text}%', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
                     Text(
-                      'Total: ₹${(item.itemTotal ?? 0.0).toStringAsFixed(2)}',
+                      'Total: ₹${(item.totalAmount ?? 0.0).toStringAsFixed(2)}',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                     ),
                   ],

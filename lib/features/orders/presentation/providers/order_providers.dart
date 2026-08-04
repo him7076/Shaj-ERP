@@ -59,6 +59,11 @@ class CartItemState {
     this.mfgDate,
   });
 
+  double get itemTotal {
+    final base = (rate * quantity) - discountAmount;
+    return base + (base * (gstPercent / 100.0));
+  }
+
   CartItemState copyWith({
     double? quantity,
     double? freeQuantity,
