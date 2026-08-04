@@ -21,9 +21,10 @@ echo "Checking Flutter version..."
 flutter --version
 
 echo "Compiling Flutter Web (Release mode)..."
-flutter build web --release -v
+flutter build web --release
 
 echo "=== Vercel Flutter Web Build Completed Successfully ==="
+
 
 
 

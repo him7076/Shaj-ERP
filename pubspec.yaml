@@ -58,9 +58,9 @@ dependencies:
   archive: ^3.6.1
   encrypt: ^5.0.3
   crypto: ^3.0.3
-  google_sign_in: ^7.0.0
+  google_sign_in: ^6.3.0
   googleapis: ^13.1.0
-  extension_google_sign_in_as_googleapis_auth: ^2.0.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.9
   file_picker: ^8.0.5
 
   # Reports & Analytics dependencies
