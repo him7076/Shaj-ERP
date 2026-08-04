@@ -127,11 +127,22 @@ class CartNotifier extends StateNotifier<OrderCart> {
   }
 
   void addItem(Item item, {double qty = 1.0}) {
-    final existingIndex = state.items.indexWhere((element) => element.item.uuid == item.uuid);
+    final existingIndex = state.items.indexWhere((element) {
+      if (item.uuid != null && item.uuid!.isNotEmpty && element.item.uuid != null && element.item.uuid!.isNotEmpty) {
+        return element.item.uuid == item.uuid;
+      }
+      if (item.id != 0 && element.item.id != 0) {
+        return element.item.id == item.id;
+      }
+      return element.item.itemName == item.itemName;
+    });
     if (existingIndex != -1) {
       final current = state.items[existingIndex];
-      updateItem(item.uuid!, quantity: current.quantity + qty);
-      return;
+      final targetKey = current.item.uuid ?? item.uuid ?? '';
+      if (targetKey.isNotEmpty) {
+        updateItem(targetKey, quantity: current.quantity + qty);
+        return;
+      }
     }
 
     final rate = item.sellRate ?? 0.0;

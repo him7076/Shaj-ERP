@@ -189,7 +189,7 @@ class PurchaseExcelImportService {
       final colS1Phone = _findCol(s1ColMap, ['phone', 'mobile', 'contact'], 2);
       final colS1Gst = _findCol(s1ColMap, ['party gst', 'gst number', 'gstin', 'gst'], 3);
       final colS1OrderNo = _findCol(s1ColMap, ['order number', 'order no', 'po number'], 4);
-      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'bill no', 'invoice no', 'voucher no', 'invoice'], 5);
+      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'voucher no', 'invoice #', 'bill #', 'ref no', 'ref', 'reference', 'invoice'], 5);
       final colS1TxnType = _findCol(s1ColMap, ['transaction type', 'txn type', 'type'], 6);
       final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 7);
       final colS1PayType = _findCol(s1ColMap, ['payment type', 'pay mode', 'mode'], 8);
@@ -206,7 +206,7 @@ class PurchaseExcelImportService {
 
       final colS2Date = _findCol(s2ColMap, ['date', 'bill date', 'invoice date'], 0);
       final colS2Party = _findCol(s2ColMap, ['party name', 'party', 'supplier name', 'supplier'], 1);
-      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'bill no', 'invoice no', 'voucher no', 'invoice'], 2);
+      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'voucher no', 'invoice #', 'bill #', 'ref no', 'ref', 'reference', 'invoice'], 2);
       final colS2ItemName = _findCol(s2ColMap, ['item name', 'product name', 'item', 'product', 'description'], 3);
       final colS2BatchNo = _findCol(s2ColMap, ['batch number', 'batch no', 'batch'], 4);
       final colS2ExpDate = _findCol(s2ColMap, ['expire date', 'exp date', 'expiry'], 5);
@@ -222,7 +222,6 @@ class PurchaseExcelImportService {
 
       // 1. Parse Sheet 2 Items into Multi-Key Lookup Maps
       final Map<String, List<Map<String, dynamic>>> itemsByBillNo = {};
-      final Map<String, List<Map<String, dynamic>>> itemsByPartyName = {};
       final Map<String, List<Map<String, dynamic>>> itemsByComboKey = {};
 
       if (itemSheet != null && itemSheet.rows.length > 1) {
@@ -256,14 +255,10 @@ class PurchaseExcelImportService {
           };
 
           final normBillNo = _normalizeKey(billNo);
-          final normParty = _normalizeKey(partyName);
-          final normCombo = _normalizeKey('${partyName}_$dateStr');
+          final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
 
           if (normBillNo.isNotEmpty) {
             itemsByBillNo.putIfAbsent(normBillNo, () => []).add(itemData);
-          }
-          if (normParty.isNotEmpty) {
-            itemsByPartyName.putIfAbsent(normParty, () => []).add(itemData);
           }
           if (normCombo.isNotEmpty) {
             itemsByComboKey.putIfAbsent(normCombo, () => []).add(itemData);
@@ -350,8 +345,7 @@ class PurchaseExcelImportService {
           // Retrieve items linked to this bill from Sheet 2 using multi-key lookup
           final normBillNo = _normalizeKey(billNo);
           final normEffBillNo = _normalizeKey(effectiveBillNo);
-          final normParty = _normalizeKey(partyName);
-          final normCombo = _normalizeKey('${partyName}_$dateStr');
+          final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
 
           List<Map<String, dynamic>> rawItems = [];
           if (normBillNo.isNotEmpty && itemsByBillNo.containsKey(normBillNo)) {

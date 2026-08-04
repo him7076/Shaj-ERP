@@ -7,6 +7,8 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
+import 'package:uuid/uuid.dart';
+
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 
 class AddItemSheet extends ConsumerStatefulWidget {
@@ -77,6 +79,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
       final repo = ref.read(itemRepositoryProvider);
       
       final newItem = Item()
+        ..uuid = const Uuid().v4()
         ..itemName = _nameController.text.trim()
         ..itemCode = _codeController.text.trim()
         ..sellRate = double.tryParse(_sellRateController.text.trim()) ?? 0.0

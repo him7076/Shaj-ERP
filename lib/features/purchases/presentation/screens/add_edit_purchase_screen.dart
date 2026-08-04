@@ -223,9 +223,14 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
   void _addItemLine(Item item) async {
     // Check if item is already added
-    final exists = _draftItems.any((element) => element.itemId == item.id);
-    if (exists) {
-      final existingIndex = _draftItems.indexWhere((element) => element.itemId == item.id);
+    final existingIndex = _draftItems.indexWhere((element) {
+      if (item.id != null && item.id != 0 && element.itemId != null && element.itemId != 0) {
+        return element.itemId == item.id;
+      }
+      return element.itemName?.trim().toLowerCase() == item.itemName?.trim().toLowerCase();
+    });
+
+    if (existingIndex != -1) {
       setState(() {
         _draftItems[existingIndex].quantity = (_draftItems[existingIndex].quantity ?? 0.0) + 1.0;
       });
