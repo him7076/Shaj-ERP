@@ -1556,8 +1556,6 @@ class WebMockCollection<T> extends IsarCollection<T> {
       if (prop == 'itemname') return item.itemName;
     }
     if (item is OrderItem) {
-      if (prop == 'orderid') return item.orderId;
-      if (prop == 'orderuuid') return item.orderUuid;
       if (prop == 'itemid') return item.itemId;
       if (prop == 'itemname') return item.itemName;
     }

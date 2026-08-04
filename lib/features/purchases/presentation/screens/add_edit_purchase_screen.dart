@@ -313,12 +313,12 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
       final purchase = _existingPurchase ?? Purchase();
       if (_existingPurchase == null) {
-        purchase.uuid ??= const Uuid().v4();
+        purchase.uuid ??= Uuid().v4();
         purchase.purchaseNumber = _billNumberController.text.trim();
         purchase.createdAt = DateTime.now();
         purchase.version = 1;
       } else {
-        purchase.uuid ??= const Uuid().v4();
+        purchase.uuid ??= Uuid().v4();
         purchase.version = _existingPurchase!.version + 1;
       }
 
