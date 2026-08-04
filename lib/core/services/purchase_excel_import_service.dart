@@ -320,7 +320,14 @@ class PurchaseExcelImportService {
           final existingPurchases = await isar.purchases.filter().purchaseNumberEqualTo(effectiveBillNo).findAll();
           for (var oldP in existingPurchases) {
             await isar.writeTxn(() async {
-              final oldItems = await isar.purchaseItems.filter().purchase((q) => q.idEqualTo(oldP.id)).findAll();
+              final oldItems = await isar.purchaseItems
+                  .filter()
+                  .purchaseUuidEqualTo(oldP.uuid)
+                  .or()
+                  .purchaseIdEqualTo(oldP.id)
+                  .or()
+                  .purchase((q) => q.idEqualTo(oldP.id))
+                  .findAll();
               for (var oi in oldItems) {
                 await isar.purchaseItems.delete(oi.id);
               }

@@ -100,6 +100,10 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         if (!isNew) {
           final oldItems = await isar.collection<PurchaseItem>()
               .filter()
+              .purchaseUuidEqualTo(purchase.uuid)
+              .or()
+              .purchaseIdEqualTo(purchaseId)
+              .or()
               .purchase((q) => q.idEqualTo(purchaseId))
               .findAll();
 
@@ -118,15 +122,17 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         // 4. Save new purchase items & adjust stocks
         for (var item in items) {
           item.uuid ??= _generateUuid();
-          if (!kIsWeb) {
-            item.purchase.value = purchase;
-          }
+          item.purchaseId = purchaseId;
+          item.purchaseUuid = purchase.uuid;
+          item.purchase.value = purchase;
           
           final itemId = await isar.collection<PurchaseItem>().put(item);
           item.id = itemId;
-          if (!kIsWeb) {
-            await item.purchase.save();
-          }
+          try { await item.purchase.save(); } catch (_) {}
+          try {
+            purchase.purchaseItems.add(item);
+            await purchase.purchaseItems.save();
+          } catch (_) {}
 
           // Update product stock balance (Stock IN)
           final targetItem = await isar.items.get(item.itemId ?? 0);
