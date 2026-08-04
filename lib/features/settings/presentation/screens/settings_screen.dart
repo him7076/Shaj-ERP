@@ -16,6 +16,7 @@ import 'package:business_sahaj_erp/features/purchases/presentation/providers/pur
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);

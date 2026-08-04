@@ -503,7 +503,7 @@ class PurchaseExcelImportService {
 
   // --- Helper Methods ---
 
-  static Map<String, int> _buildColumnMap(List<CellValue?> headerRow) {
+  static Map<String, int> _buildColumnMap(List<Data?> headerRow) {
     final Map<String, int> map = {};
     for (int i = 0; i < headerRow.length; i++) {
       final cell = headerRow[i];
@@ -533,7 +533,7 @@ class PurchaseExcelImportService {
     return defaultIndex;
   }
 
-  static String _getCellValue(List<CellValue?> row, int colIndex) {
+  static String _getCellValue(List<Data?> row, int colIndex) {
     if (colIndex < 0 || colIndex >= row.length) return '';
     final cell = row[colIndex];
     if (cell == null || cell.value == null) return '';
