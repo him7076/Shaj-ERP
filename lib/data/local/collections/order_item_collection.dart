@@ -33,6 +33,8 @@ class OrderItem implements IsarModel {
   // Batch Tracking
   String? batchNumber;
   String? expiryDate;
+  String? mfgDate;
+
 
   // Isar Links
   final order = IsarLink<Order>();

@@ -336,7 +336,8 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           ..deletedAt = DateTime.now()
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();
-        await isar.deletedVouchers.put(deletedVoucher);
+        await isar.collection<DeletedVoucher>().put(deletedVoucher);
+
 
         // Add to Sync Queue
         final queueItem = SyncQueue()

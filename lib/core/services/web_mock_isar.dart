@@ -716,6 +716,9 @@ class WebMockIsar implements Isar {
         'gstRate': entity.gstRate,
         'gstAmount': entity.gstAmount,
         'totalAmount': entity.totalAmount,
+        'batchNumber': entity.batchNumber,
+        'expiryDate': entity.expiryDate,
+        'mfgDate': entity.mfgDate,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -771,6 +774,9 @@ class WebMockIsar implements Isar {
         'gstRate': entity.gstRate,
         'gstAmount': entity.gstAmount,
         'totalAmount': entity.totalAmount,
+        'batchNumber': entity.batchNumber,
+        'expiryDate': entity.expiryDate,
+        'mfgDate': entity.mfgDate,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -778,6 +784,7 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+
     if (entity is DeletedVoucher) {
       return {
         'type': 'DeletedVoucher',
@@ -1216,6 +1223,9 @@ class WebMockIsar implements Isar {
           ..gstRate = map['gstRate'] as double?
           ..gstAmount = map['gstAmount'] as double?
           ..totalAmount = map['totalAmount'] as double?
+          ..batchNumber = map['batchNumber'] as String?
+          ..expiryDate = map['expiryDate'] as String?
+          ..mfgDate = map['mfgDate'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
@@ -1265,6 +1275,11 @@ class WebMockIsar implements Isar {
           ..gstRate = map['gstRate'] as double?
           ..gstAmount = map['gstAmount'] as double?
           ..totalAmount = map['totalAmount'] as double?
+          ..batchNumber = map['batchNumber'] as String?
+          ..expiryDate = map['expiryDate'] as String?
+          ..mfgDate = map['mfgDate'] as String?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
           ..isSynced = map['isSynced'] as bool
           ..version = map['version'] as int;

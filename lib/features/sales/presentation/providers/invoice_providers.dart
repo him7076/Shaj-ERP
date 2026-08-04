@@ -114,6 +114,9 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     double? rate,
     double? discountPercent,
     double? discountAmount,
+    String? batchNumber,
+    String? expiryDate,
+    String? mfgDate,
   }) {
     if (index < 0 || index >= state.items.length) return;
 
@@ -140,7 +143,11 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       rate: rate,
       discountPercent: finalDiscPercent,
       discountAmount: finalDiscAmount,
+      batchNumber: batchNumber,
+      expiryDate: expiryDate,
+      mfgDate: mfgDate,
     );
+
 
     final updatedList = List<CartItemState>.from(state.items);
     updatedList[index] = updated;

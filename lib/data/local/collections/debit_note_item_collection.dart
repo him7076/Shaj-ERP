@@ -32,6 +32,12 @@ class DebitNoteItem implements IsarModel {
   double? gstAmount;
   double? totalAmount;
 
+  // Batch Tracking
+  String? batchNumber;
+  String? expiryDate;
+  String? mfgDate;
+
+
   final debitNote = IsarLink<DebitNote>();
   final item = IsarLink<Item>();
 

@@ -32,6 +32,12 @@ class CreditNoteItem implements IsarModel {
   double? gstAmount;
   double? totalAmount;
 
+  // Batch Tracking
+  String? batchNumber;
+  String? expiryDate;
+  String? mfgDate;
+
+
   final creditNote = IsarLink<CreditNote>();
   final item = IsarLink<Item>();
 

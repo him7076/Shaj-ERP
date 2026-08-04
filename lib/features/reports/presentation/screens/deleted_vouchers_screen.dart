@@ -9,10 +9,11 @@ import 'package:isar/isar.dart';
 final deletedVouchersProvider = FutureProvider.autoDispose<List<DeletedVoucher>>((ref) async {
   final dbService = ref.read(databaseServiceProvider);
   final isar = dbService.isar;
-  final list = await isar.deletedVouchers.filter().idGreaterThan(-1).findAll();
+  final list = await isar.collection<DeletedVoucher>().filter().idGreaterThan(-1).findAll();
   list.sort((a, b) => b.deletedAt?.compareTo(a.deletedAt ?? DateTime.now()) ?? 0);
   return list;
 });
+
 
 class DeletedVouchersScreen extends ConsumerStatefulWidget {
   const DeletedVouchersScreen({Key? key}) : super(key: key);
