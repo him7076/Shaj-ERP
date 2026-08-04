@@ -316,6 +316,18 @@ class PurchaseExcelImportService {
             }
           }
 
+          // Delete existing old purchase bill if re-importing same bill number
+          final existingPurchases = await isar.purchases.filter().purchaseNumberEqualTo(effectiveBillNo).findAll();
+          for (var oldP in existingPurchases) {
+            await isar.writeTxn(() async {
+              final oldItems = await isar.purchaseItems.filter().purchase((q) => q.idEqualTo(oldP.id)).findAll();
+              for (var oi in oldItems) {
+                await isar.purchaseItems.delete(oi.id);
+              }
+              await isar.purchases.delete(oldP.id);
+            });
+          }
+
           // Create Purchase Record
           final purchase = Purchase()
             ..uuid = Uuid().v4()

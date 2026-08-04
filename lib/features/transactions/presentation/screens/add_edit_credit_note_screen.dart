@@ -432,7 +432,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                 final it = _items[index];
                                 return ListTile(
                                   contentPadding: EdgeInsets.zero,
-                                  title: Text(it.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  title: Text('#${index + 1}. ${it.itemName ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold)),
                                   subtitle: Text(
                                     '${it.quantity} Qty x ₹${it.rate} | Taxable: ₹${it.taxableAmount?.toStringAsFixed(2)} | GST (${it.gstRate}%): ₹${it.gstAmount?.toStringAsFixed(2)}',
                                   ),

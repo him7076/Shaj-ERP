@@ -881,10 +881,11 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                    separatorBuilder: (context, index) => const Divider(height: 24),
                    itemBuilder: (context, index) {
                      final cartItem = cart.items[index];
-                     return OrderCartItemRow(
-                       cartItem: cartItem,
-                       isGstInclusive: cart.isGstInclusive,
-                     );
+                      return OrderCartItemRow(
+                        index: index,
+                        cartItem: cartItem,
+                        isGstInclusive: cart.isGstInclusive,
+                      );
                    },
                  ),
                ),
@@ -997,9 +998,10 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 }
 
 class OrderCartItemRow extends ConsumerStatefulWidget {
+  final int index;
   final CartItemState cartItem;
   final bool isGstInclusive;
-  const OrderCartItemRow({Key? key, required this.cartItem, required this.isGstInclusive}) : super(key: key);
+  const OrderCartItemRow({Key? key, required this.index, required this.cartItem, required this.isGstInclusive}) : super(key: key);
 
   @override
   ConsumerState<OrderCartItemRow> createState() => _OrderCartItemRowState();
@@ -1092,8 +1094,23 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '#${widget.index + 1}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 item.item.itemName ?? '',

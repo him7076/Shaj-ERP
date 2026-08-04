@@ -885,6 +885,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                    itemBuilder: (context, index) {
                      final item = _draftItems[index];
                      return PurchaseCartItemRow(
+                       index: index,
                        item: item,
                        onDelete: () {
                          setState(() {
@@ -1011,12 +1012,14 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 }
 
 class PurchaseCartItemRow extends ConsumerStatefulWidget {
+  final int index;
   final PurchaseItem item;
   final VoidCallback onDelete;
   final Function(double qty, double rate, double discount, double gstRate) onChanged;
 
   const PurchaseCartItemRow({
     Key? key,
+    required this.index,
     required this.item,
     required this.onDelete,
     required this.onChanged,
@@ -1142,8 +1145,23 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '#${widget.index + 1}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 item.itemName ?? '',
