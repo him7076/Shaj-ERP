@@ -23,6 +23,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 
 class WebMockIsar implements Isar {
   final String firmId;
@@ -131,6 +132,7 @@ class WebMockIsar implements Isar {
     if (T == CreditNoteItem) return 'creditNoteItems';
     if (T == DebitNote) return 'debitNotes';
     if (T == DebitNoteItem) return 'debitNoteItems';
+    if (T == DeletedVoucher) return 'deletedVouchers';
     return 'dynamics';
   }
 
@@ -172,6 +174,8 @@ class WebMockIsar implements Isar {
     if (name == 'creditNoteItems') return WebMockCollection<CreditNoteItem>('creditNoteItems', _db, this);
     if (name == 'debitNotes') return WebMockCollection<DebitNote>('debitNotes', _db, this);
     if (name == 'debitNoteItems') return WebMockCollection<DebitNoteItem>('debitNoteItems', _db, this);
+    if (name == 'deletedVouchers') return WebMockCollection<DeletedVoucher>('deletedVouchers', _db, this);
+
     return WebMockCollection<dynamic>(name, _db, this);
   }
 
@@ -774,8 +778,27 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+    if (entity is DeletedVoucher) {
+      return {
+        'type': 'DeletedVoucher',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'voucherType': entity.voucherType,
+        'voucherNumber': entity.voucherNumber,
+        'partyName': entity.partyName,
+        'amount': entity.amount,
+        'remarks': entity.remarks,
+        'deletedAt': entity.deletedAt?.toIso8601String(),
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
     return {};
   }
+
 
   dynamic _mapToEntity(Map<String, dynamic> map) {
     final type = map['type'] as String;
@@ -1242,6 +1265,19 @@ class WebMockIsar implements Isar {
           ..gstRate = map['gstRate'] as double?
           ..gstAmount = map['gstAmount'] as double?
           ..totalAmount = map['totalAmount'] as double?
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'DeletedVoucher':
+        return DeletedVoucher()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..voucherType = map['voucherType'] as String?
+          ..voucherNumber = map['voucherNumber'] as String?
+          ..partyName = map['partyName'] as String?
+          ..amount = map['amount'] as double?
+          ..remarks = map['remarks'] as String?
+          ..deletedAt = map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
@@ -1251,6 +1287,7 @@ class WebMockIsar implements Isar {
         return null;
     }
   }
+
 }
 
 class WebMockCollection<T> extends IsarCollection<T> {

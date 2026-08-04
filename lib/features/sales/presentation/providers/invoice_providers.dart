@@ -37,6 +37,7 @@ class InvoiceCart {
   final double paidAmount;
   final DateTime dueDate;
   final String remarks;
+  final double? customRoundOff;
 
   InvoiceCart({
     this.selectedParty,
@@ -47,6 +48,7 @@ class InvoiceCart {
     this.invoiceType = 'Tax Invoice',
     this.paidAmount = 0.0,
     this.remarks = '',
+    this.customRoundOff,
     DateTime? dueDate,
   }) : dueDate = dueDate ?? DateTime.now().add(const Duration(days: 15)); // Default 15 days credit
 
@@ -60,6 +62,7 @@ class InvoiceCart {
     double? paidAmount,
     DateTime? dueDate,
     String? remarks,
+    double? customRoundOff,
   }) {
     return InvoiceCart(
       selectedParty: selectedParty ?? this.selectedParty,
@@ -71,9 +74,11 @@ class InvoiceCart {
       paidAmount: paidAmount ?? this.paidAmount,
       dueDate: dueDate ?? this.dueDate,
       remarks: remarks ?? this.remarks,
+      customRoundOff: customRoundOff ?? this.customRoundOff,
     );
   }
 }
+
 
 // State Notifier for Direct Invoice Creator
 class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
@@ -197,6 +202,21 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     state = state.copyWith(remarks: remarks);
   }
 
+  void setCustomRoundOff(double? val) {
+    state = InvoiceCart(
+      selectedParty: state.selectedParty,
+      items: state.items,
+      isGstInclusive: state.isGstInclusive,
+      discountPercent: state.discountPercent,
+      discountAmount: state.discountAmount,
+      invoiceType: state.invoiceType,
+      paidAmount: state.paidAmount,
+      dueDate: state.dueDate,
+      remarks: state.remarks,
+      customRoundOff: val,
+    );
+  }
+
   void setDiscounts(double? percent, double? amount) {
     state = state.copyWith(
       discountPercent: percent ?? state.discountPercent,
@@ -222,6 +242,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       paidAmount: invoice.paidAmount ?? 0.0,
       dueDate: invoice.dueDate ?? DateTime.now(),
       remarks: invoice.remarks ?? '',
+      customRoundOff: invoice.roundOff,
     );
   }
 
@@ -262,8 +283,8 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     totalDiscount += orderDiscountVal;
 
     final double rawGrandTotal = (subtotal + totalGst) - orderDiscountVal;
-    final double roundedGrandTotal = rawGrandTotal.roundToDouble();
-    final double roundOff = roundedGrandTotal - rawGrandTotal;
+    final double roundOff = state.customRoundOff ?? (rawGrandTotal.roundToDouble() - rawGrandTotal);
+    final double roundedGrandTotal = rawGrandTotal + roundOff;
     final double pending = roundedGrandTotal - state.paidAmount;
 
     return {
@@ -276,6 +297,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     };
   }
 }
+
 
 final invoiceCartProvider = StateNotifierProvider<InvoiceCartNotifier, InvoiceCart>((ref) {
   return InvoiceCartNotifier();

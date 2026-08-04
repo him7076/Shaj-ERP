@@ -2,6 +2,7 @@ import 'package:isar/isar.dart';
 import 'dart:math';
 import 'package:business_sahaj_erp/data/local/collections/isar_model.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/base_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
@@ -176,6 +177,41 @@ abstract class BaseIsarRepository<T extends IsarModel> implements BaseRepository
       await isar.writeTxn(() async {
         await collection.put(entity);
 
+        // Record DeletedVoucher for audit trail
+        try {
+          dynamic dynamicEntity = entity;
+          String? vNum;
+          String? pName;
+          double? vAmt;
+          String? vRem;
+
+          try { vNum = dynamicEntity.invoiceNumber; } catch (_) {}
+          try { vNum ??= dynamicEntity.purchaseNumber; } catch (_) {}
+          try { vNum ??= dynamicEntity.orderNumber; } catch (_) {}
+          try { vNum ??= dynamicEntity.creditNoteNumber; } catch (_) {}
+          try { vNum ??= dynamicEntity.debitNoteNumber; } catch (_) {}
+          try { vNum ??= dynamicEntity.transactionNumber; } catch (_) {}
+
+          try { pName = dynamicEntity.partyName; } catch (_) {}
+          try { vAmt = dynamicEntity.grandTotal; } catch (_) {}
+          try { vAmt ??= dynamicEntity.amount; } catch (_) {}
+          try { vRem = dynamicEntity.remarks; } catch (_) {}
+
+          if (vNum != null && vNum.toString().isNotEmpty) {
+            final delVoucher = DeletedVoucher()
+              ..uuid = _generateUuid()
+              ..voucherType = entityType
+              ..voucherNumber = vNum.toString()
+              ..partyName = pName
+              ..amount = vAmt
+              ..remarks = vRem
+              ..deletedAt = DateTime.now()
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now();
+            await isar.collection<DeletedVoucher>().put(delVoucher);
+          }
+        } catch (_) {}
+
         // Only log to sync queue if it is a local change
         if (!isSyncDownload) {
           final queueItem = SyncQueue()
@@ -189,6 +225,7 @@ abstract class BaseIsarRepository<T extends IsarModel> implements BaseRepository
           await isar.syncQueues.put(queueItem);
         }
       });
+
       
       logger.debug('$entityType soft-deleted. isSyncDownload: $isSyncDownload, UUID: $uuid');
     } on RecordNotFoundException {

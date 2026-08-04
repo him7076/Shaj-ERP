@@ -348,7 +348,11 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ..taxableAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
           ..gstPercent = cartItem.gstPercent
           ..gstAmount = cartItem.gstPercent * cartItem.rate * 0.01
-          ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount;
+          ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
+          ..batchNumber = cartItem.batchNumber
+          ..expiryDate = cartItem.expiryDate
+          ..mfgDate = cartItem.mfgDate;
+
 
         if (!kIsWeb) {
           orderItem.item.value = cartItem.item;
@@ -1014,6 +1018,9 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
   late TextEditingController _rateInclController;
   late TextEditingController _discPercentController;
   late TextEditingController _discAmountController;
+  late TextEditingController _batchController;
+  late TextEditingController _mfgDateController;
+  late TextEditingController _expDateController;
 
   bool _isUpdatingLocally = false;
 
@@ -1036,7 +1043,11 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     _rateInclController = TextEditingController(text: rateIncl.toStringAsFixed(2));
     _discPercentController = TextEditingController(text: item.discountPercent.toString());
     _discAmountController = TextEditingController(text: item.discountAmount.toString());
+    _batchController = TextEditingController(text: item.batchNumber ?? '');
+    _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
+    _expDateController = TextEditingController(text: item.expiryDate ?? '');
   }
+
   
   @override
   void didUpdateWidget(OrderCartItemRow oldWidget) {
@@ -1075,8 +1086,12 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     _rateInclController.dispose();
     _discPercentController.dispose();
     _discAmountController.dispose();
+    _batchController.dispose();
+    _mfgDateController.dispose();
+    _expDateController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1302,7 +1317,42 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _batchController,
+                decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  ref.read(cartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _mfgDateController,
+                decoration: const InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  ref.read(cartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _expDateController,
+                decoration: const InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  ref.read(cartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
+                },
+              ),
+            ),
+          ],
+        ),
       ],
     );
+
   }
 }

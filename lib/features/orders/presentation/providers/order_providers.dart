@@ -41,6 +41,9 @@ class CartItemState {
   final double discountPercent;
   final double discountAmount;
   final double gstPercent;
+  final String? batchNumber;
+  final String? expiryDate;
+  final String? mfgDate;
 
   const CartItemState({
     required this.item,
@@ -51,6 +54,9 @@ class CartItemState {
     this.discountPercent = 0.0,
     this.discountAmount = 0.0,
     required this.gstPercent,
+    this.batchNumber,
+    this.expiryDate,
+    this.mfgDate,
   });
 
   CartItemState copyWith({
@@ -61,6 +67,9 @@ class CartItemState {
     double? discountPercent,
     double? discountAmount,
     double? gstPercent,
+    String? batchNumber,
+    String? expiryDate,
+    String? mfgDate,
   }) {
     return CartItemState(
       item: item,
@@ -71,9 +80,13 @@ class CartItemState {
       discountPercent: discountPercent ?? this.discountPercent,
       discountAmount: discountAmount ?? this.discountAmount,
       gstPercent: gstPercent ?? this.gstPercent,
+      batchNumber: batchNumber ?? this.batchNumber,
+      expiryDate: expiryDate ?? this.expiryDate,
+      mfgDate: mfgDate ?? this.mfgDate,
     );
   }
 }
+
 
 // Order Cart Wrapper
 class OrderCart {

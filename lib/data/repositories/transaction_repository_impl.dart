@@ -7,6 +7,7 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/transaction_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
@@ -324,6 +325,19 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           }
         }
 
+        // Create Audit Record for Deleted Voucher
+        final deletedVoucher = DeletedVoucher()
+          ..uuid = _generateUuid()
+          ..voucherType = transaction.transactionType ?? 'Transaction'
+          ..voucherNumber = transaction.transactionNumber
+          ..partyName = transaction.partyName
+          ..amount = transaction.amount
+          ..remarks = transaction.remarks
+          ..deletedAt = DateTime.now()
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.deletedVouchers.put(deletedVoucher);
+
         // Add to Sync Queue
         final queueItem = SyncQueue()
           ..uuid = _generateUuid()
@@ -335,6 +349,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(queueItem);
       });
+
       logger.info('Transaction ${transaction.transactionNumber} deleted.');
     } catch (e) {
       throw DatabaseException('Failed to delete transaction: $e');

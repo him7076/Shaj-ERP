@@ -48,10 +48,13 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   double _taxableAmount = 0.0;
   double _totalGST = 0.0;
   double _grandTotal = 0.0;
+  double? _customRoundOff;
+  double _roundOff = 0.0;
   bool _isSaving = false;
   String? _companyGst;
   Purchase? _existingPurchase;
   String _paymentMode = 'Cash';
+
   List<String> _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit'];
 
   void _loadPaymentModes() {
@@ -248,14 +251,17 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     }
 
     _discountAmount = double.tryParse(_discountController.text) ?? 0.0;
+    final double rawTotal = (sub - _discountAmount) + tax;
+    _roundOff = _customRoundOff ?? (rawTotal.roundToDouble() - rawTotal);
 
     setState(() {
       _subtotal = sub;
       _taxableAmount = sub - _discountAmount;
       _totalGST = tax;
-      _grandTotal = _taxableAmount + _totalGST;
+      _grandTotal = rawTotal + _roundOff;
     });
   }
+
 
   void _addItemLine(Item item) async {
 
@@ -331,7 +337,9 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         ..discountAmount = _discountAmount
         ..taxableAmount = _taxableAmount
         ..totalGST = _totalGST
+        ..roundOff = _roundOff
         ..grandTotal = _grandTotal
+
         ..paidAmount = paidAmt
         ..pendingAmount = pendingAmt
         ..paymentStatus = paymentStat
@@ -995,7 +1003,52 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         ] else ...[
           _buildSummaryRow(igstLabel, igst, theme),
         ],
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text('Round Off', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                  if (_customRoundOff != null)
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.blue),
+                      tooltip: 'Reset to Auto Round Off',
+                      onPressed: () {
+                        _customRoundOff = null;
+                        _recalculateTotals();
+                      },
+                    ),
+                ],
+              ),
+              SizedBox(
+                width: 90,
+                child: TextFormField(
+                  initialValue: _roundOff.toStringAsFixed(2),
+                  key: ValueKey('roundoff_${_customRoundOff}_$_roundOff'),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (val) {
+                    final parsed = double.tryParse(val);
+                    if (parsed != null) {
+                      _customRoundOff = parsed;
+                      _recalculateTotals();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
         const Divider(),
+
         _buildSummaryRow('GRAND TOTAL', _grandTotal, theme, isBold: true),
         _buildSummaryRow('Pending Outstanding', pendingAmt < 0 ? 0.0 : pendingAmt, theme, isPending: true),
       ],
@@ -1057,6 +1110,9 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   late TextEditingController _rateInclController;
   late TextEditingController _discController;
   late TextEditingController _gstController;
+  late TextEditingController _batchController;
+  late TextEditingController _mfgDateController;
+  late TextEditingController _expDateController;
 
   bool _isUpdatingLocally = false;
   Item? _resolvedDbItem;
@@ -1074,9 +1130,13 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
     _rateInclController = TextEditingController(text: incl.toStringAsFixed(2));
     _discController = TextEditingController(text: item.discount?.toString() ?? '0.0');
     _gstController = TextEditingController(text: gstPct.toString());
+    _batchController = TextEditingController(text: item.batchNumber ?? '');
+    _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
+    _expDateController = TextEditingController(text: item.expiryDate ?? '');
 
     _loadDbItem();
   }
+
 
   Future<void> _loadDbItem() async {
     final item = widget.item;
@@ -1136,8 +1196,12 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
     _rateInclController.dispose();
     _discController.dispose();
     _gstController.dispose();
+    _batchController.dispose();
+    _mfgDateController.dispose();
+    _expDateController.dispose();
     super.dispose();
   }
+
 
   void _triggerChanged({double? qty, double? exclRate, double? disc, double? gst}) {
     final targetQty = qty ?? double.tryParse(_qtyController.text) ?? 1.0;
@@ -1345,8 +1409,43 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _batchController,
+                decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  widget.item.batchNumber = val.trim();
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _mfgDateController,
+                decoration: const InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  widget.item.mfgDate = val.trim();
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _expDateController,
+                decoration: const InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  widget.item.expiryDate = val.trim();
+                },
+              ),
+            ),
+          ],
+        ),
       ],
     );
+
   }
 }
 

@@ -41,6 +41,10 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
   final _qtyController = TextEditingController(text: '1');
   final _rateController = TextEditingController();
   final _discountController = TextEditingController(text: '0');
+  final _batchController = TextEditingController();
+  final _mfgDateController = TextEditingController();
+  final _expDateController = TextEditingController();
+  double? _customRoundOff;
 
   @override
   void initState() {
@@ -70,6 +74,9 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     _qtyController.dispose();
     _rateController.dispose();
     _discountController.dispose();
+    _batchController.dispose();
+    _mfgDateController.dispose();
+    _expDateController.dispose();
     super.dispose();
   }
 
@@ -94,12 +101,13 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
   }
 
   double get _grandTotal {
-    return _rawGrandTotal.roundToDouble();
+    return _customRoundOff != null ? (_rawGrandTotal + _customRoundOff!) : _rawGrandTotal.roundToDouble();
   }
 
   double get _roundOff {
-    return _grandTotal - _rawGrandTotal;
+    return _customRoundOff ?? (_grandTotal - _rawGrandTotal);
   }
+
 
   Map<String, double> _calculateGstBreakdown(String? companyGst) {
     final isLocal = GstService().isIntrastate(companyGst, _selectedParty?.gstNumber, partyState: _selectedParty?.state);
@@ -142,7 +150,10 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       ..taxableAmount = taxable
       ..gstRate = gstRate
       ..gstAmount = gst
-      ..totalAmount = total;
+      ..totalAmount = total
+      ..batchNumber = _batchController.text.trim()
+      ..mfgDate = _mfgDateController.text.trim()
+      ..expiryDate = _expDateController.text.trim();
     
     if (!kIsWeb) {
       noteItem.item.value = _selectedItemForAdd;
@@ -154,8 +165,12 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       _qtyController.text = '1';
       _rateController.clear();
       _discountController.text = '0';
+      _batchController.clear();
+      _mfgDateController.clear();
+      _expDateController.clear();
     });
   }
+
 
   Future<void> _saveCreditNote() async {
     if (_selectedParty == null) {

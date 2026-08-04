@@ -433,7 +433,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..taxableAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
           ..gstRate = cartItem.gstPercent
           ..gstAmount = cartItem.gstPercent * cartItem.rate * 0.01
-          ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount;
+          ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
+          ..batchNumber = cartItem.batchNumber
+          ..expiryDate = cartItem.expiryDate
+          ..mfgDate = cartItem.mfgDate;
+
 
         if (!kIsWeb) {
           invItem.item.value = cartItem.item;
@@ -1207,8 +1211,50 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             ] else ...[
               _buildSummaryRow(igstLabel, igst, theme),
             ],
-            _buildSummaryRow('Round Off', totals['roundOff']!, theme),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text('Round Off', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                      if (cart.customRoundOff != null)
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.blue),
+                          tooltip: 'Reset to Auto Round Off',
+                          onPressed: () {
+                            ref.read(invoiceCartProvider.notifier).setCustomRoundOff(null);
+                          },
+                        ),
+                    ],
+                  ),
+                  SizedBox(
+                    width: 90,
+                    child: TextFormField(
+                      initialValue: totals['roundOff']!.toStringAsFixed(2),
+                      key: ValueKey('roundoff_${cart.customRoundOff}_${totals['roundOff']}'),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        final parsed = double.tryParse(val);
+                        if (parsed != null) {
+                          ref.read(invoiceCartProvider.notifier).setCustomRoundOff(parsed);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const Divider(),
+
             _buildSummaryRow('GRAND TOTAL', totals['grandTotal']!, theme, isBold: true),
             _buildSummaryRow('Pending Outstanding', totals['pendingAmount']!, theme, isPending: true),
           ],
@@ -1265,6 +1311,9 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
   late TextEditingController _rateInclController;
   late TextEditingController _discPercentController;
   late TextEditingController _discAmountController;
+  late TextEditingController _batchController;
+  late TextEditingController _mfgDateController;
+  late TextEditingController _expDateController;
 
   bool _isUpdatingLocally = false;
 
@@ -1287,7 +1336,11 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _rateInclController = TextEditingController(text: rateIncl.toStringAsFixed(2));
     _discPercentController = TextEditingController(text: item.discountPercent.toString());
     _discAmountController = TextEditingController(text: item.discountAmount.toString());
+    _batchController = TextEditingController(text: item.batchNumber ?? '');
+    _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
+    _expDateController = TextEditingController(text: item.expiryDate ?? '');
   }
+
   
   @override
   void didUpdateWidget(InvoiceCartItemRow oldWidget) {
@@ -1326,8 +1379,12 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _rateInclController.dispose();
     _discPercentController.dispose();
     _discAmountController.dispose();
+    _batchController.dispose();
+    _mfgDateController.dispose();
+    _expDateController.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1553,7 +1610,42 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _batchController,
+                decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _mfgDateController,
+                decoration: const InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _expDateController,
+                decoration: const InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
+                },
+              ),
+            ),
+          ],
+        ),
       ],
     );
+
   }
 }

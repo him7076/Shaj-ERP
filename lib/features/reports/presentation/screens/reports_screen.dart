@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/screens/outstan
 import 'package:business_sahaj_erp/features/reports/presentation/screens/party_ledger_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/salesman_report_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/batch_report_screen.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/screens/deleted_vouchers_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
@@ -316,6 +317,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         MaterialPageRoute(builder: (context) => const BatchReportScreen()),
                       ),
                     ),
+                    _buildReportMenuCard(
+                      title: 'Deleted Vouchers Audit Log',
+                      description: 'Track all deleted bill numbers, dates & party details',
+                      icon: Icons.delete_sweep_rounded,
+                      color: const Color(0xFFEF4444),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DeletedVouchersScreen()),
+                      ),
+                    ),
+
                   ],
                 ),
               ],
