@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
+import 'package:business_sahaj_erp/core/widgets/liquid_glass_card.dart';
 import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -656,67 +657,63 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
 
-    return AnimatedHoverCard(
-      glowColor: iconColor,
-      onTap: onTap,
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 10.0 : 20.0, vertical: isMobile ? 8.0 : 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                    fontSize: isMobile ? 10 : 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.all(isMobile ? 6 : 10),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: isMobile ? 16 : 20,
-                ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  fontSize: isMobile ? 13.5 : 20,
-                  color: theme.colorScheme.onSurface,
-                  letterSpacing: -0.5,
+    final cardChild = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                  fontSize: isMobile ? 10 : 13,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (!isMobile) ...[
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: trendColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+            ),
+            Container(
+              padding: EdgeInsets.all(isMobile ? 6 : 10),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: isMobile ? 16 : 20,
+              ),
+            ),
+          ],
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w900,
+                fontSize: isMobile ? 13.5 : 20,
+                color: theme.colorScheme.onSurface,
+                letterSpacing: -0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (!isMobile) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: trendColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -744,7 +741,22 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
         ],
-      ),
+      );
+
+    if (isMobile) {
+      return LiquidGlassCard(
+        onTap: onTap,
+        accentGlowColor: iconColor,
+        padding: const EdgeInsets.all(12.0),
+        child: cardChild,
+      );
+    }
+
+    return AnimatedHoverCard(
+      glowColor: iconColor,
+      onTap: onTap,
+      padding: const EdgeInsets.all(20.0),
+      child: cardChild,
     );
   }
 

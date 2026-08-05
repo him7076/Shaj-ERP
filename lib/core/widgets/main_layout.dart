@@ -55,7 +55,9 @@ class MainLayout extends StatelessWidget {
         ),
       );
     } else {
-      // Mobile / Tablet Layout: Modern Floating Bottom Bar + FAB + Slider Drawer
+      // Mobile / Tablet Layout: Liquid Glass Floating Bottom Bar + FAB + Slider Drawer
+      final isDark = theme.brightness == Brightness.dark;
+
       return Scaffold(
         key: _scaffoldKey,
         appBar: const CustomAppBar(),
@@ -66,82 +68,123 @@ class MainLayout extends StatelessWidget {
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: Container(
-          height: 56,
-          width: 56,
+          height: 58,
+          width: 58,
           margin: const EdgeInsets.only(top: 10),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF6366F1), Color(0xFF3B82F6)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6366F1).withOpacity(0.45),
+                blurRadius: 16,
+                spreadRadius: 2,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: FloatingActionButton(
-            elevation: 4,
+            elevation: 0,
+            highlightElevation: 0,
             shape: const CircleBorder(),
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
             onPressed: () => MobileBottomSheets.showQuickCreate(context),
-            child: const Icon(Icons.add_rounded, size: 32),
+            child: const Icon(Icons.add_rounded, size: 34),
             tooltip: 'Quick Action',
           ),
         ),
         bottomNavigationBar: Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(isDark ? 0.40 : 0.10),
+                blurRadius: 24,
+                spreadRadius: 1,
+                offset: const Offset(0, 8),
               ),
             ],
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.4),
-              width: 1,
-            ),
           ),
-          child: BottomAppBar(
-            height: 64,
-            elevation: 0,
-            color: Colors.transparent,
-            shape: const CircularNotchedRectangle(),
-            notchMargin: 8,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  context,
-                  icon: Icons.dashboard_outlined,
-                  activeIcon: Icons.dashboard_rounded,
-                  label: 'Home',
-                  isSelected: selectedIndex == 0,
-                  onTap: () => context.go('/dashboard'),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  gradient: isDark
+                      ? LinearGradient(
+                          colors: [
+                            const Color(0xFF1E293B).withOpacity(0.85),
+                            const Color(0xFF0F172A).withOpacity(0.70),
+                          ],
+                        )
+                      : LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.90),
+                            Colors.white.withOpacity(0.75),
+                          ],
+                        ),
+                  border: Border.all(
+                    color: isDark ? Colors.white.withOpacity(0.14) : Colors.white.withOpacity(0.65),
+                    width: 1.2,
+                  ),
                 ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.receipt_long_outlined,
-                  activeIcon: Icons.receipt_long_rounded,
-                  label: 'Sales',
-                  isSelected: selectedIndex == 1,
-                  onTap: () => context.go('/sales'),
+                child: BottomAppBar(
+                  height: 64,
+                  elevation: 0,
+                  color: Colors.transparent,
+                  shape: const CircularNotchedRectangle(),
+                  notchMargin: 8,
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildNavItem(
+                        context,
+                        icon: Icons.dashboard_outlined,
+                        activeIcon: Icons.dashboard_rounded,
+                        label: 'Home',
+                        isSelected: selectedIndex == 0,
+                        onTap: () => context.go('/dashboard'),
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.receipt_long_outlined,
+                        activeIcon: Icons.receipt_long_rounded,
+                        label: 'Sales',
+                        isSelected: selectedIndex == 1,
+                        onTap: () => context.go('/sales'),
+                      ),
+                      const SizedBox(width: 48), // Space for central FAB notch
+                      _buildNavItem(
+                        context,
+                        icon: Icons.people_outline_rounded,
+                        activeIcon: Icons.people_rounded,
+                        label: 'Parties',
+                        isSelected: selectedIndex == 2,
+                        onTap: () => context.go('/parties'),
+                      ),
+                      _buildNavItem(
+                        context,
+                        icon: Icons.grid_view_outlined,
+                        activeIcon: Icons.grid_view_rounded,
+                        label: 'More',
+                        isSelected: selectedIndex == 3,
+                        onTap: () {
+                          _scaffoldKey.currentState?.openDrawer();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 48), // Space for central FAB notch
-                _buildNavItem(
-                  context,
-                  icon: Icons.people_outline_rounded,
-                  activeIcon: Icons.people_rounded,
-                  label: 'Parties',
-                  isSelected: selectedIndex == 2,
-                  onTap: () => context.go('/parties'),
-                ),
-                _buildNavItem(
-                  context,
-                  icon: Icons.grid_view_outlined,
-                  activeIcon: Icons.grid_view_rounded,
-                  label: 'More',
-                  isSelected: selectedIndex == 3,
-                  onTap: () {
-                    _scaffoldKey.currentState?.openDrawer();
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -158,29 +201,45 @@ class MainLayout extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    final color = isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant;
+    final isDark = theme.brightness == Brightness.dark;
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: isSelected
+            ? BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6366F1).withOpacity(0.35),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              )
+            : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: color,
-              size: 24,
+              color: isSelected ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+              size: 22,
             ),
             const SizedBox(height: 2),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                color: color,
+                color: isSelected ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
               ),
             ),
           ],
@@ -188,4 +247,5 @@ class MainLayout extends StatelessWidget {
       ),
     );
   }
+}
 }

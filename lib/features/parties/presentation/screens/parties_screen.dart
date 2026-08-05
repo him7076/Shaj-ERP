@@ -11,6 +11,8 @@ import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
 import 'package:business_sahaj_erp/core/services/party_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/widgets/liquid_glass_card.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'party_detail_screen.dart';
 import 'add_edit_party_screen.dart';
 
@@ -488,134 +490,153 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
 
   Widget _buildPartyCard(Party party, {String? distanceBadge}) {
     final theme = Theme.of(context);
+    final isMobile = ResponsiveLayout.isMobile(context);
     final balance = party.openingBalance ?? 0.0;
     final isReceivable = party.balanceType == 'Dr';
     final glowColor = isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981);
     
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10.0),
-      child: AnimatedHoverCard(
-        glowColor: glowColor,
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => PartyDetailScreen(partyUuid: party.uuid!),
+    final VoidCallback handleTap = () {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => PartyDetailScreen(partyUuid: party.uuid!),
+        ),
+      ).then((_) {
+        ref.read(partySearchProvider.notifier).setQuery(_searchController.text);
+      });
+    };
+
+    final cardContent = Padding(
+      padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+      child: Row(
+        children: [
+          Container(
+            width: isMobile ? 38 : 44,
+            height: isMobile ? 38 : 44,
+            decoration: BoxDecoration(
+              color: glowColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
-          ).then((_) {
-            ref.read(partySearchProvider.notifier).setQuery(_searchController.text);
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: glowColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    party.partyName != null && party.partyName!.isNotEmpty
-                        ? party.partyName![0].toUpperCase()
-                        : 'P',
-                    style: TextStyle(
-                      color: glowColor,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                    ),
-                  ),
+            child: Center(
+              child: Text(
+                party.partyName != null && party.partyName!.isNotEmpty
+                    ? party.partyName![0].toUpperCase()
+                    : 'P',
+                style: TextStyle(
+                  color: glowColor,
+                  fontWeight: FontWeight.w800,
+                  fontSize: isMobile ? 15 : 18,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            party.partyName ?? '',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                    Expanded(
+                      child: Text(
+                        party.partyName ?? '',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: isMobile ? 13.5 : 15,
                         ),
-                        if (distanceBadge != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              distanceBadge,
-                              style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            party.partyType ?? 'Customer',
-                            style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
-                          ),
+                    if (distanceBadge != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Code: ${party.partyCode ?? "N/A"}' +
-                          (party.mobileNumber != null && party.mobileNumber!.isNotEmpty ? ' • 📞 ${party.mobileNumber}' : ''),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                            fontSize: 11,
-                          ),
+                        child: Text(
+                          distanceBadge,
+                          style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold),
                         ),
-                      ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        party.partyType ?? 'Customer',
+                        style: TextStyle(fontSize: 10, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Code: ${party.partyCode ?? "N/A"}' +
+                        (party.mobileNumber != null && party.mobileNumber!.isNotEmpty ? ' • 📞 ${party.mobileNumber}' : ''),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                          fontSize: 10.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '₹${balance.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: isMobile ? 13.5 : 15,
+                  color: isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
+                ),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '₹${balance.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                      color: isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: glowColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      isReceivable ? 'Receivable' : 'Payable',
-                      style: TextStyle(fontSize: 10, color: glowColor, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: glowColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  isReceivable ? 'Receivable' : 'Payable',
+                  style: TextStyle(fontSize: 9.5, color: glowColor, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: isMobile
+          ? LiquidGlassCard(
+              onTap: handleTap,
+              accentGlowColor: glowColor,
+              padding: EdgeInsets.zero,
+              child: cardContent,
+            )
+          : AnimatedHoverCard(
+              glowColor: glowColor,
+              onTap: handleTap,
+              child: cardContent,
+            ),
     );
   }
 }
