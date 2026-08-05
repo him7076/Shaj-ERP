@@ -222,10 +222,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: MediaQuery.of(context).size.width > 900 ? 3 : 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 2.2,
+                  crossAxisCount: MediaQuery.of(context).size.width > 900
+                      ? 3
+                      : (MediaQuery.of(context).size.width < 600 ? 1 : 2),
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: MediaQuery.of(context).size.width < 600 ? 2.8 : 2.2,
                   children: [
                     _buildReportMenuCard(
                       title: 'Sales Register',
@@ -445,6 +447,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 Text(
                   title,
                   style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(

@@ -8,6 +8,9 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      scaffoldBackgroundColor: ColorConstants.backgroundLight,
+      canvasColor: ColorConstants.backgroundLight,
+      dialogBackgroundColor: ColorConstants.surfaceLight,
       colorScheme: const ColorScheme.light(
         primary: ColorConstants.primaryLight,
         onPrimary: ColorConstants.onPrimaryLight,
@@ -92,6 +95,9 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      scaffoldBackgroundColor: ColorConstants.backgroundDark,
+      canvasColor: ColorConstants.backgroundDark,
+      dialogBackgroundColor: ColorConstants.surfaceDark,
       colorScheme: const ColorScheme.dark(
         primary: ColorConstants.primaryDark,
         onPrimary: ColorConstants.onPrimaryDark,

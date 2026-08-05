@@ -208,7 +208,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         childAspectRatio = 1.6;
       } else {
         crossAxisCount = 1;
-        childAspectRatio = 2.8;
+        childAspectRatio = 3.0;
       }
     }
 

@@ -572,7 +572,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 110),
                 ],
               ),
       ),

@@ -509,7 +509,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 110),
                 ],
               ),
       ),

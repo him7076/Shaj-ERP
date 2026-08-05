@@ -67,13 +67,24 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
         FocusScope.of(context).unfocus();
       },
       optionsViewBuilder: (context, onSelected, options) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final dropdownWidth = screenWidth < 500 ? (screenWidth - 48) : 420.0;
+
         return Align(
           alignment: Alignment.topLeft,
           child: Material(
-            elevation: 8,
+            elevation: 12,
+            shadowColor: Colors.black45,
             borderRadius: BorderRadius.circular(12),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 250, maxWidth: 450),
+            color: theme.colorScheme.surface,
+            child: Container(
+              width: dropdownWidth,
+              constraints: const BoxConstraints(maxHeight: 220),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
+              ),
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
@@ -87,10 +98,12 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
                       : (bal < 0 ? 'Payable: ₹${bal.abs().toStringAsFixed(2)}' : 'Balance: ₹0.00');
 
                   return ListTile(
-                    title: Text(party.partyName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    dense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                    title: Text(party.partyName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                     subtitle: Text(
                       balText,
-                      style: TextStyle(color: balColor, fontWeight: FontWeight.w600, fontSize: 12),
+                      style: TextStyle(color: balColor, fontWeight: FontWeight.w600, fontSize: 11),
                     ),
                     onTap: () => onSelected(party),
                   );
