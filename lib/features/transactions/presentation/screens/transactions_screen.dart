@@ -223,7 +223,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isMobile = constraints.maxWidth < 600;
-                    if (isMobile) {                      return Row(
+                    if (isMobile) {
+                      return Row(
                         children: [
                           Expanded(
                             child: _buildMetricCard(
@@ -259,7 +260,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           ),
                         ],
                       );
-                    } }
+                    }
 
                     return Row(
                       children: [
