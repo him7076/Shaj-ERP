@@ -10,8 +10,7 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart'; // Reuse DuplicateBillAction enum
-
-typedef ImportProgressCallback = void Function(int current, int total, String statusMessage);
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 class ImportSalesResult {
   final int totalInvoicesImported;

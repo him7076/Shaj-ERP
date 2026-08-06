@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+typedef ImportProgressCallback = void Function(int current, int total, String statusMessage);
+
 class ImportProgressState {
   final int current;
   final int total;

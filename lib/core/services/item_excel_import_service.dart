@@ -9,6 +9,7 @@ import 'package:business_sahaj_erp/data/local/collections/category_collection.da
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 class ImportItemResult {
   final int totalItemsImported;

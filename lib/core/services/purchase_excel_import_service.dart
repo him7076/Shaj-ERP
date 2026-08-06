@@ -9,7 +9,7 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_item_collecti
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
-import 'package:business_sahaj_erp/core/services/sales_excel_import_service.dart'; // Reuse ImportProgressCallback
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 enum DuplicateBillAction {
   overwrite,

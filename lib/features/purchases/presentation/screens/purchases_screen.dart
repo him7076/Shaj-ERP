@@ -163,7 +163,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         );
       }
 
-      final importResult = await PurchaseExcelImportService.importPurchasesFromBytes(
+      final importResult = await PurchaseExcelImportService.importPurchaseBillsFromBytes(
         fileBytes,
         dbService,
         duplicateAction: selectedAction,
