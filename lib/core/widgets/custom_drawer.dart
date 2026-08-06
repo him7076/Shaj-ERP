@@ -340,8 +340,7 @@ class CustomDrawer extends ConsumerWidget {
                       // Theme Switcher Tile
                       InkWell(
                         onTap: () {
-                          ref.read(themeModeProvider.notifier).state =
-                              isDark ? ThemeMode.light : ThemeMode.dark;
+                          ref.read(themeProvider.notifier).toggleTheme();
                         },
                         borderRadius: BorderRadius.circular(10),
                         child: Container(

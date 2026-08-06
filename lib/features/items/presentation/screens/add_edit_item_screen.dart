@@ -1508,17 +1508,21 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 error: (e, _) => const Icon(Icons.error),
               ),
             ),
-          ],
-        ),
-                controller: _conversionController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Conversion Factor',
-                  border: OutlineInputBorder(),
-                  helperText: 'E.g. If 1 BOX = 10 PCS, enter 10.0',
+            if (_selectedSecUnit != null) ...[
+              SizedBox(width: ResponsiveLayout.isMobile(context) ? 0 : 16, height: ResponsiveLayout.isMobile(context) ? 12 : 0),
+              Expanded(
+                flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
+                child: TextFormField(
+                  controller: _conversionController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(
+                    labelText: 'Conversion Factor',
+                    border: OutlineInputBorder(),
+                    helperText: 'E.g. If 1 BOX = 10 PCS, enter 10.0',
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],

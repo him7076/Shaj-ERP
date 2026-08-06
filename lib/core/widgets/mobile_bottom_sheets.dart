@@ -12,7 +12,7 @@ class MobileBottomSheets {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
