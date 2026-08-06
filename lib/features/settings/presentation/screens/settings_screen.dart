@@ -1204,7 +1204,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               final db = ref.read(databaseServiceProvider);
                               await db.switchFirm(id, prefs);
                               ref.read(activeFirmIdProvider.notifier).state = id;
+                              
+                              // Invalidate all local data providers to guarantee clean multi-firm isolation
+                              ref.invalidate(sharedPreferencesProvider);
                               ref.invalidate(dashboardAnalyticsProvider);
+                              ref.invalidate(filteredPartiesProvider);
+                              ref.invalidate(partiesListProvider);
+                              ref.invalidate(filteredItemsProvider);
+                              ref.invalidate(itemsListProvider);
+                              ref.invalidate(categoriesListProvider);
+                              ref.invalidate(brandsListProvider);
+                              ref.invalidate(unitsListProvider);
+                              ref.invalidate(purchaseListProvider);
+                              ref.invalidate(filteredInvoicesProvider);
+                              ref.invalidate(invoicesListProvider);
+                              ref.invalidate(filteredOrdersProvider);
+                              ref.invalidate(ordersListProvider);
+                              ref.invalidate(expenseListProvider);
+                              ref.invalidate(bankAccountsListProvider);
+                              ref.invalidate(transactionsListProvider);
 
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(

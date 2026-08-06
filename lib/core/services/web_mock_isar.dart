@@ -57,6 +57,12 @@ class WebMockIsar implements Isar {
     }
   }
 
+  bool get hasData {
+    final partyList = _db['partys'] ?? [];
+    final itemList = _db['items'] ?? [];
+    return partyList.isNotEmpty || itemList.isNotEmpty;
+  }
+
   Map<String, List<dynamic>> get _db => _dbs[firmId] ??= {};
 
   // Forces dart2js compilation to keep the Query inheritance relation
@@ -1448,6 +1454,10 @@ class WebMockCollection<T> extends IsarCollection<T> {
     return _list.length;
   }
 
+  int countSync() {
+    return _list.length;
+  }
+
   @override
   Query<R> buildQuery<R>({
     List<WhereClause> whereClauses = const [],
@@ -1662,6 +1672,10 @@ class WebMockQuery<T> extends Query<T> {
 
   @override
   Future<int> count() async {
+    return list.length;
+  }
+
+  int countSync() {
     return list.length;
   }
 

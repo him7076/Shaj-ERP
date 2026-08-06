@@ -68,7 +68,7 @@ class DatabaseService {
 
         final key = 'demo_seeded_$activeFirmId';
         final alreadySeeded = prefs?.getBool(key) ?? false;
-        final bool hasExistingData = _isar!.collection<Party>().countSync() > 0 || _isar!.collection<Item>().countSync() > 0;
+        final bool hasExistingData = (_isar as WebMockIsar).hasData;
 
         if (!alreadySeeded && !hasExistingData && activeFirmId == 'firm_default') {
           try {
