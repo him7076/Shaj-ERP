@@ -372,6 +372,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                            ref.invalidate(filteredOrdersProvider);
                                            ref.invalidate(expenseListProvider);
                                            ref.invalidate(bankAccountsListProvider);
+                                           ref.invalidate(filteredTransactionsProvider);
 
                                            if (context.mounted) {
                                              Navigator.of(context, rootNavigator: true).pop(); // Close dialog
@@ -1209,20 +1210,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ref.invalidate(sharedPreferencesProvider);
                               ref.invalidate(dashboardAnalyticsProvider);
                               ref.invalidate(filteredPartiesProvider);
-                              ref.invalidate(partiesListProvider);
                               ref.invalidate(filteredItemsProvider);
-                              ref.invalidate(itemsListProvider);
                               ref.invalidate(categoriesListProvider);
                               ref.invalidate(brandsListProvider);
                               ref.invalidate(unitsListProvider);
                               ref.invalidate(purchaseListProvider);
                               ref.invalidate(filteredInvoicesProvider);
-                              ref.invalidate(invoicesListProvider);
                               ref.invalidate(filteredOrdersProvider);
-                              ref.invalidate(ordersListProvider);
                               ref.invalidate(expenseListProvider);
                               ref.invalidate(bankAccountsListProvider);
-                              ref.invalidate(transactionsListProvider);
+                              ref.invalidate(filteredTransactionsProvider);
 
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
