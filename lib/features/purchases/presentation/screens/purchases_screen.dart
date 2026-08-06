@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -152,20 +154,12 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         selectedAction = choice;
       }
 
-      // Show loading overlay
+      final progressController = StreamController<ImportProgressState>.broadcast();
       if (mounted) {
-        showDialog(
+        ImportProgressModal.show(
           context: context,
-          barrierDismissible: false,
-          builder: (ctx) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16),
-                Text('Importing Purchases & Items...'),
-              ],
-            ),
-          ),
+          title: 'Importing Purchase Bills',
+          progressStream: progressController.stream,
         );
       }
 
@@ -173,7 +167,19 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         fileBytes,
         dbService,
         duplicateAction: selectedAction,
+        onProgress: (current, total, statusMessage) {
+          progressController.add(ImportProgressState(
+            current: current,
+            total: total,
+            statusMessage: statusMessage,
+          ));
+        },
       );
+
+      await progressController.close();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+      }
 
       // Instantly trigger cloud sync to push newly imported purchases & items to Firestore
       ref.read(syncServiceProvider).syncAll();

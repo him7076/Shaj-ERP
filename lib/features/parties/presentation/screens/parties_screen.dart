@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
 import 'package:business_sahaj_erp/core/services/party_excel_import_service.dart';
 import 'package:business_sahaj_erp/core/widgets/liquid_glass_card.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'party_detail_screen.dart';
 import 'add_edit_party_screen.dart';
 
@@ -80,33 +82,38 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
         return;
       }
 
-      // Show loading overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Importing Parties & Customers...'),
-            ],
-          ),
-        ),
-      );
+      final progressController = StreamController<ImportProgressState>.broadcast();
+      if (mounted) {
+        ImportProgressModal.show(
+          context: context,
+          title: 'Importing Parties & Customers',
+          progressStream: progressController.stream,
+        );
+      }
 
       final dbService = ref.read(databaseServiceProvider);
-      final importResult = await PartyExcelImportService.importPartiesFromBytes(fileBytes, dbService);
+      final importResult = await PartyExcelImportService.importPartiesFromBytes(
+        fileBytes,
+        dbService,
+        onProgress: (current, total, statusMessage) {
+          progressController.add(ImportProgressState(
+            current: current,
+            total: total,
+            statusMessage: statusMessage,
+          ));
+        },
+      );
 
-      // Instantly trigger cloud sync to push newly imported parties to Firestore
-      ref.read(syncServiceProvider).syncAll();
-
+      await progressController.close();
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog cleanly
+        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
       }
 
       ref.read(partySearchProvider.notifier).setQuery('');
       ref.invalidate(filteredPartiesProvider);
+
+      // Instantly trigger cloud sync to push newly imported parties to Firestore
+      ref.read(syncServiceProvider).syncAll();
 
       if (mounted) {
         showDialog(

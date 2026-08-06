@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/item_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({Key? key}) : super(key: key);
@@ -81,23 +83,32 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         return;
       }
 
-      // Show loading overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16),
-              Text('Importing Products & Stock...'),
-            ],
-          ),
-        ),
-      );
+      final progressController = StreamController<ImportProgressState>.broadcast();
+      if (mounted) {
+        ImportProgressModal.show(
+          context: context,
+          title: 'Importing Products & Stock',
+          progressStream: progressController.stream,
+        );
+      }
 
       final dbService = ref.read(databaseServiceProvider);
-      final importResult = await ItemExcelImportService.importItemsFromBytes(fileBytes, dbService);
+      final importResult = await ItemExcelImportService.importItemsFromBytes(
+        fileBytes,
+        dbService,
+        onProgress: (current, total, statusMessage) {
+          progressController.add(ImportProgressState(
+            current: current,
+            total: total,
+            statusMessage: statusMessage,
+          ));
+        },
+      );
+
+      await progressController.close();
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+      }
 
       // Instantly trigger cloud sync to push newly imported items to Firestore
       ref.read(syncServiceProvider).syncAll();

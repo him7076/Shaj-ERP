@@ -136,8 +136,9 @@ class ItemExcelImportService {
   /// Imports Products & Stock details supporting flexible column headers and Price Tax Mode calculation
   static Future<ImportItemResult> importItemsFromBytes(
     Uint8List bytes,
-    DatabaseService dbService,
-  ) async {
+    DatabaseService dbService, {
+    ImportProgressCallback? onProgress,
+  }) async {
     final List<String> errors = [];
     int totalItemsImported = 0;
     int totalItemsUpdated = 0;
@@ -164,6 +165,7 @@ class ItemExcelImportService {
         );
       }
 
+      final totalRows = sheet.rows.length - 1;
       final colMap = _buildColumnMap(sheet.rows[0]);
 
       final colCode = _findCol(colMap, ['item code', 'code', 'product code', 'sku code'], 0);
@@ -215,6 +217,9 @@ class ItemExcelImportService {
         final itemName = _getCellValue(row, colName).trim();
 
         if (itemName.isEmpty && itemCode.isEmpty) continue;
+
+        onProgress?.call(r, totalRows, 'Processing item "${itemName.isNotEmpty ? itemName : itemCode}" ($r/$totalRows)...');
+        await Future.delayed(Duration.zero);
 
         final shortName = _getCellValue(row, colShortName).trim();
         final categoryStr = _getCellValue(row, colCategory).trim();

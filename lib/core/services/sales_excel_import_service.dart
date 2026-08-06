@@ -11,6 +11,8 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart'; // Reuse DuplicateBillAction enum
 
+typedef ImportProgressCallback = void Function(int current, int total, String statusMessage);
+
 class ImportSalesResult {
   final int totalInvoicesImported;
   final int totalItemsImported;
@@ -181,11 +183,12 @@ class SalesExcelImportService {
     return excel.encode();
   }
 
-  /// Imports Sales Invoices and Line Items from decoded Excel bytes
+  /// Imports Sales Invoices and Line Items from decoded Excel bytes with Progress Callback & async yielding
   static Future<ImportSalesResult> importSalesInvoicesFromBytes(
     Uint8List bytes,
     DatabaseService dbService, {
     DuplicateBillAction duplicateAction = DuplicateBillAction.overwrite,
+    ImportProgressCallback? onProgress,
   }) async {
     final List<String> errors = [];
     int totalInvoicesImported = 0;
@@ -223,6 +226,8 @@ class SalesExcelImportService {
         );
       }
 
+      final totalHeaderRows = headerSheet.rows.length - 1;
+
       // Column mapping for Sheet 1
       final s1ColMap = headerSheet.rows.isNotEmpty ? _buildColumnMap(headerSheet.rows[0]) : <String, int>{};
 
@@ -258,11 +263,13 @@ class SalesExcelImportService {
       final colS2Gst = _findCol(s2ColMap, ['gst', 'tax rate', 'tax %', 'tax'], 13);
       final colS2Amount = _findCol(s2ColMap, ['amount', 'total', 'line total'], 14);
 
-      // 1. Index Sheet 2 Items strictly by Normalized Invoice Number
+      // 1. Index Sheet 2 Items strictly by Normalized Invoice Number & Combo Key
       final Map<String, List<Map<String, dynamic>>> itemsByInvNo = {};
       final Map<String, List<Map<String, dynamic>>> itemsByComboKey = {};
 
       if (itemSheet != null && itemSheet.rows.length > 1) {
+        onProgress?.call(0, totalHeaderRows > 0 ? totalHeaderRows : 1, 'Indexing Sheet 2 item line details...');
+
         for (int r = 1; r < itemSheet.rows.length; r++) {
           final row = itemSheet.rows[r];
           if (row.isEmpty) continue;
@@ -307,7 +314,7 @@ class SalesExcelImportService {
       final allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
       final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
-      // 2. Iterate Sheet 1 Headers & Create Sales Invoices
+      // 2. Iterate Sheet 1 Headers & Create / Overwrite Sales Invoices
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
         if (row.isEmpty) continue;
@@ -320,6 +327,10 @@ class SalesExcelImportService {
         final effectiveInvNo = invNo.isNotEmpty
             ? invNo
             : 'INV-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r';
+
+        // Notify progress and yield main event loop to prevent browser Not Responding freeze
+        onProgress?.call(r, totalHeaderRows, 'Processing invoice "$effectiveInvNo" ($r/$totalHeaderRows)...');
+        await Future.delayed(Duration.zero);
 
         final dateStr = _getCellValue(row, colS1Date);
         final phone = _getCellValue(row, colS1Phone);
@@ -344,22 +355,19 @@ class SalesExcelImportService {
           if (matchingInvoices.isNotEmpty) {
             if (duplicateAction == DuplicateBillAction.skip) {
               skippedInvoices++;
-              errors.add('Invoice "$effectiveInvNo" already exists in database (Skipped as requested).');
+              errors.add('Invoice "$effectiveInvNo" already exists in database (Skipped).');
               continue;
             }
 
-            // DuplicateAction.overwrite: Restore item stock and delete old invoice record
+            // DuplicateAction.overwrite: Clean old line items, restore item stock, and purge old invoice
             for (var oldInv in matchingInvoices) {
               final oldItems = await isar.invoiceItems
                   .filter()
                   .parentInvoiceIdEqualTo(oldInv.id)
-                  .or()
-                  .invoice((q) => q.idEqualTo(oldInv.id))
                   .findAll();
 
               await isar.writeTxn(() async {
                 for (var oi in oldItems) {
-                  // Restore stock for deleted old invoice items
                   if (oi.itemId != null) {
                     final targetItem = await isar.items.get(oi.itemId!);
                     if (targetItem != null) {
@@ -423,7 +431,7 @@ class SalesExcelImportService {
             invoice.party.value = party;
           }
 
-          // Retrieve items matching THIS SPECIFIC INVOICE NUMBER
+          // Retrieve items matching THIS SPECIFIC INVOICE NUMBER ONLY
           final normInvNo = _normalizeKey(invNo);
           final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
 
@@ -432,10 +440,8 @@ class SalesExcelImportService {
             rawItems = itemsByInvNo[normInvNo]!;
           } else if (normEffInvNoCheck.isNotEmpty && itemsByInvNo.containsKey(normEffInvNoCheck)) {
             rawItems = itemsByInvNo[normEffInvNoCheck]!;
-          } else if (colS2InvoiceNo == -1 && normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
+          } else if (normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
             rawItems = itemsByComboKey[normCombo]!;
-          } else if (headerSheet.rows.length == 2 && itemsByInvNo.isNotEmpty) {
-            rawItems = itemsByInvNo.values.expand((element) => element).toList();
           }
 
           final List<InvoiceItem> createdItems = [];
@@ -467,7 +473,7 @@ class SalesExcelImportService {
                   ..hsnCode = hsn
                   ..sellRate = rate
                   ..buyRate = rate > 0 ? (rate * 0.7) : 0.0
-                  ..currentStock = 0.0 // Stock goes negative if not previously in stock
+                  ..currentStock = 0.0
                   ..openingStock = 0.0
                   ..createdAt = DateTime.now()
                   ..updatedAt = DateTime.now();
@@ -615,8 +621,9 @@ class SalesExcelImportService {
 
   static String _normalizeKey(String raw) {
     if (raw.trim().isEmpty) return '';
-    final cleaned = raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    return cleaned.replaceAllMapped(RegExp(r'([a-z]+)0+([1-9][0-9]*)'), (m) => '${m[1]}${m[2]}');
+    String cleaned = raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    cleaned = cleaned.replaceAllMapped(RegExp(r'(^|[a-z])0+([1-9][0-9]*)'), (m) => '${m[1]}${m[2]}');
+    return cleaned;
   }
 
   static double _parseDouble(String valStr) {

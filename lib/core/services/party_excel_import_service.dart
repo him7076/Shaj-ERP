@@ -100,11 +100,12 @@ class PartyExcelImportService {
     return excel.encode();
   }
 
-  /// Imports Parties & Customers from decoded Excel bytes supporting flexible headers
+  /// Imports Parties & Customers details from decoded Excel bytes with Progress Callback
   static Future<ImportPartyResult> importPartiesFromBytes(
     Uint8List bytes,
-    DatabaseService dbService,
-  ) async {
+    DatabaseService dbService, {
+    ImportProgressCallback? onProgress,
+  }) async {
     final List<String> errors = [];
     int totalPartiesImported = 0;
     int totalPartiesUpdated = 0;
@@ -131,6 +132,7 @@ class PartyExcelImportService {
         );
       }
 
+      final totalRows = sheet.rows.length - 1;
       final colMap = _buildColumnMap(sheet.rows[0]);
 
       final colName = _findCol(colMap, ['party name', 'name', 'customer name', 'supplier name', 'party'], 0);
@@ -161,6 +163,11 @@ class PartyExcelImportService {
         if (row.isEmpty) continue;
 
         final partyName = _getCellValue(row, colName).trim();
+        if (partyName.isEmpty) continue;
+
+        onProgress?.call(r, totalRows, 'Processing party "$partyName" ($r/$totalRows)...');
+        await Future.delayed(Duration.zero);
+        
         final partyTypeStr = _getCellValue(row, colType).trim();
         final mobile = _getCellValue(row, colMobile).trim();
         final whatsapp = _getCellValue(row, colWhatsapp).trim();
