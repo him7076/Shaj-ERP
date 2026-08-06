@@ -329,7 +329,7 @@ class DashboardScreen extends ConsumerWidget {
                                     theme: theme,
                                     title: '${tx.transactionType} ${tx.transactionNumber ?? ""} • ${tx.partyName ?? "Walk-in Party"}',
                                     time: timeStr,
-                                    subtitle: 'Amount: ₹${tx.amount.toStringAsFixed(2)} • Mode: ${tx.paymentMode ?? "Cash"}',
+                                    subtitle: 'Amount: ₹${(tx.amount ?? 0.0).toStringAsFixed(2)} • Mode: ${tx.paymentMode ?? "Cash"}',
                                     statusIcon: iconData,
                                     statusColor: iconCol,
                                     isLast: idx == recentList.length - 1,
