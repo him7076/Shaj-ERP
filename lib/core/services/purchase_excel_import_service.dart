@@ -50,7 +50,7 @@ class PurchaseExcelImportService {
       if (headerSheet == null || headerSheet.rows.length <= 1) return duplicates;
 
       final s1ColMap = _buildColumnMap(headerSheet.rows[0]);
-      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'invoice'], 5);
+      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.', 'invoice', 'bill', 'voucher'], 5);
 
       final existingPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
       final existingNumbers = existingPurchases.map((p) => _normalizeKey(p.purchaseNumber ?? '')).toSet();
@@ -220,7 +220,7 @@ class PurchaseExcelImportService {
       final colS1Phone = _findCol(s1ColMap, ['phone', 'mobile', 'contact'], 2);
       final colS1Gst = _findCol(s1ColMap, ['party gst', 'gst number', 'gstin', 'gst'], 3);
       final colS1OrderNo = _findCol(s1ColMap, ['order number', 'po number'], 4);
-      final colS1BillNo = _findCol(s1ColMap, ['bill number', 'invoice number', 'purchase bill number', 'bill no', 'invoice no'], 5);
+      final colS1BillNo = _findCol(s1ColMap, ['bill number', 'invoice number', 'purchase bill number', 'bill no', 'invoice no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.', 'invoice', 'bill', 'voucher'], 5);
       final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 7);
       final colS1PaidAmt = _findCol(s1ColMap, ['paid amount', 'paid'], 9);
       final colS1BalAmt = _findCol(s1ColMap, ['balance amount', 'due amount', 'balance', 'pending'], 10);
@@ -230,7 +230,7 @@ class PurchaseExcelImportService {
 
       final colS2Date = _findCol(s2ColMap, ['date', 'bill date', 'invoice date'], 0);
       final colS2Party = _findCol(s2ColMap, ['party name', 'supplier name', 'party'], 1);
-      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'invoice no', 'bill no'], 2);
+      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'invoice no', 'bill no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.', 'invoice', 'bill', 'voucher'], 2);
       final colS2ItemName = _findCol(s2ColMap, ['item name', 'product name', 'item', 'product', 'description'], 3);
       final colS2BatchNo = _findCol(s2ColMap, ['batch number', 'batch no', 'batch'], 4);
       final colS2ExpDate = _findCol(s2ColMap, ['expire date', 'exp date', 'expiry'], 5);
@@ -244,23 +244,32 @@ class PurchaseExcelImportService {
       final colS2Gst = _findCol(s2ColMap, ['gst', 'tax rate', 'tax %', 'tax'], 13);
       final colS2Amount = _findCol(s2ColMap, ['amount', 'total', 'line total'], 14);
 
-      // Index Sheet 2 Items by Normalized Bill Number & Combo Key
+      // Index Sheet 2 Items strictly by Normalized Bill Number & Digits
       final Map<String, List<Map<String, dynamic>>> itemsByBillNo = {};
-      final Map<String, List<Map<String, dynamic>>> itemsByComboKey = {};
+      final Map<String, List<Map<String, dynamic>>> itemsByDigits = {};
 
       if (itemSheet != null && itemSheet.rows.length > 1) {
         onProgress?.call(0, totalHeaderRows > 0 ? totalHeaderRows : 1, 'Indexing Sheet 2 item details...');
+
+        String lastSeenBillNo = '';
 
         for (int r = 1; r < itemSheet.rows.length; r++) {
           final row = itemSheet.rows[r];
           if (row.isEmpty) continue;
 
-          final billNo = _getCellValue(row, colS2BillNo).trim();
+          String billNo = _getCellValue(row, colS2BillNo).trim();
           final itemName = _getCellValue(row, colS2ItemName).trim();
           final partyName = _getCellValue(row, colS2Party).trim();
           final dateStr = _getCellValue(row, colS2Date).trim();
 
           if (itemName.isEmpty) continue;
+
+          // Continuation row inheritance
+          if (billNo.isNotEmpty) {
+            lastSeenBillNo = billNo;
+          } else if (lastSeenBillNo.isNotEmpty) {
+            billNo = lastSeenBillNo;
+          }
 
           final itemData = {
             'date': dateStr,
@@ -281,13 +290,13 @@ class PurchaseExcelImportService {
           };
 
           final normBillNo = _normalizeKey(billNo);
-          final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
+          final digitsBillNo = _extractDigits(billNo);
 
           if (normBillNo.isNotEmpty) {
             itemsByBillNo.putIfAbsent(normBillNo, () => []).add(itemData);
           }
-          if (normCombo.isNotEmpty) {
-            itemsByComboKey.putIfAbsent(normCombo, () => []).add(itemData);
+          if (digitsBillNo.isNotEmpty && digitsBillNo != normBillNo) {
+            itemsByDigits.putIfAbsent(digitsBillNo, () => []).add(itemData);
           }
         }
       }
@@ -406,15 +415,18 @@ class PurchaseExcelImportService {
           }
 
           final normBillNo = _normalizeKey(billNo);
-          final normCombo = (partyName.isNotEmpty && dateStr.isNotEmpty) ? _normalizeKey('${partyName}_$dateStr') : '';
+          final digitsBillNo = _extractDigits(billNo);
+          final digitsEffCheck = _extractDigits(effectiveBillNo);
 
           List<Map<String, dynamic>> rawItems = [];
           if (normBillNo.isNotEmpty && itemsByBillNo.containsKey(normBillNo)) {
             rawItems = itemsByBillNo[normBillNo]!;
           } else if (normEffBillNoCheck.isNotEmpty && itemsByBillNo.containsKey(normEffBillNoCheck)) {
             rawItems = itemsByBillNo[normEffBillNoCheck]!;
-          } else if (normCombo.isNotEmpty && itemsByComboKey.containsKey(normCombo)) {
-            rawItems = itemsByComboKey[normCombo]!;
+          } else if (digitsBillNo.isNotEmpty && itemsByDigits.containsKey(digitsBillNo)) {
+            rawItems = itemsByDigits[digitsBillNo]!;
+          } else if (digitsEffCheck.isNotEmpty && itemsByDigits.containsKey(digitsEffCheck)) {
+            rawItems = itemsByDigits[digitsEffCheck]!;
           }
 
           final List<PurchaseItem> createdItems = [];
@@ -597,6 +609,13 @@ class PurchaseExcelImportService {
     String cleaned = raw.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
     cleaned = cleaned.replaceAllMapped(RegExp(r'(^|[a-z])0+([1-9][0-9]*)'), (m) => '${m[1]}${m[2]}');
     return cleaned;
+  }
+
+  static String _extractDigits(String raw) {
+    if (raw.trim().isEmpty) return '';
+    final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return '';
+    return digits.replaceFirst(RegExp(r'^0+'), '');
   }
 
   static double _parseDouble(String valStr) {

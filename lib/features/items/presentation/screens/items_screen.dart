@@ -107,15 +107,11 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
       await progressController.close();
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+        Navigator.of(context).pop(); // Close progress dialog safely
       }
 
       // Instantly trigger cloud sync to push newly imported items to Firestore
       ref.read(syncServiceProvider).syncAll();
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
-      }
 
       ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(query: ''));
       ref.invalidate(filteredItemsProvider);

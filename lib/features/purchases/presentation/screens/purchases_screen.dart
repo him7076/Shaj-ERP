@@ -178,15 +178,11 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
 
       await progressController.close();
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+        Navigator.of(context).pop(); // Close progress dialog safely
       }
 
       // Instantly trigger cloud sync to push newly imported purchases & items to Firestore
       ref.read(syncServiceProvider).syncAll();
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
-      }
 
       ref.invalidate(purchaseListProvider);
       ref.invalidate(filteredItemsProvider);

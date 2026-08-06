@@ -106,7 +106,7 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
 
       await progressController.close();
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+        Navigator.of(context).pop(); // Close progress dialog safely
       }
 
       ref.read(partySearchProvider.notifier).setQuery('');

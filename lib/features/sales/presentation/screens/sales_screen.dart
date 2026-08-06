@@ -181,15 +181,11 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
       await progressController.close();
       if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+        Navigator.of(context).pop(); // Close progress dialog safely
       }
 
       // Trigger cloud sync
       ref.read(syncServiceProvider).syncAll();
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
-      }
 
       ref.invalidate(filteredInvoicesProvider);
       ref.invalidate(filteredItemsProvider);
