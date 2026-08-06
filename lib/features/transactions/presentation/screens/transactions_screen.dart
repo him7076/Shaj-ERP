@@ -24,6 +24,9 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
+  bool _showSearch = false;
+  bool _showFilter = false;
+
   @override
   void initState() {
     super.initState();
@@ -101,177 +104,55 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: Text(widget.lockedType == 'Receipt'
-            ? 'Receipts (Payment In)'
-            : widget.lockedType == 'Payment'
-                ? 'Payments (Payment Out)'
-                : widget.lockedType == 'Credit Note'
-                    ? 'Credit Notes'
-                    : widget.lockedType == 'Debit Note'
-                        ? 'Debit Notes'
-                        : widget.lockedType == 'Transfer'
-                            ? 'Party Transfers'
-                            : widget.lockedType == 'Other Income'
-                                ? 'Other Income'
-                                : 'Payments & Transactions'),
+        toolbarHeight: isMobile ? 44 : 56,
+        title: Text(
+          widget.lockedType == 'Receipt'
+              ? 'Receipts'
+              : widget.lockedType == 'Payment'
+                  ? 'Payments'
+                  : widget.lockedType == 'Credit Note'
+                      ? 'Credit Notes'
+                      : widget.lockedType == 'Debit Note'
+                          ? 'Debit Notes'
+                          : widget.lockedType == 'Transfer'
+                              ? 'Party Transfers'
+                              : widget.lockedType == 'Other Income'
+                                  ? 'Other Income'
+                                  : 'Transactions',
+          style: TextStyle(
+            fontSize: isMobile ? 15 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
-          if (widget.lockedType != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  if (widget.lockedType == 'Credit Note') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
-                    ).then((_) => ref.invalidate(filteredTransactionsProvider));
-                  } else if (widget.lockedType == 'Debit Note') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
-                    ).then((_) => ref.invalidate(filteredTransactionsProvider));
-                  } else {
-                    AddEditTransactionDialog.show(context, initialType: widget.lockedType);
-                  }
-                },
-                icon: Icon(
-                  widget.lockedType == 'Receipt'
-                      ? Icons.arrow_downward_rounded
-                      : widget.lockedType == 'Payment'
-                          ? Icons.arrow_upward_rounded
-                          : widget.lockedType == 'Credit Note'
-                              ? Icons.assignment_return_rounded
-                              : widget.lockedType == 'Debit Note'
-                                  ? Icons.assignment_returned_rounded
-                                  : widget.lockedType == 'Transfer'
-                                      ? Icons.swap_horiz_rounded
-                                      : Icons.monetization_on_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                label: Text(
-                  widget.lockedType == 'Receipt'
-                      ? 'Record Receipt'
-                      : widget.lockedType == 'Payment'
-                          ? 'Record Payment'
-                          : widget.lockedType == 'Credit Note'
-                              ? 'New Credit Note'
-                              : widget.lockedType == 'Debit Note'
-                                  ? 'New Debit Note'
-                                  : widget.lockedType == 'Transfer'
-                                      ? 'New Transfer'
-                                      : 'Record Income',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            )
-          else
-            PopupMenuButton<String>(
-              tooltip: 'Record new entry',
-              onSelected: (type) {
-                AddEditTransactionDialog.show(context, initialType: type);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Record Transaction',
-                      style: TextStyle(color: theme.colorScheme.onPrimary, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_drop_down, color: Colors.white, size: 18),
-                  ],
-                ),
-              ),
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'Receipt',
-                  child: Row(
-                    children: [
-                      Icon(Icons.arrow_downward_rounded, color: Colors.green[700]),
-                      const SizedBox(width: 12),
-                      const Text('Receipt (Payment In)'),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'Payment',
-                  child: Row(
-                    children: [
-                      Icon(Icons.arrow_upward_rounded, color: Colors.red[700]),
-                      const SizedBox(width: 12),
-                      const Text('Payment (Payment Out)'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'Credit Note',
-                  child: Row(
-                    children: [
-                      Icon(Icons.assignment_return_rounded, color: Colors.indigo),
-                      const SizedBox(width: 12),
-                      Text('Credit Note (Sales Return)'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'Debit Note',
-                  child: Row(
-                    children: [
-                      Icon(Icons.assignment_returned_rounded, color: Colors.orange),
-                      const SizedBox(width: 12),
-                      Text('Debit Note (Purchase Return)'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'Expense',
-                  child: Row(
-                    children: [
-                      Icon(Icons.account_balance_wallet_rounded, color: Colors.redAccent),
-                      const SizedBox(width: 12),
-                      Text('Other Expense'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'Transfer',
-                  child: Row(
-                    children: [
-                      Icon(Icons.swap_horiz_rounded, color: Colors.teal),
-                      const SizedBox(width: 12),
-                      Text('Party to Party Transfer'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'Other Income',
-                  child: Row(
-                    children: [
-                      Icon(Icons.monetization_on_rounded, color: Colors.blue),
-                      const SizedBox(width: 12),
-                      Text('Other Income'),
-                    ],
-                  ),
-                ),
-              ],
+          // Search Toggle Icon
+          IconButton(
+            tooltip: 'Search Transactions',
+            icon: Icon(
+              _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+              size: isMobile ? 20 : 22,
             ),
-          const SizedBox(width: 16),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+              });
+            },
+          ),
+          // Filter Toggle Icon
+          IconButton(
+            tooltip: 'Filter Types',
+            icon: Icon(
+              _showFilter ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+              size: isMobile ? 20 : 22,
+              color: _showFilter ? theme.colorScheme.primary : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _showFilter = !_showFilter;
+              });
+            },
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -350,35 +231,38 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           physics: const BouncingScrollPhysics(),
                           children: [
                             SizedBox(
-                              width: 250,
+                              width: 170,
                               child: _buildMetricCard(
                                 theme: theme,
-                                title: 'Total Inflow',
+                                title: 'Inflow',
                                 value: currencyFormat.format(totalIn),
                                 icon: Icons.arrow_downward,
                                 color: Colors.green,
+                                isMobile: true,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             SizedBox(
-                              width: 250,
+                              width: 170,
                               child: _buildMetricCard(
                                 theme: theme,
-                                title: 'Total Outflow',
+                                title: 'Outflow',
                                 value: currencyFormat.format(totalOut),
                                 icon: Icons.arrow_upward,
                                 color: Colors.red,
+                                isMobile: true,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             SizedBox(
-                              width: 250,
+                              width: 170,
                               child: _buildMetricCard(
                                 theme: theme,
                                 title: 'Net Cash Flow',
                                 value: currencyFormat.format(totalIn - totalOut),
                                 icon: Icons.swap_vert,
                                 color: (totalIn - totalOut) >= 0 ? Colors.blue : Colors.orange,
+                                isMobile: true,
                               ),
                             ),
                           ],
@@ -427,130 +311,65 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             error: (_, __) => const SizedBox.shrink(),
           ),
 
-          // Horizontal Action Buttons Row (Only show if not locked to specific type)
-          if (widget.lockedType == null)
+          // Collapsible Search & Filter Panel
+          if (_showSearch || _showFilter || !isMobile)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Receipt (Payment In)',
-                      icon: Icons.arrow_downward_rounded,
-                      color: Colors.green,
-                      type: 'Receipt',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Payment (Payment Out)',
-                      icon: Icons.arrow_upward_rounded,
-                      color: Colors.red,
-                      type: 'Payment',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Credit Note',
-                      icon: Icons.assignment_return_rounded,
-                      color: Colors.indigo,
-                      type: 'Credit Note',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Debit Note',
-                      icon: Icons.assignment_returned_rounded,
-                      color: Colors.orange,
-                      type: 'Debit Note',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Other Expense',
-                      icon: Icons.account_balance_wallet_rounded,
-                      color: Colors.redAccent,
-                      type: 'Expense',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Party Transfer',
-                      icon: Icons.swap_horiz_rounded,
-                      color: Colors.teal,
-                      type: 'Transfer',
-                    ),
-                    const SizedBox(width: 8),
-                    _buildQuickActionChip(
-                      context: context,
-                      label: 'Other Income',
-                      icon: Icons.monetization_on_rounded,
-                      color: Colors.blue,
-                      type: 'Other Income',
-                    ),
-                  ],
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+              child: Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                 ),
-              ),
-            ),
-
-          // Filters Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: isMobile
-                    ? Column(
-                        children: [
-                          TextField(
-                            decoration: const InputDecoration(
-                              hintText: 'Search transaction no, party, remarks...',
-                              prefixIcon: Icon(Icons.search),
-                              border: InputBorder.none,
-                            ),
-                            onChanged: (val) {
-                              ref.read(transactionSearchFilterProvider.notifier).state =
-                                  filter.copyWith(query: val);
-                            },
-                          ),
-                          if (widget.lockedType == null) ...[
-                            const Divider(height: 1),
-                            DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: filter.transactionType,
-                                items: const [
-                                  DropdownMenuItem(value: 'All', child: Text('All Types')),
-                                  DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
-                                  DropdownMenuItem(value: 'Sales Order', child: Text('Sales Order')),
-                                  DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
-                                  DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                                  DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
-                                  DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                                  DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
-                                  DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                                  DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                                  DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
-                                  DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
-                                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                  child: isMobile
+                      ? Column(
+                          children: [
+                            if (_showSearch)
+                              TextField(
+                                autofocus: true,
+                                decoration: const InputDecoration(
+                                  hintText: 'Search transaction no, party, remarks...',
+                                  prefixIcon: Icon(Icons.search, size: 18),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                ),
                                 onChanged: (val) {
-                                  if (val != null) {
-                                    ref.read(transactionSearchFilterProvider.notifier).state =
-                                        filter.copyWith(transactionType: val);
-                                  }
+                                  ref.read(transactionSearchFilterProvider.notifier).state =
+                                      filter.copyWith(query: val);
                                 },
                               ),
-                            ),
+                            if (_showFilter && widget.lockedType == null) ...[
+                              if (_showSearch) const Divider(height: 1),
+                              DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  isExpanded: true,
+                                  value: filter.transactionType,
+                                  items: const [
+                                    DropdownMenuItem(value: 'All', child: Text('All Types')),
+                                    DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                                    DropdownMenuItem(value: 'Sales Order', child: Text('Sales Order')),
+                                    DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                                    DropdownMenuItem(value: 'Expense', child: Text('Expense')),
+                                    DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
+                                    DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
+                                    DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
+                                    DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
+                                    DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                    DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      ref.read(transactionSearchFilterProvider.notifier).state =
+                                          filter.copyWith(transactionType: val);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
-                      )
+                        )
                     : Row(
                         children: [
                           // Search Query
@@ -961,23 +780,69 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     required String value,
     required IconData icon,
     required Color color,
+    bool isMobile = false,
   }) {
+    if (isMobile) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 14),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: theme.colorScheme.onSurface,
+                      fontSize: 12.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [theme.colorScheme.surface, color.withOpacity(0.01)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
         child: Row(
           children: [
             Container(

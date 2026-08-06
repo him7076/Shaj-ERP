@@ -235,7 +235,14 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parties Directory'),
+        toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 56,
+        title: Text(
+          'Parties Directory',
+          style: TextStyle(
+            fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
