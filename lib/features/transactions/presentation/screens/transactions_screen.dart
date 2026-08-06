@@ -223,52 +223,43 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isMobile = constraints.maxWidth < 600;
-                    if (isMobile) {
-                      return SizedBox(
-                        height: 96,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          children: [
-                            SizedBox(
-                              width: 170,
-                              child: _buildMetricCard(
-                                theme: theme,
-                                title: 'Inflow',
-                                value: currencyFormat.format(totalIn),
-                                icon: Icons.arrow_downward,
-                                color: Colors.green,
-                                isMobile: true,
-                              ),
+                    if (isMobile) {                      return Row(
+                        children: [
+                          Expanded(
+                            child: _buildMetricCard(
+                              theme: theme,
+                              title: 'Inflow',
+                              value: currencyFormat.format(totalIn),
+                              icon: Icons.arrow_downward,
+                              color: Colors.green,
+                              isMobile: true,
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 170,
-                              child: _buildMetricCard(
-                                theme: theme,
-                                title: 'Outflow',
-                                value: currencyFormat.format(totalOut),
-                                icon: Icons.arrow_upward,
-                                color: Colors.red,
-                                isMobile: true,
-                              ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: _buildMetricCard(
+                              theme: theme,
+                              title: 'Outflow',
+                              value: currencyFormat.format(totalOut),
+                              icon: Icons.arrow_upward,
+                              color: Colors.red,
+                              isMobile: true,
                             ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 170,
-                              child: _buildMetricCard(
-                                theme: theme,
-                                title: 'Net Cash Flow',
-                                value: currencyFormat.format(totalIn - totalOut),
-                                icon: Icons.swap_vert,
-                                color: (totalIn - totalOut) >= 0 ? Colors.blue : Colors.orange,
-                                isMobile: true,
-                              ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: _buildMetricCard(
+                              theme: theme,
+                              title: 'Net Flow',
+                              value: currencyFormat.format(totalIn - totalOut),
+                              icon: Icons.swap_vert,
+                              color: (totalIn - totalOut) >= 0 ? Colors.blue : Colors.orange,
+                              isMobile: true,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       );
-                    }
+                    } }
 
                     return Row(
                       children: [
@@ -784,29 +775,22 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   }) {
     if (isMobile) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 14),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: color, size: 12),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
                     title,
                     style: TextStyle(
                       fontSize: 10,
@@ -816,18 +800,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 12.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],

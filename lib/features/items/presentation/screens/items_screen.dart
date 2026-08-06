@@ -26,6 +26,7 @@ class ItemsScreen extends ConsumerStatefulWidget {
 class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
+  bool _showSearch = false;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   @override
@@ -214,38 +215,117 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Product Inventory'),
+        toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 52,
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search name, code, HSN, barcode...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  ref.read(itemSearchProvider.notifier).update(
+                        (state) => state.copyWith(query: val),
+                      );
+                },
+              )
+            : Text(
+                'Product Inventory',
+                style: TextStyle(
+                  fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         actions: [
-          TextButton.icon(
-            onPressed: _downloadItemSampleExcel,
-            icon: const Icon(Icons.file_download_outlined, size: 18),
-            label: const Text('Sample Sheet', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 4),
-          ElevatedButton.icon(
-            onPressed: _importItemExcel,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-            ),
-            icon: const Icon(Icons.upload_file_rounded, size: 18),
-            label: const Text('Import Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 6),
+          // 🔍 Search Toggle Button
           IconButton(
-            icon: const Icon(Icons.qr_code_scanner_outlined),
+            tooltip: 'Search Products',
+            icon: Icon(_showSearch ? Icons.close_rounded : Icons.search_rounded, size: 20),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(itemSearchProvider.notifier).update(
+                        (state) => state.copyWith(query: ''),
+                      );
+                }
+              });
+            },
+          ),
+
+          // ⚡ Filter Toggle Button
+          IconButton(
+            tooltip: 'Filter Products',
+            icon: Icon(
+              _showFilters ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+              size: 20,
+              color: _showFilters ? theme.colorScheme.primary : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+          ),
+
+          // 📷 Barcode Scan Icon
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner_outlined, size: 20),
             onPressed: _scanBarcode,
             tooltip: 'Scan Barcode',
           ),
-          IconButton(
-            icon: const Icon(Icons.add_shopping_cart_outlined),
-            onPressed: () {
-              AddItemSheet.show(context);
+
+          // ⋮ 3-Dot Tools Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, size: 20),
+            tooltip: 'Product Tools',
+            onSelected: (value) {
+              if (value == 'sample') {
+                _downloadItemSampleExcel();
+              } else if (value == 'import') {
+                _importItemExcel();
+              } else if (value == 'quick_add') {
+                AddItemSheet.show(context);
+              }
             },
-            tooltip: 'Quick Add Product',
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'quick_add',
+                child: Row(
+                  children: [
+                    Icon(Icons.add_shopping_cart_outlined, size: 18, color: Colors.indigo),
+                    SizedBox(width: 8),
+                    Text('Quick Add Product'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'sample',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Sample Excel Sheet'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import',
+                child: Row(
+                  children: [
+                    Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Import Excel Catalog'),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
@@ -287,60 +367,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             },
             loading: () => const SizedBox.shrink(),
             error: (_, __) => const SizedBox.shrink(),
-          ),
-
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search Name, Code, HSN, Barcode...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                ref.read(itemSearchProvider.notifier).update(
-                                      (state) => state.copyWith(query: ''),
-                                    );
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                    ),
-                    onChanged: (val) {
-                      ref.read(itemSearchProvider.notifier).update(
-                            (state) => state.copyWith(query: val),
-                          );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: Icon(_showFilters ? Icons.filter_alt : Icons.filter_alt_outlined),
-                  onPressed: () {
-                    setState(() {
-                      _showFilters = !_showFilters;
-                    });
-                  },
-                  style: IconButton.styleFrom(
-                    padding: const EdgeInsets.all(14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ),
 
           // Filter Panel (collapsible)

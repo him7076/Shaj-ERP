@@ -20,6 +20,7 @@ class SalesScreen extends ConsumerStatefulWidget {
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -48,72 +49,77 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     final filter = ref.watch(invoiceSearchFilterProvider);
     final invoicesAsync = ref.watch(filteredInvoicesProvider);
     final partiesAsync = ref.watch(partiesListProvider);
+    final isMobile = ResponsiveLayout.isMobile(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sales Invoice Registry'),
+        toolbarHeight: isMobile ? 44 : 52,
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search invoice #, customer, GST...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(query: val));
+                },
+              )
+            : Text(
+                'Sales Invoice Registry',
+                style: TextStyle(
+                  fontSize: isMobile ? 15 : 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         actions: [
+          // 🔍 Search Toggle Button
           IconButton(
-            icon: const Icon(Icons.refresh),
+            tooltip: 'Search Invoices',
+            icon: Icon(_showSearch ? Icons.close_rounded : Icons.search_rounded, size: 20),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(query: ''));
+                }
+              });
+            },
+          ),
+
+          // ⚡ Filter Toggle Button
+          IconButton(
+            tooltip: 'Filter Invoices',
+            icon: Icon(
+              _showFilters ? Icons.filter_alt_rounded : Icons.filter_alt_outlined,
+              size: 20,
+              color: _showFilters ? theme.colorScheme.primary : null,
+            ),
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+          ),
+
+          // 🔄 Refresh
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 20),
             onPressed: () {
               ref.invalidate(filteredInvoicesProvider);
             },
             tooltip: 'Refresh Invoices',
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Search & Filter Panel
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search Invoice #, Customer Name, GST...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(query: ''));
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      filled: true,
-                      fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                    ),
-                    onChanged: (val) {
-                      ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(query: val));
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: Icon(_showFilters ? Icons.filter_alt : Icons.filter_alt_outlined),
-                  onPressed: () {
-                    setState(() {
-                      _showFilters = !_showFilters;
-                    });
-                  },
-                  style: IconButton.styleFrom(
-                    padding: const EdgeInsets.all(14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
 
           // Filters panel
           if (_showFilters) _buildFilterPanel(theme, filter, partiesAsync),

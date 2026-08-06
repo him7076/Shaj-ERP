@@ -26,6 +26,7 @@ class PartiesScreen extends ConsumerStatefulWidget {
 class _PartiesScreenState extends ConsumerState<PartiesScreen> {
   final _searchController = TextEditingController();
   bool _isNearbyMode = false;
+  bool _showSearch = false;
 
   @override
   void dispose() {
@@ -235,14 +236,158 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
 
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 56,
-        title: Text(
-          'Parties Directory',
-          style: TextStyle(
-            fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
-            fontWeight: FontWeight.bold,
+        toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 52,
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search name, code, phone, city...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                onChanged: (value) {
+                  ref.read(partySearchProvider.notifier).setQuery(value);
+                },
+              )
+            : Text(
+                'Parties Directory',
+                style: TextStyle(
+                  fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+        actions: [
+          // 🔍 Search Toggle Button
+          IconButton(
+            tooltip: 'Search Parties',
+            icon: Icon(_showSearch ? Icons.close_rounded : Icons.search_rounded, size: 20),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(partySearchProvider.notifier).setQuery('');
+                }
+              });
+            },
           ),
-        ),
+
+          // ⚡ Filter & Sort Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.tune_rounded, size: 20),
+            tooltip: 'Filter & Sort Parties',
+            onSelected: (val) {
+              if (val.startsWith('type:')) {
+                ref.read(partySearchProvider.notifier).setFilterType(val.replaceFirst('type:', ''));
+              } else {
+                ref.read(partySearchProvider.notifier).setSortBy(val);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'type:All', child: Text('Show All Types')),
+              const PopupMenuItem(value: 'type:Customer', child: Text('Customers Only')),
+              const PopupMenuItem(value: 'type:Supplier', child: Text('Suppliers Only')),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'Name', child: Text('Sort by Name')),
+              const PopupMenuItem(value: 'Recent', child: Text('Sort by Recent')),
+              const PopupMenuItem(value: 'Outstanding', child: Text('Sort by Outstanding')),
+              const PopupMenuItem(value: 'City', child: Text('Sort by City')),
+            ],
+          ),
+
+          // ⋮ 3-Dot Options & Tools Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, size: 20),
+            tooltip: 'Tools & Export',
+            onSelected: (value) {
+              switch (value) {
+                case 'sample':
+                  _downloadPartySampleExcel();
+                  break;
+                case 'import_excel':
+                  _importPartyExcel();
+                  break;
+                case 'gps':
+                  setState(() {
+                    _isNearbyMode = !_isNearbyMode;
+                  });
+                  if (_isNearbyMode) {
+                    ref.read(nearbyPartyProvider.notifier).findNearbyParties();
+                  }
+                  break;
+                case 'pdf':
+                  partiesFuture.whenData((list) {
+                    if (list.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('No parties available to export.')),
+                      );
+                      return;
+                    }
+                    ExcelCsvHelper.exportPartiesToPdf(list);
+                  });
+                  break;
+                case 'csv_demo':
+                  _importCsvDemo();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'sample',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
+                    SizedBox(width: 10),
+                    Text('Sample Excel Template'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import_excel',
+                child: Row(
+                  children: [
+                    Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
+                    SizedBox(width: 10),
+                    Text('Import Parties Excel'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'gps',
+                child: Row(
+                  children: [
+                    Icon(_isNearbyMode ? Icons.map_rounded : Icons.my_location_rounded, size: 18, color: Colors.purple),
+                    const SizedBox(width: 10),
+                    Text(_isNearbyMode ? 'Show All Parties' : 'Find Nearby GPS Parties'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'pdf',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_outlined, size: 18, color: Colors.red),
+                    SizedBox(width: 10),
+                    Text('Export PDF Directory'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'csv_demo',
+                child: Row(
+                  children: [
+                    Icon(Icons.analytics_outlined, size: 18, color: Colors.orange),
+                    SizedBox(width: 10),
+                    Text('Import Demo CSV'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -259,155 +404,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       ),
       body: Column(
         children: [
-          // Search & Filter Panel
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SearchBar(
-                    controller: _searchController,
-                    hintText: 'Search by name, code, phone, or city...',
-                    leading: const Icon(Icons.search),
-                    trailing: [
-                      if (_searchController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            ref.read(partySearchProvider.notifier).setQuery('');
-                          },
-                        ),
-                    ],
-                    onChanged: (value) {
-                      ref.read(partySearchProvider.notifier).setQuery(value);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                
-                // 3-Dot Options Menu for Import/Export/GPS
-                PopupMenuButton<String>(
-                  icon: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.more_vert_rounded, color: theme.colorScheme.primary),
-                  ),
-                  tooltip: 'Party Options & Tools',
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'sample':
-                        _downloadPartySampleExcel();
-                        break;
-                      case 'import_excel':
-                        _importPartyExcel();
-                        break;
-                      case 'gps':
-                        setState(() {
-                          _isNearbyMode = !_isNearbyMode;
-                        });
-                        if (_isNearbyMode) {
-                          ref.read(nearbyPartyProvider.notifier).findNearbyParties();
-                        }
-                        break;
-                      case 'pdf':
-                        partiesFuture.whenData((list) {
-                          if (list.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('No parties available to export.')),
-                            );
-                            return;
-                          }
-                          ExcelCsvHelper.exportPartiesToPdf(list);
-                        });
-                        break;
-                      case 'csv_demo':
-                        _importCsvDemo();
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'sample',
-                      child: Row(
-                        children: [
-                          Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
-                          SizedBox(width: 10),
-                          Text('Sample Excel Template'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'import_excel',
-                      child: Row(
-                        children: [
-                          Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
-                          SizedBox(width: 10),
-                          Text('Import Parties Excel'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'gps',
-                      child: Row(
-                        children: [
-                          Icon(_isNearbyMode ? Icons.map_rounded : Icons.my_location_rounded, size: 18, color: Colors.purple),
-                          const SizedBox(width: 10),
-                          Text(_isNearbyMode ? 'Show All Parties' : 'Find Nearby GPS Parties'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'pdf',
-                      child: Row(
-                        children: [
-                          Icon(Icons.picture_as_pdf_outlined, size: 18, color: Colors.red),
-                          SizedBox(width: 10),
-                          Text('Export PDF Directory'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'csv_demo',
-                      child: Row(
-                        children: [
-                          Icon(Icons.analytics_outlined, size: 18, color: Colors.orange),
-                          SizedBox(width: 10),
-                          Text('Import Demo CSV'),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 6),
-                
-                // Sort Menu Button
-                PopupMenuButton<String>(
-                  icon: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(Icons.sort_rounded, color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  tooltip: 'Sort Parties',
-                  onSelected: (val) {
-                    ref.read(partySearchProvider.notifier).setSortBy(val);
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'Name', child: Text('Sort by Name')),
-                    const PopupMenuItem(value: 'Recent', child: Text('Sort by Recent')),
-                    const PopupMenuItem(value: 'Outstanding', child: Text('Sort by Outstanding')),
-                    const PopupMenuItem(value: 'City', child: Text('Sort by City')),
-                  ],
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 6),
 
           // Filtering Chips bar
           SingleChildScrollView(

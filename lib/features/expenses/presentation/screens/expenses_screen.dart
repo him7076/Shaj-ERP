@@ -17,6 +17,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
   String _selectedCategoryFilter = 'All';
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -43,17 +44,55 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final expensesAsync = ref.watch(expenseListProvider);
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('Operating Expenses'),
+        toolbarHeight: isMobile ? 44 : 52,
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search remarks or category...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  ref.read(expenseSearchQueryProvider.notifier).state = val;
+                },
+              )
+            : Text(
+                'Operating Expenses',
+                style: TextStyle(
+                  fontSize: isMobile ? 15 : 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         actions: [
+          // 🔍 Search Toggle Button
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.invalidate(expenseListProvider),
-            tooltip: 'Refresh',
+            tooltip: 'Search Expenses',
+            icon: Icon(_showSearch ? Icons.close_rounded : Icons.search_rounded, size: 20),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(expenseSearchQueryProvider.notifier).state = '';
+                }
+              });
+            },
           ),
+          // 🔄 Refresh Button
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            onPressed: () => ref.invalidate(expenseListProvider),
+            tooltip: 'Refresh Expenses',
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -71,29 +110,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Search Input
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search by remarks or category...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref.read(expenseSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (val) {
-                ref.read(expenseSearchQueryProvider.notifier).state = val;
-              },
-            ),
-          ),
 
           // Horizontal Category Chip filters
           SizedBox(

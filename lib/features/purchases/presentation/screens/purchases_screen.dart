@@ -23,6 +23,7 @@ class PurchasesScreen extends ConsumerStatefulWidget {
 class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+  bool _showSearch = false;
 
   @override
   void initState() {
@@ -244,35 +245,96 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
     final theme = Theme.of(context);
     final purchasesAsync = ref.watch(purchaseListProvider);
     final notifierState = ref.watch(purchaseNotifierProvider);
+    final isMobile = ResponsiveLayout.isMobile(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: const Text('Purchases & Inward Goods'),
+        toolbarHeight: isMobile ? 44 : 52,
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(fontSize: 14),
+                decoration: const InputDecoration(
+                  hintText: 'Search purchase #, supplier...',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  ref.read(purchaseSearchQueryProvider.notifier).state = val;
+                },
+              )
+            : Text(
+                'Purchase Bills Registry',
+                style: TextStyle(
+                  fontSize: isMobile ? 15 : 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         actions: [
-          TextButton.icon(
-            onPressed: _downloadSampleExcel,
-            icon: const Icon(Icons.file_download_outlined, size: 18),
-            label: const Text('Sample Sheet', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+          // 🔍 Search Toggle Button
+          IconButton(
+            tooltip: 'Search Purchases',
+            icon: Icon(_showSearch ? Icons.close_rounded : Icons.search_rounded, size: 20),
+            onPressed: () {
+              setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  _searchController.clear();
+                  ref.read(purchaseSearchQueryProvider.notifier).state = '';
+                }
+              });
+            },
+          ),
+
+          // ⋮ 3-Dot Tools Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, size: 20),
+            tooltip: 'Purchase Tools',
+            onSelected: (value) {
+              if (value == 'sample') {
+                _downloadSampleExcel();
+              } else if (value == 'import') {
+                _importPurchaseExcel();
+              } else if (value == 'refresh') {
+                ref.invalidate(purchaseListProvider);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'sample',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Sample Excel Sheet'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import',
+                child: Row(
+                  children: [
+                    Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Import Excel Bills'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Refresh List'),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 4),
-          ElevatedButton.icon(
-            onPressed: _importPurchaseExcel,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-            ),
-            icon: const Icon(Icons.upload_file_rounded, size: 18),
-            label: const Text('Import Excel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.invalidate(purchaseListProvider),
-            tooltip: 'Refresh',
-          ),
-          const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -290,29 +352,6 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Search Box
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search by purchase number or supplier...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          ref.read(purchaseSearchQueryProvider.notifier).state = '';
-                        },
-                      )
-                    : null,
-              ),
-              onChanged: (val) {
-                ref.read(purchaseSearchQueryProvider.notifier).state = val;
-              },
-            ),
-          ),
 
           // Main Content Area
           Expanded(
