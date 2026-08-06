@@ -23,12 +23,12 @@ class ImportItemResult {
 }
 
 class ItemExcelImportService {
-  /// Generates sample Excel template (.xlsx) containing ALL Sahaj ERP product form fields
+  /// Generates sample Excel template (.xlsx) containing ALL Sahaj ERP product form fields including Price Tax Types
   static List<int>? generateSampleTemplate() {
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
 
-    // Comprehensive Header Row
+    // Comprehensive Header Row with Tax Selectors for Prices
     sheet.appendRow([
       TextCellValue('Item Code'),
       TextCellValue('Item Name'),
@@ -40,9 +40,12 @@ class ItemExcelImportService {
       TextCellValue('Secondary Unit'),
       TextCellValue('Conversion Factor'),
       TextCellValue('Sale Price'),
+      TextCellValue('Sale Price Tax Type'), // With Tax / Without Tax
       TextCellValue('Wholesale Price'),
+      TextCellValue('Wholesale Price Tax Type'), // With Tax / Without Tax
       TextCellValue('MRP'),
       TextCellValue('Purchase Price'),
+      TextCellValue('Purchase Price Tax Type'), // Without Tax / With Tax
       TextCellValue('Minimum Selling Price'),
       TextCellValue('GST Rate (%)'),
       TextCellValue('CESS Rate (%)'),
@@ -71,9 +74,12 @@ class ItemExcelImportService {
       TextCellValue('BOX'),
       DoubleCellValue(10.0),
       DoubleCellValue(850.00),
+      TextCellValue('With Tax'),
       DoubleCellValue(780.00),
+      TextCellValue('With Tax'),
       DoubleCellValue(999.00),
       DoubleCellValue(500.00),
+      TextCellValue('Without Tax'),
       DoubleCellValue(750.00),
       TextCellValue('5%'),
       DoubleCellValue(0.0),
@@ -102,9 +108,12 @@ class ItemExcelImportService {
       TextCellValue('PACK'),
       DoubleCellValue(5.0),
       DoubleCellValue(1200.00),
+      TextCellValue('With Tax'),
       DoubleCellValue(1100.00),
+      TextCellValue('With Tax'),
       DoubleCellValue(1499.00),
       DoubleCellValue(750.00),
+      TextCellValue('Without Tax'),
       DoubleCellValue(1050.00),
       TextCellValue('12%'),
       DoubleCellValue(0.0),
@@ -124,7 +133,7 @@ class ItemExcelImportService {
     return excel.encode();
   }
 
-  /// Imports Products & Stock details supporting flexible column headers
+  /// Imports Products & Stock details supporting flexible column headers and Price Tax Mode calculation
   static Future<ImportItemResult> importItemsFromBytes(
     Uint8List bytes,
     DatabaseService dbService,
@@ -166,24 +175,32 @@ class ItemExcelImportService {
       final colUnit = _findCol(colMap, ['primary unit', 'unit', 'uom', 'pack'], 6);
       final colSecUnit = _findCol(colMap, ['secondary unit', 'sec unit', 'sub unit'], 7);
       final colConvFactor = _findCol(colMap, ['conversion factor', 'conversion', 'factor'], 8);
+      
       final colSalePrice = _findCol(colMap, ['sale price', 'selling price', 'sell rate', 'rate'], 9);
-      final colWholesalePrice = _findCol(colMap, ['wholesale price', 'wholesale rate'], 10);
-      final colMrp = _findCol(colMap, ['mrp', 'max retail price'], 11);
-      final colPurchasePrice = _findCol(colMap, ['purchase price', 'buy rate', 'buy price', 'cost'], 12);
-      final colMinSellingPrice = _findCol(colMap, ['minimum selling price', 'min sale price', 'min sell rate'], 13);
-      final colGstRate = _findCol(colMap, ['gst rate (%)', 'tax rate', 'gst %', 'gst', 'tax %'], 14);
-      final colCessRate = _findCol(colMap, ['cess rate (%)', 'cess %', 'cess'], 15);
-      final colTaxInclusive = _findCol(colMap, ['tax inclusive', 'inclusive tax', 'tax inclusiv'], 16);
-      final colOpeningStock = _findCol(colMap, ['opening stock', 'opening qty'], 17);
-      final colCurrentStock = _findCol(colMap, ['current stock qty', 'current stock', 'stock qty', 'qty', 'stock'], 18);
-      final colMinStock = _findCol(colMap, ['minimum stock qty', 'minimum stock', 'reorder level', 'reorder qty'], 19);
-      final colBarcode = _findCol(colMap, ['barcode', 'upc', 'ean'], 20);
-      final colSku = _findCol(colMap, ['sku code', 'sku', 'product sku'], 21);
-      final colLocation = _findCol(colMap, ['item location', 'location', 'shelf', 'warehouse'], 22);
-      final colBatchNo = _findCol(colMap, ['default batch number', 'batch number', 'batch no', 'batch'], 23);
-      final colWeight = _findCol(colMap, ['weight (kg)', 'weight', 'wt'], 24);
-      final colDimensions = _findCol(colMap, ['dimensions', 'size'], 25);
-      final colNotes = _findCol(colMap, ['notes / description', 'notes', 'description', 'remarks'], 26);
+      final colSaleTaxType = _findCol(colMap, ['sale price tax type', 'sale tax type', 'sell tax mode'], 10);
+      
+      final colWholesalePrice = _findCol(colMap, ['wholesale price', 'wholesale rate'], 11);
+      final colWholesaleTaxType = _findCol(colMap, ['wholesale price tax type', 'wholesale tax type'], 12);
+      
+      final colMrp = _findCol(colMap, ['mrp', 'max retail price'], 13);
+      
+      final colPurchasePrice = _findCol(colMap, ['purchase price', 'buy rate', 'buy price', 'cost'], 14);
+      final colBuyTaxType = _findCol(colMap, ['purchase price tax type', 'purchase tax type', 'buy tax mode'], 15);
+      
+      final colMinSellingPrice = _findCol(colMap, ['minimum selling price', 'min sale price', 'min sell rate'], 16);
+      final colGstRate = _findCol(colMap, ['gst rate (%)', 'tax rate', 'gst %', 'gst', 'tax %'], 17);
+      final colCessRate = _findCol(colMap, ['cess rate (%)', 'cess %', 'cess'], 18);
+      final colTaxInclusive = _findCol(colMap, ['tax inclusive', 'inclusive tax', 'tax inclusiv'], 19);
+      final colOpeningStock = _findCol(colMap, ['opening stock', 'opening qty'], 20);
+      final colCurrentStock = _findCol(colMap, ['current stock qty', 'current stock', 'stock qty', 'qty', 'stock'], 21);
+      final colMinStock = _findCol(colMap, ['minimum stock qty', 'minimum stock', 'reorder level', 'reorder qty'], 22);
+      final colBarcode = _findCol(colMap, ['barcode', 'upc', 'ean'], 23);
+      final colSku = _findCol(colMap, ['sku code', 'sku', 'product sku'], 24);
+      final colLocation = _findCol(colMap, ['item location', 'location', 'shelf', 'warehouse'], 25);
+      final colBatchNo = _findCol(colMap, ['default batch number', 'batch number', 'batch no', 'batch'], 26);
+      final colWeight = _findCol(colMap, ['weight (kg)', 'weight', 'wt'], 27);
+      final colDimensions = _findCol(colMap, ['dimensions', 'size'], 28);
+      final colNotes = _findCol(colMap, ['notes / description', 'notes', 'description', 'remarks'], 29);
 
       final allCategories = await isar.categorys.filter().isDeletedEqualTo(false).findAll();
       final allBrands = await isar.brands.filter().isDeletedEqualTo(false).findAll();
@@ -206,10 +223,18 @@ class ItemExcelImportService {
         final primaryUnitStr = _getCellValue(row, colUnit).trim();
         final secUnitStr = _getCellValue(row, colSecUnit).trim();
         final convFactor = _parseDouble(_getCellValue(row, colConvFactor));
-        final salePrice = _parseDouble(_getCellValue(row, colSalePrice));
-        final wholesalePrice = _parseDouble(_getCellValue(row, colWholesalePrice));
+        
+        final rawSalePrice = _parseDouble(_getCellValue(row, colSalePrice));
+        final saleTaxType = _getCellValue(row, colSaleTaxType).trim();
+        
+        final rawWholesalePrice = _parseDouble(_getCellValue(row, colWholesalePrice));
+        final wholesaleTaxType = _getCellValue(row, colWholesaleTaxType).trim();
+
         final mrp = _parseDouble(_getCellValue(row, colMrp));
-        final purchasePrice = _parseDouble(_getCellValue(row, colPurchasePrice));
+
+        final rawPurchasePrice = _parseDouble(_getCellValue(row, colPurchasePrice));
+        final buyTaxType = _getCellValue(row, colBuyTaxType).trim();
+
         final minSellingPrice = _parseDouble(_getCellValue(row, colMinSellingPrice));
         final gstRateStr = _getCellValue(row, colGstRate).trim();
         final cessRate = _parseDouble(_getCellValue(row, colCessRate));
@@ -227,6 +252,30 @@ class ItemExcelImportService {
 
         final gstRate = _parseGstPercent(gstRateStr);
 
+        // Calculate final effective rates considering Tax Modes
+        double sellPrice = rawSalePrice;
+        if (rawSalePrice > 0 && gstRate > 0) {
+          if (saleTaxType.toLowerCase().contains('without')) {
+            // Entered price is without tax; convert to tax inclusive selling rate for standard Sahaj ERP invoices
+            sellPrice = rawSalePrice * (1 + (gstRate / 100));
+          }
+        }
+
+        double wholesalePrice = rawWholesalePrice;
+        if (rawWholesalePrice > 0 && gstRate > 0) {
+          if (wholesaleTaxType.toLowerCase().contains('without')) {
+            wholesalePrice = rawWholesalePrice * (1 + (gstRate / 100));
+          }
+        }
+
+        double purchasePrice = rawPurchasePrice;
+        if (rawPurchasePrice > 0 && gstRate > 0) {
+          if (buyTaxType.toLowerCase().contains('with') && !buyTaxType.toLowerCase().contains('without')) {
+            // Entered purchase rate is inclusive of tax; convert to base purchase rate without tax
+            purchasePrice = rawPurchasePrice / (1 + (gstRate / 100));
+          }
+        }
+
         final effectiveCode = itemCode.isNotEmpty
             ? itemCode
             : 'ITM-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r';
@@ -235,10 +284,12 @@ class ItemExcelImportService {
         final effectiveCurrentStock = currentStock > 0 ? currentStock : openingStock;
 
         // Notes construction
-        final combinedNotes = [
-          if (notes.isNotEmpty) notes,
+        final taxNotes = [
+          if (saleTaxType.isNotEmpty) 'Sale Tax: $saleTaxType',
+          if (buyTaxType.isNotEmpty) 'Purchase Tax: $buyTaxType',
+          if (wholesaleTaxType.isNotEmpty) 'Wholesale Tax: $wholesaleTaxType',
           if (location.isNotEmpty) 'Location: $location',
-          if (taxInclusiveStr == 'yes' || taxInclusiveStr == 'true') 'Tax Inclusive: Yes',
+          if (notes.isNotEmpty) notes,
         ].join(' | ');
 
         // Find or create Category Link
@@ -307,7 +358,7 @@ class ItemExcelImportService {
             existingItem.itemName = effectiveName;
             existingItem.shortName = shortName.isNotEmpty ? shortName : existingItem.shortName;
             existingItem.hsnCode = hsn.isNotEmpty ? hsn : existingItem.hsnCode;
-            existingItem.sellRate = salePrice > 0 ? salePrice : existingItem.sellRate;
+            existingItem.sellRate = sellPrice > 0 ? sellPrice : existingItem.sellRate;
             existingItem.wholesaleRate = wholesalePrice > 0 ? wholesalePrice : existingItem.wholesaleRate;
             existingItem.mrp = mrp > 0 ? mrp : existingItem.mrp;
             existingItem.buyRate = purchasePrice > 0 ? purchasePrice : existingItem.buyRate;
@@ -326,7 +377,7 @@ class ItemExcelImportService {
             existingItem.defaultBatchNumber = defaultBatchNo.isNotEmpty ? defaultBatchNo : existingItem.defaultBatchNumber;
             existingItem.weight = weight > 0 ? weight : existingItem.weight;
             existingItem.dimensions = dimensions.isNotEmpty ? dimensions : existingItem.dimensions;
-            existingItem.notes = combinedNotes.isNotEmpty ? combinedNotes : existingItem.notes;
+            existingItem.notes = taxNotes.isNotEmpty ? taxNotes : existingItem.notes;
             existingItem.updatedAt = DateTime.now();
 
             if (catObj != null) existingItem.category.value = catObj;
@@ -363,9 +414,9 @@ class ItemExcelImportService {
               ..itemName = effectiveName
               ..shortName = shortName
               ..hsnCode = hsn
-              ..sellRate = salePrice
+              ..sellRate = sellPrice
               ..wholesaleRate = wholesalePrice
-              ..mrp = mrp > 0 ? mrp : salePrice
+              ..mrp = mrp > 0 ? mrp : sellPrice
               ..buyRate = purchasePrice
               ..minimumSellingPrice = minSellingPrice
               ..openingStock = openingStock > 0 ? openingStock : effectiveCurrentStock
@@ -383,7 +434,7 @@ class ItemExcelImportService {
               ..defaultBatchNumber = defaultBatchNo
               ..weight = weight
               ..dimensions = dimensions
-              ..notes = combinedNotes
+              ..notes = taxNotes
               ..createdAt = DateTime.now()
               ..updatedAt = DateTime.now();
 

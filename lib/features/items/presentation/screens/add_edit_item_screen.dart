@@ -57,6 +57,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   Unit? _selectedUnit;
   Unit? _selectedSecUnit;
   String _rateUnitType = 'Primary'; // 'Primary' or 'Secondary'
+  String _buyRateTaxType = 'Without Tax'; // 'Without Tax' or 'With Tax'
+  String _sellRateTaxType = 'With Tax'; // 'With Tax' or 'Without Tax'
+  String _wholesaleRateTaxType = 'With Tax'; // 'With Tax' or 'Without Tax'
   double _gstRate = 18.0;
   double _cessRate = 0.0;
   bool _gstApplicable = true;
@@ -1129,21 +1132,86 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           ),
           const SizedBox(height: 16),
         ],
+
+        // 1. Purchase Rate & MRP Row
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Purchase Price + Tax Mode Selector
             Expanded(
-              child: TextFormField(
-                controller: _buyRateController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Purchase Rate (Buy)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.currency_rupee),
-                ),
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _buyRateController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (_) => setState(() {}),
+                          decoration: const InputDecoration(
+                            labelText: 'Purchase Rate (Buy)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.currency_rupee),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      DropdownButtonHideUnderline(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButton<String>(
+                            value: _buyRateTaxType,
+                            isDense: true,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'Without Tax', child: Text('Without Tax')),
+                              DropdownMenuItem(value: 'With Tax', child: Text('With Tax')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setState(() => _buyRateTaxType = val);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_buyRateController.text.isNotEmpty && _gstApplicable && _gstRate > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0, left: 4.0),
+                      child: Builder(builder: (ctx) {
+                        final val = double.tryParse(_buyRateController.text) ?? 0.0;
+                        if (val <= 0) return const SizedBox.shrink();
+                        if (_buyRateTaxType == 'Without Tax') {
+                          final tax = val * (_gstRate / 100);
+                          final gross = val + tax;
+                          return Text('₹${gross.toStringAsFixed(2)} With Tax (GST: ₹${tax.toStringAsFixed(2)})',
+                              style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.bold));
+                        } else {
+                          final net = val / (1 + (_gstRate / 100));
+                          final tax = val - net;
+                          return Text('₹${net.toStringAsFixed(2)} Without Tax (GST: ₹${tax.toStringAsFixed(2)})',
+                              style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.bold));
+                        }
+                      }),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 16),
+
+            // MRP Input
             Expanded(
+              flex: 2,
               child: TextFormField(
                 controller: _mrpController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1151,39 +1219,168 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   labelText: 'MRP (Max Retail Price)',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.currency_rupee),
+                  helperText: 'Max printed price',
                 ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _sellRateController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Retail Selling Price *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.currency_rupee),
-                ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Selling rate is required' : null,
               ),
             ),
           ],
         ),
+
         const SizedBox(height: 16),
+
+        // 2. Retail Selling Price & Wholesale Price Row
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Retail Selling Price + Tax Mode Selector
             Expanded(
-              child: TextFormField(
-                controller: _wholesaleRateController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Wholesale Price',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.currency_rupee),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _sellRateController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (_) => setState(() {}),
+                          decoration: const InputDecoration(
+                            labelText: 'Retail Selling Price *',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.currency_rupee),
+                          ),
+                          validator: (v) => v == null || v.trim().isEmpty ? 'Selling rate is required' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      DropdownButtonHideUnderline(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButton<String>(
+                            value: _sellRateTaxType,
+                            isDense: true,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'With Tax', child: Text('With Tax')),
+                              DropdownMenuItem(value: 'Without Tax', child: Text('Without Tax')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setState(() => _sellRateTaxType = val);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_sellRateController.text.isNotEmpty && _gstApplicable && _gstRate > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0, left: 4.0),
+                      child: Builder(builder: (ctx) {
+                        final val = double.tryParse(_sellRateController.text) ?? 0.0;
+                        if (val <= 0) return const SizedBox.shrink();
+                        if (_sellRateTaxType == 'With Tax') {
+                          final net = val / (1 + (_gstRate / 100));
+                          final tax = val - net;
+                          return Text('Base: ₹${net.toStringAsFixed(2)} | GST: ₹${tax.toStringAsFixed(2)}',
+                              style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.bold));
+                        } else {
+                          final tax = val * (_gstRate / 100);
+                          final gross = val + tax;
+                          return Text('Final: ₹${gross.toStringAsFixed(2)} (GST: ₹${tax.toStringAsFixed(2)})',
+                              style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.bold));
+                        }
+                      }),
+                    ),
+                ],
               ),
             ),
             const SizedBox(width: 16),
+
+            // Wholesale Price + Tax Mode Selector
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _wholesaleRateController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          onChanged: (_) => setState(() {}),
+                          decoration: const InputDecoration(
+                            labelText: 'Wholesale Price',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.currency_rupee),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      DropdownButtonHideUnderline(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: DropdownButton<String>(
+                            value: _wholesaleRateTaxType,
+                            isDense: true,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'With Tax', child: Text('With Tax')),
+                              DropdownMenuItem(value: 'Without Tax', child: Text('Without Tax')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setState(() => _wholesaleRateTaxType = val);
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_wholesaleRateController.text.isNotEmpty && _gstApplicable && _gstRate > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0, left: 4.0),
+                      child: Builder(builder: (ctx) {
+                        final val = double.tryParse(_wholesaleRateController.text) ?? 0.0;
+                        if (val <= 0) return const SizedBox.shrink();
+                        if (_wholesaleRateTaxType == 'With Tax') {
+                          final net = val / (1 + (_gstRate / 100));
+                          final tax = val - net;
+                          return Text('Base: ₹${net.toStringAsFixed(2)} | GST: ₹${tax.toStringAsFixed(2)}',
+                              style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.bold));
+                        } else {
+                          final tax = val * (_gstRate / 100);
+                          final gross = val + tax;
+                          return Text('Final: ₹${gross.toStringAsFixed(2)} (GST: ₹${tax.toStringAsFixed(2)})',
+                              style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.bold));
+                        }
+                      }),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // 3. Minimum Selling Price Threshold Row
+        Row(
+          children: [
             Expanded(
               child: TextFormField(
                 controller: _minPriceController,
@@ -1192,7 +1389,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   labelText: 'Minimum Selling Price Threshold',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.currency_rupee),
-                  helperText: 'Prevents staff from discounting below this price',
+                  helperText: 'Prevents staff from discounting below this price threshold',
                 ),
               ),
             ),
