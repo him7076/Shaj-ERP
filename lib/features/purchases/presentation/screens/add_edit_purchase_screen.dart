@@ -572,12 +572,14 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
-                  const SizedBox(height: 110),
+                  const SizedBox(height: 30),
                 ],
               ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      bottomNavigationBar: !isDesktop
+          ? null
+          : Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),

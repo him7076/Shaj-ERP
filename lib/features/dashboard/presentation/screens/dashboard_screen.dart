@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
 import 'package:business_sahaj_erp/core/widgets/liquid_glass_card.dart';
 import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
@@ -68,11 +69,13 @@ class DashboardScreen extends ConsumerWidget {
                 _buildHeroHeader(context),
                 SizedBox(height: ResponsiveLayout.isMobile(context) ? 16 : 28),
 
-                // Quick Actions Header & Grid
-                _buildQuickActionsHeader(context),
-                const SizedBox(height: 12),
-                _buildQuickActionsGrid(context),
-                SizedBox(height: ResponsiveLayout.isMobile(context) ? 20 : 32),
+                // Quick Actions Header & Grid (Desktop & Tablet only, mobile uses Central FAB sheet)
+                if (!ResponsiveLayout.isMobile(context)) ...[
+                  _buildQuickActionsHeader(context),
+                  const SizedBox(height: 12),
+                  _buildQuickActionsGrid(context),
+                  const SizedBox(height: 28),
+                ],
 
                 // Section Header for KPIs & Period Filter Dropdown
                 Flex(
@@ -231,81 +234,116 @@ class DashboardScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 32),
 
-                // Recent Activity Timeline Card
-                AnimatedHoverCard(
-                  glowColor: theme.colorScheme.primary,
-                  enableScale: false,
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Real Recent Activity Timeline Card
+                Consumer(
+                  builder: (context, ref, _) {
+                    final txsAsync = ref.watch(filteredTransactionsProvider);
+                    return AnimatedHoverCard(
+                      glowColor: theme.colorScheme.primary,
+                      enableScale: false,
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(Icons.history_rounded, color: theme.colorScheme.primary, size: 20),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(Icons.history_rounded, color: theme.colorScheme.primary, size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Recent Transactions Timeline',
+                                    style: theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Recent Transactions Timeline',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: theme.colorScheme.onSurface,
-                                ),
+                              TextButton.icon(
+                                onPressed: () => context.go('/transactions'),
+                                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                                label: const Text('View All'),
                               ),
                             ],
                           ),
-                          TextButton.icon(
-                            onPressed: () => context.go('/transactions'),
-                            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                            label: const Text('View All'),
+                          const Divider(height: 24, thickness: 0.5),
+                          txsAsync.when(
+                            data: (list) {
+                              if (list.isEmpty) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 24.0),
+                                    child: Column(
+                                      children: [
+                                        Icon(Icons.history_toggle_off_rounded, size: 44, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
+                                        const SizedBox(height: 8),
+                                        Text('No recent transactions logged yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
+                                        const SizedBox(height: 4),
+                                        Text('Transactions created will appear here ordered by entry timestamp', style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7))),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final recentList = list.take(5).toList();
+                              return ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: recentList.length,
+                                separatorBuilder: (ctx, i) => const Divider(height: 12, thickness: 0.2),
+                                itemBuilder: (ctx, idx) {
+                                  final tx = recentList[idx];
+                                  final createdTime = tx.createdAt ?? tx.transactionDate ?? DateTime.now();
+                                  final diff = DateTime.now().difference(createdTime);
+                                  String timeStr = 'Just now';
+                                  if (diff.inMinutes >= 60) {
+                                    timeStr = '${diff.inHours}h ago';
+                                  } else if (diff.inMinutes > 0) {
+                                    timeStr = '${diff.inMinutes}m ago';
+                                  }
+
+                                  Color iconCol = const Color(0xFF0EA5E9);
+                                  IconData iconData = Icons.receipt_long_rounded;
+                                  if (tx.transactionType == 'Purchase') {
+                                    iconCol = const Color(0xFF10B981);
+                                    iconData = Icons.shopping_bag_rounded;
+                                  } else if (tx.transactionType == 'Receipt' || tx.transactionType == 'Payment In') {
+                                    iconCol = const Color(0xFF16A34A);
+                                    iconData = Icons.arrow_circle_down_rounded;
+                                  } else if (tx.transactionType == 'Payment' || tx.transactionType == 'Expense') {
+                                    iconCol = const Color(0xFFDC2626);
+                                    iconData = Icons.arrow_circle_up_rounded;
+                                  }
+
+                                  return _buildActivityItem(
+                                    theme: theme,
+                                    title: '${tx.transactionType} ${tx.transactionNumber ?? ""} • ${tx.partyName ?? "Walk-in Party"}',
+                                    time: timeStr,
+                                    subtitle: 'Amount: ₹${tx.amount.toStringAsFixed(2)} • Mode: ${tx.paymentMode ?? "Cash"}',
+                                    statusIcon: iconData,
+                                    statusColor: iconCol,
+                                    isLast: idx == recentList.length - 1,
+                                  );
+                                },
+                              );
+                            },
+                            loading: () => const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
+                            error: (e, _) => Text('Error loading activity: $e', style: const TextStyle(color: Colors.red)),
                           ),
                         ],
                       ),
-                      const Divider(height: 28, thickness: 0.5),
-
-                      _buildActivityItem(
-                        theme: theme,
-                        title: 'Invoice generated for Krishna Electronics',
-                        time: '10 mins ago',
-                        subtitle: 'Invoice #INV-2026-084 • Amount: ₹14,200',
-                        statusIcon: Icons.receipt_long_rounded,
-                        statusColor: const Color(0xFF0EA5E9),
-                      ),
-                      _buildActivityItem(
-                        theme: theme,
-                        title: 'Payment received from Shiva Traders',
-                        time: '1 hour ago',
-                        subtitle: 'Ref #TXN-90234 • Amount: ₹45,000',
-                        statusIcon: Icons.check_circle_rounded,
-                        statusColor: const Color(0xFF10B981),
-                      ),
-                      _buildActivityItem(
-                        theme: theme,
-                        title: 'Wholesale Purchase draft saved',
-                        time: '3 hours ago',
-                        subtitle: 'Bill #PUR-2026-0001 • Balaji Wholesalers',
-                        statusIcon: Icons.shopping_bag_rounded,
-                        statusColor: const Color(0xFFF59E0B),
-                      ),
-                      _buildActivityItem(
-                        theme: theme,
-                        title: 'Office rent payment logged',
-                        time: '5 hours ago',
-                        subtitle: 'Expense Category: Rent • Amount: ₹12,000',
-                        statusIcon: Icons.account_balance_wallet_rounded,
-                        statusColor: const Color(0xFFF43F5E),
-                        isLast: true,
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ],
             ),

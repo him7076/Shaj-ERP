@@ -236,60 +236,6 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     return Scaffold(
       appBar: AppBar(
         title: const Text('Parties Directory'),
-        actions: [
-          TextButton.icon(
-            onPressed: _downloadPartySampleExcel,
-            icon: const Icon(Icons.file_download_outlined, size: 18),
-            label: const Text('Sample Sheet', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 4),
-          ElevatedButton.icon(
-            onPressed: _importPartyExcel,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-            ),
-            icon: const Icon(Icons.upload_file_rounded, size: 18),
-            label: const Text('Import Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          ),
-          const SizedBox(width: 6),
-
-          // GPS Location nearby filter button
-          IconButton(
-            tooltip: _isNearbyMode ? 'Show All Parties' : 'Find Nearby Parties',
-            icon: Icon(
-              _isNearbyMode ? Icons.map_rounded : Icons.my_location_rounded,
-              color: _isNearbyMode ? theme.colorScheme.primaryContainer : Colors.white,
-            ),
-            onPressed: () {
-              setState(() {
-                _isNearbyMode = !_isNearbyMode;
-              });
-              if (_isNearbyMode) {
-                ref.read(nearbyPartyProvider.notifier).findNearbyParties();
-              }
-            },
-          ),
-          
-          // PDF Export
-          IconButton(
-            tooltip: 'Export PDF List',
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            onPressed: () {
-              partiesFuture.whenData((list) {
-                if (list.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('No parties available to export.')),
-                  );
-                  return;
-                }
-                ExcelCsvHelper.exportPartiesToPdf(list);
-              });
-            },
-          ),
-          const SizedBox(width: 6),
-        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -298,7 +244,6 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
               builder: (context) => const AddEditPartyScreen(),
             ),
           ).then((_) {
-            // Trigger refresh
             ref.read(partySearchProvider.notifier).setQuery(_searchController.text);
           });
         },
@@ -309,7 +254,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
         children: [
           // Search & Filter Panel
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(12.0),
             child: Row(
               children: [
                 Expanded(
@@ -327,16 +272,121 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
                           },
                         ),
                     ],
-                    onChanged: (val) {
-                      ref.read(partySearchProvider.notifier).setQuery(val);
+                    onChanged: (value) {
+                      ref.read(partySearchProvider.notifier).setQuery(value);
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 
-                // Sort Menu
+                // 3-Dot Options Menu for Import/Export/GPS
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.sort_rounded),
+                  icon: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.more_vert_rounded, color: theme.colorScheme.primary),
+                  ),
+                  tooltip: 'Party Options & Tools',
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'sample':
+                        _downloadPartySampleExcel();
+                        break;
+                      case 'import_excel':
+                        _importPartyExcel();
+                        break;
+                      case 'gps':
+                        setState(() {
+                          _isNearbyMode = !_isNearbyMode;
+                        });
+                        if (_isNearbyMode) {
+                          ref.read(nearbyPartyProvider.notifier).findNearbyParties();
+                        }
+                        break;
+                      case 'pdf':
+                        partiesFuture.whenData((list) {
+                          if (list.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('No parties available to export.')),
+                            );
+                            return;
+                          }
+                          ExcelCsvHelper.exportPartiesToPdf(list);
+                        });
+                        break;
+                      case 'csv_demo':
+                        _importCsvDemo();
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'sample',
+                      child: Row(
+                        children: [
+                          Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
+                          SizedBox(width: 10),
+                          Text('Sample Excel Template'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'import_excel',
+                      child: Row(
+                        children: [
+                          Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
+                          SizedBox(width: 10),
+                          Text('Import Parties Excel'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'gps',
+                      child: Row(
+                        children: [
+                          Icon(_isNearbyMode ? Icons.map_rounded : Icons.my_location_rounded, size: 18, color: Colors.purple),
+                          const SizedBox(width: 10),
+                          Text(_isNearbyMode ? 'Show All Parties' : 'Find Nearby GPS Parties'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'pdf',
+                      child: Row(
+                        children: [
+                          Icon(Icons.picture_as_pdf_outlined, size: 18, color: Colors.red),
+                          SizedBox(width: 10),
+                          Text('Export PDF Directory'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'csv_demo',
+                      child: Row(
+                        children: [
+                          Icon(Icons.analytics_outlined, size: 18, color: Colors.orange),
+                          SizedBox(width: 10),
+                          Text('Import Demo CSV'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 6),
+                
+                // Sort Menu Button
+                PopupMenuButton<String>(
+                  icon: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.sort_rounded, color: theme.colorScheme.onSurfaceVariant),
+                  ),
                   tooltip: 'Sort Parties',
                   onSelected: (val) {
                     ref.read(partySearchProvider.notifier).setSortBy(val);

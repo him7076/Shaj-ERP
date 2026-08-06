@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provider.dart';
+import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
+import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
 
 class CustomDrawer extends ConsumerWidget {
@@ -326,45 +328,89 @@ class CustomDrawer extends ConsumerWidget {
 
             Divider(height: 1, thickness: 0.5, color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
 
-            // Footer Badge
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16.0),
-              child: Row(
+            // Quick Control Actions Footer (Theme, Sync & Logout)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
+              child: Column(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.shield_rounded,
-                      size: 14,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Offline First Engine',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Theme Switcher Tile
+                      InkWell(
+                        onTap: () {
+                          ref.read(themeModeProvider.notifier).state =
+                              isDark ? ThemeMode.light : ThemeMode.dark;
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                                size: 16,
+                                color: isDark ? const Color(0xFFF59E0B) : const Color(0xFF6366F1),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                isDark ? 'Dark Mode' : 'Light Mode',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          'Encrypted Isar DB v1.0',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      // Cloud Sync Button
+                      IconButton(
+                        tooltip: 'Trigger Cloud Sync',
+                        icon: const Icon(Icons.cloud_sync_rounded, size: 20, color: Color(0xFF10B981)),
+                        onPressed: () {
+                          try {
+                            ref.read(syncServiceProvider).syncAll();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('⚡ Sync triggered in background'), backgroundColor: Color(0xFF10B981)),
+                            );
+                          } catch (_) {}
+                        },
+                      ),
+                      // Logout Button
+                      IconButton(
+                        tooltip: 'Logout Account',
+                        icon: const Icon(Icons.logout_rounded, size: 20, color: Color(0xFFF43F5E)),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Text('Confirm Logout'),
+                              content: const Text('Are you sure you want to log out of Sahaj ERP?'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF43F5E)),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Logout'),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            await ref.read(authProvider.notifier).logout();
+                            if (context.mounted) {
+                              context.go('/login');
+                            }
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

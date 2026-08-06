@@ -18,7 +18,7 @@ class MainLayout extends StatelessWidget {
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/dashboard')) return 0;
-    if (location.startsWith('/sales')) return 1;
+    if (location.startsWith('/transactions')) return 1;
     if (location.startsWith('/parties')) return 2;
     if (location.startsWith('/reports') || location.startsWith('/settings')) return 3;
     return 0;
@@ -56,12 +56,12 @@ class MainLayout extends StatelessWidget {
         ),
       );
     } else {
-      // Mobile / Tablet Layout: Liquid Glass Floating Bottom Bar + FAB + Slider Drawer
+      // Mobile / Tablet Layout: Clean top space + Liquid Glass Bottom Bar + FAB + Side Drawer
       final isDark = theme.brightness == Brightness.dark;
 
       return Scaffold(
         key: _scaffoldKey,
-        appBar: const CustomAppBar(),
+        appBar: null, // Top Title AppBar completely hidden on mobile for maximum vertical space
         drawer: const CustomDrawer(isPermanent: false),
         backgroundColor: theme.colorScheme.background,
         body: SafeArea(
@@ -159,9 +159,9 @@ class MainLayout extends StatelessWidget {
                         context,
                         icon: Icons.receipt_long_outlined,
                         activeIcon: Icons.receipt_long_rounded,
-                        label: 'Sales',
+                        label: 'Transactions',
                         isSelected: selectedIndex == 1,
-                        onTap: () => context.go('/sales'),
+                        onTap: () => context.go('/transactions'),
                       ),
                       const SizedBox(width: 48), // Space for central FAB notch
                       _buildNavItem(

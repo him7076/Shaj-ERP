@@ -753,12 +753,14 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
-                  const SizedBox(height: 110),
+                  const SizedBox(height: 30),
                 ],
               ),
         ),
-        bottomNavigationBar: Builder(
-          builder: (context) {
+        bottomNavigationBar: !isDesktop
+            ? null
+            : Builder(
+                builder: (context) {
             final cart = ref.watch(invoiceCartProvider);
             return FutureBuilder<Settings?>(
               future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
@@ -844,39 +846,22 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             children: [
               Text('Billing Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: partiesAsync.when(
-                    data: (parties) {
-                      final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
-                      return SearchablePartyDropdown(
-                        parties: customerParties,
-                        selectedParty: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
-                            ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
-                            : null,
-                        labelText: 'Select Customer Account',
-                        onChanged: (party) {
-                          ref.read(invoiceCartProvider.notifier).setParty(party);
-                        },
-                      );
+            partiesAsync.when(
+                data: (parties) {
+                  return SearchablePartyDropdown(
+                    parties: parties,
+                    selectedParty: cart.selectedParty != null && parties.any((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
+                        ? parties.firstWhere((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
+                        : cart.selectedParty,
+                    labelText: 'Select Billing Party / Customer Account',
+                    onChanged: (party) {
+                      ref.read(invoiceCartProvider.notifier).setParty(party);
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading customers: $e'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.person_add),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
-                    ).then((_) => ref.invalidate(partiesListProvider));
-                  },
-                ),
-              ],
-            ),
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Text('Error loading customers: $e'),
+              ),
             if (cart.selectedParty != null) ...[
               const SizedBox(height: 12),
               Container(

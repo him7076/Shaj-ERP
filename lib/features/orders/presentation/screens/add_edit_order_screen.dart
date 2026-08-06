@@ -509,12 +509,14 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   mainContent,
                   const SizedBox(height: 16),
                   summaryContent,
-                  const SizedBox(height: 110),
+                  const SizedBox(height: 30),
                 ],
               ),
       ),
-      bottomNavigationBar: Builder(
-        builder: (context) {
+      bottomNavigationBar: !isDesktop
+          ? null
+          : Builder(
+              builder: (context) {
           final cart = ref.watch(cartProvider);
           return FutureBuilder<Settings?>(
             future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),

@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/hsn_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
 
 class AddEditItemScreen extends ConsumerStatefulWidget {
@@ -1360,9 +1361,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       icon: Icons.inventory_2_outlined,
       color: Colors.teal,
       children: [
-        Row(
+        Flex(
+          direction: ResponsiveLayout.isMobile(context) ? Axis.vertical : Axis.horizontal,
           children: [
             Expanded(
+              flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
               child: TextFormField(
                 controller: _openingStockController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1372,8 +1375,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: ResponsiveLayout.isMobile(context) ? 0 : 16, height: ResponsiveLayout.isMobile(context) ? 12 : 0),
             Expanded(
+              flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
               child: TextFormField(
                 controller: _currentStockController,
                 enabled: widget.itemUuid == null,
@@ -1385,8 +1389,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: ResponsiveLayout.isMobile(context) ? 0 : 16, height: ResponsiveLayout.isMobile(context) ? 12 : 0),
             Expanded(
+              flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
               child: TextFormField(
                 controller: _reorderLevelController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1396,8 +1401,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: ResponsiveLayout.isMobile(context) ? 0 : 16, height: ResponsiveLayout.isMobile(context) ? 12 : 0),
             Expanded(
+              flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
               child: TextFormField(
                 controller: _minStockController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1410,9 +1416,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        Row(
+        Flex(
+          direction: ResponsiveLayout.isMobile(context) ? Axis.vertical : Axis.horizontal,
           children: [
             Expanded(
+              flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
               child: unitsAsync.when(
                 data: (list) {
                   final exists = _selectedUnit != null && list.any((u) => u.id == _selectedUnit!.id);
@@ -1455,8 +1463,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 error: (e, _) => const Icon(Icons.error),
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: ResponsiveLayout.isMobile(context) ? 0 : 16, height: ResponsiveLayout.isMobile(context) ? 12 : 0),
             Expanded(
+              flex: ResponsiveLayout.isMobile(context) ? 0 : 1,
               child: unitsAsync.when(
                 data: (list) {
                   final exists = _selectedSecUnit != null && list.any((u) => u.id == _selectedSecUnit!.id);
@@ -1499,9 +1508,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 error: (e, _) => const Icon(Icons.error),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
+          ],
+        ),
                 controller: _conversionController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
 
 class SearchablePartyDropdown extends StatefulWidget {
   final List<Party> parties;
@@ -88,8 +89,32 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
-                itemCount: options.length,
+                itemCount: options.length + 1,
                 itemBuilder: (context, index) {
+                  if (index == options.length) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.12),
+                        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+                      ),
+                      child: ListTile(
+                        dense: true,
+                        leading: Icon(Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary, size: 18),
+                        title: Text(
+                          '+ Create New Party Account',
+                          style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.primary, fontSize: 12.5),
+                        ),
+                        onTap: () {
+                          FocusScope.of(context).unfocus();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
+                          );
+                        },
+                      ),
+                    );
+                  }
+
                   final party = options.elementAt(index);
                   final double bal = party.outstandingBalance ?? 0.0;
                   final Color balColor = bal > 0 ? Colors.green : (bal < 0 ? Colors.red : Colors.grey);
