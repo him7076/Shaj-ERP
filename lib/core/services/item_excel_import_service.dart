@@ -5,6 +5,9 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ImportItemResult {
@@ -20,63 +23,108 @@ class ImportItemResult {
 }
 
 class ItemExcelImportService {
-  /// Generates the sample Excel template (.xlsx) for Items Import as specified
+  /// Generates sample Excel template (.xlsx) containing ALL Sahaj ERP product form fields
   static List<int>? generateSampleTemplate() {
     final excel = Excel.createExcel();
     final sheet = excel['Sheet1'];
 
-    // Header row
+    // Comprehensive Header Row
     sheet.appendRow([
-      TextCellValue('Item code'),
-      TextCellValue('item name'),
-      TextCellValue('HSN'),
+      TextCellValue('Item Code'),
+      TextCellValue('Item Name'),
+      TextCellValue('Short Name'),
+      TextCellValue('Category'),
+      TextCellValue('Brand'),
+      TextCellValue('HSN Code'),
+      TextCellValue('Primary Unit'),
+      TextCellValue('Secondary Unit'),
+      TextCellValue('Conversion Factor'),
       TextCellValue('Sale Price'),
-      TextCellValue('purchse price'),
-      TextCellValue('discount type'),
-      TextCellValue('sale Discount'),
-      TextCellValue('current Stock QTY'),
-      TextCellValue('Minimum stock qty'),
-      TextCellValue('item Location'),
-      TextCellValue('Tax rate'),
-      TextCellValue('Tax inclusiv'),
+      TextCellValue('Wholesale Price'),
+      TextCellValue('MRP'),
+      TextCellValue('Purchase Price'),
+      TextCellValue('Minimum Selling Price'),
+      TextCellValue('GST Rate (%)'),
+      TextCellValue('CESS Rate (%)'),
+      TextCellValue('Tax Inclusive'), // Yes/No
+      TextCellValue('Opening Stock'),
+      TextCellValue('Current Stock'),
+      TextCellValue('Minimum Stock / Reorder Level'),
+      TextCellValue('Barcode'),
+      TextCellValue('SKU Code'),
+      TextCellValue('Item Location'),
+      TextCellValue('Default Batch Number'),
+      TextCellValue('Weight (kg)'),
+      TextCellValue('Dimensions'),
+      TextCellValue('Notes / Description'),
     ]);
 
     // Sample Row 1
     sheet.appendRow([
       TextCellValue('ITM-001'),
       TextCellValue('Men Cotton Casual Shirt (Blue)'),
+      TextCellValue('Shirt Blue'),
+      TextCellValue('Apparel'),
+      TextCellValue('Sahaj Fashion'),
       TextCellValue('6105'),
+      TextCellValue('PCS'),
+      TextCellValue('BOX'),
+      DoubleCellValue(10.0),
       DoubleCellValue(850.00),
+      DoubleCellValue(780.00),
+      DoubleCellValue(999.00),
       DoubleCellValue(500.00),
-      TextCellValue('discount %'),
-      TextCellValue('10%'),
+      DoubleCellValue(750.00),
+      TextCellValue('5%'),
+      DoubleCellValue(0.0),
+      TextCellValue('No'),
+      DoubleCellValue(100.0),
       DoubleCellValue(100.0),
       DoubleCellValue(10.0),
+      TextCellValue('8901234567890'),
+      TextCellValue('SKU-SHIRT-01'),
       TextCellValue('Warehouse A - Shelf 2'),
-      TextCellValue('5%'),
-      TextCellValue('no'),
+      TextCellValue('BATCH-2026-A'),
+      DoubleCellValue(0.35),
+      TextCellValue('30x20x5 cm'),
+      TextCellValue('100% pure combed cotton casual shirt'),
     ]);
 
     // Sample Row 2
     sheet.appendRow([
       TextCellValue('ITM-002'),
       TextCellValue('Women Designer Kurti'),
+      TextCellValue('Kurti Des'),
+      TextCellValue('Ethnic Wear'),
+      TextCellValue('Sahaj Ethnic'),
       TextCellValue('6204'),
+      TextCellValue('PCS'),
+      TextCellValue('PACK'),
+      DoubleCellValue(5.0),
       DoubleCellValue(1200.00),
+      DoubleCellValue(1100.00),
+      DoubleCellValue(1499.00),
       DoubleCellValue(750.00),
-      TextCellValue('Discount Amount'),
-      DoubleCellValue(100.00),
+      DoubleCellValue(1050.00),
+      TextCellValue('12%'),
+      DoubleCellValue(0.0),
+      TextCellValue('Yes'),
+      DoubleCellValue(50.0),
       DoubleCellValue(50.0),
       DoubleCellValue(5.0),
+      TextCellValue('8901234567891'),
+      TextCellValue('SKU-KURTI-02'),
       TextCellValue('Main Store - Display 1'),
-      TextCellValue('12%'),
-      TextCellValue('yes'),
+      TextCellValue('BATCH-2026-B'),
+      DoubleCellValue(0.40),
+      TextCellValue('35x25x4 cm'),
+      TextCellValue('Rayon embroidery designer kurti'),
     ]);
 
     return excel.encode();
   }
 
-  /// Imports Items & Stock details from decoded Excel bytes
+  /// Imports Products & Stock details supporting flexible column headers
   static Future<ImportItemResult> importItemsFromBytes(
     Uint8List bytes,
     DatabaseService dbService,
@@ -107,71 +155,194 @@ class ItemExcelImportService {
         );
       }
 
+      final colMap = _buildColumnMap(sheet.rows[0]);
+
+      final colCode = _findCol(colMap, ['item code', 'code', 'product code', 'sku code'], 0);
+      final colName = _findCol(colMap, ['item name', 'name', 'product name', 'title'], 1);
+      final colShortName = _findCol(colMap, ['short name', 'alias'], 2);
+      final colCategory = _findCol(colMap, ['category', 'item category', 'group'], 3);
+      final colBrand = _findCol(colMap, ['brand', 'manufacturer', 'company'], 4);
+      final colHsn = _findCol(colMap, ['hsn code', 'hsn/sac', 'hsn', 'sac'], 5);
+      final colUnit = _findCol(colMap, ['primary unit', 'unit', 'uom', 'pack'], 6);
+      final colSecUnit = _findCol(colMap, ['secondary unit', 'sec unit', 'sub unit'], 7);
+      final colConvFactor = _findCol(colMap, ['conversion factor', 'conversion', 'factor'], 8);
+      final colSalePrice = _findCol(colMap, ['sale price', 'selling price', 'sell rate', 'rate'], 9);
+      final colWholesalePrice = _findCol(colMap, ['wholesale price', 'wholesale rate'], 10);
+      final colMrp = _findCol(colMap, ['mrp', 'max retail price'], 11);
+      final colPurchasePrice = _findCol(colMap, ['purchase price', 'buy rate', 'buy price', 'cost'], 12);
+      final colMinSellingPrice = _findCol(colMap, ['minimum selling price', 'min sale price', 'min sell rate'], 13);
+      final colGstRate = _findCol(colMap, ['gst rate (%)', 'tax rate', 'gst %', 'gst', 'tax %'], 14);
+      final colCessRate = _findCol(colMap, ['cess rate (%)', 'cess %', 'cess'], 15);
+      final colTaxInclusive = _findCol(colMap, ['tax inclusive', 'inclusive tax', 'tax inclusiv'], 16);
+      final colOpeningStock = _findCol(colMap, ['opening stock', 'opening qty'], 17);
+      final colCurrentStock = _findCol(colMap, ['current stock qty', 'current stock', 'stock qty', 'qty', 'stock'], 18);
+      final colMinStock = _findCol(colMap, ['minimum stock qty', 'minimum stock', 'reorder level', 'reorder qty'], 19);
+      final colBarcode = _findCol(colMap, ['barcode', 'upc', 'ean'], 20);
+      final colSku = _findCol(colMap, ['sku code', 'sku', 'product sku'], 21);
+      final colLocation = _findCol(colMap, ['item location', 'location', 'shelf', 'warehouse'], 22);
+      final colBatchNo = _findCol(colMap, ['default batch number', 'batch number', 'batch no', 'batch'], 23);
+      final colWeight = _findCol(colMap, ['weight (kg)', 'weight', 'wt'], 24);
+      final colDimensions = _findCol(colMap, ['dimensions', 'size'], 25);
+      final colNotes = _findCol(colMap, ['notes / description', 'notes', 'description', 'remarks'], 26);
+
+      final allCategories = await isar.categorys.filter().isDeletedEqualTo(false).findAll();
+      final allBrands = await isar.brands.filter().isDeletedEqualTo(false).findAll();
+      final allUnits = await isar.units.filter().isDeletedEqualTo(false).findAll();
+      final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+
       for (int r = 1; r < sheet.rows.length; r++) {
         final row = sheet.rows[r];
         if (row.isEmpty) continue;
 
-        final itemCode = _getCellValue(row, 0).trim(); // Col A: Item code
-        final itemName = _getCellValue(row, 1).trim(); // Col B: item name
+        final itemCode = _getCellValue(row, colCode).trim();
+        final itemName = _getCellValue(row, colName).trim();
 
         if (itemName.isEmpty && itemCode.isEmpty) continue;
 
-        final hsn = _getCellValue(row, 2).trim(); // Col C: HSN
-        final salePrice = _parseDouble(_getCellValue(row, 3)); // Col D: Sale Price
-        final purchasePrice = _parseDouble(_getCellValue(row, 4)); // Col E: purchse price
-        final discountType = _getCellValue(row, 5).trim(); // Col F: discount type
-        final saleDiscount = _getCellValue(row, 6).trim(); // Col G: sale Discount
-        final currentStock = _parseDouble(_getCellValue(row, 7)); // Col H: current Stock QTY
-        final minStock = _parseDouble(_getCellValue(row, 8)); // Col I: Minimum stock qty
-        final location = _getCellValue(row, 9).trim(); // Col J: item Location
-        final taxRateStr = _getCellValue(row, 10).trim(); // Col K: Tax rate
-        final taxInclusiveStr = _getCellValue(row, 11).trim().toLowerCase(); // Col L: Tax inclusiv
+        final shortName = _getCellValue(row, colShortName).trim();
+        final categoryStr = _getCellValue(row, colCategory).trim();
+        final brandStr = _getCellValue(row, colBrand).trim();
+        final hsn = _getCellValue(row, colHsn).trim();
+        final primaryUnitStr = _getCellValue(row, colUnit).trim();
+        final secUnitStr = _getCellValue(row, colSecUnit).trim();
+        final convFactor = _parseDouble(_getCellValue(row, colConvFactor));
+        final salePrice = _parseDouble(_getCellValue(row, colSalePrice));
+        final wholesalePrice = _parseDouble(_getCellValue(row, colWholesalePrice));
+        final mrp = _parseDouble(_getCellValue(row, colMrp));
+        final purchasePrice = _parseDouble(_getCellValue(row, colPurchasePrice));
+        final minSellingPrice = _parseDouble(_getCellValue(row, colMinSellingPrice));
+        final gstRateStr = _getCellValue(row, colGstRate).trim();
+        final cessRate = _parseDouble(_getCellValue(row, colCessRate));
+        final taxInclusiveStr = _getCellValue(row, colTaxInclusive).trim().toLowerCase();
+        final openingStock = _parseDouble(_getCellValue(row, colOpeningStock));
+        final currentStock = _parseDouble(_getCellValue(row, colCurrentStock));
+        final minStock = _parseDouble(_getCellValue(row, colMinStock));
+        final barcode = _getCellValue(row, colBarcode).trim();
+        final sku = _getCellValue(row, colSku).trim();
+        final location = _getCellValue(row, colLocation).trim();
+        final defaultBatchNo = _getCellValue(row, colBatchNo).trim();
+        final weight = _parseDouble(_getCellValue(row, colWeight));
+        final dimensions = _getCellValue(row, colDimensions).trim();
+        final notes = _getCellValue(row, colNotes).trim();
 
-        final taxRate = _parseGstPercent(taxRateStr);
-        final isTaxInclusive = taxInclusiveStr == 'yes' || taxInclusiveStr == 'true' || taxInclusiveStr == '1';
+        final gstRate = _parseGstPercent(gstRateStr);
 
         final effectiveCode = itemCode.isNotEmpty
             ? itemCode
             : 'ITM-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r';
-
         final effectiveName = itemName.isNotEmpty ? itemName : 'Item $effectiveCode';
 
-        final notesStr = [
+        final effectiveCurrentStock = currentStock > 0 ? currentStock : openingStock;
+
+        // Notes construction
+        final combinedNotes = [
+          if (notes.isNotEmpty) notes,
           if (location.isNotEmpty) 'Location: $location',
-          if (saleDiscount.isNotEmpty) 'Discount: $saleDiscount ($discountType)',
-          if (isTaxInclusive) 'Tax Inclusive: Yes',
+          if (taxInclusiveStr == 'yes' || taxInclusiveStr == 'true') 'Tax Inclusive: Yes',
         ].join(' | ');
 
-        final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+        // Find or create Category Link
+        Category? catObj;
+        if (categoryStr.isNotEmpty) {
+          catObj = allCategories.where((c) => c.categoryName?.trim().toLowerCase() == categoryStr.toLowerCase()).firstOrNull;
+          if (catObj == null) {
+            catObj = Category()
+              ..uuid = const Uuid().v4()
+              ..categoryName = categoryStr
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now();
+            await isar.writeTxn(() async {
+              catObj!.id = await isar.categorys.put(catObj!);
+            });
+            allCategories.add(catObj!);
+          }
+        }
+
+        // Find or create Brand Link
+        Brand? brandObj;
+        if (brandStr.isNotEmpty) {
+          brandObj = allBrands.where((b) => b.brandName?.trim().toLowerCase() == brandStr.toLowerCase()).firstOrNull;
+          if (brandObj == null) {
+            brandObj = Brand()
+              ..uuid = const Uuid().v4()
+              ..brandName = brandStr
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now();
+            await isar.writeTxn(() async {
+              brandObj!.id = await isar.brands.put(brandObj!);
+            });
+            allBrands.add(brandObj!);
+          }
+        }
+
+        // Find or create Unit Link
+        Unit? unitObj;
+        final unitName = primaryUnitStr.isNotEmpty ? primaryUnitStr : 'PCS';
+        unitObj = allUnits.where((u) => u.unitName?.trim().toLowerCase() == unitName.toLowerCase() || u.shortName?.trim().toLowerCase() == unitName.toLowerCase()).firstOrNull;
+        if (unitObj == null) {
+          unitObj = Unit()
+            ..uuid = const Uuid().v4()
+            ..unitName = unitName
+            ..shortName = unitName
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.writeTxn(() async {
+            unitObj!.id = await isar.units.put(unitObj!);
+          });
+          allUnits.add(unitObj!);
+        }
 
         try {
-          // Check if item exists by itemCode or itemName
           Item? existingItem;
           if (itemCode.isNotEmpty) {
             existingItem = allItems.where((i) => i.itemCode?.trim() == itemCode).firstOrNull;
+          }
+          if (existingItem == null && barcode.isNotEmpty) {
+            existingItem = allItems.where((i) => i.barcode?.trim() == barcode).firstOrNull;
           }
           existingItem ??= allItems.where((i) => i.itemName?.trim().toLowerCase() == effectiveName.toLowerCase()).firstOrNull;
 
           if (existingItem != null) {
             // Update existing Item
             existingItem.itemName = effectiveName;
+            existingItem.shortName = shortName.isNotEmpty ? shortName : existingItem.shortName;
             existingItem.hsnCode = hsn.isNotEmpty ? hsn : existingItem.hsnCode;
             existingItem.sellRate = salePrice > 0 ? salePrice : existingItem.sellRate;
+            existingItem.wholesaleRate = wholesalePrice > 0 ? wholesalePrice : existingItem.wholesaleRate;
+            existingItem.mrp = mrp > 0 ? mrp : existingItem.mrp;
             existingItem.buyRate = purchasePrice > 0 ? purchasePrice : existingItem.buyRate;
-            existingItem.currentStock = (existingItem.currentStock ?? 0.0) + currentStock;
+            existingItem.minimumSellingPrice = minSellingPrice > 0 ? minSellingPrice : existingItem.minimumSellingPrice;
+            existingItem.currentStock = (existingItem.currentStock ?? 0.0) + effectiveCurrentStock;
             existingItem.minimumStock = minStock > 0 ? minStock : existingItem.minimumStock;
             existingItem.reorderLevel = minStock > 0 ? minStock : existingItem.reorderLevel;
-            existingItem.gstRate = taxRate > 0 ? taxRate : existingItem.gstRate;
-            existingItem.notes = notesStr.isNotEmpty ? notesStr : existingItem.notes;
+            existingItem.gstApplicable = true;
+            existingItem.gstRate = gstRate > 0 ? gstRate : existingItem.gstRate;
+            existingItem.cessRate = cessRate > 0 ? cessRate : existingItem.cessRate;
+            existingItem.secondaryUnit = secUnitStr.isNotEmpty ? secUnitStr : existingItem.secondaryUnit;
+            existingItem.conversionFactor = convFactor > 0 ? convFactor : existingItem.conversionFactor;
+            existingItem.barcode = barcode.isNotEmpty ? barcode : existingItem.barcode;
+            existingItem.sku = sku.isNotEmpty ? sku : existingItem.sku;
+            existingItem.skuCode = sku.isNotEmpty ? sku : existingItem.skuCode;
+            existingItem.defaultBatchNumber = defaultBatchNo.isNotEmpty ? defaultBatchNo : existingItem.defaultBatchNumber;
+            existingItem.weight = weight > 0 ? weight : existingItem.weight;
+            existingItem.dimensions = dimensions.isNotEmpty ? dimensions : existingItem.dimensions;
+            existingItem.notes = combinedNotes.isNotEmpty ? combinedNotes : existingItem.notes;
             existingItem.updatedAt = DateTime.now();
+
+            if (catObj != null) existingItem.category.value = catObj;
+            if (brandObj != null) existingItem.brand.value = brandObj;
+            if (unitObj != null) existingItem.unit.value = unitObj;
 
             await isar.writeTxn(() async {
               await isar.items.put(existingItem!);
+              try { await existingItem.category.save(); } catch (_) {}
+              try { await existingItem.brand.save(); } catch (_) {}
+              try { await existingItem.unit.save(); } catch (_) {}
             });
 
             // Enqueue for Sync
             final queueItem = SyncQueue()
-              ..uuid = Uuid().v4()
+              ..uuid = const Uuid().v4()
               ..entityType = 'Item'
               ..entityId = existingItem.id
               ..entityUuid = existingItem.uuid
@@ -187,29 +358,49 @@ class ItemExcelImportService {
           } else {
             // Create New Item
             final newItem = Item()
-              ..uuid = Uuid().v4()
+              ..uuid = const Uuid().v4()
               ..itemCode = effectiveCode
               ..itemName = effectiveName
+              ..shortName = shortName
               ..hsnCode = hsn
               ..sellRate = salePrice
+              ..wholesaleRate = wholesalePrice
+              ..mrp = mrp > 0 ? mrp : salePrice
               ..buyRate = purchasePrice
-              ..openingStock = currentStock
-              ..currentStock = currentStock
+              ..minimumSellingPrice = minSellingPrice
+              ..openingStock = openingStock > 0 ? openingStock : effectiveCurrentStock
+              ..currentStock = effectiveCurrentStock
               ..minimumStock = minStock
               ..reorderLevel = minStock
               ..gstApplicable = true
-              ..gstRate = taxRate
-              ..notes = notesStr
+              ..gstRate = gstRate
+              ..cessRate = cessRate
+              ..secondaryUnit = secUnitStr
+              ..conversionFactor = convFactor > 0 ? convFactor : 1.0
+              ..barcode = barcode
+              ..sku = sku
+              ..skuCode = sku
+              ..defaultBatchNumber = defaultBatchNo
+              ..weight = weight
+              ..dimensions = dimensions
+              ..notes = combinedNotes
               ..createdAt = DateTime.now()
               ..updatedAt = DateTime.now();
 
+            if (catObj != null) newItem.category.value = catObj;
+            if (brandObj != null) newItem.brand.value = brandObj;
+            if (unitObj != null) newItem.unit.value = unitObj;
+
             await isar.writeTxn(() async {
               newItem.id = await isar.items.put(newItem);
+              try { await newItem.category.save(); } catch (_) {}
+              try { await newItem.brand.save(); } catch (_) {}
+              try { await newItem.unit.save(); } catch (_) {}
             });
 
             // Enqueue for Sync
             final queueItem = SyncQueue()
-              ..uuid = Uuid().v4()
+              ..uuid = const Uuid().v4()
               ..entityType = 'Item'
               ..entityId = newItem.id
               ..entityUuid = newItem.uuid
@@ -240,8 +431,38 @@ class ItemExcelImportService {
     );
   }
 
+  static Map<String, int> _buildColumnMap(List<Data?> headerRow) {
+    final Map<String, int> map = {};
+    for (int i = 0; i < headerRow.length; i++) {
+      final cell = headerRow[i];
+      if (cell != null && cell.value != null) {
+        final val = cell.value.toString().trim().toLowerCase();
+        if (val.isNotEmpty) {
+          map[val] = i;
+        }
+      }
+    }
+    return map;
+  }
+
+  static int _findCol(Map<String, int> colMap, List<String> candidates, int defaultIndex) {
+    for (var cand in candidates) {
+      if (colMap.containsKey(cand)) {
+        return colMap[cand]!;
+      }
+    }
+    for (var entry in colMap.entries) {
+      for (var cand in candidates) {
+        if (entry.key.contains(cand)) {
+          return entry.value;
+        }
+      }
+    }
+    return defaultIndex;
+  }
+
   static String _getCellValue(List<Data?> row, int colIndex) {
-    if (colIndex >= row.length || row[colIndex] == null) return '';
+    if (colIndex < 0 || colIndex >= row.length || row[colIndex] == null) return '';
     final val = row[colIndex]?.value;
     if (val == null) return '';
     return val.toString().trim();

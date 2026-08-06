@@ -1,5 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:printing/printing.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
@@ -8,6 +11,10 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/core/services/sales_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -41,6 +48,200 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _downloadSalesSampleExcel() async {
+    try {
+      final sampleBytes = SalesExcelImportService.generateSampleTemplate();
+      if (sampleBytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate sample template.')),
+        );
+        return;
+      }
+
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(sampleBytes),
+        filename: 'Sales_Invoice_Import_Sample_Template.xlsx',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📥 Sample Sales Invoice Excel Template downloaded! Fill details in Sheet 1 & Sheet 2.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating sample Excel: $e')),
+      );
+    }
+  }
+
+  Future<void> _importSalesExcel() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final fileBytes = result.files.first.bytes;
+      if (fileBytes == null || fileBytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read the selected Excel file.')),
+        );
+        return;
+      }
+
+      final dbService = ref.read(databaseServiceProvider);
+
+      // Check for existing duplicate invoices in database
+      final duplicateInvoices = await SalesExcelImportService.checkForDuplicateInvoices(fileBytes, dbService);
+
+      DuplicateBillAction selectedAction = DuplicateBillAction.overwrite;
+
+      if (duplicateInvoices.isNotEmpty && mounted) {
+        final choice = await showDialog<DuplicateBillAction>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                SizedBox(width: 10),
+                Text('Existing Invoice Found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'The following sales invoice(s) already exist in your database:\n${duplicateInvoices.map((b) => '• $b').join('\n')}',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'What would you like to do with these existing invoices?',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.skip),
+                icon: const Icon(Icons.skip_next_rounded, size: 18),
+                label: const Text('Skip Existing'),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.overwrite),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                icon: const Icon(Icons.sync, size: 18),
+                label: const Text('Rewrite / Overwrite'),
+              ),
+            ],
+          ),
+        );
+
+        if (choice == null) return;
+        selectedAction = choice;
+      }
+
+      // Show loading overlay
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const AlertDialog(
+            content: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16),
+                Text('Importing Sales Invoices & Updating Stock...'),
+              ],
+            ),
+          ),
+        );
+      }
+
+      final importResult = await SalesExcelImportService.importSalesInvoicesFromBytes(
+        fileBytes,
+        dbService,
+        duplicateAction: selectedAction,
+      );
+
+      // Trigger cloud sync
+      ref.read(syncServiceProvider).syncAll();
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog safely
+      }
+
+      ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(filteredItemsProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(
+                  importResult.totalInvoicesImported > 0 ? Icons.check_circle : Icons.warning_amber_rounded,
+                  color: importResult.totalInvoicesImported > 0 ? Colors.green : Colors.amber,
+                  size: 28,
+                ),
+                const SizedBox(width: 10),
+                const Text('Sales Excel Import', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✅ Sales Invoices Imported: ${importResult.totalInvoicesImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text('📦 Sales Items Recorded: ${importResult.totalItemsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (importResult.skippedInvoices > 0) ...[
+                    const SizedBox(height: 4),
+                    Text('⏭️ Invoices Skipped: ${importResult.skippedInvoices}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15)),
+                  ],
+                  if (importResult.errors.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Warnings / Logs:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import Excel file: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -106,13 +307,51 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             },
           ),
 
-          // 🔄 Refresh
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-            onPressed: () {
-              ref.invalidate(filteredInvoicesProvider);
+          // ⋮ 3-Dot Tools Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, size: 20),
+            tooltip: 'Sales Tools',
+            onSelected: (value) {
+              if (value == 'sample') {
+                _downloadSalesSampleExcel();
+              } else if (value == 'import') {
+                _importSalesExcel();
+              } else if (value == 'refresh') {
+                ref.invalidate(filteredInvoicesProvider);
+              }
             },
-            tooltip: 'Refresh Invoices',
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'sample',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('Sample Excel Sheet'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import',
+                child: Row(
+                  children: [
+                    Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('Import Excel Invoices'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh_rounded, size: 18),
+                    SizedBox(width: 8),
+                    Text('Refresh List'),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 4),
         ],
