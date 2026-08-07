@@ -77,14 +77,10 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
       _editedItemsMap.clear();
       ref.invalidate(filteredItemsProvider);
 
-      // Auto-trigger Cloud Sync ONLY IF Cloud Sync is enabled by user and changes were made
-      final prefs = ref.read(sharedPreferencesProvider);
-      final cloudSyncEnabled = prefs.getBool('enable_firebase_cloud_sync') ?? true;
-      if (cloudSyncEnabled) {
-        try {
-          ref.read(syncServiceProvider).syncAll();
-        } catch (_) {}
-      }
+      // Auto-trigger Cloud Sync in background (syncAll internal gate checks if cloud sync is enabled)
+      try {
+        ref.read(syncServiceProvider).syncAll();
+      } catch (_) {}
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
