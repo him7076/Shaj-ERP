@@ -531,7 +531,7 @@ class SalesExcelImportService {
               ..itemName = itemName
               ..hsnCode = hsn
               ..quantity = qty > 0 ? qty : 1.0
-              ..unit = unit
+              ..unit = unit.isNotEmpty ? unit : (catalogItem?.primaryUnitName ?? catalogItem?.unit.value?.shortName ?? 'PCS')
               ..rate = rate
               ..discount = discount
               ..taxableAmount = taxable > 0 ? taxable : lineTotal

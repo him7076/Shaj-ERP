@@ -136,11 +136,11 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     final historyNotifier = ref.read(backupHistoryNotifierProvider.notifier);
     final theme = Theme.of(context);
 
-    // Show processing dialog
+    bool isDialogActive = true;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (ctx) {
         return const AlertDialog(
           content: Row(
             children: [
@@ -151,7 +151,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
           ),
         );
       },
-    );
+    ).then((_) => isDialogActive = false);
 
     try {
       final password = _encryptBackup ? _passwordController.text : null;
@@ -161,10 +161,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         uploadToCloud: _uploadToCloud,
       );
 
-      // Close dialog
-      if (mounted) Navigator.pop(context);
+      if (mounted && isDialogActive) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
-      // Show success
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -181,10 +181,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         });
       }
     } catch (e) {
-      // Close dialog
-      if (mounted) Navigator.pop(context);
+      if (mounted && isDialogActive) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
 
-      // Show error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

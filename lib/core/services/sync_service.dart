@@ -853,6 +853,7 @@ class SyncService {
           'currentStock': e.currentStock,
           'reorderLevel': e.reorderLevel,
           'minimumStock': e.minimumStock,
+          'primaryUnitName': e.primaryUnitName ?? e.unit.value?.shortName ?? e.unit.value?.unitName,
           'secondaryUnit': e.secondaryUnit,
           'conversionFactor': e.conversionFactor,
           'barcode': e.barcode,
@@ -1244,6 +1245,7 @@ class SyncService {
           ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble()
           ..reorderLevel = (data['reorderLevel'] as num?)?.toDouble()
           ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
+          ..primaryUnitName = data['primaryUnitName'] as String?
           ..secondaryUnit = data['secondaryUnit']
           ..conversionFactor = (data['conversionFactor'] as num?)?.toDouble()
           ..barcode = data['barcode']

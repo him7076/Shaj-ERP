@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:printing/printing.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,17 +68,15 @@ class BackupService {
     bool includeImages = true,
     bool uploadToCloud = false,
   }) async {
-    final tempDir = await getTemporaryDirectory();
     final backupTimestamp = DateTime.now();
     final backupId = backupTimestamp.millisecondsSinceEpoch;
-    final tempBackupFolder = Directory('${tempDir.path}/backup_$backupId');
-    await tempBackupFolder.create(recursive: true);
+    final bserpFilename = 'BusinessSahaj_${_formatDateString(backupTimestamp)}.bserp';
 
     try {
       logger.info('Starting backup generation...');
       final isar = _dbService.isar;
 
-      // 1. Export All 21 Isar Collections to temporary JSON files
+      // 1. Export All 21 Isar Collections to JSON maps
       final collections = {
         'categories': await isar.categorys.where().findAll(),
         'units': await isar.units.where().findAll(),
@@ -101,15 +101,6 @@ class BackupService {
         'sync_queues': await isar.syncQueues.where().findAll(),
       };
 
-      final List<File> tempJsonFiles = [];
-      for (var entry in collections.entries) {
-        final jsonList = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
-        final file = File('${tempBackupFolder.path}/${entry.key}.json');
-        await file.writeAsString(jsonEncode(jsonList));
-        tempJsonFiles.add(file);
-      }
-
-      // 2. Export Metadata Header
       final metadata = BackupMetadata(
         appVersion: '1.0.0',
         databaseVersion: DatabaseService.currentDatabaseVersion,
@@ -118,18 +109,62 @@ class BackupService {
         includeImages: includeImages,
         collectionsList: collections.keys.toList(),
       );
+
+      // --- WEB-SPECIFIC IN-MEMORY BACKUP & DOWNLOAD ---
+      if (kIsWeb) {
+        final Map<String, dynamic> webPayload = {
+          'metadata': metadata.toJson(),
+        };
+
+        for (var entry in collections.entries) {
+          webPayload[entry.key] = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
+        }
+
+        final jsonString = jsonEncode(webPayload);
+        final jsonBytes = Uint8List.fromList(utf8.encode(jsonString));
+
+        await Printing.sharePdf(
+          bytes: jsonBytes,
+          filename: bserpFilename,
+        );
+
+        final historyEntry = BackupHistoryEntry(
+          backupName: bserpFilename,
+          date: backupTimestamp,
+          size: jsonBytes.length,
+          location: 'Browser Downloads',
+          isCloud: false,
+          isEncrypted: false,
+        );
+
+        await _registerBackupInHistory(historyEntry);
+        logger.info('Web backup generated and downloaded successfully: $bserpFilename');
+        return historyEntry;
+      }
+
+      // --- DESKTOP / MOBILE FILESYSTEM BACKUP ---
+      final tempDir = await getTemporaryDirectory();
+      final tempBackupFolder = Directory('${tempDir.path}/backup_$backupId');
+      await tempBackupFolder.create(recursive: true);
+
+      final List<File> tempJsonFiles = [];
+      for (var entry in collections.entries) {
+        final jsonList = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
+        final file = File('${tempBackupFolder.path}/${entry.key}.json');
+        await file.writeAsString(jsonEncode(jsonList));
+        tempJsonFiles.add(file);
+      }
+
       final metaFile = File('${tempBackupFolder.path}/metadata.json');
       await metaFile.writeAsString(jsonEncode(metadata.toJson()));
       tempJsonFiles.add(metaFile);
 
-      // 3. Collect Images if selected
       Directory? imagesDir;
       if (includeImages) {
         final appDocsDir = await getApplicationDocumentsDirectory();
         imagesDir = Directory('${appDocsDir.path}/product_images');
       }
 
-      // 4. Create ZIP archive
       final zipFilename = 'BusinessSahaj_${_formatDateString(backupTimestamp)}.zip';
       final zipTempPath = '${tempDir.path}/$zipFilename';
       await _compressionService.createBackupArchive(
