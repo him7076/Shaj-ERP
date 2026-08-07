@@ -947,7 +947,7 @@ class SyncService {
         final e = entity as InvoiceItem;
         String? invUuid = e.invoice.value?.uuid;
         if ((invUuid == null || invUuid.isEmpty) && e.parentInvoiceId != null) {
-          final parentInv = await isar.invoices.get(e.parentInvoiceId!);
+          final parentInv = await _dbService.isar.invoices.get(e.parentInvoiceId!);
           invUuid = parentInv?.uuid;
         }
         return baseMap..addAll({
@@ -1018,7 +1018,7 @@ class SyncService {
         final e = entity as PurchaseItem;
         String? pUuid = e.purchaseUuid ?? e.purchase.value?.uuid;
         if ((pUuid == null || pUuid.isEmpty) && e.purchaseId != null) {
-          final parentP = await isar.purchases.get(e.purchaseId!);
+          final parentP = await _dbService.isar.purchases.get(e.purchaseId!);
           pUuid = parentP?.uuid;
         }
         return baseMap..addAll({
