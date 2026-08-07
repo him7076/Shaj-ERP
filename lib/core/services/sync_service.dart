@@ -1849,8 +1849,9 @@ class SyncService {
                 ..isSynced = true
                 ..updatedAt = DateTime.now();
 
+              final targetInvItem = invItem;
               await isar.writeTxn(() async {
-                await isar.invoiceItems.put(invItem!);
+                await isar.invoiceItems.put(targetInvItem);
               });
             }
           }
@@ -1917,8 +1918,9 @@ class SyncService {
                 ..isSynced = true
                 ..updatedAt = DateTime.now();
 
+              final targetPurItem = purItem;
               await isar.writeTxn(() async {
-                await isar.purchaseItems.put(purItem!);
+                await isar.purchaseItems.put(targetPurItem);
               });
             }
           }
