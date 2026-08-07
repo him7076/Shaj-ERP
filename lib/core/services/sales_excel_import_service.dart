@@ -29,14 +29,16 @@ class ImportSalesResult {
 class SalesExcelImportService {
   static const Uuid _uuidGen = Uuid();
 
-  /// Checks Excel bytes for invoice numbers that already exist in database
+  /// Checks Excel (bytes or pre-decoded object) for invoice numbers that already exist in database
   static Future<List<String>> checkForDuplicateInvoices(
-    Uint8List bytes,
+    dynamic bytesOrExcel,
     DatabaseService dbService,
   ) async {
     final List<String> duplicates = [];
     try {
-      final excel = Excel.decodeBytes(bytes);
+      final Excel excel = bytesOrExcel is Excel
+          ? bytesOrExcel
+          : Excel.decodeBytes(bytesOrExcel as Uint8List);
       final isar = dbService.isar;
 
       final sheetKeys = excel.tables.keys.toList();
@@ -83,15 +85,14 @@ class SalesExcelImportService {
       TextCellValue('Customer GST Number'),
       TextCellValue('Sales Order Number'),
       TextCellValue('Invoice Number'),
-      TextCellValue('Invoice Type'), // Tax Invoice, Bill of Supply
+      TextCellValue('Invoice Type'),
       TextCellValue('Total Amount'),
-      TextCellValue('Payment Type'), // Cash, Bank, UPI, Credit
+      TextCellValue('Payment Type'),
       TextCellValue('Paid Amount'),
       TextCellValue('Balance Amount'),
       TextCellValue('Description'),
     ]);
 
-    // Sample Rows for Sheet 1
     sheet1.appendRow([
       TextCellValue('13/07/2026'),
       TextCellValue('Shree Krishna Traders'),
@@ -142,7 +143,6 @@ class SalesExcelImportService {
       TextCellValue('Amount'),
     ]);
 
-    // Sample Rows for Sheet 2
     sheet2.appendRow([
       TextCellValue('13/07/2026'),
       TextCellValue('Shree Krishna Traders'),
@@ -182,9 +182,9 @@ class SalesExcelImportService {
     return excel.encode();
   }
 
-  /// Imports Sales Invoices and Line Items from decoded Excel bytes with Progress Callback & async yielding
+  /// Imports Sales Invoices and Line Items from Excel (bytes or pre-decoded Excel object)
   static Future<ImportSalesResult> importSalesInvoicesFromBytes(
-    Uint8List bytes,
+    dynamic bytesOrExcel,
     DatabaseService dbService, {
     DuplicateBillAction duplicateAction = DuplicateBillAction.overwrite,
     ImportProgressCallback? onProgress,
@@ -195,7 +195,9 @@ class SalesExcelImportService {
     int skippedInvoices = 0;
 
     try {
-      final excel = Excel.decodeBytes(bytes);
+      final Excel excel = bytesOrExcel is Excel
+          ? bytesOrExcel
+          : Excel.decodeBytes(bytesOrExcel as Uint8List);
       final isar = dbService.isar;
 
       final sheetKeys = excel.tables.keys.toList();
@@ -441,20 +443,20 @@ class SalesExcelImportService {
             invoice.party.value = party;
           }
 
-          // Retrieve items matching THIS SPECIFIC INVOICE NUMBER ONLY
+          // Retrieve items matching THIS SPECIFIC INVOICE NUMBER ONLY (Consume on match to avoid cross-bill contamination)
           final normInvNo = _normalizeKey(invNo);
           final digitsInvNo = _extractDigits(invNo);
           final digitsEffCheck = _extractDigits(effectiveInvNo);
 
           List<Map<String, dynamic>> rawItems = [];
           if (normInvNo.isNotEmpty && itemsByInvNo.containsKey(normInvNo)) {
-            rawItems = itemsByInvNo[normInvNo]!;
+            rawItems = itemsByInvNo.remove(normInvNo)!;
           } else if (normEffInvNoCheck.isNotEmpty && itemsByInvNo.containsKey(normEffInvNoCheck)) {
-            rawItems = itemsByInvNo[normEffInvNoCheck]!;
+            rawItems = itemsByInvNo.remove(normEffInvNoCheck)!;
           } else if (digitsInvNo.isNotEmpty && itemsByDigits.containsKey(digitsInvNo)) {
-            rawItems = itemsByDigits[digitsInvNo]!;
+            rawItems = itemsByDigits.remove(digitsInvNo)!;
           } else if (digitsEffCheck.isNotEmpty && itemsByDigits.containsKey(digitsEffCheck)) {
-            rawItems = itemsByDigits[digitsEffCheck]!;
+            rawItems = itemsByDigits.remove(digitsEffCheck)!;
           }
 
           final List<InvoiceItem> createdItems = [];

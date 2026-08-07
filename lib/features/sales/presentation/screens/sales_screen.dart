@@ -98,10 +98,34 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         return;
       }
 
+      final progressController = StreamController<ImportProgressState>.broadcast();
+      BuildContext? progressDialogContext;
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            progressDialogContext = ctx;
+            return ImportProgressModal(
+              title: 'Importing Sales Invoices',
+              progressStream: progressController.stream,
+            );
+          },
+        );
+      }
+
+      progressController.add(const ImportProgressState(current: 0, total: 100, statusMessage: 'Reading Excel workbook...'));
+      await Future.delayed(const Duration(milliseconds: 50));
+
       final dbService = ref.read(databaseServiceProvider);
 
+      // Single-pass Excel decoding
+      final excelDoc = Excel.decodeBytes(fileBytes);
+      await Future.delayed(Duration.zero);
+
       // Check for existing duplicate invoices in database
-      final duplicateInvoices = await SalesExcelImportService.checkForDuplicateInvoices(fileBytes, dbService);
+      final duplicateInvoices = await SalesExcelImportService.checkForDuplicateInvoices(excelDoc, dbService);
 
       DuplicateBillAction selectedAction = DuplicateBillAction.overwrite;
 
@@ -153,21 +177,18 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           ),
         );
 
-        if (choice == null) return;
+        if (choice == null) {
+          if (progressDialogContext != null && progressDialogContext!.mounted) {
+            Navigator.of(progressDialogContext!).pop();
+          }
+          await progressController.close();
+          return;
+        }
         selectedAction = choice;
       }
 
-      final progressController = StreamController<ImportProgressState>.broadcast();
-      if (mounted) {
-        ImportProgressModal.show(
-          context: context,
-          title: 'Importing Sales Invoices',
-          progressStream: progressController.stream,
-        );
-      }
-
       final importResult = await SalesExcelImportService.importSalesInvoicesFromBytes(
-        fileBytes,
+        excelDoc,
         dbService,
         duplicateAction: selectedAction,
         onProgress: (current, total, statusMessage) {
@@ -180,8 +201,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       );
 
       await progressController.close();
-      if (mounted) {
-        Navigator.of(context).pop(); // Close progress dialog safely
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop(); // Close progress dialog safely
       }
 
       // Trigger cloud sync

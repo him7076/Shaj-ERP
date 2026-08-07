@@ -84,11 +84,19 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       }
 
       final progressController = StreamController<ImportProgressState>.broadcast();
+      BuildContext? progressDialogContext;
+
       if (mounted) {
-        ImportProgressModal.show(
+        showDialog(
           context: context,
-          title: 'Importing Products & Stock',
-          progressStream: progressController.stream,
+          barrierDismissible: false,
+          builder: (ctx) {
+            progressDialogContext = ctx;
+            return ImportProgressModal(
+              title: 'Importing Products & Stock',
+              progressStream: progressController.stream,
+            );
+          },
         );
       }
 
@@ -106,8 +114,8 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       );
 
       await progressController.close();
-      if (mounted) {
-        Navigator.of(context).pop(); // Close progress dialog safely
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop(); // Close progress dialog safely
       }
 
       // Instantly trigger cloud sync to push newly imported items to Firestore

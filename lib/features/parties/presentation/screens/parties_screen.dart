@@ -83,11 +83,19 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
       }
 
       final progressController = StreamController<ImportProgressState>.broadcast();
+      BuildContext? progressDialogContext;
+
       if (mounted) {
-        ImportProgressModal.show(
+        showDialog(
           context: context,
-          title: 'Importing Parties & Customers',
-          progressStream: progressController.stream,
+          barrierDismissible: false,
+          builder: (ctx) {
+            progressDialogContext = ctx;
+            return ImportProgressModal(
+              title: 'Importing Parties & Customers',
+              progressStream: progressController.stream,
+            );
+          },
         );
       }
 
@@ -105,8 +113,8 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
       );
 
       await progressController.close();
-      if (mounted) {
-        Navigator.of(context).pop(); // Close progress dialog safely
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop(); // Close progress dialog safely
       }
 
       ref.read(partySearchProvider.notifier).setQuery('');

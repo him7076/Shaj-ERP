@@ -95,10 +95,34 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         return;
       }
 
+      final progressController = StreamController<ImportProgressState>.broadcast();
+      BuildContext? progressDialogContext;
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            progressDialogContext = ctx;
+            return ImportProgressModal(
+              title: 'Importing Purchase Bills',
+              progressStream: progressController.stream,
+            );
+          },
+        );
+      }
+
+      progressController.add(const ImportProgressState(current: 0, total: 100, statusMessage: 'Reading Excel workbook...'));
+      await Future.delayed(const Duration(milliseconds: 50));
+
       final dbService = ref.read(databaseServiceProvider);
 
-      // 1. Check for existing duplicate bills in database
-      final duplicateBills = await PurchaseExcelImportService.checkForDuplicateBills(fileBytes, dbService);
+      // Single-pass Excel decoding
+      final excelDoc = Excel.decodeBytes(fileBytes);
+      await Future.delayed(Duration.zero);
+
+      // Check for existing duplicate bills in database
+      final duplicateBills = await PurchaseExcelImportService.checkForDuplicateBills(excelDoc, dbService);
 
       DuplicateBillAction selectedAction = DuplicateBillAction.overwrite;
 
@@ -150,21 +174,18 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
           ),
         );
 
-        if (choice == null) return; // User cancelled
+        if (choice == null) {
+          if (progressDialogContext != null && progressDialogContext!.mounted) {
+            Navigator.of(progressDialogContext!).pop();
+          }
+          await progressController.close();
+          return;
+        }
         selectedAction = choice;
       }
 
-      final progressController = StreamController<ImportProgressState>.broadcast();
-      if (mounted) {
-        ImportProgressModal.show(
-          context: context,
-          title: 'Importing Purchase Bills',
-          progressStream: progressController.stream,
-        );
-      }
-
       final importResult = await PurchaseExcelImportService.importPurchaseBillsFromBytes(
-        fileBytes,
+        excelDoc,
         dbService,
         duplicateAction: selectedAction,
         onProgress: (current, total, statusMessage) {
@@ -177,8 +198,8 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       );
 
       await progressController.close();
-      if (mounted) {
-        Navigator.of(context).pop(); // Close progress dialog safely
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop(); // Close progress dialog safely
       }
 
       // Instantly trigger cloud sync to push newly imported purchases & items to Firestore
