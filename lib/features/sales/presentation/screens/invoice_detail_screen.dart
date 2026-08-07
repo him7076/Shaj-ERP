@@ -14,6 +14,7 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/services/pdf_service.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/models/firm_info.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 
@@ -247,6 +248,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isMobile = ResponsiveLayout.isMobile(context);
 
     if (_isLoading) {
       return const Scaffold(
