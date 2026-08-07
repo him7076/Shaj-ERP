@@ -33,14 +33,16 @@ class ImportPurchaseResult {
 class PurchaseExcelImportService {
   static final Uuid _uuidGen = const Uuid();
 
-  /// Checks Excel bytes for bill numbers that already exist in database
+  /// Checks Excel (bytes or pre-decoded object) for bill numbers that already exist in database
   static Future<List<String>> checkForDuplicateBills(
-    Uint8List bytes,
+    dynamic bytesOrExcel,
     DatabaseService dbService,
   ) async {
     final List<String> duplicates = [];
     try {
-      final excel = Excel.decodeBytes(bytes);
+      final Excel excel = bytesOrExcel is Excel
+          ? bytesOrExcel
+          : Excel.decodeBytes(bytesOrExcel as Uint8List);
       final isar = dbService.isar;
 
       final sheetKeys = excel.tables.keys.toList();
@@ -168,9 +170,9 @@ class PurchaseExcelImportService {
     return excel.encode();
   }
 
-  /// Imports Purchase Bills and Line Items from decoded Excel bytes with Progress Callback
+  /// Imports Purchase Bills and Line Items from Excel (bytes or pre-decoded object)
   static Future<ImportPurchaseResult> importPurchaseBillsFromBytes(
-    Uint8List bytes,
+    dynamic bytesOrExcel,
     DatabaseService dbService, {
     DuplicateBillAction duplicateAction = DuplicateBillAction.overwrite,
     ImportProgressCallback? onProgress,
@@ -181,7 +183,9 @@ class PurchaseExcelImportService {
     int skippedBills = 0;
 
     try {
-      final excel = Excel.decodeBytes(bytes);
+      final Excel excel = bytesOrExcel is Excel
+          ? bytesOrExcel
+          : Excel.decodeBytes(bytesOrExcel as Uint8List);
       final isar = dbService.isar;
 
       final sheetKeys = excel.tables.keys.toList();
