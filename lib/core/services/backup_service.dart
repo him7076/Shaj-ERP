@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:printing/printing.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -71,6 +71,7 @@ class BackupService {
     final backupTimestamp = DateTime.now();
     final backupId = backupTimestamp.millisecondsSinceEpoch;
     final bserpFilename = 'BusinessSahaj_${_formatDateString(backupTimestamp)}.bserp';
+    Directory? tempBackupFolder;
 
     try {
       logger.info('Starting backup generation...');
@@ -144,7 +145,7 @@ class BackupService {
 
       // --- DESKTOP / MOBILE FILESYSTEM BACKUP ---
       final tempDir = await getTemporaryDirectory();
-      final tempBackupFolder = Directory('${tempDir.path}/backup_$backupId');
+      tempBackupFolder = Directory('${tempDir.path}/backup_$backupId');
       await tempBackupFolder.create(recursive: true);
 
       final List<File> tempJsonFiles = [];
@@ -174,7 +175,6 @@ class BackupService {
       );
 
       // 5. Final target file with custom extension
-      final bserpFilename = 'BusinessSahaj_${_formatDateString(backupTimestamp)}.bserp';
       final appDocsDir = await getApplicationDocumentsDirectory();
       final backupDir = Directory('${appDocsDir.path}/backups');
       if (!await backupDir.exists()) {
@@ -233,7 +233,7 @@ class BackupService {
       return historyEntry;
     } catch (e, stackTrace) {
       logger.error('System backup execution failed', e, stackTrace);
-      if (await tempBackupFolder.exists()) {
+      if (tempBackupFolder != null && await tempBackupFolder.exists()) {
         await tempBackupFolder.delete(recursive: true);
       }
       throw BackupException('System backup execution failed: $e');
