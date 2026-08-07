@@ -968,7 +968,7 @@ class RestoreService {
       ..version = map['version'] as int? ?? 1;
   }
 
-  Item _mapMapToItem(Map<String, dynamic> map, String currentDocsPrefix) {
+  Item _mapMapToItem(Map<String, dynamic> map, [String currentDocsPrefix = '']) {
     final imagePathsList = map['imagePaths'] != null ? List<String>.from(map['imagePaths']) : <String>[];
     final rewrittenPaths = imagePathsList.map((p) => _rewriteImagePath(p, currentDocsPrefix)).toList();
     final rewrittenThumb = map['thumbnailImage'] != null ? _rewriteImagePath(map['thumbnailImage'] as String, currentDocsPrefix) : null;

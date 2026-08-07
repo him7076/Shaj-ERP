@@ -730,7 +730,6 @@ class SyncService {
             await _insertLocalRecord(entityType, data);
           }
         }
-        }
       } catch (e) {
         logger.warning('Skipped $entityType sync query due to timeout or network: $e');
       }
