@@ -371,12 +371,12 @@ class SalesExcelImportService {
 
             // DuplicateAction.overwrite: Clean old line items, restore item stock, and purge old invoice
             for (var oldInv in matchingInvoices) {
-              final oldItems = await isar.invoiceItems
-                  .filter()
-                  .parentInvoiceIdEqualTo(oldInv.id)
-                  .or()
-                  .invoice((q) => q.idEqualTo(oldInv.id))
-                  .findAll();
+              final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+              final oldItems = allInvItems.where((oi) => 
+                oi.parentInvoiceId == oldInv.id || 
+                (oldInv.uuid != null && oldInv.uuid!.isNotEmpty && oi.parentInvoiceUuid == oldInv.uuid) ||
+                oi.invoice.value?.id == oldInv.id
+              ).toList();
 
               await isar.writeTxn(() async {
                 for (var oi in oldItems) {
@@ -443,7 +443,7 @@ class SalesExcelImportService {
             invoice.party.value = party;
           }
 
-          // Retrieve items matching THIS SPECIFIC INVOICE NUMBER ONLY (Consume on match to avoid cross-bill contamination)
+          // Retrieve items matching THIS SPECIFIC INVOICE NUMBER (with fuzzy and single-invoice fallback)
           final normInvNo = _normalizeKey(invNo);
           final digitsInvNo = _extractDigits(invNo);
           final digitsEffCheck = _extractDigits(effectiveInvNo);
@@ -457,6 +457,21 @@ class SalesExcelImportService {
             rawItems = itemsByDigits.remove(digitsInvNo)!;
           } else if (digitsEffCheck.isNotEmpty && itemsByDigits.containsKey(digitsEffCheck)) {
             rawItems = itemsByDigits.remove(digitsEffCheck)!;
+          } else {
+            final partyNorm = _normalizeKey(partyName);
+            String? matchedKey;
+            for (var k in itemsByInvNo.keys) {
+              if (itemsByInvNo[k]!.any((i) => (partyNorm.isNotEmpty && _normalizeKey(i['partyName'] as String) == partyNorm) || _normalizeKey(i['invNo'] as String).contains(normInvNo) || (normInvNo.isNotEmpty && _normalizeKey(i['invNo'] as String).contains(normInvNo)))) {
+                matchedKey = k;
+                break;
+              }
+            }
+            if (matchedKey != null) {
+              rawItems = itemsByInvNo.remove(matchedKey)!;
+            } else if (totalHeaderRows == 1 && itemsByInvNo.isNotEmpty) {
+              rawItems = itemsByInvNo.values.expand((list) => list).toList();
+              itemsByInvNo.clear();
+            }
           }
 
           final List<InvoiceItem> createdItems = [];
@@ -490,6 +505,7 @@ class SalesExcelImportService {
                   ..buyRate = rate > 0 ? (rate * 0.7) : 0.0
                   ..currentStock = 0.0
                   ..openingStock = 0.0
+                  ..primaryUnitName = unit.isNotEmpty ? unit : 'PCS'
                   ..createdAt = DateTime.now()
                   ..updatedAt = DateTime.now();
 
@@ -497,6 +513,29 @@ class SalesExcelImportService {
                   catalogItem!.id = await isar.items.put(catalogItem!);
                 });
                 allItems.add(catalogItem!);
+              }
+
+              // Bind exact Unit collection entity to catalog item
+              if (unit.isNotEmpty) {
+                final allUnits = await isar.units.filter().isDeletedEqualTo(false).findAll();
+                Unit? matchedUnit = allUnits.where((u) => u.shortName?.trim().toLowerCase() == unit.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == unit.trim().toLowerCase()).firstOrNull;
+                if (matchedUnit == null) {
+                  matchedUnit = Unit()
+                    ..uuid = _uuidGen.v4()
+                    ..unitName = unit
+                    ..shortName = unit.toUpperCase()
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now();
+                  await isar.writeTxn(() async {
+                    matchedUnit!.id = await isar.units.put(matchedUnit!);
+                  });
+                }
+                catalogItem.unit.value = matchedUnit;
+                catalogItem.primaryUnitName = matchedUnit.shortName ?? unit;
+                await isar.writeTxn(() async {
+                  await isar.items.put(catalogItem!);
+                  try { await catalogItem!.unit.save(); } catch (_) {}
+                });
               }
 
               // Deduct sales quantity from item current stock (converting secondary unit if applicable)

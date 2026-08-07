@@ -257,10 +257,16 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   item: dbItem,
                   quantity: item.quantity ?? 1.0,
                   freeQuantity: item.freeQuantity ?? 0.0,
+                  unit: (item.unit != null && item.unit!.isNotEmpty && item.unit != 'PCS') 
+                      ? item.unit! 
+                      : (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? item.unit ?? 'PCS'),
                   rate: item.rate ?? 0.0,
                   discountPercent: discPct,
                   discountAmount: item.discount ?? 0.0,
                   gstPercent: item.gstRate ?? 18.0,
+                  batchNumber: item.batchNumber,
+                  expiryDate: item.expiryDate,
+                  mfgDate: item.mfgDate,
                 ),
               );
             }
