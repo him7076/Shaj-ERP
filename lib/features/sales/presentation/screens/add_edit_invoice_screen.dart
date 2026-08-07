@@ -276,6 +276,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             party: party,
             invoice: invoice,
             items: cartItems,
+            isGstInclusive: false,
           );
         }
         setState(() {});

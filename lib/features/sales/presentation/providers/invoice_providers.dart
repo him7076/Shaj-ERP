@@ -235,6 +235,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     required Party party,
     required Invoice invoice,
     required List<CartItemState> items,
+    bool isGstInclusive = false,
   }) {
     final double sub = invoice.subtotal ?? 0.0;
     final double discAmt = invoice.discountAmount ?? 0.0;
@@ -242,7 +243,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     state = InvoiceCart(
       selectedParty: party,
       items: items,
-      isGstInclusive: true,
+      isGstInclusive: isGstInclusive,
       discountPercent: discPct,
       discountAmount: discAmt,
       invoiceType: invoice.invoiceType ?? 'Tax Invoice',
