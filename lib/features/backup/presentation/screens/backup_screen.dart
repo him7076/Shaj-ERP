@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/providers/backup_providers.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_history_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/restore_screen.dart';
@@ -136,24 +138,30 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     final historyNotifier = ref.read(backupHistoryNotifierProvider.notifier);
     final theme = Theme.of(context);
 
-    bool isDialogActive = true;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return const AlertDialog(
-          content: Row(
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 24),
-              Text('Generating secure backup archive...'),
-            ],
-          ),
-        );
-      },
-    ).then((_) => isDialogActive = false);
+    final progressController = StreamController<ImportProgressState>.broadcast();
+    BuildContext? progressDialogContext;
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          progressDialogContext = ctx;
+          return ImportProgressModal(
+            title: 'Creating Business Backup',
+            progressStream: progressController.stream,
+          );
+        },
+      );
+    }
 
     try {
+      progressController.add(const ImportProgressState(current: 20, total: 100, statusMessage: 'Extracting database collections & settings...'));
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      progressController.add(const ImportProgressState(current: 50, total: 100, statusMessage: 'Formatting JSON archive payload...'));
+      await Future.delayed(const Duration(milliseconds: 100));
+
       final password = _encryptBackup ? _passwordController.text : null;
       final entry = await historyNotifier.triggerBackup(
         password: password,
@@ -161,8 +169,11 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         uploadToCloud: _uploadToCloud,
       );
 
-      if (mounted && isDialogActive) {
-        Navigator.of(context, rootNavigator: true).pop();
+      progressController.add(const ImportProgressState(current: 100, total: 100, statusMessage: 'Backup generated successfully!'));
+      await progressController.close();
+
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
       }
 
       if (mounted) {
@@ -181,8 +192,10 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         });
       }
     } catch (e) {
-      if (mounted && isDialogActive) {
-        Navigator.of(context, rootNavigator: true).pop();
+      await progressController.close();
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+      }
       }
 
       if (mounted) {

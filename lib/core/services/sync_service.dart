@@ -666,13 +666,9 @@ class SyncService {
 
           // Firm-wise filtering
           final docFirmId = data['firmId'] as String?;
-          if (docFirmId != null) {
+          if (docFirmId != null && docFirmId.isNotEmpty) {
             if (docFirmId != activeFirmId) {
               continue; // Skip documents belonging to another firm
-            }
-          } else {
-            if (activeFirmId != 'firm_default') {
-              continue; // Default legacy documents map to firm_default only
             }
           }
 

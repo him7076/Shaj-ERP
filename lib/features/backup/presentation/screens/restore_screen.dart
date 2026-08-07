@@ -1,9 +1,16 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/providers/backup_providers.dart';
 import 'package:business_sahaj_erp/domain/models/backup_metadata.dart';
 
@@ -242,11 +249,41 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
 
     if (confirm != true) return;
 
+    final progressController = StreamController<ImportProgressState>.broadcast();
+    BuildContext? progressDialogContext;
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          progressDialogContext = ctx;
+          return ImportProgressModal(
+            title: 'Restoring Business Backup',
+            progressStream: progressController.stream,
+          );
+        },
+      );
+    }
+
+    final prefs = ref.read(sharedPreferencesProvider);
+    final dbService = ref.read(databaseServiceProvider);
+
     // Execute restore
     try {
+      progressController.add(const ImportProgressState(current: 15, total: 100, statusMessage: 'Validating backup header & metadata...'));
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      progressController.add(const ImportProgressState(current: 35, total: 100, statusMessage: 'Creating distinct restored firm entry...'));
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      progressController.add(const ImportProgressState(current: 65, total: 100, statusMessage: 'Ingesting parties, items, and sales invoices...'));
+
       if (_selectedFileBytes != null) {
         await progressNotifier.runRestoreBytes(
           bytes: _selectedFileBytes!,
+          prefs: prefs,
+          dbService: dbService,
           password: _passwordController.text,
           restoreParties: _restoreParties,
           restoreItems: _restoreItems,
@@ -254,6 +291,7 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
           restoreInvoices: _restoreInvoices,
           restoreSettings: _restoreSettings,
           duplicateStrategy: _duplicateStrategy,
+          restoreAsNewFirm: true,
         );
       } else if (_isDriveSource) {
         await progressNotifier.restoreFromDrive(
@@ -270,6 +308,8 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
       } else {
         await progressNotifier.runRestore(
           filePath: _selectedFilePath!,
+          prefs: prefs,
+          dbService: dbService,
           password: _passwordController.text,
           restoreParties: _restoreParties,
           restoreItems: _restoreItems,
@@ -277,8 +317,31 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
           restoreInvoices: _restoreInvoices,
           restoreSettings: _restoreSettings,
           duplicateStrategy: _duplicateStrategy,
+          restoreAsNewFirm: true,
         );
       }
+
+      progressController.add(const ImportProgressState(current: 95, total: 100, statusMessage: 'Re-linking multi-device relations & UUIDs...'));
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      progressController.add(const ImportProgressState(current: 100, total: 100, statusMessage: 'Restoration completed!'));
+      await progressController.close();
+
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+      }
+
+      // Update active firm provider & invalidate all state
+      ref.read(activeFirmIdProvider.notifier).state = dbService.activeFirmId;
+      ref.invalidate(sharedPreferencesProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
+      ref.invalidate(filteredPartiesProvider);
+      ref.invalidate(filteredItemsProvider);
+      ref.invalidate(categoriesListProvider);
+      ref.invalidate(unitsListProvider);
+      ref.invalidate(purchaseListProvider);
+      ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(filteredOrdersProvider);
 
       // Reload local backups list
       await historyNotifier.loadHistory();

@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
@@ -335,6 +338,8 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
 
   Future<void> runRestore({
     required String filePath,
+    SharedPreferences? prefs,
+    DatabaseService? dbService,
     String? password,
     bool restoreParties = true,
     bool restoreItems = true,
@@ -342,14 +347,40 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
     bool restoreInvoices = true,
     bool restoreSettings = true,
     String duplicateStrategy = 'replace',
+    bool restoreAsNewFirm = true,
   }) async {
     state = state.copyWith(
       status: RestoreStatus.restoring,
-      message: 'Ingesting records into database...',
-      progress: 0.5,
+      message: 'Reading backup metadata...',
+      progress: 0.1,
     );
 
     try {
+      if (restoreAsNewFirm && prefs != null && dbService != null) {
+        try {
+          final meta = await _repository.validate(filePath, password: password);
+          final companyName = meta.companyName ?? 'Restored Company';
+          final newFirmId = 'firm_restored_${DateTime.now().millisecondsSinceEpoch}';
+          final restoredName = '$companyName (Restored ${DateFormat('dd MMM HH:mm').format(DateTime.now())})';
+
+          final firmsList = prefs.getStringList('firms_list') ?? ['firm_default'];
+          if (!firmsList.contains(newFirmId)) {
+            firmsList.add(newFirmId);
+            await prefs.setStringList('firms_list', firmsList);
+          }
+          await prefs.setString('firm_name_$newFirmId', restoredName);
+          await prefs.setBool('demo_seeded_$newFirmId', true);
+
+          await dbService.switchFirm(newFirmId, prefs);
+        } catch (_) {}
+      }
+
+      state = state.copyWith(
+        status: RestoreStatus.restoring,
+        message: 'Ingesting records into database...',
+        progress: 0.5,
+      );
+
       await _repository.restore(
         filePath,
         password: password,
@@ -363,7 +394,7 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
 
       state = state.copyWith(
         status: RestoreStatus.success,
-        message: 'Database restored successfully! Restarting connection...',
+        message: 'Database restored successfully!',
         progress: 1.0,
       );
     } catch (e) {
@@ -378,6 +409,8 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
 
   Future<void> runRestoreBytes({
     required Uint8List bytes,
+    SharedPreferences? prefs,
+    DatabaseService? dbService,
     String? password,
     bool restoreParties = true,
     bool restoreItems = true,
@@ -385,14 +418,40 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
     bool restoreInvoices = true,
     bool restoreSettings = true,
     String duplicateStrategy = 'replace',
+    bool restoreAsNewFirm = true,
   }) async {
     state = state.copyWith(
       status: RestoreStatus.restoring,
-      message: 'Ingesting records into database...',
-      progress: 0.5,
+      message: 'Reading backup metadata...',
+      progress: 0.1,
     );
 
     try {
+      if (restoreAsNewFirm && prefs != null && dbService != null) {
+        try {
+          final meta = await _repository.validateBytes(bytes, password: password);
+          final companyName = meta.companyName ?? 'Restored Company';
+          final newFirmId = 'firm_restored_${DateTime.now().millisecondsSinceEpoch}';
+          final restoredName = '$companyName (Restored ${DateFormat('dd MMM HH:mm').format(DateTime.now())})';
+
+          final firmsList = prefs.getStringList('firms_list') ?? ['firm_default'];
+          if (!firmsList.contains(newFirmId)) {
+            firmsList.add(newFirmId);
+            await prefs.setStringList('firms_list', firmsList);
+          }
+          await prefs.setString('firm_name_$newFirmId', restoredName);
+          await prefs.setBool('demo_seeded_$newFirmId', true);
+
+          await dbService.switchFirm(newFirmId, prefs);
+        } catch (_) {}
+      }
+
+      state = state.copyWith(
+        status: RestoreStatus.restoring,
+        message: 'Ingesting records into database...',
+        progress: 0.5,
+      );
+
       await _repository.restoreBytes(
         bytes,
         password: password,
@@ -406,7 +465,7 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
 
       state = state.copyWith(
         status: RestoreStatus.success,
-        message: 'Database restored successfully! Restarting connection...',
+        message: 'Database restored successfully!',
         progress: 1.0,
       );
     } catch (e) {
