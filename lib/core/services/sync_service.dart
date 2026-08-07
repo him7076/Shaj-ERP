@@ -202,19 +202,30 @@ class SyncService {
     }
   }
 
-  /// Non-blocking, lightweight background queue upload.
-  /// Pushes unsynced changes to Firestore asynchronously WITHOUT running full database downloads or freezing the browser.
-  void syncPendingChangesQuietly() {
-    Future.microtask(() async {
+  Timer? _quietSyncDebounceTimer;
+  bool _isUploadingQuietly = false;
+
+  /// Non-blocking, debounced background queue upload.
+  /// Batches multiple rapid saves into a single background upload cycle,
+  /// preventing browser freezes, event-loop starvation, and Isar DB lock contention.
+  void syncPendingChangesQuietly({Duration delay = const Duration(seconds: 2)}) {
+    _quietSyncDebounceTimer?.cancel();
+    _quietSyncDebounceTimer = Timer(delay, () async {
+      if (_isUploadingQuietly) return;
+      final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+      if (!cloudSyncEnabled) return;
+      if (_currentState.status == SyncStatus.syncing) return;
+
+      _isUploadingQuietly = true;
       try {
-        final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
-        if (!cloudSyncEnabled) return;
-        if (_currentState.status == SyncStatus.syncing) return;
         await _firebaseService.ensureAuthenticated();
-        if (!_firebaseService.isAuthenticated) return;
-        await _uploadLocalChanges();
+        if (_firebaseService.isAuthenticated) {
+          await _uploadLocalChanges();
+        }
       } catch (e) {
         logger.warning('Quiet background upload encountered non-fatal error: $e');
+      } finally {
+        _isUploadingQuietly = false;
       }
     });
   }
@@ -562,16 +573,19 @@ class SyncService {
       return;
     }
 
+    final isar = _dbService.isar;
+    final List<Map<String, dynamic>> syncedItems = [];
+    final List<int> completedQueueIds = [];
+
     for (var queueItem in queueItems) {
       if (queueItem.retryCount >= 5) continue;
 
-      // Yield to Chrome main event loop to keep UI 100% responsive
-      await Future.delayed(Duration.zero);
+      // Yield 10ms to Chrome main event loop between items for 60 FPS UI responsiveness
+      await Future.delayed(const Duration(milliseconds: 10));
 
       try {
         final entityType = queueItem.entityType!;
         final entityId = queueItem.entityId!;
-        final isar = _dbService.isar;
 
         dynamic entity;
         switch (entityType) {
@@ -599,7 +613,7 @@ class SyncService {
 
         if (entity == null && queueItem.operation != 'Delete') {
           logger.warning('Sync queue item ID ${queueItem.id} not found in database. Skipping.');
-          await _queueService.removeQueueItem(queueItem.id);
+          completedQueueIds.add(queueItem.id);
           continue;
         }
 
@@ -615,38 +629,48 @@ class SyncService {
         }
 
         if (entity != null) {
-          entity.isSynced = true;
-          await _dbService.isar.writeTxn(() async {
-            switch (entityType) {
-              case 'Party': await isar.partys.put(entity as Party); break;
-              case 'Item': await isar.items.put(entity as Item); break;
-              case 'Category': await isar.categorys.put(entity as Category); break;
-              case 'Unit': await isar.units.put(entity as Unit); break;
-              case 'Brand': await isar.brands.put(entity as Brand); break;
-              case 'Order': await isar.orders.put(entity as Order); break;
-              case 'OrderItem': await isar.orderItems.put(entity as OrderItem); break;
-              case 'Invoice': await isar.invoices.put(entity as Invoice); break;
-              case 'InvoiceItem': await isar.invoiceItems.put(entity as InvoiceItem); break;
-              case 'Settings': await isar.settings.put(entity as Settings); break;
-              case 'User': await isar.users.put(entity as User); break;
-              case 'Purchase': await isar.purchases.put(entity as Purchase); break;
-              case 'PurchaseItem': await isar.purchaseItems.put(entity as PurchaseItem); break;
-              case 'Expense': await isar.expenses.put(entity as Expense); break;
-              case 'Transaction': await isar.transactions.put(entity as Transaction); break;
-              case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
-              case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
-              case 'CreditNoteItem': await isar.creditNoteItems.put(entity as CreditNoteItem); break;
-              case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
-              case 'DebitNoteItem': await isar.debitNoteItems.put(entity as DebitNoteItem); break;
-            }
-          });
+          syncedItems.add({'entityType': entityType, 'entity': entity});
         }
-
-        await _queueService.removeQueueItem(queueItem.id);
+        completedQueueIds.add(queueItem.id);
       } catch (e) {
         logger.error('Failed to sync queue item ID ${queueItem.id}', e);
         await _queueService.updateAttempt(queueItem, e.toString());
       }
+    }
+
+    // Execute a SINGLE batched Isar write transaction for all uploaded items & queue cleanup
+    if (syncedItems.isNotEmpty || completedQueueIds.isNotEmpty) {
+      await isar.writeTxn(() async {
+        for (var itemMap in syncedItems) {
+          final entityType = itemMap['entityType'] as String;
+          final entity = itemMap['entity'];
+          entity.isSynced = true;
+          switch (entityType) {
+            case 'Party': await isar.partys.put(entity as Party); break;
+            case 'Item': await isar.items.put(entity as Item); break;
+            case 'Category': await isar.categorys.put(entity as Category); break;
+            case 'Unit': await isar.units.put(entity as Unit); break;
+            case 'Brand': await isar.brands.put(entity as Brand); break;
+            case 'Order': await isar.orders.put(entity as Order); break;
+            case 'OrderItem': await isar.orderItems.put(entity as OrderItem); break;
+            case 'Invoice': await isar.invoices.put(entity as Invoice); break;
+            case 'InvoiceItem': await isar.invoiceItems.put(entity as InvoiceItem); break;
+            case 'Settings': await isar.settings.put(entity as Settings); break;
+            case 'User': await isar.users.put(entity as User); break;
+            case 'Purchase': await isar.purchases.put(entity as Purchase); break;
+            case 'PurchaseItem': await isar.purchaseItems.put(entity as PurchaseItem); break;
+            case 'Expense': await isar.expenses.put(entity as Expense); break;
+            case 'Transaction': await isar.transactions.put(entity as Transaction); break;
+            case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
+            case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
+            case 'CreditNoteItem': await isar.creditNoteItems.put(entity as CreditNoteItem); break;
+            case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
+            case 'DebitNoteItem': await isar.debitNoteItems.put(entity as DebitNoteItem); break;
+          }
+        }
+        await isar.syncQueues.deleteAll(completedQueueIds);
+      });
+      logger.info('Batched sync complete: Updated ${syncedItems.length} entities and cleared ${completedQueueIds.length} queue items.');
     }
   }
 
