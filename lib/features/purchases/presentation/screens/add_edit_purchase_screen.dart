@@ -361,6 +361,11 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
       ref.invalidate(dashboardAnalyticsProvider);
 
+      // Immediately trigger background sync so Mobile updates PC/Cloud instantly
+      try {
+        ref.read(syncServiceProvider).syncAll();
+      } catch (_) {}
+
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Purchase invoice saved successfully!')),

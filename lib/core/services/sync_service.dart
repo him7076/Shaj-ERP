@@ -189,20 +189,14 @@ class SyncService {
     }
   }
 
-  /// Delete or soft-delete a firm in Firestore
+  /// Hard-delete a firm document in Firestore
   Future<void> deleteRemoteFirm(String firmId) async {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;
     try {
-      final companyId = _firebaseService.companyId;
       final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
-      await docRef.set({
-        'firmId': firmId,
-        'companyId': companyId,
-        'isDeleted': true,
-        'updatedAt': DateTime.now().toIso8601String(),
-      }, SetOptions(merge: true));
-      logger.info('Marked firm $firmId as deleted in Firestore.');
+      await docRef.delete();
+      logger.info('Permanently deleted firm $firmId from Firestore.');
     } catch (e) {
       logger.error('Failed to delete firm $firmId in Firestore', e);
     }
@@ -350,7 +344,7 @@ class SyncService {
 
     try {
       await _queueService.resetAllRetries();
-      await _enqueueAllLocalRecordsForUpload();
+      await _enqueueAllLocalRecordsForUpload(forceAll: true);
       await _uploadLocalChanges();
 
       final newSyncTime = DateTime.now();
@@ -373,11 +367,11 @@ class SyncService {
   }
 
   /// Helper to enqueue unsynced or all local records into SyncQueue
-  Future<void> _enqueueAllLocalRecordsForUpload() async {
+  Future<void> _enqueueAllLocalRecordsForUpload({bool forceAll = false}) async {
     final uuidGen = Uuid();
     final isar = _dbService.isar;
     await isar.writeTxn(() async {
-      final parties = await isar.partys.filter().isSyncedEqualTo(false).findAll();
+      final parties = forceAll ? await isar.partys.filter().idGreaterThan(-1).findAll() : await isar.partys.filter().isSyncedEqualTo(false).findAll();
       for (var p in parties) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -389,7 +383,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final items = await isar.items.filter().isSyncedEqualTo(false).findAll();
+      final items = forceAll ? await isar.items.filter().idGreaterThan(-1).findAll() : await isar.items.filter().isSyncedEqualTo(false).findAll();
       for (var i in items) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -401,7 +395,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final invoices = await isar.invoices.filter().isSyncedEqualTo(false).findAll();
+      final invoices = forceAll ? await isar.invoices.filter().idGreaterThan(-1).findAll() : await isar.invoices.filter().isSyncedEqualTo(false).findAll();
       for (var inv in invoices) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -413,7 +407,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final orders = await isar.orders.filter().isSyncedEqualTo(false).findAll();
+      final orders = forceAll ? await isar.orders.filter().idGreaterThan(-1).findAll() : await isar.orders.filter().isSyncedEqualTo(false).findAll();
       for (var ord in orders) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -425,7 +419,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final purchases = await isar.purchases.filter().isSyncedEqualTo(false).findAll();
+      final purchases = forceAll ? await isar.purchases.filter().idGreaterThan(-1).findAll() : await isar.purchases.filter().isSyncedEqualTo(false).findAll();
       for (var pur in purchases) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -437,7 +431,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final invItems = await isar.invoiceItems.filter().isSyncedEqualTo(false).findAll();
+      final invItems = forceAll ? await isar.invoiceItems.filter().idGreaterThan(-1).findAll() : await isar.invoiceItems.filter().isSyncedEqualTo(false).findAll();
       for (var ii in invItems) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -449,7 +443,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final purItems = await isar.purchaseItems.filter().isSyncedEqualTo(false).findAll();
+      final purItems = forceAll ? await isar.purchaseItems.filter().idGreaterThan(-1).findAll() : await isar.purchaseItems.filter().isSyncedEqualTo(false).findAll();
       for (var pi in purItems) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -461,7 +455,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final expenses = await isar.expenses.filter().isSyncedEqualTo(false).findAll();
+      final expenses = forceAll ? await isar.expenses.filter().idGreaterThan(-1).findAll() : await isar.expenses.filter().isSyncedEqualTo(false).findAll();
       for (var exp in expenses) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -473,7 +467,7 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final txns = await isar.transactions.filter().isSyncedEqualTo(false).findAll();
+      final txns = forceAll ? await isar.transactions.filter().idGreaterThan(-1).findAll() : await isar.transactions.filter().isSyncedEqualTo(false).findAll();
       for (var t in txns) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -518,6 +512,22 @@ class SyncService {
       }
       await batch.commit();
     }
+
+    // Also hard-delete any firm documents in 'firms' collection
+    try {
+      final firmsSnapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: companyId)
+          .get();
+
+      if (firmsSnapshot.docs.isNotEmpty) {
+        final batch = _firebaseService.firestore.batch();
+        for (var doc in firmsSnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } catch (_) {}
 
     // Reset local sync state so next sync starts fresh
     await _prefs.remove(AppConstants.keyLastSyncTime);
@@ -577,20 +587,11 @@ class SyncService {
         final docRef = _firebaseService.firestore.collection(firestoreCollection).doc(queueItem.entityUuid);
 
         if (queueItem.operation == 'Delete') {
-          await docRef.set({
-            'uuid': queueItem.entityUuid,
-            'isDeleted': true,
-            'isSynced': true,
-            'updatedAt': DateTime.now().toIso8601String(),
-            'version': queueItem.version,
-            'deviceId': _firebaseService.deviceId,
-            'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
-            'companyId': _firebaseService.companyId,
-            'firmId': _dbService.activeFirmId,
-          }, SetOptions(merge: true));
+          await docRef.delete();
+          logger.info('Permanently deleted document ${queueItem.entityUuid} from Firestore collection $firestoreCollection');
         } else {
           final map = await _mapEntityToMap(entityType, entity);
-          await docRef.set(map);
+          await docRef.set(map, SetOptions(merge: true));
         }
 
         if (entity != null) {
@@ -1016,6 +1017,33 @@ class SyncService {
         });
       case 'Invoice':
         final e = entity as Invoice;
+        final isarRef = _dbService.isar;
+        final rawItems = await isarRef.invoiceItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) => q.parentInvoiceIdEqualTo(e.id).or().parentInvoiceUuidEqualTo(e.uuid))
+            .findAll();
+
+        final itemsMapList = rawItems.map((item) => {
+          'uuid': item.uuid,
+          'itemId': item.itemId,
+          'itemName': item.itemName,
+          'hsnCode': item.hsnCode,
+          'quantity': item.quantity,
+          'freeQuantity': item.freeQuantity,
+          'unit': item.unit,
+          'rate': item.rate,
+          'discount': item.discount,
+          'taxableAmount': item.taxableAmount,
+          'gstRate': item.gstRate,
+          'gstAmount': item.gstAmount,
+          'totalAmount': item.totalAmount,
+          'batchNumber': item.batchNumber,
+          'expiryDate': item.expiryDate,
+          'mfgDate': item.mfgDate,
+        }).toList();
+
         return baseMap..addAll({
           'invoiceNumber': e.invoiceNumber,
           'invoiceDate': e.invoiceDate?.toIso8601String(),
@@ -1050,6 +1078,7 @@ class SyncService {
           'editTime': e.editTime?.toIso8601String(),
           'partyUuid': e.party.value?.uuid,
           'orderUuid': e.order.value?.uuid,
+          'items': itemsMapList,
         });
       case 'InvoiceItem':
         final e = entity as InvoiceItem;
@@ -1099,6 +1128,32 @@ class SyncService {
         });
       case 'Purchase':
         final e = entity as Purchase;
+        final isarRefP = _dbService.isar;
+        final rawPItems = await isarRefP.purchaseItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) => q.purchaseIdEqualTo(e.id).or().purchaseUuidEqualTo(e.uuid))
+            .findAll();
+
+        final pItemsMapList = rawPItems.map((item) => {
+          'uuid': item.uuid,
+          'itemId': item.itemId,
+          'itemName': item.itemName,
+          'hsnCode': item.hsnCode,
+          'quantity': item.quantity,
+          'rate': item.rate,
+          'discount': item.discount,
+          'taxableAmount': item.taxableAmount,
+          'gstRate': item.gstRate,
+          'gstAmount': item.gstAmount,
+          'totalAmount': item.totalAmount,
+          'unit': item.unit,
+          'batchNumber': item.batchNumber,
+          'expiryDate': item.expiryDate,
+          'mfgDate': item.mfgDate,
+        }).toList();
+
         return baseMap..addAll({
           'purchaseNumber': e.purchaseNumber,
           'supplierInvoiceNumber': e.supplierInvoiceNumber,
@@ -1121,6 +1176,7 @@ class SyncService {
           'pendingAmount': e.pendingAmount,
           'remarks': e.remarks,
           'partyUuid': e.party.value?.uuid,
+          'items': pItemsMapList,
         });
       case 'PurchaseItem':
         final e = entity as PurchaseItem;
@@ -1761,6 +1817,44 @@ class SyncService {
           await e.party.save();
           await e.order.save();
         });
+
+        // Restore embedded items if present in document
+        if (data.containsKey('items') && data['items'] is List) {
+          final itemsList = data['items'] as List;
+          for (var itemMap in itemsList) {
+            if (itemMap is Map<String, dynamic>) {
+              final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
+              var invItem = await isar.invoiceItems.filter().uuidEqualTo(itemUuid).findFirst();
+              invItem ??= InvoiceItem();
+              invItem
+                ..uuid = itemUuid
+                ..parentInvoiceId = e.id
+                ..parentInvoiceUuid = e.uuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..freeQuantity = (itemMap['freeQuantity'] as num?)?.toDouble()
+                ..unit = itemMap['unit'] as String?
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discount = (itemMap['discount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstRate = (itemMap['gstRate'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..batchNumber = itemMap['batchNumber'] as String?
+                ..expiryDate = itemMap['expiryDate'] as String?
+                ..mfgDate = itemMap['mfgDate'] as String?
+                ..isDeleted = false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              await isar.writeTxn(() async {
+                await isar.invoiceItems.put(invItem!);
+              });
+            }
+          }
+        }
       } else if (entityType == 'InvoiceItem') {
         final e = entity as InvoiceItem;
         final invUuid = (data['invoiceUuid'] ?? data['parentInvoiceUuid']) as String?;
@@ -1791,6 +1885,43 @@ class SyncService {
           await isar.writeTxn(() async {
             await e.party.save();
           });
+        }
+
+        // Restore embedded items if present in document
+        if (data.containsKey('items') && data['items'] is List) {
+          final itemsList = data['items'] as List;
+          for (var itemMap in itemsList) {
+            if (itemMap is Map<String, dynamic>) {
+              final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
+              var purItem = await isar.purchaseItems.filter().uuidEqualTo(itemUuid).findFirst();
+              purItem ??= PurchaseItem();
+              purItem
+                ..uuid = itemUuid
+                ..purchaseId = e.id
+                ..purchaseUuid = e.uuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discount = (itemMap['discount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstRate = (itemMap['gstRate'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..unit = itemMap['unit'] as String?
+                ..batchNumber = itemMap['batchNumber'] as String?
+                ..expiryDate = itemMap['expiryDate'] as String?
+                ..mfgDate = itemMap['mfgDate'] as String?
+                ..isDeleted = false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              await isar.writeTxn(() async {
+                await isar.purchaseItems.put(purItem!);
+              });
+            }
+          }
         }
       } else if (entityType == 'PurchaseItem') {
         final e = entity as PurchaseItem;

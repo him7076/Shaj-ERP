@@ -463,6 +463,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       ref.invalidate(dashboardAnalyticsProvider);
       ref.read(unsavedChangesProvider.notifier).state = false;
 
+      // Immediately trigger background sync so Mobile updates PC/Cloud instantly
+      try {
+        ref.read(syncServiceProvider).syncAll();
+      } catch (_) {}
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
