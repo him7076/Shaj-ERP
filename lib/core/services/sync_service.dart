@@ -1018,12 +1018,8 @@ class SyncService {
       case 'Invoice':
         final e = entity as Invoice;
         final isarRef = _dbService.isar;
-        final rawItems = await isarRef.invoiceItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) => q.parentInvoiceIdEqualTo(e.id).or().parentInvoiceUuidEqualTo(e.uuid))
-            .findAll();
+        final allInvItems = await isarRef.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+        final rawItems = allInvItems.where((i) => i.parentInvoiceId == e.id || (e.uuid != null && e.uuid!.isNotEmpty && i.parentInvoiceUuid == e.uuid)).toList();
 
         final itemsMapList = rawItems.map((item) => {
           'uuid': item.uuid,
@@ -1129,12 +1125,8 @@ class SyncService {
       case 'Purchase':
         final e = entity as Purchase;
         final isarRefP = _dbService.isar;
-        final rawPItems = await isarRefP.purchaseItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) => q.purchaseIdEqualTo(e.id).or().purchaseUuidEqualTo(e.uuid))
-            .findAll();
+        final allPurItems = await isarRefP.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+        final rawPItems = allPurItems.where((i) => i.purchaseId == e.id || (e.uuid != null && e.uuid!.isNotEmpty && i.purchaseUuid == e.uuid)).toList();
 
         final pItemsMapList = rawPItems.map((item) => {
           'uuid': item.uuid,
