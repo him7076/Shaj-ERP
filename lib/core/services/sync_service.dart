@@ -565,7 +565,7 @@ class SyncService {
             'firmId': _dbService.activeFirmId,
           }, SetOptions(merge: true));
         } else {
-          final map = _mapEntityToMap(entityType, entity);
+          final map = await _mapEntityToMap(entityType, entity);
           await docRef.set(map);
         }
 
@@ -762,7 +762,7 @@ class SyncService {
   }
 
   /// Maps Isar entity to JSON map for Firestore
-  Map<String, dynamic> _mapEntityToMap(String entityType, dynamic entity) {
+  Future<Map<String, dynamic>> _mapEntityToMap(String entityType, dynamic entity) async {
     final baseMap = {
       'uuid': entity.uuid,
       'createdAt': entity.createdAt.toIso8601String(),

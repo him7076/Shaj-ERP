@@ -499,8 +499,18 @@ class SalesExcelImportService {
                 allItems.add(catalogItem!);
               }
 
-              // Deduct sales quantity from item current stock
-              catalogItem.currentStock = (catalogItem.currentStock ?? 0.0) - qty;
+              // Deduct sales quantity from item current stock (converting secondary unit if applicable)
+              double qtyInPrimaryUnit = qty;
+              final convFactor = catalogItem.conversionFactor ?? 1.0;
+              if (convFactor > 1.0 && catalogItem.secondaryUnit != null && catalogItem.secondaryUnit!.isNotEmpty) {
+                final uName = unit.trim().toLowerCase();
+                final sName = catalogItem.secondaryUnit!.trim().toLowerCase();
+                if (uName == sName) {
+                  qtyInPrimaryUnit = qty / convFactor;
+                }
+              }
+
+              catalogItem.currentStock = (catalogItem.currentStock ?? 0.0) - qtyInPrimaryUnit;
               catalogItem.updatedAt = DateTime.now();
               await isar.writeTxn(() async {
                 await isar.items.put(catalogItem!);

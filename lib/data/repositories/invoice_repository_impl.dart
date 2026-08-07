@@ -163,17 +163,26 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               : item.item.value;
           if (dbItem != null) {
             final double available = dbItem.currentStock ?? 0.0;
-            final double requested = item.quantity ?? 0.0;
+            double requestedInPrimaryUnit = item.quantity ?? 0.0;
 
-            final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
-            if (!allowNegativeStock && available < requested) {
-              throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requested');
+            final convFactor = dbItem.conversionFactor ?? 1.0;
+            if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
+              final itemUnit = (item.unit ?? '').trim().toLowerCase();
+              final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
+              if (itemUnit == secUnit) {
+                requestedInPrimaryUnit = requestedInPrimaryUnit / convFactor;
+              }
             }
 
-            dbItem.currentStock = available - requested;
+            final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
+            if (!allowNegativeStock && available < requestedInPrimaryUnit) {
+              throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requestedInPrimaryUnit');
+            }
+
+            dbItem.currentStock = available - requestedInPrimaryUnit;
 
             // Log stock movement
-            final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
+            final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
             dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
             
             await isar.items.put(dbItem);

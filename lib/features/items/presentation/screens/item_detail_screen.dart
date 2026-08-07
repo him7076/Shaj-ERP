@@ -1,11 +1,46 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+
+class _ItemTransaction {
+  final String type; // 'Sale', 'Purchase', 'Order'
+  final DateTime date;
+  final String title;
+  final String partyName;
+  final double quantity;
+  final String unit;
+  final double rate;
+  final double totalAmount;
+  final String targetUuid;
+
+  _ItemTransaction({
+    required this.type,
+    required this.date,
+    required this.title,
+    required this.partyName,
+    required this.quantity,
+    required this.unit,
+    required this.rate,
+    required this.totalAmount,
+    required this.targetUuid,
+  });
+}
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
   final String itemUuid;
@@ -19,6 +54,9 @@ class ItemDetailScreen extends ConsumerStatefulWidget {
 class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   bool _isLoading = false;
   Item? _item;
+  List<_ItemTransaction> _itemTransactions = [];
+
+  final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   @override
   void initState() {
@@ -30,19 +68,101 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final repo = ref.read(itemRepositoryProvider);
+      final isar = ref.read(databaseServiceProvider).isar;
       final fetchedItem = await repo.getByUuid(widget.itemUuid);
+
       if (fetchedItem != null) {
         try { await fetchedItem.category.load(); } catch (_) {}
         try { await fetchedItem.brand.load(); } catch (_) {}
         try { await fetchedItem.unit.load(); } catch (_) {}
+
+        final List<_ItemTransaction> txs = [];
+        final itemName = fetchedItem.itemName?.trim().toLowerCase() ?? '';
+        final itemId = fetchedItem.id;
+
+        // 1. Fetch Sales Invoices for this item
+        final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedInvItems = allInvItems.where((ii) => ii.itemId == itemId || (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemName)).toList();
+
+        for (var ii in matchedInvItems) {
+          Invoice? inv;
+          try { await ii.invoice.load(); inv = ii.invoice.value; } catch (_) {}
+          inv ??= ii.parentInvoiceId != null ? await isar.invoices.get(ii.parentInvoiceId!) : null;
+
+          if (inv != null && !inv.isDeleted) {
+            txs.add(_ItemTransaction(
+              type: 'Sale',
+              date: inv.invoiceDate ?? inv.createdAt,
+              title: 'Sales Invoice #${inv.invoiceNumber}',
+              partyName: inv.partyName ?? 'Customer',
+              quantity: ii.quantity ?? 1.0,
+              unit: ii.unit ?? 'PCS',
+              rate: ii.rate ?? 0.0,
+              totalAmount: ii.totalAmount ?? (ii.quantity ?? 1.0) * (ii.rate ?? 0.0),
+              targetUuid: inv.uuid ?? inv.id.toString(),
+            ));
+          }
+        }
+
+        // 2. Fetch Purchase Bills for this item
+        final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedPurItems = allPurItems.where((pi) => pi.itemId == itemId || (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemName)).toList();
+
+        for (var pi in matchedPurItems) {
+          Purchase? pur;
+          try { await pi.purchase.load(); pur = pi.purchase.value; } catch (_) {}
+          pur ??= pi.purchaseId != null ? await isar.purchases.get(pi.purchaseId!) : null;
+
+          if (pur != null && !pur.isDeleted) {
+            txs.add(_ItemTransaction(
+              type: 'Purchase',
+              date: pur.purchaseDate ?? pur.createdAt,
+              title: 'Purchase Bill #${pur.purchaseNumber}${pur.supplierInvoiceNumber != null && pur.supplierInvoiceNumber!.isNotEmpty ? " (Supp: ${pur.supplierInvoiceNumber})" : ""}',
+              partyName: pur.partyName ?? 'Supplier',
+              quantity: pi.quantity ?? 1.0,
+              unit: pi.unit ?? 'PCS',
+              rate: pi.rate ?? 0.0,
+              totalAmount: pi.totalAmount ?? (pi.quantity ?? 1.0) * (pi.rate ?? 0.0),
+              targetUuid: pur.uuid ?? pur.id.toString(),
+            ));
+          }
+        }
+
+        // 3. Fetch Orders for this item
+        final allOrdItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedOrdItems = allOrdItems.where((oi) => oi.itemId == itemId || (oi.itemName != null && oi.itemName!.trim().toLowerCase() == itemName)).toList();
+
+        for (var oi in matchedOrdItems) {
+          Order? ord;
+          try { await oi.order.load(); ord = oi.order.value; } catch (_) {}
+
+          if (ord != null && !ord.isDeleted) {
+            txs.add(_ItemTransaction(
+              type: 'Order',
+              date: ord.orderDate ?? ord.createdAt,
+              title: 'Sales Order #${ord.orderNumber}',
+              partyName: ord.partyName ?? 'Customer',
+              quantity: oi.quantity ?? 1.0,
+              unit: oi.unit ?? 'PCS',
+              rate: oi.rate ?? 0.0,
+              totalAmount: oi.totalAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0),
+              targetUuid: ord.uuid ?? ord.id.toString(),
+            ));
+          }
+        }
+
+        // Sort descending by date
+        txs.sort((a, b) => b.date.compareTo(a.date));
+
+        setState(() {
+          _item = fetchedItem;
+          _itemTransactions = txs;
+        });
       }
-      setState(() {
-        _item = fetchedItem;
-      });
     } catch (e) {
       logger.error('Failed to load item detail', e);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -109,7 +229,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final theme = Theme.of(context);
             return AlertDialog(
               title: const Text('Adjust Inventory Stock'),
               content: Form(
@@ -118,7 +237,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Stock In / Stock Out toggle
                       SegmentedButton<bool>(
                         segments: const [
                           ButtonSegment<bool>(
@@ -134,9 +252,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         ],
                         selected: {isStockIn},
                         onSelectionChanged: (val) {
-                          setDialogState(() {
-                            isStockIn = val.first;
-                          });
+                          setDialogState(() => isStockIn = val.first);
                         },
                       ),
                       const SizedBox(height: 16),
@@ -160,7 +276,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Reason for Adjustment',
                           border: OutlineInputBorder(),
-                          hintText: 'e.g. Purchase, Damage, Audit audit...',
+                          hintText: 'e.g. Purchase, Damage, Audit...',
                         ),
                         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                       ),
@@ -201,7 +317,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           reasonController.text.trim(),
         );
 
-        // Reload data
         await _loadItem();
         ref.invalidate(filteredItemsProvider);
         ref.invalidate(lowStockAlertProvider);
@@ -230,6 +345,31 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     }
   }
 
+  void _openTransactionDetail(_ItemTransaction tx) {
+    if (tx.type == 'Sale') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InvoiceDetailScreen(invoiceUuid: tx.targetUuid),
+        ),
+      ).then((_) => _loadItem());
+    } else if (tx.type == 'Purchase') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEditPurchaseScreen(purchaseUuid: tx.targetUuid),
+        ),
+      ).then((_) => _loadItem());
+    } else if (tx.type == 'Order') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderDetailScreen(orderUuid: tx.targetUuid),
+        ),
+      ).then((_) => _loadItem());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -251,7 +391,18 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final item = _item!;
     final isLow = stockService.isLowStock(item);
     final isOut = stockService.isOutOfStock(item);
-    final historyLogs = stockService.getStockHistory(item);
+
+    // Calculate Primary vs Secondary stock breakdown
+    final double primaryStock = item.currentStock ?? 0.0;
+    final String primaryUnitName = item.unit.value?.shortName ?? 'PCS';
+    final String? secUnitName = item.secondaryUnit;
+    final double? convFactor = item.conversionFactor;
+
+    String stockBreakdownText = '$primaryStock $primaryUnitName';
+    if (secUnitName != null && secUnitName.isNotEmpty && convFactor != null && convFactor > 1.0) {
+      final double secStock = primaryStock * convFactor;
+      stockBreakdownText = '$primaryStock $primaryUnitName  (${secStock.toStringAsFixed(1)} $secUnitName)';
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -260,7 +411,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             onPressed: () async {
-              // Navigate to edit screen
               await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -282,7 +432,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Image Carousel / Thumbnail Header
             _buildImageHeader(item, theme),
 
             Padding(
@@ -290,7 +439,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Title, Code, & Stock Badge
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -304,7 +452,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Code: ${item.itemCode ?? "N/A"} | SKU: ${item.sku ?? item.skuCode ?? "N/A"}',
+                              'Code: ${item.itemCode ?? "N/A"} | HSN: ${item.hsnCode ?? "N/A"}',
                               style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                             ),
                           ],
@@ -313,9 +461,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                       _buildStockBadge(isOut, isLow, theme, item),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  // Stock adjustment CTA card
+                  // Stock Level Card with Dual Unit Conversion
                   Card(
                     color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                     elevation: 0,
@@ -334,9 +482,15 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Current Stock Level: ${item.currentStock ?? 0.0} ${item.unit.value?.shortName ?? "PCS"}',
-                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  'Current Stock Level:',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                                 ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  stockBreakdownText,
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                                ),
+                                const SizedBox(height: 4),
                                 Text(
                                   'Reorder Level: ${item.reorderLevel ?? 0.0} | Min: ${item.minimumStock ?? 0.0}',
                                   style: theme.textTheme.bodySmall,
@@ -345,7 +499,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             ),
                           ),
                           ElevatedButton.icon(
-                            icon: const Icon(Icons.swap_vert),
+                            icon: const Icon(Icons.swap_vert, size: 18),
                             label: const Text('Adjust'),
                             onPressed: _adjustStockDialog,
                             style: ElevatedButton.styleFrom(
@@ -362,77 +516,117 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   _buildSectionTitle('Pricing & Taxation', theme),
                   const SizedBox(height: 12),
                   _buildDetailTable([
-                    _DetailRow('Selling Price (Retail)', '₹${item.sellRate?.toStringAsFixed(2) ?? "0.00"}', isBold: true),
-                    _DetailRow('Wholesale Price', '₹${item.wholesaleRate?.toStringAsFixed(2) ?? "N/A"}'),
-                    _DetailRow('Min Selling Price', '₹${item.minimumSellingPrice?.toStringAsFixed(2) ?? "N/A"}'),
-                    _DetailRow('MRP', '₹${item.mrp?.toStringAsFixed(2) ?? "N/A"}'),
-                    _DetailRow('Buy/Purchase Price', '₹${item.buyRate?.toStringAsFixed(2) ?? "N/A"}'),
+                    _DetailRow('Selling Price (Retail)', _currencyFormat.format(item.sellRate ?? 0.0), isBold: true),
+                    _DetailRow('Wholesale Price', _currencyFormat.format(item.wholesaleRate ?? 0.0)),
+                    _DetailRow('Min Selling Price', _currencyFormat.format(item.minimumSellingPrice ?? 0.0)),
+                    _DetailRow('MRP', _currencyFormat.format(item.mrp ?? 0.0)),
+                    _DetailRow('Buy/Purchase Price', _currencyFormat.format(item.buyRate ?? 0.0)),
                     _DetailRow('GST Status', item.gstApplicable ? 'Applicable (${item.gstRate ?? 0.0}%)' : 'Exempt / Non-GST'),
-                    _DetailRow('CESS Rate', '${item.cessRate ?? 0.0}%'),
                     _DetailRow('HSN Code', item.hsnCode ?? 'N/A'),
                   ], theme),
                   const SizedBox(height: 24),
 
-                  // Categorization & Specs
-                  _buildSectionTitle('Categorization & Specs', theme),
+                  // Units & Conversion Specs
+                  _buildSectionTitle('Units & Unit Conversion', theme),
                   const SizedBox(height: 12),
                   _buildDetailTable([
                     _DetailRow('Category', item.category.value?.categoryName ?? 'N/A'),
                     _DetailRow('Brand', item.brand.value?.brandName ?? 'N/A'),
                     _DetailRow('Primary Unit', item.unit.value?.unitName ?? 'N/A'),
-                    _DetailRow('Secondary Unit', item.secondaryUnit ?? 'N/A'),
-                    _DetailRow('Conversion Factor', item.conversionFactor != null ? '1 ${item.secondaryUnit} = ${item.conversionFactor} ${item.unit.value?.shortName}' : 'N/A'),
-                    _DetailRow('Weight', item.weight != null ? '${item.weight} KG' : 'N/A'),
-                    _DetailRow('Dimensions', item.dimensions ?? 'N/A'),
+                    _DetailRow('Secondary Unit', item.secondaryUnit != null && item.secondaryUnit!.isNotEmpty ? item.secondaryUnit! : 'None'),
+                    _DetailRow('Conversion Factor', (item.conversionFactor != null && item.conversionFactor! > 1.0) ? '1 ${item.unit.value?.shortName ?? "Box"} = ${item.conversionFactor} ${item.secondaryUnit}' : '1 : 1'),
                   ], theme),
                   const SizedBox(height: 24),
 
-                  // Stock Logs / History
-                  _buildSectionTitle('Stock Movement History', theme),
+                  // CLICKABLE ITEM TRANSACTIONS SECTION
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildSectionTitle('Item Transactions (${_itemTransactions.length})', theme),
+                      Text('Click to View Detail', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                    ],
+                  ),
                   const SizedBox(height: 12),
-                  historyLogs.isEmpty
+                  _itemTransactions.isEmpty
                       ? Container(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            border: Border.all(color: theme.colorScheme.outlineVariant),
+                            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Center(
-                            child: Text('No stock adjustments recorded yet.'),
+                            child: Text('No sales, purchases, or orders recorded for this item yet.'),
                           ),
                         )
-                      : Container(
-                          constraints: const BoxConstraints(maxHeight: 250),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: theme.colorScheme.outlineVariant),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            physics: const ClampingScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: historyLogs.length,
-                            separatorBuilder: (context, index) => const Divider(height: 1),
-                            itemBuilder: (context, index) {
-                              final log = historyLogs[index];
-                              return ListTile(
-                                dense: true,
-                                title: Text(log),
-                                leading: Icon(
-                                  log.contains('STOCK_IN') ? Icons.add_circle : Icons.remove_circle,
-                                  color: log.contains('STOCK_IN') ? Colors.green : Colors.red,
-                                  size: 16,
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _itemTransactions.length,
+                          itemBuilder: (context, index) {
+                            final tx = _itemTransactions[index];
+                            final dateStr = DateFormat('dd MMM yyyy').format(tx.date);
+
+                            Color badgeColor = Colors.green;
+                            IconData badgeIcon = Icons.call_made_rounded;
+
+                            if (tx.type == 'Purchase') {
+                              badgeColor = Colors.blue;
+                              badgeIcon = Icons.call_received_rounded;
+                            } else if (tx.type == 'Order') {
+                              badgeColor = Colors.orange;
+                              badgeIcon = Icons.shopping_bag_outlined;
+                            }
+
+                            return Card(
+                              elevation: 0,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                              ),
+                              child: ListTile(
+                                onTap: () => _openTransactionDetail(tx),
+                                leading: CircleAvatar(
+                                  backgroundColor: badgeColor.withOpacity(0.12),
+                                  child: Icon(badgeIcon, color: badgeColor, size: 20),
                                 ),
-                              );
-                            },
-                          ),
+                                title: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        tx.title,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Text(
+                                      _currencyFormat.format(tx.totalAmount),
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor, fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Party: ${tx.partyName}  •  $dateStr',
+                                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                                      ),
+                                      Text(
+                                        '${tx.quantity} ${tx.unit}',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
+                              ),
+                            );
+                          },
                         ),
-                  if (item.notes != null && item.notes!.isNotEmpty && historyLogs.isEmpty) ...[
-                    const SizedBox(height: 16),
-                    _buildSectionTitle('Notes', theme),
-                    const SizedBox(height: 8),
-                    Text(item.notes!),
-                  ],
                 ],
               ),
             ),
@@ -446,18 +640,18 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final images = item.imagePaths ?? [];
     if (images.isEmpty) {
       return Container(
-        height: 200,
+        height: 180,
         color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
         child: Icon(
           Icons.image_outlined,
-          size: 72,
+          size: 64,
           color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
         ),
       );
     }
 
     return SizedBox(
-      height: 240,
+      height: 220,
       child: PageView.builder(
         itemCount: images.length,
         itemBuilder: (context, index) {
@@ -466,10 +660,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             future: file.exists(),
             builder: (context, snapshot) {
               if (snapshot.data == true) {
-                return Image.file(
-                  file,
-                  fit: BoxFit.contain,
-                );
+                return Image.file(file, fit: BoxFit.contain);
               } else {
                 return Container(
                   color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
@@ -530,7 +721,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       child: Column(
         children: rows.map((row) {
           return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
