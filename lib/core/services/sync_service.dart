@@ -202,6 +202,23 @@ class SyncService {
     }
   }
 
+  /// Non-blocking, lightweight background queue upload.
+  /// Pushes unsynced changes to Firestore asynchronously WITHOUT running full database downloads or freezing the browser.
+  void syncPendingChangesQuietly() {
+    Future.microtask(() async {
+      try {
+        final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+        if (!cloudSyncEnabled) return;
+        if (_currentState.status == SyncStatus.syncing) return;
+        await _firebaseService.ensureAuthenticated();
+        if (!_firebaseService.isAuthenticated) return;
+        await _uploadLocalChanges();
+      } catch (e) {
+        logger.warning('Quiet background upload encountered non-fatal error: $e');
+      }
+    });
+  }
+
   /// Triggers full synchronization of all collections: upload edits, download changes, resolve conflicts
   Future<void> syncAll() async {
     final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
@@ -1376,7 +1393,7 @@ class SyncService {
           ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble()
           ..reorderLevel = (data['reorderLevel'] as num?)?.toDouble()
           ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
-          ..primaryUnitName = data['primaryUnitName'] as String?
+          ..primaryUnitName = (data['primaryUnitName'] as String?)?.isNotEmpty == true ? (data['primaryUnitName'] as String) : (data['unit'] as String? ?? 'PCS')
           ..secondaryUnit = data['secondaryUnit']
           ..conversionFactor = (data['conversionFactor'] as num?)?.toDouble()
           ..barcode = data['barcode']

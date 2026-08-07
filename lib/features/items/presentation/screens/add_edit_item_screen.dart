@@ -568,6 +568,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.brand.value = _selectedBrand;
       if (_selectedUnit != null) {
         item.unit.value = _selectedUnit;
+        item.primaryUnitName = _selectedUnit?.shortName ?? _selectedUnit?.unitName;
+      } else if (item.primaryUnitName == null || item.primaryUnitName!.isEmpty) {
+        item.primaryUnitName = item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
       }
 
       if (_existingItem == null) {
@@ -579,9 +582,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       ref.invalidate(filteredItemsProvider);
       ref.invalidate(lowStockAlertProvider);
 
-      // Auto-trigger Cloud Sync in background (syncAll internal gate checks if cloud sync is enabled)
+      // Lightweight non-blocking quiet background sync of saved item
       try {
-        ref.read(syncServiceProvider).syncAll();
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
 
       if (mounted) {

@@ -77,9 +77,9 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
       _editedItemsMap.clear();
       ref.invalidate(filteredItemsProvider);
 
-      // Auto-trigger Cloud Sync in background (syncAll internal gate checks if cloud sync is enabled)
+      // Lightweight non-blocking quiet background sync
       try {
-        ref.read(syncServiceProvider).syncAll();
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
 
       if (mounted) {

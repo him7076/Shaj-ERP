@@ -482,9 +482,9 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
 
       ref.invalidate(partiesListProvider);
 
-      // Auto-trigger Cloud Sync in background (syncAll internal gate checks if cloud sync is enabled)
+      // Lightweight non-blocking quiet background sync
       try {
-        ref.read(syncServiceProvider).syncAll();
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
 
       if (mounted) {

@@ -361,9 +361,9 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
       ref.invalidate(dashboardAnalyticsProvider);
 
-      // Immediately trigger background sync so Mobile updates PC/Cloud instantly
+      // Lightweight non-blocking quiet background sync
       try {
-        ref.read(syncServiceProvider).syncAll();
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
 
       if (success && mounted) {
