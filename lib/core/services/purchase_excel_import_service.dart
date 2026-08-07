@@ -354,6 +354,11 @@ class PurchaseExcelImportService {
       final allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
       final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
+      // Purge any existing duplicate purchase bills locally and enqueue Firestore Delete signals
+      if (duplicateAction == DuplicateBillAction.overwrite) {
+        await purgeDuplicatePurchases(isar);
+      }
+
       // 2. Iterate Sheet 1 Headers & Create / Overwrite Purchase Bills
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
@@ -436,7 +441,31 @@ class PurchaseExcelImportService {
                       await isar.items.put(targetItem);
                     }
                   }
+
+                  // Enqueue Delete for Firestore so cloud copy is deleted
+                  if (oi.uuid != null && oi.uuid!.isNotEmpty) {
+                    await isar.syncQueues.put(SyncQueue()
+                      ..uuid = _uuidGen.v4()
+                      ..entityType = 'PurchaseItem'
+                      ..entityId = oi.id
+                      ..entityUuid = oi.uuid
+                      ..operation = 'Delete'
+                      ..createdAt = DateTime.now()
+                      ..updatedAt = DateTime.now());
+                  }
                   await isar.purchaseItems.delete(oi.id);
+                }
+
+                // Enqueue Delete for Purchase in Firestore so cloud copy is deleted
+                if (oldP.uuid != null && oldP.uuid!.isNotEmpty) {
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = _uuidGen.v4()
+                    ..entityType = 'Purchase'
+                    ..entityId = oldP.id
+                    ..entityUuid = oldP.uuid
+                    ..operation = 'Delete'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
                 }
                 await isar.purchases.delete(oldP.id);
               });
@@ -798,5 +827,62 @@ class PurchaseExcelImportService {
       }
     } catch (_) {}
     return DateTime.tryParse(dateStr) ?? DateTime.now();
+  }
+
+  static Future<void> purgeDuplicatePurchases(Isar isar) async {
+    try {
+      final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final Map<String, List<Purchase>> grouped = {};
+      for (var pur in allPurchases) {
+        final numKey = _normalizeKey(pur.purchaseNumber ?? '');
+        final suppKey = _normalizeKey(pur.supplierInvoiceNumber ?? '');
+        final key = numKey.isNotEmpty ? numKey : suppKey;
+        if (key.isNotEmpty) grouped.putIfAbsent(key, () => []).add(pur);
+      }
+
+      for (var list in grouped.values) {
+        if (list.length > 1) {
+          list.sort((a, b) => b.id.compareTo(a.id));
+          final duplicates = list.sublist(1);
+          for (var oldP in duplicates) {
+            final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+            final oldItems = allPurItems.where((oi) => 
+              oi.purchaseId == oldP.id || 
+              (oldP.uuid != null && oldP.uuid!.isNotEmpty && oi.purchaseUuid == oldP.uuid) ||
+              oi.purchase.value?.id == oldP.id
+            ).toList();
+
+            await isar.writeTxn(() async {
+              for (var oi in oldItems) {
+                if (oi.uuid != null && oi.uuid!.isNotEmpty) {
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = _uuidGen.v4()
+                    ..entityType = 'PurchaseItem'
+                    ..entityId = oi.id
+                    ..entityUuid = oi.uuid
+                    ..operation = 'Delete'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
+                }
+                await isar.purchaseItems.delete(oi.id);
+              }
+              if (oldP.uuid != null && oldP.uuid!.isNotEmpty) {
+                await isar.syncQueues.put(SyncQueue()
+                  ..uuid = _uuidGen.v4()
+                  ..entityType = 'Purchase'
+                  ..entityId = oldP.id
+                  ..entityUuid = oldP.uuid
+                  ..operation = 'Delete'
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now());
+              }
+              await isar.purchases.delete(oldP.id);
+            });
+          }
+        }
+      }
+    } catch (e) {
+      logger.error('Error purging duplicate purchases', e);
+    }
   }
 }

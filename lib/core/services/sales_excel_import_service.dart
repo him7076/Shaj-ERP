@@ -325,6 +325,11 @@ class SalesExcelImportService {
       final allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
       final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
+      // Purge any existing duplicate invoices locally and enqueue Firestore Delete signals
+      if (duplicateAction == DuplicateBillAction.overwrite) {
+        await purgeDuplicateInvoices(isar);
+      }
+
       // 2. Iterate Sheet 1 Headers & Create / Overwrite Sales Invoices
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
@@ -398,7 +403,31 @@ class SalesExcelImportService {
                       await isar.items.put(targetItem);
                     }
                   }
+
+                  // Enqueue Delete for Firestore so cloud copy is deleted
+                  if (oi.uuid != null && oi.uuid!.isNotEmpty) {
+                    await isar.syncQueues.put(SyncQueue()
+                      ..uuid = _uuidGen.v4()
+                      ..entityType = 'InvoiceItem'
+                      ..entityId = oi.id
+                      ..entityUuid = oi.uuid
+                      ..operation = 'Delete'
+                      ..createdAt = DateTime.now()
+                      ..updatedAt = DateTime.now());
+                  }
                   await isar.invoiceItems.delete(oi.id);
+                }
+
+                // Enqueue Delete for Invoice in Firestore so cloud copy is deleted
+                if (oldInv.uuid != null && oldInv.uuid!.isNotEmpty) {
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = _uuidGen.v4()
+                    ..entityType = 'Invoice'
+                    ..entityId = oldInv.id
+                    ..entityUuid = oldInv.uuid
+                    ..operation = 'Delete'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
                 }
                 await isar.invoices.delete(oldInv.id);
               });
@@ -761,5 +790,60 @@ class SalesExcelImportService {
       }
     } catch (_) {}
     return DateTime.tryParse(dateStr) ?? DateTime.now();
+  }
+
+  static Future<void> purgeDuplicateInvoices(Isar isar) async {
+    try {
+      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final Map<String, List<Invoice>> grouped = {};
+      for (var inv in allInvoices) {
+        final key = _normalizeKey(inv.invoiceNumber ?? '');
+        if (key.isNotEmpty) grouped.putIfAbsent(key, () => []).add(inv);
+      }
+
+      for (var list in grouped.values) {
+        if (list.length > 1) {
+          list.sort((a, b) => b.id.compareTo(a.id));
+          final duplicates = list.sublist(1);
+          for (var oldInv in duplicates) {
+            final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+            final oldItems = allInvItems.where((oi) => 
+              oi.parentInvoiceId == oldInv.id || 
+              (oldInv.uuid != null && oldInv.uuid!.isNotEmpty && oi.parentInvoiceUuid == oldInv.uuid) ||
+              oi.invoice.value?.id == oldInv.id
+            ).toList();
+
+            await isar.writeTxn(() async {
+              for (var oi in oldItems) {
+                if (oi.uuid != null && oi.uuid!.isNotEmpty) {
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = _uuidGen.v4()
+                    ..entityType = 'InvoiceItem'
+                    ..entityId = oi.id
+                    ..entityUuid = oi.uuid
+                    ..operation = 'Delete'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
+                }
+                await isar.invoiceItems.delete(oi.id);
+              }
+              if (oldInv.uuid != null && oldInv.uuid!.isNotEmpty) {
+                await isar.syncQueues.put(SyncQueue()
+                  ..uuid = _uuidGen.v4()
+                  ..entityType = 'Invoice'
+                  ..entityId = oldInv.id
+                  ..entityUuid = oldInv.uuid
+                  ..operation = 'Delete'
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now());
+              }
+              await isar.invoices.delete(oldInv.id);
+            });
+          }
+        }
+      }
+    } catch (e) {
+      logger.error('Error purging duplicate invoices', e);
+    }
   }
 }

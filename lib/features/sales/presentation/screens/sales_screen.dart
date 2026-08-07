@@ -335,11 +335,24 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, size: 20),
             tooltip: 'Sales Tools',
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'sample') {
                 _downloadSalesSampleExcel();
               } else if (value == 'import') {
                 _importSalesExcel();
+              } else if (value == 'clean_duplicates') {
+                final dbService = ref.read(databaseServiceProvider);
+                await SalesExcelImportService.purgeDuplicateInvoices(dbService.isar);
+                ref.read(syncServiceProvider).syncPendingChangesQuietly();
+                ref.invalidate(filteredInvoicesProvider);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('🧹 Duplicate Invoices cleaned up locally & Cloud Delete queued!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } else if (value == 'refresh') {
                 ref.invalidate(filteredInvoicesProvider);
               }
@@ -362,6 +375,16 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                     Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
                     SizedBox(width: 8),
                     Text('Import Excel Invoices'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'clean_duplicates',
+                child: Row(
+                  children: [
+                    Icon(Icons.cleaning_services_rounded, size: 18, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Clean Duplicate Invoices'),
                   ],
                 ),
               ),
