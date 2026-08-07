@@ -565,6 +565,9 @@ class SyncService {
     for (var queueItem in queueItems) {
       if (queueItem.retryCount >= 5) continue;
 
+      // Yield to Chrome main event loop to keep UI 100% responsive
+      await Future.delayed(Duration.zero);
+
       try {
         final entityType = queueItem.entityType!;
         final entityId = queueItem.entityId!;

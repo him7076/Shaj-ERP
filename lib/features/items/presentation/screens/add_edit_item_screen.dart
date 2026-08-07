@@ -582,11 +582,6 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       ref.invalidate(filteredItemsProvider);
       ref.invalidate(lowStockAlertProvider);
 
-      // Lightweight non-blocking quiet background sync of saved item
-      try {
-        ref.read(syncServiceProvider).syncPendingChangesQuietly();
-      } catch (_) {}
-
       if (mounted) {
         Navigator.pop(context, item);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -596,6 +591,13 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           ),
         );
       }
+
+      // Quiet background sync after screen pops
+      Future.microtask(() {
+        try {
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+      });
     } catch (e) {
       logger.error('Failed to save item', e);
       if (mounted) {
