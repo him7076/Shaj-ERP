@@ -579,6 +579,15 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       ref.invalidate(filteredItemsProvider);
       ref.invalidate(lowStockAlertProvider);
 
+      // Auto-trigger Cloud Sync ONLY IF Cloud Sync is enabled by user
+      final prefs = ref.read(sharedPreferencesProvider);
+      final cloudSyncEnabled = prefs.getBool('enable_firebase_cloud_sync') ?? true;
+      if (cloudSyncEnabled) {
+        try {
+          ref.read(syncServiceProvider).syncAll();
+        } catch (_) {}
+      }
+
       if (mounted) {
         Navigator.pop(context, item);
         ScaffoldMessenger.of(context).showSnackBar(

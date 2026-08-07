@@ -96,7 +96,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               title: 'Sales Invoice #${inv.invoiceNumber}',
               partyName: inv.partyName ?? 'Customer',
               quantity: ii.quantity ?? 1.0,
-              unit: (ii.unit != null && ii.unit!.isNotEmpty) ? ii.unit! : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
+              unit: (ii.unit != null && ii.unit!.isNotEmpty && ii.unit != 'PCS')
+                  ? ii.unit!
+                  : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? ii.unit ?? 'PCS'),
               rate: ii.rate ?? 0.0,
               totalAmount: ii.totalAmount ?? (ii.quantity ?? 1.0) * (ii.rate ?? 0.0),
               targetUuid: inv.uuid ?? inv.id.toString(),
@@ -120,7 +122,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               title: 'Purchase Bill #${pur.purchaseNumber}${pur.supplierInvoiceNumber != null && pur.supplierInvoiceNumber!.isNotEmpty ? " (Supp: ${pur.supplierInvoiceNumber})" : ""}',
               partyName: pur.partyName ?? 'Supplier',
               quantity: pi.quantity ?? 1.0,
-              unit: (pi.unit != null && pi.unit!.isNotEmpty) ? pi.unit! : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
+              unit: (pi.unit != null && pi.unit!.isNotEmpty && pi.unit != 'PCS')
+                  ? pi.unit!
+                  : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? pi.unit ?? 'PCS'),
               rate: pi.rate ?? 0.0,
               totalAmount: pi.totalAmount ?? (pi.quantity ?? 1.0) * (pi.rate ?? 0.0),
               targetUuid: pur.uuid ?? pur.id.toString(),
@@ -143,7 +147,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               title: 'Sales Order #${ord.orderNumber}',
               partyName: ord.partyName ?? 'Customer',
               quantity: oi.quantity ?? 1.0,
-              unit: (oi.unit != null && oi.unit!.isNotEmpty) ? oi.unit! : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
+              unit: (oi.unit != null && oi.unit!.isNotEmpty && oi.unit != 'PCS')
+                  ? oi.unit!
+                  : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? oi.unit ?? 'PCS'),
               rate: oi.rate ?? 0.0,
               totalAmount: oi.totalAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0),
               targetUuid: ord.uuid ?? ord.id.toString(),

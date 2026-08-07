@@ -619,9 +619,16 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                 separatorBuilder: (context, index) => const Divider(height: 24),
                 itemBuilder: (context, index) {
                   final item = _invoiceItems[index];
-                  final unitStr = (item.unit != null && item.unit!.isNotEmpty) 
-                      ? item.unit! 
-                      : (item.item.value?.primaryUnitName ?? item.item.value?.unit.value?.shortName ?? 'PCS');
+                  final masterItem = item.item.value;
+                  String unitStr = 'PCS';
+                  if (item.unit != null && item.unit!.isNotEmpty && item.unit != 'PCS') {
+                    unitStr = item.unit!;
+                  } else if (masterItem != null) {
+                    unitStr = masterItem.primaryUnitName ?? masterItem.unit.value?.shortName ?? masterItem.unit.value?.unitName ?? item.unit ?? 'PCS';
+                  } else if (item.unit != null && item.unit!.isNotEmpty) {
+                    unitStr = item.unit!;
+                  }
+
                   final qty = item.quantity ?? 0.0;
                   final freeQty = item.freeQuantity ?? 0.0;
                   final rate = item.rate ?? 0.0;
