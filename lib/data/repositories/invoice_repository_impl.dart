@@ -130,12 +130,22 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             oldItem.updatedAt = DateTime.now();
             await isar.invoiceItems.put(oldItem);
 
-            // Restore stock back before applying new ones
+            // Restore stock back before applying new ones (converting secondary unit if applicable)
             final dbItem = kIsWeb
                 ? (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null)
                 : oldItem.item.value;
             if (dbItem != null) {
-              dbItem.currentStock = (dbItem.currentStock ?? 0.0) + (oldItem.quantity ?? 0.0);
+              double restoredQty = oldItem.quantity ?? 0.0;
+              final convFactor = dbItem.conversionFactor ?? 1.0;
+              if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
+                final uName = (oldItem.unit ?? '').trim().toLowerCase();
+                final sName = dbItem.secondaryUnit!.trim().toLowerCase();
+                final pName = (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? '').trim().toLowerCase();
+                if (uName == sName && uName != pName) {
+                  restoredQty = restoredQty / convFactor;
+                }
+              }
+              dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
               await isar.items.put(dbItem);
             }
           }
@@ -169,7 +179,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
               final itemUnit = (item.unit ?? '').trim().toLowerCase();
               final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
-              if (itemUnit == secUnit) {
+              final pName = (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? '').trim().toLowerCase();
+              if (itemUnit == secUnit && itemUnit != pName) {
                 requestedInPrimaryUnit = requestedInPrimaryUnit / convFactor;
               }
             }

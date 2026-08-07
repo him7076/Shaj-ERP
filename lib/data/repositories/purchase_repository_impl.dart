@@ -107,11 +107,21 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
               .purchase((q) => q.idEqualTo(purchaseId))
               .findAll();
 
-          // Restore stock levels before deletion
+          // Restore stock levels before deletion (converting secondary unit if applicable)
           for (var oldItem in oldItems) {
             final targetItem = await isar.items.get(oldItem.itemId ?? 0);
             if (targetItem != null) {
-              targetItem.currentStock = (targetItem.currentStock ?? 0.0) - (oldItem.quantity ?? 0.0);
+              double restoredQty = oldItem.quantity ?? 0.0;
+              final convFactor = targetItem.conversionFactor ?? 1.0;
+              if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
+                final uName = (oldItem.unit ?? '').trim().toLowerCase();
+                final sName = targetItem.secondaryUnit!.trim().toLowerCase();
+                final pName = (targetItem.primaryUnitName ?? targetItem.unit.value?.shortName ?? '').trim().toLowerCase();
+                if (uName == sName && uName != pName) {
+                  restoredQty = restoredQty / convFactor;
+                }
+              }
+              targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
               await isar.items.put(targetItem);
             }
           }
@@ -157,15 +167,26 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             purchase.purchaseItems.add(newItem);
           } catch (_) {}
 
-          // Update product stock balance (Stock IN)
+          // Update product stock balance (Stock IN) (converting secondary unit if applicable)
           final targetItem = await isar.items.get(item.itemId ?? 0);
           if (targetItem != null) {
             final double current = targetItem.currentStock ?? 0.0;
-            targetItem.currentStock = current + (item.quantity ?? 0.0);
+            double qtyInPrimary = item.quantity ?? 0.0;
+            final convFactor = targetItem.conversionFactor ?? 1.0;
+            if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
+              final uName = (item.unit ?? '').trim().toLowerCase();
+              final sName = targetItem.secondaryUnit!.trim().toLowerCase();
+              final pName = (targetItem.primaryUnitName ?? targetItem.unit.value?.shortName ?? '').trim().toLowerCase();
+              if (uName == sName && uName != pName) {
+                qtyInPrimary = qtyInPrimary / convFactor;
+              }
+            }
+
+            targetItem.currentStock = current + qtyInPrimary;
             
             // Add a history line inside item.notes
             final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
-            final logEntry = '[$timestamp] STOCK_IN (Purchase): +${item.quantity} | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
+            final logEntry = '[$timestamp] STOCK_IN (Purchase): +$qtyInPrimary | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
             final currentNotes = targetItem.notes ?? '';
             targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
 

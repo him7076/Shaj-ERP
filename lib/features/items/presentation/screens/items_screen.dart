@@ -627,16 +627,27 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     final isOut = stockVal <= 0;
     final isLow = stockVal <= reorderVal && !isOut;
 
+    final String primaryUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS';
+    final String? secUnit = item.secondaryUnit;
+    final double? conv = item.conversionFactor;
+
+    final String formattedStock = stockVal == stockVal.roundToDouble() ? stockVal.toInt().toString() : stockVal.toStringAsFixed(2);
+    String stockLabel = '$formattedStock $primaryUnit';
+    if (secUnit != null && secUnit.isNotEmpty && conv != null && conv > 1.0) {
+      final double secVal = stockVal * conv;
+      final String formattedSec = secVal == secVal.roundToDouble() ? secVal.toInt().toString() : secVal.toStringAsFixed(1);
+      stockLabel = '$formattedStock $primaryUnit ($formattedSec $secUnit)';
+    }
+
     Color stockColor = Colors.green;
-    String stockLabel = '${stockVal.toInt()} in stock';
     IconData stockIcon = Icons.check_circle;
     if (isOut) {
       stockColor = Colors.red;
-      stockLabel = 'Out of Stock';
+      stockLabel = 'Out of Stock ($stockLabel)';
       stockIcon = Icons.cancel;
     } else if (isLow) {
       stockColor = Colors.orange;
-      stockLabel = '${stockVal.toInt()} (Low)';
+      stockLabel = '$stockLabel (Low)';
       stockIcon = Icons.warning;
     }
 

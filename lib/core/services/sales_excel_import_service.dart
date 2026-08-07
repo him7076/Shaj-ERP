@@ -384,7 +384,17 @@ class SalesExcelImportService {
                   if (oi.itemId != null) {
                     final targetItem = await isar.items.get(oi.itemId!);
                     if (targetItem != null) {
-                      targetItem.currentStock = (targetItem.currentStock ?? 0.0) + (oi.quantity ?? 0.0);
+                      double restoredQty = oi.quantity ?? 0.0;
+                      final convFactor = targetItem.conversionFactor ?? 1.0;
+                      if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
+                        final uName = (oi.unit ?? '').trim().toLowerCase();
+                        final sName = targetItem.secondaryUnit!.trim().toLowerCase();
+                        final pName = (targetItem.primaryUnitName ?? targetItem.unit.value?.shortName ?? '').trim().toLowerCase();
+                        if (uName == sName && uName != pName) {
+                          restoredQty = restoredQty / convFactor;
+                        }
+                      }
+                      targetItem.currentStock = (targetItem.currentStock ?? 0.0) + restoredQty;
                       await isar.items.put(targetItem);
                     }
                   }
