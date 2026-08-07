@@ -72,6 +72,28 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               .findAll();
         }
 
+        if (items.isEmpty && fetched.uuid != null && fetched.uuid!.isNotEmpty) {
+          final targetUuid = fetched.uuid!;
+          final targetId = fetched.id;
+          final allItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+          items = allItems.where((i) {
+            if (i.parentInvoiceId == targetId) return true;
+            try {
+              if (i.invoice.value?.uuid == targetUuid) return true;
+            } catch (_) {}
+            return false;
+          }).toList();
+
+          if (items.isNotEmpty) {
+            await isar.writeTxn(() async {
+              for (var itm in items) {
+                itm.parentInvoiceId = targetId;
+                await isar.invoiceItems.put(itm);
+              }
+            });
+          }
+        }
+
         setState(() {
           _invoice = fetched;
           _invoiceItems = items;

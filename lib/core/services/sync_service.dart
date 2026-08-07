@@ -945,19 +945,30 @@ class SyncService {
         });
       case 'InvoiceItem':
         final e = entity as InvoiceItem;
+        String? invUuid = e.invoice.value?.uuid;
+        if ((invUuid == null || invUuid.isEmpty) && e.parentInvoiceId != null) {
+          final parentInv = await isar.invoices.get(e.parentInvoiceId!);
+          invUuid = parentInv?.uuid;
+        }
         return baseMap..addAll({
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
+          'parentInvoiceId': e.parentInvoiceId,
+          'parentInvoiceUuid': invUuid,
+          'invoiceUuid': invUuid,
           'quantity': e.quantity,
           'freeQuantity': e.freeQuantity,
+          'unit': e.unit,
           'rate': e.rate,
           'discount': e.discount,
           'taxableAmount': e.taxableAmount,
           'gstRate': e.gstRate,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
-          'invoiceUuid': e.invoice.value?.uuid,
+          'batchNumber': e.batchNumber,
+          'expiryDate': e.expiryDate,
+          'mfgDate': e.mfgDate,
           'itemUuid': e.item.value?.uuid,
         });
       case 'Settings':
@@ -982,6 +993,7 @@ class SyncService {
         final e = entity as Purchase;
         return baseMap..addAll({
           'purchaseNumber': e.purchaseNumber,
+          'supplierInvoiceNumber': e.supplierInvoiceNumber,
           'purchaseDate': e.purchaseDate?.toIso8601String(),
           'partyId': e.partyId,
           'partyName': e.partyName,
@@ -1004,10 +1016,17 @@ class SyncService {
         });
       case 'PurchaseItem':
         final e = entity as PurchaseItem;
+        String? pUuid = e.purchaseUuid ?? e.purchase.value?.uuid;
+        if ((pUuid == null || pUuid.isEmpty) && e.purchaseId != null) {
+          final parentP = await isar.purchases.get(e.purchaseId!);
+          pUuid = parentP?.uuid;
+        }
         return baseMap..addAll({
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
+          'purchaseId': e.purchaseId,
+          'purchaseUuid': pUuid,
           'quantity': e.quantity,
           'rate': e.rate,
           'discount': e.discount,
@@ -1015,10 +1034,10 @@ class SyncService {
           'gstRate': e.gstRate,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
+          'unit': e.unit,
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'purchaseUuid': e.purchase.value?.uuid,
           'itemUuid': e.item.value?.uuid,
         });
       case 'Expense':
@@ -1305,14 +1324,19 @@ class SyncService {
           ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
+          ..parentInvoiceId = data['parentInvoiceId']
           ..quantity = (data['quantity'] as num?)?.toDouble()
           ..freeQuantity = (data['freeQuantity'] as num?)?.toDouble()
+          ..unit = data['unit']
           ..rate = (data['rate'] as num?)?.toDouble()
           ..discount = (data['discount'] as num?)?.toDouble()
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
           ..gstRate = (data['gstRate'] as num?)?.toDouble()
           ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble()
+          ..batchNumber = data['batchNumber']
+          ..expiryDate = data['expiryDate']
+          ..mfgDate = data['mfgDate'];
         break;
       case 'Settings':
         entity = Settings()
@@ -1367,6 +1391,7 @@ class SyncService {
       case 'Purchase':
         entity = Purchase()
           ..purchaseNumber = data['purchaseNumber']
+          ..supplierInvoiceNumber = data['supplierInvoiceNumber']
           ..purchaseDate = data['purchaseDate'] != null ? DateTime.parse(data['purchaseDate']) : null
           ..partyId = data['partyId']
           ..partyName = data['partyName']
@@ -1391,7 +1416,10 @@ class SyncService {
           ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
+          ..purchaseId = data['purchaseId']
+          ..purchaseUuid = data['purchaseUuid']
           ..quantity = (data['quantity'] as num?)?.toDouble()
+          ..unit = data['unit']
           ..rate = (data['rate'] as num?)?.toDouble()
           ..discount = (data['discount'] as num?)?.toDouble()
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
@@ -1625,19 +1653,24 @@ class SyncService {
         });
       } else if (entityType == 'InvoiceItem') {
         final e = entity as InvoiceItem;
-        final invoiceUuid = data['invoiceUuid'] as String?;
+        final invUuid = (data['invoiceUuid'] ?? data['parentInvoiceUuid']) as String?;
         final itemUuid = data['itemUuid'] as String?;
 
-        if (invoiceUuid != null) {
-          e.invoice.value = await isar.invoices.filter().uuidEqualTo(invoiceUuid).findFirst();
+        if (invUuid != null && invUuid.isNotEmpty) {
+          final parentInv = await isar.invoices.filter().uuidEqualTo(invUuid).findFirst();
+          if (parentInv != null) {
+            e.invoice.value = parentInv;
+            e.parentInvoiceId = parentInv.id;
+          }
         }
-        if (itemUuid != null) {
+        if (itemUuid != null && itemUuid.isNotEmpty) {
           e.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
         }
 
         await isar.writeTxn(() async {
-          await e.invoice.save();
-          await e.item.save();
+          await isar.invoiceItems.put(e);
+          try { await e.invoice.save(); } catch (_) {}
+          try { await e.item.save(); } catch (_) {}
         });
       } else if (entityType == 'Purchase') {
         final e = entity as Purchase;
@@ -1652,15 +1685,22 @@ class SyncService {
         final e = entity as PurchaseItem;
         final purchaseUuid = data['purchaseUuid'] as String?;
         final itemUuid = data['itemUuid'] as String?;
-        if (purchaseUuid != null) {
-          e.purchase.value = await isar.purchases.filter().uuidEqualTo(purchaseUuid).findFirst();
+
+        if (purchaseUuid != null && purchaseUuid.isNotEmpty) {
+          final parentPurchase = await isar.purchases.filter().uuidEqualTo(purchaseUuid).findFirst();
+          if (parentPurchase != null) {
+            e.purchase.value = parentPurchase;
+            e.purchaseId = parentPurchase.id;
+          }
         }
-        if (itemUuid != null) {
+        if (itemUuid != null && itemUuid.isNotEmpty) {
           e.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
         }
+
         await isar.writeTxn(() async {
-          await e.purchase.save();
-          await e.item.save();
+          await isar.purchaseItems.put(e);
+          try { await e.purchase.save(); } catch (_) {}
+          try { await e.item.save(); } catch (_) {}
         });
       } else if (entityType == 'CreditNote') {
         final e = entity as CreditNote;
