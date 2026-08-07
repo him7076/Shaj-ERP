@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:business_sahaj_erp/domain/models/backup_metadata.dart';
 import 'package:business_sahaj_erp/domain/repositories/restore_repository.dart';
 import 'package:business_sahaj_erp/core/services/restore_service.dart';
@@ -16,6 +17,14 @@ class RestoreRepositoryImpl implements RestoreRepository {
   }
 
   @override
+  Future<BackupMetadata> validateBytes(
+    Uint8List bytes, {
+    String? password,
+  }) {
+    return _restoreService.validateBackupBytes(bytes, password: password);
+  }
+
+  @override
   Future<void> restore(
     String filePath, {
     String? password,
@@ -28,6 +37,29 @@ class RestoreRepositoryImpl implements RestoreRepository {
   }) {
     return _restoreService.restoreBackup(
       filePath,
+      password: password,
+      restoreParties: restoreParties,
+      restoreItems: restoreItems,
+      restoreOrders: restoreOrders,
+      restoreInvoices: restoreInvoices,
+      restoreSettings: restoreSettings,
+      duplicateStrategy: duplicateStrategy,
+    );
+  }
+
+  @override
+  Future<void> restoreBytes(
+    Uint8List bytes, {
+    String? password,
+    bool restoreParties = true,
+    bool restoreItems = true,
+    bool restoreOrders = true,
+    bool restoreInvoices = true,
+    bool restoreSettings = true,
+    String duplicateStrategy = 'replace',
+  }) {
+    return _restoreService.restoreBackupBytes(
+      bytes,
       password: password,
       restoreParties: restoreParties,
       restoreItems: restoreItems,

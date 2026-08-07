@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
@@ -320,6 +321,18 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
     }
   }
 
+  Future<BackupMetadata> validateBytes(Uint8List bytes, {String? password}) async {
+    state = state.copyWith(status: RestoreStatus.validating, message: 'Validating backup header...');
+    try {
+      final meta = await _repository.validateBytes(bytes, password: password);
+      state = state.copyWith(status: RestoreStatus.idle, metadata: meta, progress: 0.3);
+      return meta;
+    } catch (e) {
+      state = state.copyWith(status: RestoreStatus.failure, message: 'Validation failed: $e');
+      rethrow;
+    }
+  }
+
   Future<void> runRestore({
     required String filePath,
     String? password,
@@ -339,6 +352,49 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
     try {
       await _repository.restore(
         filePath,
+        password: password,
+        restoreParties: restoreParties,
+        restoreItems: restoreItems,
+        restoreOrders: restoreOrders,
+        restoreInvoices: restoreInvoices,
+        restoreSettings: restoreSettings,
+        duplicateStrategy: duplicateStrategy,
+      );
+
+      state = state.copyWith(
+        status: RestoreStatus.success,
+        message: 'Database restored successfully! Restarting connection...',
+        progress: 1.0,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: RestoreStatus.failure,
+        message: 'Restore failed: $e',
+        progress: 0.0,
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> runRestoreBytes({
+    required Uint8List bytes,
+    String? password,
+    bool restoreParties = true,
+    bool restoreItems = true,
+    bool restoreOrders = true,
+    bool restoreInvoices = true,
+    bool restoreSettings = true,
+    String duplicateStrategy = 'replace',
+  }) async {
+    state = state.copyWith(
+      status: RestoreStatus.restoring,
+      message: 'Ingesting records into database...',
+      progress: 0.5,
+    );
+
+    try {
+      await _repository.restoreBytes(
+        bytes,
         password: password,
         restoreParties: restoreParties,
         restoreItems: restoreItems,

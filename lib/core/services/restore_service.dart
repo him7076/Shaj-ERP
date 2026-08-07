@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
+import 'package:archive/archive.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
@@ -42,6 +44,192 @@ class RestoreService {
     this._compressionService,
     this._encryptionService,
   );
+
+  /// Validates a backup archive directly from Uint8List bytes (Web & Native compatible)
+  Future<BackupMetadata> validateBackupBytes(Uint8List bytes, {String? password}) async {
+    try {
+      if (bytes.isEmpty) {
+        throw const CorruptedBackupException('Backup file is empty.');
+      }
+
+      // 1. Raw JSON Payload (Web Download Format)
+      if (bytes[0] == 0x7B /* '{' */) {
+        final jsonString = utf8.decode(bytes);
+        final Map<String, dynamic> fullMap = jsonDecode(jsonString);
+        if (!fullMap.containsKey('metadata')) {
+          throw const CorruptedBackupException('Invalid backup archive: missing metadata header.');
+        }
+        final metadata = BackupMetadata.fromJson(fullMap['metadata']);
+        if (metadata.databaseVersion > DatabaseService.currentDatabaseVersion) {
+          throw RestoreException(
+            'Incompatible database version. Backup version is v${metadata.databaseVersion}, '
+            'but application only supports up to v${DatabaseService.currentDatabaseVersion}.',
+          );
+        }
+        return metadata;
+      }
+
+      // 2. ZIP Archive (PK Header Format)
+      if (bytes.length > 2 && bytes[0] == 0x50 && bytes[1] == 0x4B) {
+        final archive = ZipDecoder().decodeBytes(bytes);
+        final metaArchiveFile = archive.findFile('metadata.json');
+        if (metaArchiveFile == null) {
+          throw const CorruptedBackupException('Invalid backup archive: missing metadata header.');
+        }
+        final metaContent = utf8.decode(metaArchiveFile.content as List<int>);
+        final metadata = BackupMetadata.fromJson(jsonDecode(metaContent));
+        if (metadata.databaseVersion > DatabaseService.currentDatabaseVersion) {
+          throw RestoreException(
+            'Incompatible database version. Backup version is v${metadata.databaseVersion}, '
+            'but application only supports up to v${DatabaseService.currentDatabaseVersion}.',
+          );
+        }
+        return metadata;
+      }
+
+      throw const CorruptedBackupException('Unsupported backup file format.');
+    } catch (e) {
+      if (e is RestoreException || e is CorruptedBackupException || e is EncryptionException) {
+        rethrow;
+      }
+      throw RestoreException('Failed to validate backup data: $e');
+    }
+  }
+
+  /// Restores database directly from Uint8List bytes
+  Future<void> restoreBackupBytes(
+    Uint8List bytes, {
+    String? password,
+    bool restoreParties = true,
+    bool restoreItems = true,
+    bool restoreOrders = true,
+    bool restoreInvoices = true,
+    bool restoreSettings = true,
+    String duplicateStrategy = 'replace',
+  }) async {
+    try {
+      Map<String, dynamic> collectionsMap = {};
+
+      if (bytes[0] == 0x7B /* '{' */) {
+        final jsonString = utf8.decode(bytes);
+        collectionsMap = jsonDecode(jsonString);
+      } else if (bytes.length > 2 && bytes[0] == 0x50 && bytes[1] == 0x4B) {
+        final archive = ZipDecoder().decodeBytes(bytes);
+        for (var file in archive) {
+          if (file.isFile && file.name.endsWith('.json') && file.name != 'metadata.json') {
+            final colName = file.name.replaceAll('.json', '');
+            final contentStr = utf8.decode(file.content as List<int>);
+            collectionsMap[colName] = jsonDecode(contentStr);
+          }
+        }
+      }
+
+      final isar = _dbService.isar;
+
+      await isar.writeTxn(() async {
+        if (restoreParties && collectionsMap.containsKey('parties')) {
+          final list = collectionsMap['parties'] as List;
+          for (var itemMap in list) {
+            final party = _mapMapToParty(itemMap as Map<String, dynamic>);
+            await isar.partys.put(party);
+          }
+        }
+
+        if (restoreItems && collectionsMap.containsKey('items')) {
+          final list = collectionsMap['items'] as List;
+          for (var itemMap in list) {
+            final item = _mapMapToItem(itemMap as Map<String, dynamic>);
+            await isar.items.put(item);
+          }
+        }
+
+        if (restoreItems && collectionsMap.containsKey('categories')) {
+          final list = collectionsMap['categories'] as List;
+          for (var itemMap in list) {
+            final cat = _mapMapToCategory(itemMap as Map<String, dynamic>);
+            await isar.categorys.put(cat);
+          }
+        }
+
+        if (restoreItems && collectionsMap.containsKey('units')) {
+          final list = collectionsMap['units'] as List;
+          for (var itemMap in list) {
+            final unit = _mapMapToUnit(itemMap as Map<String, dynamic>);
+            await isar.units.put(unit);
+          }
+        }
+
+        if (restoreItems && collectionsMap.containsKey('brands')) {
+          final list = collectionsMap['brands'] as List;
+          for (var itemMap in list) {
+            final brand = _mapMapToBrand(itemMap as Map<String, dynamic>);
+            await isar.brands.put(brand);
+          }
+        }
+
+        if (restoreOrders && collectionsMap.containsKey('orders')) {
+          final list = collectionsMap['orders'] as List;
+          for (var itemMap in list) {
+            final order = _mapMapToOrder(itemMap as Map<String, dynamic>);
+            await isar.orders.put(order);
+          }
+        }
+
+        if (restoreOrders && collectionsMap.containsKey('order_items')) {
+          final list = collectionsMap['order_items'] as List;
+          for (var itemMap in list) {
+            final oi = _mapMapToOrderItem(itemMap as Map<String, dynamic>);
+            await isar.orderItems.put(oi);
+          }
+        }
+
+        if (restoreInvoices && collectionsMap.containsKey('invoices')) {
+          final list = collectionsMap['invoices'] as List;
+          for (var itemMap in list) {
+            final inv = _mapMapToInvoice(itemMap as Map<String, dynamic>);
+            await isar.invoices.put(inv);
+          }
+        }
+
+        if (restoreInvoices && collectionsMap.containsKey('invoice_items')) {
+          final list = collectionsMap['invoice_items'] as List;
+          for (var itemMap in list) {
+            final ii = _mapMapToInvoiceItem(itemMap as Map<String, dynamic>);
+            await isar.invoiceItems.put(ii);
+          }
+        }
+
+        if (collectionsMap.containsKey('purchases')) {
+          final list = collectionsMap['purchases'] as List;
+          for (var itemMap in list) {
+            final pur = _mapMapToPurchase(itemMap as Map<String, dynamic>);
+            await isar.purchases.put(pur);
+          }
+        }
+
+        if (collectionsMap.containsKey('purchase_items')) {
+          final list = collectionsMap['purchase_items'] as List;
+          for (var itemMap in list) {
+            final pi = _mapMapToPurchaseItem(itemMap as Map<String, dynamic>);
+            await isar.purchaseItems.put(pi);
+          }
+        }
+
+        if (restoreSettings && collectionsMap.containsKey('settings')) {
+          final list = collectionsMap['settings'] as List;
+          for (var itemMap in list) {
+            final st = _mapMapToSettings(itemMap as Map<String, dynamic>);
+            await isar.settings.put(st);
+          }
+        }
+      });
+
+      logger.info('Database restore from bytes completed successfully.');
+    } catch (e, stack) {
+      logger.error('Failed to restore database from bytes', e, stack);
+      throw RestoreException('Failed to restore database: $e');
+    }
+  }
 
   /// Validates a backup file. Returns BackupMetadata if valid.
   Future<BackupMetadata> validateBackup(String filePath, {String? password}) async {

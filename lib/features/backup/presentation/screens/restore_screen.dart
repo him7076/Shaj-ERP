@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -24,6 +25,9 @@ class RestoreScreen extends ConsumerStatefulWidget {
 
 class _RestoreScreenState extends ConsumerState<RestoreScreen> {
   String? _selectedFilePath;
+  Uint8List? _selectedFileBytes;
+  String? _selectedFileName;
+
   bool _isDriveSource = false;
   String? _driveFileId;
   String? _driveFilename;
@@ -69,22 +73,75 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
   Future<void> _pickBackupFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.any, // Allow selection of any file to let them pick .bserp
+        type: FileType.any,
+        withData: true,
       );
 
-      if (result != null && result.files.single.path != null) {
-        setState(() {
-          _selectedFilePath = result.files.single.path;
-          _isDriveSource = false;
-          _validatedMeta = null;
-          _validationError = null;
-          _passwordController.clear();
-        });
-        _triggerValidation();
+      if (result != null && result.files.isNotEmpty) {
+        final platformFile = result.files.single;
+        final bytes = platformFile.bytes;
+
+        if (kIsWeb || bytes != null) {
+          if (bytes != null) {
+            setState(() {
+              _selectedFileBytes = bytes;
+              _selectedFileName = platformFile.name;
+              _selectedFilePath = platformFile.name;
+              _isDriveSource = false;
+              _validatedMeta = null;
+              _validationError = null;
+              _passwordController.clear();
+            });
+            _triggerValidationFromBytes(bytes);
+          } else {
+            setState(() {
+              _validationError = 'Failed to read backup file data from browser.';
+            });
+          }
+        } else if (platformFile.path != null) {
+          setState(() {
+            _selectedFilePath = platformFile.path;
+            _selectedFileName = platformFile.name;
+            _selectedFileBytes = null;
+            _isDriveSource = false;
+            _validatedMeta = null;
+            _validationError = null;
+            _passwordController.clear();
+          });
+          _triggerValidation();
+        }
       }
     } catch (e) {
       setState(() {
         _validationError = 'Failed to open file picker: $e';
+      });
+    }
+  }
+
+  Future<void> _triggerValidationFromBytes(Uint8List bytes) async {
+    setState(() {
+      _isValidating = true;
+      _validationError = null;
+    });
+
+    try {
+      final progressNotifier = ref.read(restoreProgressNotifierProvider.notifier);
+      final meta = await progressNotifier.validateBytes(
+        bytes,
+        password: _passwordController.text,
+      );
+      setState(() {
+        _validatedMeta = meta;
+        _isValidating = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isValidating = false;
+        if (e.toString().contains('password') || e.toString().contains('Password')) {
+          _validationError = 'Password required or incorrect decryption key.';
+        } else {
+          _validationError = 'Validation failed: $e';
+        }
       });
     }
   }
@@ -187,7 +244,18 @@ class _RestoreScreenState extends ConsumerState<RestoreScreen> {
 
     // Execute restore
     try {
-      if (_isDriveSource) {
+      if (_selectedFileBytes != null) {
+        await progressNotifier.runRestoreBytes(
+          bytes: _selectedFileBytes!,
+          password: _passwordController.text,
+          restoreParties: _restoreParties,
+          restoreItems: _restoreItems,
+          restoreOrders: _restoreOrders,
+          restoreInvoices: _restoreInvoices,
+          restoreSettings: _restoreSettings,
+          duplicateStrategy: _duplicateStrategy,
+        );
+      } else if (_isDriveSource) {
         await progressNotifier.restoreFromDrive(
           driveFileId: _driveFileId!,
           filename: _driveFilename!,
