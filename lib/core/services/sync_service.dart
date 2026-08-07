@@ -1824,8 +1824,7 @@ class SyncService {
           for (var itemMap in itemsList) {
             if (itemMap is Map<String, dynamic>) {
               final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
-              var invItem = await isar.invoiceItems.filter().uuidEqualTo(itemUuid).findFirst();
-              invItem ??= InvoiceItem();
+              final InvoiceItem invItem = (await isar.invoiceItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? InvoiceItem();
               invItem
                 ..uuid = itemUuid
                 ..parentInvoiceId = e.id
@@ -1849,9 +1848,8 @@ class SyncService {
                 ..isSynced = true
                 ..updatedAt = DateTime.now();
 
-              final targetInvItem = invItem;
               await isar.writeTxn(() async {
-                await isar.invoiceItems.put(targetInvItem);
+                await isar.invoiceItems.put(invItem);
               });
             }
           }
@@ -1894,8 +1892,7 @@ class SyncService {
           for (var itemMap in itemsList) {
             if (itemMap is Map<String, dynamic>) {
               final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
-              var purItem = await isar.purchaseItems.filter().uuidEqualTo(itemUuid).findFirst();
-              purItem ??= PurchaseItem();
+              final PurchaseItem purItem = (await isar.purchaseItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? PurchaseItem();
               purItem
                 ..uuid = itemUuid
                 ..purchaseId = e.id
@@ -1918,9 +1915,8 @@ class SyncService {
                 ..isSynced = true
                 ..updatedAt = DateTime.now();
 
-              final targetPurItem = purItem;
               await isar.writeTxn(() async {
-                await isar.purchaseItems.put(targetPurItem);
+                await isar.purchaseItems.put(purItem);
               });
             }
           }
