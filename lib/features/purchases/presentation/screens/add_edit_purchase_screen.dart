@@ -33,6 +33,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _remarksController = TextEditingController();
   final _billNumberController = TextEditingController();
+  final _supplierInvoiceNumberController = TextEditingController();
   final _paidAmountController = TextEditingController(text: '0.0');
   final _discountController = TextEditingController(text: '0.0');
   final _productSearchController = TextEditingController();
@@ -142,6 +143,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       if (purchase != null) {
         _existingPurchase = purchase;
         _billNumberController.text = purchase.purchaseNumber ?? '';
+        _supplierInvoiceNumberController.text = purchase.supplierInvoiceNumber ?? '';
         _purchaseDate = purchase.purchaseDate ?? DateTime.now();
         final remarksText = purchase.remarks ?? '';
         _remarksController.text = remarksText.replaceAll(RegExp(r'\s*\[Paid via [^\]]+\]'), '');
@@ -223,6 +225,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   void dispose() {
     _remarksController.dispose();
     _billNumberController.dispose();
+    _supplierInvoiceNumberController.dispose();
     _paidAmountController.dispose();
     _discountController.dispose();
     _productSearchController.dispose();
@@ -329,6 +332,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
       purchase
         ..purchaseDate = _purchaseDate
+        ..purchaseNumber = _billNumberController.text.trim()
+        ..supplierInvoiceNumber = _supplierInvoiceNumberController.text.trim()
         ..partyId = _selectedParty!.id
         ..partyName = _selectedParty!.partyName
         ..gstNumber = _selectedParty!.gstNumber
@@ -734,11 +739,18 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
                     controller: _billNumberController,
-                    decoration: const InputDecoration(labelText: 'Purchase Bill Number', border: OutlineInputBorder(), isDense: true),
+                    decoration: const InputDecoration(labelText: 'Internal Bill #', border: OutlineInputBorder(), isDense: true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _supplierInvoiceNumberController,
+                    decoration: const InputDecoration(labelText: 'Supplier Invoice #', border: OutlineInputBorder(), isDense: true),
                   ),
                 ),
               ],

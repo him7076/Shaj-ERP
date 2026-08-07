@@ -560,6 +560,7 @@ class WebMockIsar implements Isar {
         'id': entity.id,
         'uuid': entity.uuid,
         'purchaseNumber': entity.purchaseNumber,
+        'supplierInvoiceNumber': entity.supplierInvoiceNumber,
         'purchaseDate': entity.purchaseDate?.toIso8601String(),
         'partyId': entity.partyId,
         'partyName': entity.partyName,
@@ -1085,6 +1086,7 @@ class WebMockIsar implements Isar {
           ..id = map['id'] as int
           ..uuid = map['uuid'] as String?
           ..purchaseNumber = map['purchaseNumber'] as String?
+          ..supplierInvoiceNumber = map['supplierInvoiceNumber'] as String?
           ..purchaseDate = map['purchaseDate'] != null ? DateTime.parse(map['purchaseDate'] as String) : null
           ..partyId = map['partyId'] as int?
           ..partyName = map['partyName'] as String?
@@ -1607,6 +1609,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     }
     if (item is Purchase) {
       if (prop == 'purchasenumber') return item.purchaseNumber;
+      if (prop == 'supplierinvoicenumber') return item.supplierInvoiceNumber;
       if (prop == 'partyname') return item.partyName;
       if (prop == 'partyid') return item.partyId;
       if (prop == 'paymentstatus') return item.paymentStatus;

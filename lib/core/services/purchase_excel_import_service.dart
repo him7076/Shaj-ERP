@@ -31,9 +31,9 @@ class ImportPurchaseResult {
 }
 
 class PurchaseExcelImportService {
-  static final Uuid _uuidGen = const Uuid();
+  static const Uuid _uuidGen = Uuid();
 
-  /// Checks Excel (bytes or pre-decoded object) for bill numbers that already exist in database
+  /// Checks Excel (bytes or pre-decoded object) for bill numbers / supplier invoice numbers that already exist in database
   static Future<List<String>> checkForDuplicateBills(
     dynamic bytesOrExcel,
     DatabaseService dbService,
@@ -52,21 +52,44 @@ class PurchaseExcelImportService {
       if (headerSheet == null || headerSheet.rows.length <= 1) return duplicates;
 
       final s1ColMap = _buildColumnMap(headerSheet.rows[0]);
-      final colS1BillNo = _findCol(s1ColMap, ['invoice number', 'bill number', 'purchase bill number', 'purchase bill no', 'bill no', 'invoice no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.', 'invoice', 'bill', 'voucher'], 5);
+      final colS1BillNo = _findCol(s1ColMap, ['purchase bill number', 'purchase bill no', 'bill number', 'bill no', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.'], 5);
+      final colS1SupplierInvNo = _findCol(s1ColMap, ['supplier invoice number', 'supplier invoice no', 'supplier bill number', 'supplier bill no', 'invoice number', 'invoice no', 'invoice #', 'bill number', 'bill no', 'inv no', 'invoice'], 6);
 
       final existingPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
-      final existingNumbers = existingPurchases.map((p) => _normalizeKey(p.purchaseNumber ?? '')).toSet();
+      final existingNumbers = <String>{};
+      for (var p in existingPurchases) {
+        if (p.purchaseNumber != null && p.purchaseNumber!.isNotEmpty) {
+          existingNumbers.add(_normalizeKey(p.purchaseNumber!));
+          final d = _extractDigits(p.purchaseNumber!);
+          if (d.isNotEmpty) existingNumbers.add(d);
+        }
+        if (p.supplierInvoiceNumber != null && p.supplierInvoiceNumber!.isNotEmpty) {
+          existingNumbers.add(_normalizeKey(p.supplierInvoiceNumber!));
+          final d = _extractDigits(p.supplierInvoiceNumber!);
+          if (d.isNotEmpty) existingNumbers.add(d);
+        }
+      }
 
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
         if (row.isEmpty) continue;
         final billNo = _getCellValue(row, colS1BillNo).trim();
-        if (billNo.isEmpty) continue;
+        final suppInvNo = _getCellValue(row, colS1SupplierInvNo).trim();
 
-        final norm = _normalizeKey(billNo);
-        if (norm.isNotEmpty && existingNumbers.contains(norm)) {
-          if (!duplicates.contains(billNo)) {
-            duplicates.add(billNo);
+        final effectiveCheck = billNo.isNotEmpty ? billNo : suppInvNo;
+        if (effectiveCheck.isEmpty) continue;
+
+        final normBill = _normalizeKey(billNo);
+        final normSupp = _normalizeKey(suppInvNo);
+        final digBill = _extractDigits(billNo);
+        final digSupp = _extractDigits(suppInvNo);
+
+        if ((normBill.isNotEmpty && existingNumbers.contains(normBill)) ||
+            (normSupp.isNotEmpty && existingNumbers.contains(normSupp)) ||
+            (digBill.isNotEmpty && existingNumbers.contains(digBill)) ||
+            (digSupp.isNotEmpty && existingNumbers.contains(digSupp))) {
+          if (!duplicates.contains(effectiveCheck)) {
+            duplicates.add(effectiveCheck);
           }
         }
       }
@@ -76,7 +99,7 @@ class PurchaseExcelImportService {
     return duplicates;
   }
 
-  /// Generates sample Excel template (.xlsx) with 2 sheets
+  /// Generates sample Excel template (.xlsx) with 2 sheets for Purchase Import
   static List<int>? generateSampleTemplate() {
     final excel = Excel.createExcel();
 
@@ -84,11 +107,12 @@ class PurchaseExcelImportService {
     final sheet1 = excel['Sheet1'];
     sheet1.appendRow([
       TextCellValue('Date'),
-      TextCellValue('Party Name'),
+      TextCellValue('Supplier Party Name'),
       TextCellValue('Phone No.'),
-      TextCellValue('Party GST Number'),
+      TextCellValue('Supplier GST Number'),
       TextCellValue('Order Number'),
-      TextCellValue('Bill Number/Invoice Number'),
+      TextCellValue('Purchase Bill Number'),
+      TextCellValue('Supplier Invoice Number'),
       TextCellValue('Transaction Type'),
       TextCellValue('Total Amount'),
       TextCellValue('Payment Type'),
@@ -97,43 +121,44 @@ class PurchaseExcelImportService {
       TextCellValue('Description'),
     ]);
 
-    // Sample Rows for Sheet 1
     sheet1.appendRow([
       TextCellValue('13/07/2026'),
-      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
-      TextCellValue(''),
+      TextCellValue('PROSOURCING INTERNATIONAL LLP'),
+      TextCellValue('9876543210'),
       TextCellValue('24ABEFP1587E1ZB'),
-      TextCellValue('PU-01'),
-      TextCellValue('PU-01'),
+      TextCellValue('PO-01'),
+      TextCellValue('PUR-01'),
+      TextCellValue('SUP-8891'),
       TextCellValue('Purchase'),
       DoubleCellValue(164220.33),
       TextCellValue('Cash'),
       DoubleCellValue(0.00),
       DoubleCellValue(164220.33),
-      TextCellValue('Received stock batch'),
+      TextCellValue('Stock received from halol depo'),
     ]);
 
     sheet1.appendRow([
-      TextCellValue('11/07/2026'),
-      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
-      TextCellValue(''),
-      TextCellValue('24ABEFP1587E1ZB'),
-      TextCellValue('PU-02'),
-      TextCellValue('PU-02'),
+      TextCellValue('14/07/2026'),
+      TextCellValue('Global Tech Supplies Pvt Ltd'),
+      TextCellValue('9123456789'),
+      TextCellValue('27AAACG9876C1Z3'),
+      TextCellValue('PO-02'),
+      TextCellValue('PUR-02'),
+      TextCellValue('INV-9920'),
       TextCellValue('Purchase'),
-      DoubleCellValue(216623.14),
-      TextCellValue('Cash'),
-      DoubleCellValue(0.00),
-      DoubleCellValue(216623.14),
-      TextCellValue('Stock received from halol depo'),
+      DoubleCellValue(55000.00),
+      TextCellValue('Credit'),
+      DoubleCellValue(20000.00),
+      DoubleCellValue(35000.00),
+      TextCellValue('Raw material purchase'),
     ]);
 
     // Sheet 2: Item Details
     final sheet2 = excel['Sheet2'];
     sheet2.appendRow([
       TextCellValue('Date'),
-      TextCellValue('Party Name'),
-      TextCellValue('Invoice Number'),
+      TextCellValue('Supplier Party Name'),
+      TextCellValue('Invoice/Bill Number'),
       TextCellValue('Item Name'),
       TextCellValue('Batch Number'),
       TextCellValue('Expire Date'),
@@ -148,12 +173,11 @@ class PurchaseExcelImportService {
       TextCellValue('Amount'),
     ]);
 
-    // Sample Rows for Sheet 2
     sheet2.appendRow([
       TextCellValue('13/07/2026'),
-      TextCellValue('PROSOURICNG INTERNATIONAL LLP'),
-      TextCellValue('PU-01'),
-      TextCellValue('Item A'),
+      TextCellValue('PROSOURCING INTERNATIONAL LLP'),
+      TextCellValue('SUP-8891'),
+      TextCellValue('Cotton Fabric Roll (Blue)'),
       TextCellValue('B-01'),
       TextCellValue('12/2027'),
       TextCellValue('01/2026'),
@@ -164,7 +188,25 @@ class PurchaseExcelImportService {
       DoubleCellValue(3284.40),
       TextCellValue('0.00'),
       TextCellValue('18%'),
-      DoubleCellValue(164220.00),
+      DoubleCellValue(164220.33),
+    ]);
+
+    sheet2.appendRow([
+      TextCellValue('14/07/2026'),
+      TextCellValue('Global Tech Supplies Pvt Ltd'),
+      TextCellValue('INV-9920'),
+      TextCellValue('Industrial Zipper 12 inch'),
+      TextCellValue(''),
+      TextCellValue(''),
+      TextCellValue(''),
+      TextCellValue('ITM-02'),
+      TextCellValue('9607'),
+      DoubleCellValue(500.0),
+      TextCellValue('PCS'),
+      DoubleCellValue(100.00),
+      TextCellValue('0.00'),
+      TextCellValue('10%'),
+      DoubleCellValue(55000.00),
     ]);
 
     return excel.encode();
@@ -217,24 +259,27 @@ class PurchaseExcelImportService {
 
       final totalHeaderRows = headerSheet.rows.length - 1;
 
+      // Column mapping for Sheet 1
       final s1ColMap = headerSheet.rows.isNotEmpty ? _buildColumnMap(headerSheet.rows[0]) : <String, int>{};
 
       final colS1Date = _findCol(s1ColMap, ['date', 'bill date', 'invoice date'], 0);
-      final colS1Party = _findCol(s1ColMap, ['party name', 'supplier name', 'supplier', 'party'], 1);
+      final colS1Party = _findCol(s1ColMap, ['supplier party name', 'party name', 'supplier name', 'supplier', 'party'], 1);
       final colS1Phone = _findCol(s1ColMap, ['phone', 'mobile', 'contact'], 2);
-      final colS1Gst = _findCol(s1ColMap, ['party gst', 'gst number', 'gstin', 'gst'], 3);
+      final colS1Gst = _findCol(s1ColMap, ['supplier gst', 'party gst', 'gst number', 'gstin', 'gst'], 3);
       final colS1OrderNo = _findCol(s1ColMap, ['order number', 'po number'], 4);
-      final colS1BillNo = _findCol(s1ColMap, ['bill number', 'invoice number', 'purchase bill number', 'bill no', 'invoice no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.', 'invoice', 'bill', 'voucher'], 5);
-      final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 7);
-      final colS1PaidAmt = _findCol(s1ColMap, ['paid amount', 'paid'], 9);
-      final colS1BalAmt = _findCol(s1ColMap, ['balance amount', 'due amount', 'balance', 'pending'], 10);
-      final colS1Desc = _findCol(s1ColMap, ['description', 'remarks', 'notes'], 11);
+      final colS1BillNo = _findCol(s1ColMap, ['purchase bill number', 'purchase bill no', 'bill number', 'bill no', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.'], 5);
+      final colS1SupplierInvNo = _findCol(s1ColMap, ['supplier invoice number', 'supplier invoice no', 'supplier bill number', 'supplier bill no', 'invoice number', 'invoice no', 'invoice #', 'bill number', 'bill no', 'inv no', 'invoice'], 6);
+      final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 8);
+      final colS1PaidAmt = _findCol(s1ColMap, ['paid amount', 'paid'], 10);
+      final colS1BalAmt = _findCol(s1ColMap, ['balance amount', 'due amount', 'balance', 'pending'], 11);
+      final colS1Desc = _findCol(s1ColMap, ['description', 'remarks', 'notes'], 12);
 
+      // Column mapping for Sheet 2
       final s2ColMap = (itemSheet != null && itemSheet.rows.isNotEmpty) ? _buildColumnMap(itemSheet.rows[0]) : <String, int>{};
 
       final colS2Date = _findCol(s2ColMap, ['date', 'bill date', 'invoice date'], 0);
-      final colS2Party = _findCol(s2ColMap, ['party name', 'supplier name', 'party'], 1);
-      final colS2BillNo = _findCol(s2ColMap, ['invoice number', 'bill number', 'invoice no', 'bill no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.', 'invoice', 'bill', 'voucher'], 2);
+      final colS2Party = _findCol(s2ColMap, ['supplier party name', 'party name', 'supplier name', 'party'], 1);
+      final colS2BillNo = _findCol(s2ColMap, ['invoice/bill number', 'supplier invoice number', 'supplier invoice no', 'invoice number', 'bill number', 'invoice no', 'bill no', 'invoice #', 'bill #', 'voucher number', 'voucher no', 'ref no', 'no.', 'invoice', 'bill'], 2);
       final colS2ItemName = _findCol(s2ColMap, ['item name', 'product name', 'item', 'product', 'description'], 3);
       final colS2BatchNo = _findCol(s2ColMap, ['batch number', 'batch no', 'batch'], 4);
       final colS2ExpDate = _findCol(s2ColMap, ['expire date', 'exp date', 'expiry'], 5);
@@ -248,12 +293,12 @@ class PurchaseExcelImportService {
       final colS2Gst = _findCol(s2ColMap, ['gst', 'tax rate', 'tax %', 'tax'], 13);
       final colS2Amount = _findCol(s2ColMap, ['amount', 'total', 'line total'], 14);
 
-      // Index Sheet 2 Items strictly by Normalized Bill Number & Digits
+      // 1. Index Sheet 2 Items strictly by Normalized Invoice/Bill Number & Digits
       final Map<String, List<Map<String, dynamic>>> itemsByBillNo = {};
       final Map<String, List<Map<String, dynamic>>> itemsByDigits = {};
 
       if (itemSheet != null && itemSheet.rows.length > 1) {
-        onProgress?.call(0, totalHeaderRows > 0 ? totalHeaderRows : 1, 'Indexing Sheet 2 item details...');
+        onProgress?.call(0, totalHeaderRows > 0 ? totalHeaderRows : 1, 'Indexing Sheet 2 item line details...');
 
         String lastSeenBillNo = '';
 
@@ -308,20 +353,26 @@ class PurchaseExcelImportService {
       final allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
       final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
-      // Iterate Sheet 1 Headers
+      // 2. Iterate Sheet 1 Headers & Create / Overwrite Purchase Bills
       for (int r = 1; r < headerSheet.rows.length; r++) {
         final row = headerSheet.rows[r];
         if (row.isEmpty) continue;
 
         final partyName = _getCellValue(row, colS1Party).trim();
         final billNo = _getCellValue(row, colS1BillNo).trim();
+        final suppInvNo = _getCellValue(row, colS1SupplierInvNo).trim();
 
-        if (partyName.isEmpty && billNo.isEmpty) continue;
+        if (partyName.isEmpty && billNo.isEmpty && suppInvNo.isEmpty) continue;
 
         final effectiveBillNo = billNo.isNotEmpty
             ? billNo
-            : 'PU-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r';
+            : (suppInvNo.isNotEmpty
+                ? suppInvNo
+                : 'PUR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$r');
 
+        final effectiveSupplierInvNo = suppInvNo.isNotEmpty ? suppInvNo : (billNo.isNotEmpty ? billNo : '');
+
+        // Notify progress and yield main event loop to prevent browser freeze
         onProgress?.call(r, totalHeaderRows, 'Processing purchase bill "$effectiveBillNo" ($r/$totalHeaderRows)...');
         await Future.delayed(Duration.zero);
 
@@ -335,40 +386,48 @@ class PurchaseExcelImportService {
         final description = _getCellValue(row, colS1Desc);
 
         try {
-          final normEffBillNoCheck = _normalizeKey(effectiveBillNo);
+          final normBillNo = _normalizeKey(effectiveBillNo);
+          final normSuppInvNo = _normalizeKey(effectiveSupplierInvNo);
 
-          List<Purchase> matchingPurchases = await isar.purchases.filter().purchaseNumberEqualTo(effectiveBillNo).findAll();
-          if (matchingPurchases.isEmpty && normEffBillNoCheck.isNotEmpty) {
-            final allExisting = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
-            matchingPurchases = allExisting.where((p) => _normalizeKey(p.purchaseNumber ?? '') == normEffBillNoCheck).toList();
-          }
+          // Check if purchase bill number or supplier invoice number already exists
+          List<Purchase> matchingPurchases = [];
+          final allExistingPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+
+          matchingPurchases = allExistingPurchases.where((p) {
+            final pBill = _normalizeKey(p.purchaseNumber ?? '');
+            final pSupp = _normalizeKey(p.supplierInvoiceNumber ?? '');
+            return (normBillNo.isNotEmpty && (pBill == normBillNo || pSupp == normBillNo)) ||
+                   (normSuppInvNo.isNotEmpty && (pBill == normSuppInvNo || pSupp == normSuppInvNo));
+          }).toList();
 
           if (matchingPurchases.isNotEmpty) {
             if (duplicateAction == DuplicateBillAction.skip) {
               skippedBills++;
-              errors.add('Purchase Bill "$effectiveBillNo" already exists in database (Skipped).');
+              errors.add('Purchase bill "$effectiveBillNo" already exists in database (Skipped).');
               continue;
             }
 
-            // DuplicateAction.overwrite: Clean old line items and purge old purchase
-            for (var oldPur in matchingPurchases) {
+            // DuplicateAction.overwrite: Clean old line items, reverse item stock, and purge old purchase
+            for (var oldP in matchingPurchases) {
               final oldItems = await isar.purchaseItems
                   .filter()
-                  .purchaseIdEqualTo(oldPur.id)
+                  .purchaseIdEqualTo(oldP.id)
+                  .or()
+                  .purchase((q) => q.idEqualTo(oldP.id))
                   .findAll();
 
               await isar.writeTxn(() async {
-                for (var pi in oldItems) {
-                  if (pi.itemId != null) {
-                    final targetItem = await isar.items.get(pi.itemId!);
+                for (var oi in oldItems) {
+                  if (oi.itemId != null) {
+                    final targetItem = await isar.items.get(oi.itemId!);
                     if (targetItem != null) {
-                      targetItem.currentStock = (targetItem.currentStock ?? 0.0) - (pi.quantity ?? 0.0);
+                      targetItem.currentStock = (targetItem.currentStock ?? 0.0) - (oi.quantity ?? 0.0);
                       await isar.items.put(targetItem);
                     }
                   }
-                  await isar.purchaseItems.delete(pi.id);
+                  await isar.purchaseItems.delete(oi.id);
                 }
-                await isar.purchases.delete(oldPur.id);
+                await isar.purchases.delete(oldP.id);
               });
             }
           }
@@ -397,14 +456,16 @@ class PurchaseExcelImportService {
 
           final purchaseUuid = _uuidGen.v4();
 
+          // Create Purchase Record
           final purchase = Purchase()
             ..uuid = purchaseUuid
             ..purchaseNumber = effectiveBillNo
+            ..supplierInvoiceNumber = effectiveSupplierInvNo
             ..purchaseDate = _parseDate(dateStr)
             ..partyId = party?.id
             ..partyName = partyName
             ..gstNumber = gstNo
-            ..remarks = description.isNotEmpty ? description : 'Imported via Excel (Order: $orderNo)'
+            ..remarks = description.isNotEmpty ? description : 'Imported via Excel'
             ..grandTotal = totalAmount
             ..paidAmount = paidAmount
             ..pendingAmount = balanceAmount > 0 ? balanceAmount : (totalAmount - paidAmount)
@@ -418,19 +479,21 @@ class PurchaseExcelImportService {
             purchase.party.value = party;
           }
 
-          final normBillNo = _normalizeKey(billNo);
-          final digitsBillNo = _extractDigits(billNo);
-          final digitsEffCheck = _extractDigits(effectiveBillNo);
+          // Retrieve items matching THIS SPECIFIC PURCHASE BILL ONLY (Consume on match to avoid cross-bill contamination)
+          final normEffBill = _normalizeKey(effectiveBillNo);
+          final normEffSupp = _normalizeKey(effectiveSupplierInvNo);
+          final digitsEffBill = _extractDigits(effectiveBillNo);
+          final digitsEffSupp = _extractDigits(effectiveSupplierInvNo);
 
           List<Map<String, dynamic>> rawItems = [];
-          if (normBillNo.isNotEmpty && itemsByBillNo.containsKey(normBillNo)) {
-            rawItems = itemsByBillNo[normBillNo]!;
-          } else if (normEffBillNoCheck.isNotEmpty && itemsByBillNo.containsKey(normEffBillNoCheck)) {
-            rawItems = itemsByBillNo[normEffBillNoCheck]!;
-          } else if (digitsBillNo.isNotEmpty && itemsByDigits.containsKey(digitsBillNo)) {
-            rawItems = itemsByDigits[digitsBillNo]!;
-          } else if (digitsEffCheck.isNotEmpty && itemsByDigits.containsKey(digitsEffCheck)) {
-            rawItems = itemsByDigits[digitsEffCheck]!;
+          if (normEffBill.isNotEmpty && itemsByBillNo.containsKey(normEffBill)) {
+            rawItems = itemsByBillNo.remove(normEffBill)!;
+          } else if (normEffSupp.isNotEmpty && itemsByBillNo.containsKey(normEffSupp)) {
+            rawItems = itemsByBillNo.remove(normEffSupp)!;
+          } else if (digitsEffBill.isNotEmpty && itemsByDigits.containsKey(digitsEffBill)) {
+            rawItems = itemsByDigits.remove(digitsEffBill)!;
+          } else if (digitsEffSupp.isNotEmpty && itemsByDigits.containsKey(digitsEffSupp)) {
+            rawItems = itemsByDigits.remove(digitsEffSupp)!;
           }
 
           final List<PurchaseItem> createdItems = [];
@@ -450,6 +513,7 @@ class PurchaseExcelImportService {
 
             final gstRatePercent = _parseGstPercent(gstStr);
 
+            // Find or create Catalog Item
             Item? catalogItem;
             if (itemName.isNotEmpty) {
               catalogItem = allItems.where((i) => i.itemName?.trim().toLowerCase() == itemName.toLowerCase()).firstOrNull;
@@ -472,7 +536,7 @@ class PurchaseExcelImportService {
                 allItems.add(catalogItem!);
               }
 
-              // Add purchased quantity to current stock
+              // Add purchase quantity to item current stock
               catalogItem.currentStock = (catalogItem.currentStock ?? 0.0) + qty;
               catalogItem.updatedAt = DateTime.now();
               await isar.writeTxn(() async {
@@ -552,7 +616,7 @@ class PurchaseExcelImportService {
 
           totalBillsImported++;
         } catch (rowErr) {
-          logger.error('Error importing purchase bill row $r', rowErr);
+          logger.error('Error importing purchase row $r', rowErr);
           errors.add('Row $r ($partyName): ${rowErr.toString()}');
         }
       }

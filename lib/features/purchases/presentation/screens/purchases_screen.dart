@@ -553,7 +553,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                             crossAxisAlignment: WrapCrossAlignment.center,
                                             children: [
                                               Text(
-                                                'Bill No: ${purchase.purchaseNumber ?? "N/A"}  •  $dateStr',
+                                                'Bill No: ${purchase.purchaseNumber ?? "N/A"}${purchase.supplierInvoiceNumber != null && purchase.supplierInvoiceNumber!.isNotEmpty ? " (Supp: ${purchase.supplierInvoiceNumber})" : ""}  •  $dateStr',
                                                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
                                               ),
                                               if (purchase.remarks != null && purchase.remarks!.isNotEmpty)

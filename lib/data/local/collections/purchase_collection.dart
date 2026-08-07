@@ -17,6 +17,8 @@ class Purchase implements IsarModel {
   @Index(unique: true)
   String? purchaseNumber;
 
+  String? supplierInvoiceNumber;
+
   DateTime? purchaseDate;
 
   // Party Details (snapshot copy of the Supplier)
