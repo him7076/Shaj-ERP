@@ -196,7 +196,6 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       if (progressDialogContext != null && progressDialogContext!.mounted) {
         Navigator.of(progressDialogContext!).pop();
       }
-      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

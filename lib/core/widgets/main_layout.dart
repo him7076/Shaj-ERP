@@ -58,6 +58,12 @@ class MainLayout extends StatelessWidget {
     } else {
       // Mobile / Tablet Layout: Clean top space + Liquid Glass Bottom Bar + FAB + Side Drawer
       final isDark = theme.brightness == Brightness.dark;
+      final location = GoRouterState.of(context).matchedLocation;
+      final isDetailScreen = location.contains('/detail') ||
+          location.contains('/add') ||
+          location.contains('/edit') ||
+          location.contains('/item/') ||
+          location.contains('/party/');
 
       return Scaffold(
         key: _scaffoldKey,
@@ -67,39 +73,43 @@ class MainLayout extends StatelessWidget {
         body: SafeArea(
           child: child,
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: Container(
-          height: 58,
-          width: 58,
-          margin: const EdgeInsets.only(top: 10),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF6366F1), Color(0xFF3B82F6)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF6366F1).withOpacity(0.45),
-                blurRadius: 16,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
+        floatingActionButtonLocation: isDetailScreen ? null : FloatingActionButtonLocation.centerDocked,
+        floatingActionButton: isDetailScreen
+            ? null
+            : Container(
+                height: 58,
+                width: 58,
+                margin: const EdgeInsets.only(top: 10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF6366F1), Color(0xFF3B82F6)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withOpacity(0.45),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  elevation: 0,
+                  highlightElevation: 0,
+                  shape: const CircleBorder(),
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  onPressed: () => MobileBottomSheets.showQuickCreate(context),
+                  child: const Icon(Icons.add_rounded, size: 34),
+                  tooltip: 'Quick Action',
+                ),
               ),
-            ],
-          ),
-          child: FloatingActionButton(
-            elevation: 0,
-            highlightElevation: 0,
-            shape: const CircleBorder(),
-            backgroundColor: Colors.transparent,
-            foregroundColor: Colors.white,
-            onPressed: () => MobileBottomSheets.showQuickCreate(context),
-            child: const Icon(Icons.add_rounded, size: 34),
-            tooltip: 'Quick Action',
-          ),
-        ),
-        bottomNavigationBar: Container(
+        bottomNavigationBar: isDetailScreen
+            ? null
+            : Container(
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),

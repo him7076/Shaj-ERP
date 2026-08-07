@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/connectivity_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/sync_provider.dart';
@@ -347,14 +352,21 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                       ),
                 onPressed: isSyncing
                     ? null
-                    : () {
-                        ref.read(syncServiceProvider).syncAll();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('⚡ Syncing local offline database with Cloud...'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                    : () async {
+                        await ref.read(syncServiceProvider).syncAll();
+                        ref.invalidate(dashboardAnalyticsProvider);
+                        ref.invalidate(filteredTransactionsProvider);
+                        ref.invalidate(filteredPartiesProvider);
+                        ref.invalidate(filteredItemsProvider);
+                        ref.invalidate(filteredInvoicesProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('⚡ Sync completed! All records updated.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
                       },
               ),
               const SizedBox(width: 6),

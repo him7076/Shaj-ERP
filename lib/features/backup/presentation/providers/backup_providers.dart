@@ -359,7 +359,7 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
       if (restoreAsNewFirm && prefs != null && dbService != null) {
         try {
           final meta = await _repository.validate(filePath, password: password);
-          final companyName = meta.companyName ?? 'Restored Company';
+          final companyName = 'Restored Company';
           final newFirmId = 'firm_restored_${DateTime.now().millisecondsSinceEpoch}';
           final restoredName = '$companyName (Restored ${DateFormat('dd MMM HH:mm').format(DateTime.now())})';
 
@@ -430,7 +430,7 @@ class RestoreProgressNotifier extends StateNotifier<RestoreProgressState> {
       if (restoreAsNewFirm && prefs != null && dbService != null) {
         try {
           final meta = await _repository.validateBytes(bytes, password: password);
-          final companyName = meta.companyName ?? 'Restored Company';
+          final companyName = 'Restored Company';
           final newFirmId = 'firm_restored_${DateTime.now().millisecondsSinceEpoch}';
           final restoredName = '$companyName (Restored ${DateFormat('dd MMM HH:mm').format(DateTime.now())})';
 

@@ -333,7 +333,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
+      bottomNavigationBar: isMobile ? null : BottomAppBar(
         elevation: 8,
         child: Row(
           children: [

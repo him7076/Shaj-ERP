@@ -189,17 +189,21 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        title: Text(_party!.partyName ?? 'Party Dashboard', style: const TextStyle(fontWeight: FontWeight.bold)),
+        toolbarHeight: isMobile ? 44 : 56,
+        title: Text(
+          isMobile ? 'Party Details' : (_party!.partyName ?? 'Party Dashboard'),
+          style: TextStyle(fontSize: isMobile ? 16 : 18, fontWeight: FontWeight.bold),
+        ),
         elevation: 0,
         actions: [
           IconButton(
             tooltip: 'Share Business Card',
-            icon: const Icon(Icons.share_outlined),
+            icon: Icon(Icons.share_outlined, size: isMobile ? 20 : 24),
             onPressed: _shareCard,
           ),
           IconButton(
             tooltip: 'Edit Party Profile',
-            icon: const Icon(Icons.edit_outlined),
+            icon: Icon(Icons.edit_outlined, size: isMobile ? 20 : 24),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -210,7 +214,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
           ),
           IconButton(
             tooltip: 'Delete Party',
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+            icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: isMobile ? 20 : 24),
             onPressed: _softDeleteParty,
           ),
         ],
@@ -218,10 +222,10 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. Next-Gen Hero Profile Banner
+            // 1. Next-Gen Hero Profile Banner (Mobile Optimized)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(isMobile ? 12 : 24),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [theme.colorScheme.primary, theme.colorScheme.tertiary],
@@ -232,67 +236,55 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
               child: Column(
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
-                        radius: 36,
+                        radius: isMobile ? 22 : 36,
                         backgroundColor: Colors.white.withOpacity(0.2),
                         child: Text(
                           initial,
-                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontSize: isMobile ? 20 : 32, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               _party!.partyName ?? 'Unnamed Party',
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: TextStyle(fontSize: isMobile ? 16 : 22, fontWeight: FontWeight.bold, color: Colors.white),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 2),
                             Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
+                              spacing: 6,
+                              runSpacing: 4,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text('Code: ${_party!.partyCode ?? "N/A"}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  child: Text('Code: ${_party!.partyCode ?? "N/A"}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text(_party!.partyType ?? 'Customer', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  child: Text(_party!.partyType ?? 'Customer', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ),
-                                if (_party!.city != null && _party!.city!.isNotEmpty)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text('📍 ${_party!.city}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                                  ),
                               ],
                             ),
-                            if (_party!.gstNumber != null && _party!.gstNumber!.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text('GSTIN: ${_party!.gstNumber}', style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 12)),
-                            ],
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
                   // Quick Direct Shortcuts Row
                   Row(
@@ -302,6 +294,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                         _buildHeroActionButton(
                           icon: Icons.phone_outlined,
                           label: 'Call',
+                          isMobile: isMobile,
                           onTap: () {
                             Clipboard.setData(ClipboardData(text: _party!.mobileNumber!));
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied phone: ${_party!.mobileNumber}')));
@@ -311,11 +304,13 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                         _buildHeroActionButton(
                           icon: Icons.chat_bubble_outline,
                           label: 'WhatsApp',
+                          isMobile: isMobile,
                           onTap: () => _launchWhatsApp(_party!.mobileNumber!),
                         ),
                       _buildHeroActionButton(
                         icon: Icons.receipt_long_outlined,
-                        label: 'New Invoice',
+                        label: 'Invoice',
+                        isMobile: isMobile,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -325,7 +320,8 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                       ),
                       _buildHeroActionButton(
                         icon: Icons.add_circle_outline,
-                        label: 'Record Payment',
+                        label: 'Payment',
+                        isMobile: isMobile,
                         onTap: () {
                           AddEditTransactionDialog.show(context, initialParty: _party);
                         },
@@ -336,41 +332,35 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
               ),
             ),
 
-            // 2. Financial Metrics Summary Cards
+            // 2. Financial Metrics Summary Cards (1 Single Row on Mobile)
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isNarrow = constraints.maxWidth < 600;
-                  return Flex(
-                    direction: isNarrow ? Axis.vertical : Axis.horizontal,
-                    children: [
-                      Expanded(
-                        flex: isNarrow ? 0 : 1,
-                        child: _buildMetricCard(
-                          theme: theme,
-                          title: 'Net Outstanding Balance',
-                          value: currencyFormat.format(outstanding),
-                          subtitle: isDr ? 'Customer Ledger Due (Receivable)' : 'Advance Paid (Credit)',
-                          color: isDr ? Colors.red : Colors.green,
-                          icon: isDr ? Icons.arrow_circle_up : Icons.arrow_circle_down,
-                        ),
-                      ),
-                      const SizedBox(width: 12, height: 12),
-                      Expanded(
-                        flex: isNarrow ? 0 : 1,
-                        child: _buildMetricCard(
-                          theme: theme,
-                          title: 'Credit Limit & Available',
-                          value: currencyFormat.format(creditLimit),
-                          subtitle: 'Available Limit: ${currencyFormat.format(availableCredit)}',
-                          color: availableCredit < 0 ? Colors.red : Colors.blue,
-                          icon: Icons.credit_card_rounded,
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildMetricCard(
+                      theme: theme,
+                      title: 'Outstanding',
+                      value: currencyFormat.format(outstanding),
+                      subtitle: isDr ? 'Due (Dr)' : 'Advance (Cr)',
+                      color: isDr ? Colors.red : Colors.green,
+                      icon: isDr ? Icons.arrow_circle_up : Icons.arrow_circle_down,
+                      isMobile: isMobile,
+                    ),
+                  ),
+                  SizedBox(width: isMobile ? 8 : 12),
+                  Expanded(
+                    child: _buildMetricCard(
+                      theme: theme,
+                      title: 'Credit Limit',
+                      value: currencyFormat.format(creditLimit),
+                      subtitle: 'Avail: ${currencyFormat.format(availableCredit)}',
+                      color: availableCredit < 0 ? Colors.red : Colors.blue,
+                      icon: Icons.credit_card_rounded,
+                      isMobile: isMobile,
+                    ),
+                  ),
+                ],
               ),
             ),
 
@@ -412,22 +402,24 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isMobile = false,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 14, vertical: isMobile ? 6 : 8),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.18),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.white30, width: 0.5),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white, size: 16),
-            const SizedBox(width: 6),
-            Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+            Icon(icon, color: Colors.white, size: isMobile ? 14 : 16),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: isMobile ? 11 : 12)),
           ],
         ),
       ),
@@ -441,35 +433,36 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     required String subtitle,
     required Color color,
     required IconData icon,
+    bool isMobile = false,
   }) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(isMobile ? 6 : 12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: isMobile ? 18 : 24),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: isMobile ? 8 : 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.onSurfaceVariant)),
+                  Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(fontSize: isMobile ? 10 : 12, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurfaceVariant)),
                   const SizedBox(height: 2),
-                  Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+                  FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: isMobile ? 14 : 18, fontWeight: FontWeight.bold, color: color))),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: theme.textTheme.bodySmall?.copyWith(fontSize: 11)),
+                  Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(fontSize: isMobile ? 9 : 11)),
                 ],
               ),
             ),

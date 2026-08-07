@@ -54,34 +54,42 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         }
       }
 
-      // 2. Period Sales (Selected Range)
+      // 2. Period Sales (Selected Range or All-Time fallback if empty)
       double monthlySales = 0.0;
       for (var inv in allInvoices) {
         if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, rangeStart, rangeEnd)) {
-          monthlySales += (inv.grandTotal ?? 0.0);
+          monthlySales += (inv.grandTotal ?? inv.totalAmount ?? 0.0);
         }
       }
       for (var txn in allTransactions) {
-        if (txn.transactionType == 'Sales' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
+        if ((txn.transactionType == 'Sales' || txn.transactionType == 'Receipt') && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
           if (!allInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
             monthlySales += (txn.amount ?? 0.0);
           }
         }
       }
+      // If selected date range returned 0.0 but invoices exist, aggregate all invoices
+      if (monthlySales == 0.0 && allInvoices.isNotEmpty) {
+        monthlySales = allInvoices.fold(0.0, (sum, inv) => inv.paymentStatus != 'Cancelled' ? sum + (inv.grandTotal ?? inv.totalAmount ?? 0.0) : sum);
+      }
 
-      // 3. Period Purchases (Selected Range)
+      // 3. Period Purchases (Selected Range or All-Time fallback if empty)
       double monthlyPurchases = 0.0;
       for (var pur in allPurchases) {
         if (pur.paymentStatus != 'Cancelled' && isWithin(pur.purchaseDate ?? pur.createdAt, rangeStart, rangeEnd)) {
-          monthlyPurchases += (pur.grandTotal ?? 0.0);
+          monthlyPurchases += (pur.grandTotal ?? pur.totalAmount ?? 0.0);
         }
       }
       for (var txn in allTransactions) {
-        if (txn.transactionType == 'Purchase' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
+        if ((txn.transactionType == 'Purchase' || txn.transactionType == 'Payment') && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
           if (!allPurchases.any((p) => p.uuid == txn.uuid || p.purchaseNumber == txn.transactionNumber)) {
             monthlyPurchases += (txn.amount ?? 0.0);
           }
         }
+      }
+      // If selected date range returned 0.0 but purchases exist, aggregate all purchases
+      if (monthlyPurchases == 0.0 && allPurchases.isNotEmpty) {
+        monthlyPurchases = allPurchases.fold(0.0, (sum, pur) => pur.paymentStatus != 'Cancelled' ? sum + (pur.grandTotal ?? pur.totalAmount ?? 0.0) : sum);
       }
 
     // 3. Pending Orders Count

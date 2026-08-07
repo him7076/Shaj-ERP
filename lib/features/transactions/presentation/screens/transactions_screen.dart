@@ -657,9 +657,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       const SizedBox(width: 8),
                                       PopupMenuButton<String>(
                                         onSelected: (action) async {
-                                          if (action == 'edit' || action == 'link') {
-                                            AddEditTransactionDialog.show(context, transaction: txn);
-                                          } else if (action == 'delete') {
+                                           if (action == 'edit') {
+                                             _openTransaction(context, txn);
+                                           } else if (action == 'link') {
+                                             AddEditTransactionDialog.show(context, transaction: txn);
+                                           } else if (action == 'delete') {
                                             final confirm = await showDialog<bool>(
                                               context: context,
                                               builder: (context) => AlertDialog(
