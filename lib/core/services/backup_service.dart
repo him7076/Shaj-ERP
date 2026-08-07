@@ -319,12 +319,16 @@ class BackupService {
           'latitude': e.latitude,
           'longitude': e.longitude,
           'locationAddress': e.locationAddress,
-          'googleMapUrl': e.googleMapUrl,
           'openingBalance': e.openingBalance,
-          'currentBalance': e.currentBalance,
+          'balanceType': e.balanceType,
           'creditLimit': e.creditLimit,
           'paymentTerms': e.paymentTerms,
+          'dueDays': e.dueDays,
+          'contactPerson': e.contactPerson,
+          'businessCategory': e.businessCategory,
           'notes': e.notes,
+          'shopPhotos': e.shopPhotos,
+          'shopPhotoUrls': e.shopPhotoUrls,
           'outstandingBalance': e.outstandingBalance,
         });
       case 'items':

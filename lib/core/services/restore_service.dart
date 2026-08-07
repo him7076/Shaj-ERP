@@ -748,6 +748,8 @@ class RestoreService {
       ..partyName = map['partyName']
       ..partyType = map['partyType']
       ..gstNumber = map['gstNumber']
+      ..panNumber = map['panNumber']
+      ..gstType = map['gstType']
       ..mobileNumber = map['mobileNumber']
       ..whatsappNumber = map['whatsappNumber']
       ..email = map['email']
@@ -758,9 +760,18 @@ class RestoreService {
       ..pincode = map['pincode']
       ..latitude = (map['latitude'] as num?)?.toDouble()
       ..longitude = (map['longitude'] as num?)?.toDouble()
+      ..locationAddress = map['locationAddress']
+      ..googleMapUrl = map['googleMapUrl']
+      ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
+      ..balanceType = map['balanceType']
       ..creditLimit = (map['creditLimit'] as num?)?.toDouble()
       ..paymentTerms = map['paymentTerms']
+      ..dueDays = map['dueDays'] as int?
+      ..contactPerson = map['contactPerson']
+      ..businessCategory = map['businessCategory']
       ..notes = map['notes']
+      ..shopPhotos = map['shopPhotos'] != null ? List<String>.from(map['shopPhotos']) : null
+      ..shopPhotoUrls = map['shopPhotoUrls'] != null ? List<String>.from(map['shopPhotoUrls']) : null
       ..outstandingBalance = (map['outstandingBalance'] as num?)?.toDouble()
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
