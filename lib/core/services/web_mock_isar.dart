@@ -444,6 +444,7 @@ class WebMockIsar implements Isar {
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
         'parentInvoiceId': entity.parentInvoiceId,
+        'parentInvoiceUuid': entity.parentInvoiceUuid,
         'quantity': entity.quantity,
         'freeQuantity': entity.freeQuantity,
         'rate': entity.rate,
@@ -986,6 +987,7 @@ class WebMockIsar implements Isar {
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
           ..parentInvoiceId = map['parentInvoiceId'] as int?
+          ..parentInvoiceUuid = map['parentInvoiceUuid'] as String?
           ..quantity = map['quantity'] as double?
           ..freeQuantity = map['freeQuantity'] as double?
           ..rate = map['rate'] as double?

@@ -18,8 +18,10 @@ class InvoiceItem implements IsarModel {
   String? itemName;
   String? hsnCode;
   
-  // Helper field to track parent invoice for Web mock queries
+  @Index()
   int? parentInvoiceId;
+  @Index()
+  String? parentInvoiceUuid;
 
   double? quantity;
   double? freeQuantity;

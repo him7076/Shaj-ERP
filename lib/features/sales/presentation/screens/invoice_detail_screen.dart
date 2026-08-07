@@ -64,23 +64,17 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
         if (items.isEmpty) {
           final targetId = fetched.id;
-          items = await isar.invoiceItems
-              .filter()
-              .isDeletedEqualTo(false)
-              .and()
-              .parentInvoiceIdEqualTo(targetId)
-              .findAll();
-        }
+          final targetUuid = fetched.uuid;
 
-        if (items.isEmpty && fetched.uuid != null && fetched.uuid!.isNotEmpty) {
-          final targetUuid = fetched.uuid!;
-          final targetId = fetched.id;
           final allItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
           items = allItems.where((i) {
             if (i.parentInvoiceId == targetId) return true;
-            try {
-              if (i.invoice.value?.uuid == targetUuid) return true;
-            } catch (_) {}
+            if (targetUuid != null && targetUuid.isNotEmpty) {
+              if (i.parentInvoiceUuid == targetUuid) return true;
+              try {
+                if (i.invoice.value?.uuid == targetUuid) return true;
+              } catch (_) {}
+            }
             return false;
           }).toList();
 
@@ -88,7 +82,10 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
             await isar.writeTxn(() async {
               for (var itm in items) {
                 itm.parentInvoiceId = targetId;
+                itm.parentInvoiceUuid = targetUuid;
+                itm.invoice.value = fetched;
                 await isar.invoiceItems.put(itm);
+                try { await itm.invoice.save(); } catch (_) {}
               }
             });
           }

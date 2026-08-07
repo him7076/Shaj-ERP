@@ -730,9 +730,97 @@ class SyncService {
             await _insertLocalRecord(entityType, data);
           }
         }
+        }
       } catch (e) {
         logger.warning('Skipped $entityType sync query due to timeout or network: $e');
       }
+    }
+
+    // Post-download pass: Ensure all line items are connected to parents in local Isar DB
+    await _relinkAllRelations();
+  }
+
+  /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
+  /// with their respective parent documents by UUID/ID in local DB.
+  Future<void> _relinkAllRelations() async {
+    final isar = _dbService.isar;
+    logger.info('Executing post-sync pass to re-link all line items to parents...');
+
+    try {
+      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final Map<String, Invoice> invoiceByUuid = {};
+      final Map<int, Invoice> invoiceById = {};
+
+      for (var inv in allInvoices) {
+        if (inv.uuid != null && inv.uuid!.isNotEmpty) {
+          invoiceByUuid[inv.uuid!] = inv;
+        }
+        invoiceById[inv.id] = inv;
+      }
+
+      final allInvoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+
+      await isar.writeTxn(() async {
+        for (var item in allInvoiceItems) {
+          Invoice? parent;
+          try { await item.invoice.load(); parent = item.invoice.value; } catch (_) {}
+
+          if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) {
+            parent = invoiceByUuid[item.parentInvoiceUuid!];
+          }
+
+          if (parent == null && item.parentInvoiceId != null) {
+            parent = invoiceById[item.parentInvoiceId!];
+          }
+
+          if (parent != null) {
+            item.invoice.value = parent;
+            item.parentInvoiceId = parent.id;
+            item.parentInvoiceUuid = parent.uuid;
+            await isar.invoiceItems.put(item);
+            try { await item.invoice.save(); } catch (_) {}
+          }
+        }
+      });
+
+      // Relink PurchaseItems
+      final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final Map<String, Purchase> purchaseByUuid = {};
+      final Map<int, Purchase> purchaseById = {};
+
+      for (var pur in allPurchases) {
+        if (pur.uuid != null && pur.uuid!.isNotEmpty) {
+          purchaseByUuid[pur.uuid!] = pur;
+        }
+        purchaseById[pur.id] = pur;
+      }
+
+      final allPurchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+
+      await isar.writeTxn(() async {
+        for (var item in allPurchaseItems) {
+          Purchase? parent;
+          try { await item.purchase.load(); parent = item.purchase.value; } catch (_) {}
+
+          if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) {
+            parent = purchaseByUuid[item.purchaseUuid!];
+          }
+
+          if (parent == null && item.purchaseId != null) {
+            parent = purchaseById[item.purchaseId!];
+          }
+
+          if (parent != null) {
+            item.purchase.value = parent;
+            item.purchaseId = parent.id;
+            item.purchaseUuid = parent.uuid;
+            await isar.purchaseItems.put(item);
+            try { await item.purchase.save(); } catch (_) {}
+          }
+        }
+      });
+    } catch (e) {
+      logger.error('Error during post-sync relation re-linking pass', e);
     }
   }
 
@@ -1351,6 +1439,7 @@ class SyncService {
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
           ..parentInvoiceId = data['parentInvoiceId']
+          ..parentInvoiceUuid = (data['parentInvoiceUuid'] ?? data['invoiceUuid']) as String?
           ..quantity = (data['quantity'] as num?)?.toDouble()
           ..freeQuantity = (data['freeQuantity'] as num?)?.toDouble()
           ..unit = data['unit']
@@ -1683,6 +1772,7 @@ class SyncService {
         final itemUuid = data['itemUuid'] as String?;
 
         if (invUuid != null && invUuid.isNotEmpty) {
+          e.parentInvoiceUuid = invUuid;
           final parentInv = await isar.invoices.filter().uuidEqualTo(invUuid).findFirst();
           if (parentInv != null) {
             e.invoice.value = parentInv;

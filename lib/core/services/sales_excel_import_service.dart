@@ -564,6 +564,7 @@ class SalesExcelImportService {
 
             for (var invItem in createdItems) {
               invItem.parentInvoiceId = invoice.id;
+              invItem.parentInvoiceUuid = invoice.uuid;
               invItem.invoice.value = invoice;
               invItem.id = await isar.invoiceItems.put(invItem);
               try { await invItem.invoice.save(); } catch (_) {}
