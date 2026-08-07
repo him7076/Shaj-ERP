@@ -359,6 +359,7 @@ class WebMockIsar implements Isar {
         'reorderLevel': entity.reorderLevel,
         'minimumStock': entity.minimumStock,
         'secondaryUnit': entity.secondaryUnit,
+        'primaryUnitName': entity.primaryUnitName,
         'conversionFactor': entity.conversionFactor,
         'barcode': entity.barcode,
         'sku': entity.sku,
@@ -909,6 +910,7 @@ class WebMockIsar implements Isar {
           ..reorderLevel = map['reorderLevel'] as double?
           ..minimumStock = map['minimumStock'] as double?
           ..secondaryUnit = map['secondaryUnit'] as String?
+          ..primaryUnitName = map['primaryUnitName'] as String?
           ..conversionFactor = map['conversionFactor'] as double?
           ..barcode = map['barcode'] as String?
           ..sku = map['sku'] as String?

@@ -394,7 +394,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
     // Calculate Primary vs Secondary stock breakdown
     final double primaryStock = item.currentStock ?? 0.0;
-    final String primaryUnitName = item.unit.value?.shortName ?? 'PCS';
+    final String primaryUnitName = item.unit.value?.shortName ?? item.unit.value?.unitName ?? item.primaryUnitName ?? 'PCS';
     final String? secUnitName = item.secondaryUnit;
     final double? convFactor = item.conversionFactor;
 
@@ -532,9 +532,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   _buildDetailTable([
                     _DetailRow('Category', item.category.value?.categoryName ?? 'N/A'),
                     _DetailRow('Brand', item.brand.value?.brandName ?? 'N/A'),
-                    _DetailRow('Primary Unit', item.unit.value?.unitName ?? 'N/A'),
+                    _DetailRow('Primary Unit', item.unit.value?.unitName ?? item.unit.value?.shortName ?? item.primaryUnitName ?? 'N/A'),
                     _DetailRow('Secondary Unit', item.secondaryUnit != null && item.secondaryUnit!.isNotEmpty ? item.secondaryUnit! : 'None'),
-                    _DetailRow('Conversion Factor', (item.conversionFactor != null && item.conversionFactor! > 1.0) ? '1 ${item.unit.value?.shortName ?? "Box"} = ${item.conversionFactor} ${item.secondaryUnit}' : '1 : 1'),
+                    _DetailRow('Conversion Factor', (item.conversionFactor != null && item.conversionFactor! > 1.0) ? '1 ${item.unit.value?.shortName ?? item.primaryUnitName ?? "Box"} = ${item.conversionFactor} ${item.secondaryUnit}' : '1 : 1'),
                   ], theme),
                   const SizedBox(height: 24),
 

@@ -437,6 +437,30 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
+      final invItems = await isar.invoiceItems.filter().isSyncedEqualTo(false).findAll();
+      for (var ii in invItems) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'InvoiceItem'
+          ..entityId = ii.id
+          ..entityUuid = ii.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final purItems = await isar.purchaseItems.filter().isSyncedEqualTo(false).findAll();
+      for (var pi in purItems) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'PurchaseItem'
+          ..entityId = pi.id
+          ..entityUuid = pi.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
       final expenses = await isar.expenses.filter().isSyncedEqualTo(false).findAll();
       for (var exp in expenses) {
         final q = SyncQueue()

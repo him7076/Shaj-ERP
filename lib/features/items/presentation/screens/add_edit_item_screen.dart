@@ -219,12 +219,20 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           _selectedBrand = brands.firstWhere((b) => b.id == item.brand.value!.id);
         }
         if (item.unit.value != null) {
-          _selectedUnit = units.firstWhere((u) => u.id == item.unit.value!.id);
+          _selectedUnit = units.where((u) => u.id == item.unit.value!.id).firstOrNull;
+        }
+        if (_selectedUnit == null && item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
+          _selectedUnit = units.where((u) => (u.shortName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase())).firstOrNull;
+        }
+        if (_selectedUnit == null && item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
+          _selectedUnit = Unit()
+            ..shortName = item.primaryUnitName
+            ..unitName = item.primaryUnitName;
         }
 
         if (item.secondaryUnit != null && item.secondaryUnit!.isNotEmpty) {
           try {
-            _selectedSecUnit = units.firstWhere((u) => u.shortName == item.secondaryUnit);
+            _selectedSecUnit = units.firstWhere((u) => u.shortName?.trim().toLowerCase() == item.secondaryUnit!.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == item.secondaryUnit!.trim().toLowerCase());
           } catch (_) {
             _selectedSecUnit = Unit()
               ..shortName = item.secondaryUnit
@@ -542,7 +550,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           double.tryParse(_openingStockController.text.trim()) ?? 0.0;
       item.reorderLevel = double.tryParse(_reorderLevelController.text.trim()) ?? 0.0;
       item.minimumStock = double.tryParse(_minStockController.text.trim()) ?? 0.0;
-      item.secondaryUnit = _selectedSecUnit?.shortName;
+      item.primaryUnitName = _selectedUnit?.shortName ?? _selectedUnit?.unitName ?? item.primaryUnitName ?? 'PCS';
+      item.secondaryUnit = _selectedSecUnit?.shortName ?? _selectedSecUnit?.unitName;
       item.conversionFactor = double.tryParse(_conversionController.text.trim());
 
       item.gstApplicable = _gstApplicable;
@@ -557,7 +566,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
       item.category.value = _selectedCategory;
       item.brand.value = _selectedBrand;
-      item.unit.value = _selectedUnit;
+      if (_selectedUnit != null) {
+        item.unit.value = _selectedUnit;
+      }
 
       if (_existingItem == null) {
         await repo.create(item);

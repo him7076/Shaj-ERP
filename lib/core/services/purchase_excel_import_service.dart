@@ -610,18 +610,27 @@ class PurchaseExcelImportService {
             try { await purchase.purchaseItems.save(); } catch (_) {}
           });
 
-          // Enqueue for Sync
-          final queueItem = SyncQueue()
-            ..uuid = _uuidGen.v4()
-            ..entityType = 'Purchase'
-            ..entityId = purchase.id
-            ..entityUuid = purchase.uuid
-            ..operation = 'Create'
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now();
-
+          // Enqueue for Sync (Header + All Line Items)
           await isar.writeTxn(() async {
-            await isar.syncQueues.put(queueItem);
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _uuidGen.v4()
+              ..entityType = 'Purchase'
+              ..entityId = purchase.id
+              ..entityUuid = purchase.uuid
+              ..operation = 'Create'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
+
+            for (var item in createdItems) {
+              await isar.syncQueues.put(SyncQueue()
+                ..uuid = _uuidGen.v4()
+                ..entityType = 'PurchaseItem'
+                ..entityId = item.id
+                ..entityUuid = item.uuid
+                ..operation = 'Create'
+                ..createdAt = DateTime.now()
+                ..updatedAt = DateTime.now());
+            }
           });
 
           totalBillsImported++;

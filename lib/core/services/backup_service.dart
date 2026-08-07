@@ -22,6 +22,15 @@ import 'package:business_sahaj_erp/data/local/collections/order_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -43,7 +52,6 @@ class BackupService {
     this._prefs,
   );
 
-  /// Formats date to simple string: yyyy_MM_dd_HH_mm
   String _formatDateString(DateTime dt) {
     return '${dt.year}_'
         '${dt.month.toString().padLeft(2, '0')}_'
@@ -68,7 +76,7 @@ class BackupService {
       logger.info('Starting backup generation...');
       final isar = _dbService.isar;
 
-      // 1. Export Isar Collections to temporary JSON files
+      // 1. Export All 21 Isar Collections to temporary JSON files
       final collections = {
         'categories': await isar.categorys.where().findAll(),
         'units': await isar.units.where().findAll(),
@@ -79,6 +87,15 @@ class BackupService {
         'order_items': await isar.orderItems.where().findAll(),
         'invoices': await isar.invoices.where().findAll(),
         'invoice_items': await isar.invoiceItems.where().findAll(),
+        'purchases': await isar.purchases.where().findAll(),
+        'purchase_items': await isar.purchaseItems.where().findAll(),
+        'expenses': await isar.expenses.where().findAll(),
+        'transactions': await isar.transactions.where().findAll(),
+        'bank_accounts': await isar.bankAccounts.where().findAll(),
+        'credit_notes': await isar.creditNotes.where().findAll(),
+        'credit_note_items': await isar.creditNoteItems.where().findAll(),
+        'debit_notes': await isar.debitNotes.where().findAll(),
+        'debit_note_items': await isar.debitNoteItems.where().findAll(),
         'settings': await isar.settings.where().findAll(),
         'users': await isar.users.where().findAll(),
         'sync_queues': await isar.syncQueues.where().findAll(),
@@ -137,17 +154,15 @@ class BackupService {
           destPath: localDestPath,
           password: password,
         );
-        // Clean temporary zip
         await File(zipTempPath).delete();
       } else {
-        // Just rename/move zip file to target
         await File(zipTempPath).rename(localDestPath);
       }
 
       final backupFile = File(localDestPath);
       final sizeInBytes = await backupFile.length();
 
-      // 7. If Cloud sync is requested, upload to Google Drive
+      // 7. Cloud sync if requested
       String finalLocation = localDestPath;
       bool isCloudSaved = false;
 
@@ -162,7 +177,6 @@ class BackupService {
           logger.info('Backup successfully uploaded to Google Drive. File ID: $driveFileId');
         } catch (cloudError) {
           logger.error('Failed to sync backup to Google Drive. Retaining local backup.', cloudError);
-          // Don't fail the entire backup, register it as local backup.
         }
       }
 
@@ -177,18 +191,13 @@ class BackupService {
       );
 
       await _registerBackupInHistory(historyEntry);
-
-      // 9. Clean temporary export files
       await tempBackupFolder.delete(recursive: true);
-
-      // 10. Run Auto Cleanup
       await autoCleanupBackups();
 
       logger.info('System backup generated successfully: $bserpFilename (${sizeInBytes} bytes)');
       return historyEntry;
     } catch (e, stackTrace) {
       logger.error('System backup execution failed', e, stackTrace);
-      // Ensure temp folder is cleaned up on failure
       if (await tempBackupFolder.exists()) {
         await tempBackupFolder.delete(recursive: true);
       }
@@ -196,15 +205,13 @@ class BackupService {
     }
   }
 
-  /// Appends backup entry into registry history list
   Future<void> _registerBackupInHistory(BackupHistoryEntry entry) async {
     final currentHistory = await getBackupHistory();
-    currentHistory.insert(0, entry); // latest first
+    currentHistory.insert(0, entry);
     final serialized = currentHistory.map((e) => e.toJson()).toList();
     await _prefs.setString(_keyBackupHistory, jsonEncode(serialized));
   }
 
-  /// Retrieves the history list from registry
   Future<List<BackupHistoryEntry>> getBackupHistory() async {
     final historyString = _prefs.getString(_keyBackupHistory);
     if (historyString == null) return [];
@@ -217,12 +224,9 @@ class BackupService {
     }
   }
 
-  /// Removes an entry from backup history and deletes files
   Future<void> deleteBackup(BackupHistoryEntry entry) async {
     try {
       logger.info('Deleting backup: ${entry.backupName}');
-
-      // Delete file locally or on cloud
       if (entry.isCloud) {
         await _driveService.deleteBackup(entry.location);
       } else {
@@ -231,21 +235,16 @@ class BackupService {
           await file.delete();
         }
       }
-
-      // Remove from preferences
       final history = await getBackupHistory();
       history.removeWhere((e) => e.location == entry.location);
       final serialized = history.map((e) => e.toJson()).toList();
       await _prefs.setString(_keyBackupHistory, jsonEncode(serialized));
-
-      logger.info('Backup deleted successfully.');
     } catch (e) {
       logger.error('Failed to delete backup', e);
       throw BackupException('Failed to delete backup: $e');
     }
   }
 
-  /// Deletes older backups automatically keeping last N settings
   Future<void> autoCleanupBackups() async {
     final limitString = _prefs.getString('backup_cleanup_limit') ?? 'keep_10';
     if (limitString == 'unlimited') return;
@@ -260,10 +259,6 @@ class BackupService {
     try {
       final history = await getBackupHistory();
       if (history.length <= keepLimit) return;
-
-      logger.info('Auto backup cleanup triggered. Current size: ${history.length}, Limit: $keepLimit');
-      
-      // Identify entries to remove (index keepLimit and onwards are the oldest ones)
       final entriesToRemove = history.sublist(keepLimit);
       for (var entry in entriesToRemove) {
         await deleteBackup(entry);
@@ -307,11 +302,15 @@ class BackupService {
       case 'parties':
         final e = entity as Party;
         return baseMap..addAll({
+          'partyCode': e.partyCode,
           'partyName': e.partyName,
-          'gstNumber': e.gstNumber,
+          'partyType': e.partyType,
           'mobileNumber': e.mobileNumber,
           'whatsappNumber': e.whatsappNumber,
           'email': e.email,
+          'gstType': e.gstType,
+          'gstNumber': e.gstNumber,
+          'panNumber': e.panNumber,
           'addressLine1': e.addressLine1,
           'addressLine2': e.addressLine2,
           'city': e.city,
@@ -319,6 +318,10 @@ class BackupService {
           'pincode': e.pincode,
           'latitude': e.latitude,
           'longitude': e.longitude,
+          'locationAddress': e.locationAddress,
+          'googleMapUrl': e.googleMapUrl,
+          'openingBalance': e.openingBalance,
+          'currentBalance': e.currentBalance,
           'creditLimit': e.creditLimit,
           'paymentTerms': e.paymentTerms,
           'notes': e.notes,
@@ -327,8 +330,10 @@ class BackupService {
       case 'items':
         final e = entity as Item;
         return baseMap..addAll({
+          'itemCode': e.itemCode,
           'itemName': e.itemName,
           'shortName': e.shortName,
+          'description': e.description,
           'hsnCode': e.hsnCode,
           'gstApplicable': e.gstApplicable,
           'gstRate': e.gstRate,
@@ -342,6 +347,7 @@ class BackupService {
           'currentStock': e.currentStock,
           'reorderLevel': e.reorderLevel,
           'minimumStock': e.minimumStock,
+          'primaryUnitName': e.primaryUnitName,
           'secondaryUnit': e.secondaryUnit,
           'conversionFactor': e.conversionFactor,
           'barcode': e.barcode,
@@ -353,6 +359,8 @@ class BackupService {
           'weight': e.weight,
           'dimensions': e.dimensions,
           'notes': e.notes,
+          'enableBatchTracking': e.enableBatchTracking,
+          'defaultBatchNumber': e.defaultBatchNumber,
           'categoryUuid': e.category.value?.uuid,
           'unitUuid': e.unit.value?.uuid,
           'brandUuid': e.brand.value?.uuid,
@@ -448,6 +456,136 @@ class BackupService {
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
+          'parentInvoiceId': e.parentInvoiceId,
+          'parentInvoiceUuid': e.invoice.value?.uuid,
+          'invoiceUuid': e.invoice.value?.uuid,
+          'quantity': e.quantity,
+          'freeQuantity': e.freeQuantity,
+          'unit': e.unit,
+          'rate': e.rate,
+          'discount': e.discount,
+          'taxableAmount': e.taxableAmount,
+          'gstRate': e.gstRate,
+          'gstAmount': e.gstAmount,
+          'totalAmount': e.totalAmount,
+          'batchNumber': e.batchNumber,
+          'expiryDate': e.expiryDate,
+          'mfgDate': e.mfgDate,
+          'itemUuid': e.item.value?.uuid,
+        });
+      case 'purchases':
+        final e = entity as Purchase;
+        return baseMap..addAll({
+          'purchaseNumber': e.purchaseNumber,
+          'supplierInvoiceNumber': e.supplierInvoiceNumber,
+          'purchaseDate': e.purchaseDate?.toIso8601String(),
+          'partyId': e.partyId,
+          'partyName': e.partyName,
+          'gstNumber': e.gstNumber,
+          'address': e.address,
+          'subtotal': e.subtotal,
+          'discountAmount': e.discountAmount,
+          'taxableAmount': e.taxableAmount,
+          'cgstAmount': e.cgstAmount,
+          'sgstAmount': e.sgstAmount,
+          'igstAmount': e.igstAmount,
+          'totalGST': e.totalGST,
+          'roundOff': e.roundOff,
+          'grandTotal': e.grandTotal,
+          'paymentStatus': e.paymentStatus,
+          'paidAmount': e.paidAmount,
+          'pendingAmount': e.pendingAmount,
+          'remarks': e.remarks,
+          'partyUuid': e.party.value?.uuid,
+        });
+      case 'purchase_items':
+        final e = entity as PurchaseItem;
+        return baseMap..addAll({
+          'purchaseId': e.purchaseId,
+          'purchaseUuid': e.purchaseUuid ?? e.purchase.value?.uuid,
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'hsnCode': e.hsnCode,
+          'quantity': e.quantity,
+          'unit': e.unit,
+          'rate': e.rate,
+          'discount': e.discount,
+          'taxableAmount': e.taxableAmount,
+          'gstRate': e.gstRate,
+          'gstAmount': e.gstAmount,
+          'totalAmount': e.totalAmount,
+          'batchNumber': e.batchNumber,
+          'expiryDate': e.expiryDate,
+          'mfgDate': e.mfgDate,
+          'itemUuid': e.item.value?.uuid,
+        });
+      case 'expenses':
+        final e = entity as Expense;
+        return baseMap..addAll({
+          'category': e.category,
+          'amount': e.amount,
+          'expenseDate': e.expenseDate?.toIso8601String(),
+          'paymentMode': e.paymentMode,
+          'remarks': e.remarks,
+        });
+      case 'transactions':
+        final e = entity as Transaction;
+        return baseMap..addAll({
+          'transactionNumber': e.transactionNumber,
+          'transactionDate': e.transactionDate?.toIso8601String(),
+          'partyUuid': e.partyUuid,
+          'partyName': e.partyName,
+          'transactionType': e.transactionType,
+          'amount': e.amount,
+          'paymentMode': e.paymentMode,
+          'referenceNumber': e.referenceNumber,
+          'remarks': e.remarks,
+          'linkedBillUuid': e.linkedBillUuid,
+          'linkedBillNumber': e.linkedBillNumber,
+          'targetPartyUuid': e.targetPartyUuid,
+          'targetPartyName': e.targetPartyName,
+        });
+      case 'bank_accounts':
+        final e = entity as BankAccount;
+        return baseMap..addAll({
+          'accountName': e.accountName,
+          'bankName': e.bankName,
+          'accountNumber': e.accountNumber,
+          'ifscCode': e.ifscCode,
+          'branchName': e.branchName,
+          'openingBalance': e.openingBalance,
+          'currentBalance': e.currentBalance,
+        });
+      case 'credit_notes':
+        final e = entity as CreditNote;
+        return baseMap..addAll({
+          'creditNoteNumber': e.creditNoteNumber,
+          'creditNoteDate': e.creditNoteDate?.toIso8601String(),
+          'originalInvoiceNumber': e.originalInvoiceNumber,
+          'originalInvoiceUuid': e.originalInvoiceUuid,
+          'partyId': e.partyId,
+          'partyName': e.partyName,
+          'gstNumber': e.gstNumber,
+          'address': e.address,
+          'subtotal': e.subtotal,
+          'discountAmount': e.discountAmount,
+          'taxableAmount': e.taxableAmount,
+          'cgstAmount': e.cgstAmount,
+          'sgstAmount': e.sgstAmount,
+          'igstAmount': e.igstAmount,
+          'totalGST': e.totalGST,
+          'roundOff': e.roundOff,
+          'grandTotal': e.grandTotal,
+          'remarks': e.remarks,
+          'createdBy': e.createdBy,
+        });
+      case 'credit_note_items':
+        final e = entity as CreditNoteItem;
+        return baseMap..addAll({
+          'creditNoteUuid': e.creditNote.value?.uuid,
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'hsnCode': e.hsnCode,
           'quantity': e.quantity,
           'freeQuantity': e.freeQuantity,
           'rate': e.rate,
@@ -456,8 +594,44 @@ class BackupService {
           'gstRate': e.gstRate,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
-          'invoiceUuid': e.invoice.value?.uuid,
-          'itemUuid': e.item.value?.uuid,
+        });
+      case 'debit_notes':
+        final e = entity as DebitNote;
+        return baseMap..addAll({
+          'debitNoteNumber': e.debitNoteNumber,
+          'debitNoteDate': e.debitNoteDate?.toIso8601String(),
+          'originalPurchaseNumber': e.originalPurchaseNumber,
+          'originalPurchaseUuid': e.originalPurchaseUuid,
+          'partyId': e.partyId,
+          'partyName': e.partyName,
+          'gstNumber': e.gstNumber,
+          'address': e.address,
+          'subtotal': e.subtotal,
+          'discountAmount': e.discountAmount,
+          'taxableAmount': e.taxableAmount,
+          'cgstAmount': e.cgstAmount,
+          'sgstAmount': e.sgstAmount,
+          'igstAmount': e.igstAmount,
+          'totalGST': e.totalGST,
+          'roundOff': e.roundOff,
+          'grandTotal': e.grandTotal,
+          'remarks': e.remarks,
+          'createdBy': e.createdBy,
+        });
+      case 'debit_note_items':
+        final e = entity as DebitNoteItem;
+        return baseMap..addAll({
+          'debitNoteUuid': e.debitNote.value?.uuid,
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'hsnCode': e.hsnCode,
+          'quantity': e.quantity,
+          'rate': e.rate,
+          'discount': e.discount,
+          'taxableAmount': e.taxableAmount,
+          'gstRate': e.gstRate,
+          'gstAmount': e.gstAmount,
+          'totalAmount': e.totalAmount,
         });
       case 'settings':
         final e = entity as Settings;

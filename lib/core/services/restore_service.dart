@@ -19,6 +19,15 @@ import 'package:business_sahaj_erp/data/local/collections/order_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -35,8 +44,6 @@ class RestoreService {
   );
 
   /// Validates a backup file. Returns BackupMetadata if valid.
-  /// If backup is encrypted and password is correct, returns metadata.
-  /// Throws [EncryptionException] if password is wrong or required but missing.
   Future<BackupMetadata> validateBackup(String filePath, {String? password}) async {
     final tempDir = await getTemporaryDirectory();
     final tempExtractPath = '${tempDir.path}/meta_extract_${DateTime.now().millisecondsSinceEpoch}';
@@ -46,14 +53,8 @@ class RestoreService {
     bool isTemporaryDecryptedFile = false;
 
     try {
-      // 1. Try to check if zip can be parsed. If not, and password is provided, try to decrypt.
       final fileBytes = await File(filePath).readAsBytes();
-      bool isEncrypted = false;
-      
-      // A valid ZIP starts with the bytes 'PK' (0x50, 0x4B)
-      if (fileBytes.length < 2 || fileBytes[0] != 0x50 || fileBytes[1] != 0x4B) {
-        isEncrypted = true;
-      }
+      bool isEncrypted = fileBytes.length < 2 || fileBytes[0] != 0x50 || fileBytes[1] != 0x4B;
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
@@ -70,7 +71,6 @@ class RestoreService {
         isTemporaryDecryptedFile = true;
       }
 
-      // 2. Extract only metadata.json to validate
       await _compressionService.extractBackupArchive(
         zipPath: zipToExtract,
         destExtractDir: tempExtractPath,
@@ -84,13 +84,11 @@ class RestoreService {
       final metaContent = await metaFile.readAsString();
       final metadata = BackupMetadata.fromJson(jsonDecode(metaContent));
 
-      // 3. Clean up temp files
       await Directory(tempExtractPath).delete(recursive: true);
       if (isTemporaryDecryptedFile) {
         await File(zipToExtract).delete();
       }
 
-      // 4. Validate DB schema compatibility
       if (metadata.databaseVersion > DatabaseService.currentDatabaseVersion) {
         throw RestoreException(
           'Incompatible database version. Backup version is v${metadata.databaseVersion}, '
@@ -100,7 +98,6 @@ class RestoreService {
 
       return metadata;
     } catch (e) {
-      // Cleanup temp directories on error
       if (await Directory(tempExtractPath).exists()) {
         await Directory(tempExtractPath).delete(recursive: true);
       }
@@ -112,7 +109,6 @@ class RestoreService {
   }
 
   /// Restores database collections and images.
-  /// [duplicateStrategy] options: 'replace', 'merge', 'skip'
   Future<void> restoreBackup(
     String filePath, {
     String? password,
@@ -133,7 +129,6 @@ class RestoreService {
     try {
       logger.info('Initiating backup restoration: $filePath');
       
-      // 1. Decrypt if needed
       final fileBytes = await File(filePath).readAsBytes();
       bool isEncrypted = fileBytes.length < 2 || fileBytes[0] != 0x50 || fileBytes[1] != 0x4B;
 
@@ -151,20 +146,11 @@ class RestoreService {
         isTemporaryDecrypted = true;
       }
 
-      // 2. Extract the archive
       await _compressionService.extractBackupArchive(
         zipPath: zipToExtract,
         destExtractDir: extractDir.path,
       );
 
-      // 3. Read metadata
-      final metaFile = File('${extractDir.path}/metadata.json');
-      if (!await metaFile.exists()) {
-        throw const CorruptedBackupException('Backup metadata header not found.');
-      }
-      final metadata = BackupMetadata.fromJson(jsonDecode(await metaFile.readAsString()));
-
-      // 4. Copy images back to document folder and rewrite prefixes if directory changed
       final appDocsDir = await getApplicationDocumentsDirectory();
       final targetImagesDir = Directory('${appDocsDir.path}/product_images');
       if (!await targetImagesDir.exists()) {
@@ -186,10 +172,9 @@ class RestoreService {
         }
       }
 
-      // 5. Ingest JSON collections back into Isar in strict relationship dependency order
       final isar = _dbService.isar;
 
-      // Restoring Settings
+      // 1. Restoring Settings
       if (restoreSettings) {
         await _restoreCollection<Settings>(
           jsonFile: File('${extractDir.path}/settings.json'),
@@ -207,7 +192,7 @@ class RestoreService {
         );
       }
 
-      // Users
+      // 2. Users
       await _restoreCollection<User>(
         jsonFile: File('${extractDir.path}/users.json'),
         strategy: duplicateStrategy,
@@ -223,7 +208,7 @@ class RestoreService {
         findByUuid: (uuid) async => await isar.users.filter().uuidEqualTo(uuid).findFirst(),
       );
 
-      // Categories
+      // 3. Categories
       if (restoreItems) {
         await _restoreCollection<Category>(
           jsonFile: File('${extractDir.path}/categories.json'),
@@ -239,29 +224,9 @@ class RestoreService {
           }).deleteAll(),
           findByUuid: (uuid) async => await isar.categorys.filter().uuidEqualTo(uuid).findFirst(),
         );
-
-        // Re-link Category Parent-Child relations
-        final categoriesJsonFile = File('${extractDir.path}/categories.json');
-        if (await categoriesJsonFile.exists()) {
-          final List list = jsonDecode(await categoriesJsonFile.readAsString());
-          await isar.writeTxn(() async {
-            for (var itemMap in list) {
-              final parentUuid = itemMap['parentCategoryUuid'] as String?;
-              if (parentUuid != null) {
-                final currentUuid = itemMap['uuid'] as String;
-                final current = await isar.categorys.filter().uuidEqualTo(currentUuid).findFirst();
-                final parent = await isar.categorys.filter().uuidEqualTo(parentUuid).findFirst();
-                if (current != null && parent != null) {
-                  current.parentCategory.value = parent;
-                  await current.parentCategory.save();
-                }
-              }
-            }
-          });
-        }
       }
 
-      // Units
+      // 4. Units
       if (restoreItems) {
         await _restoreCollection<Unit>(
           jsonFile: File('${extractDir.path}/units.json'),
@@ -279,7 +244,7 @@ class RestoreService {
         );
       }
 
-      // Brands
+      // 5. Brands
       if (restoreItems) {
         await _restoreCollection<Brand>(
           jsonFile: File('${extractDir.path}/brands.json'),
@@ -297,7 +262,7 @@ class RestoreService {
         );
       }
 
-      // Parties
+      // 6. Parties
       if (restoreParties) {
         await _restoreCollection<Party>(
           jsonFile: File('${extractDir.path}/parties.json'),
@@ -315,12 +280,12 @@ class RestoreService {
         );
       }
 
-      // Items
+      // 7. Items
       if (restoreItems) {
         await _restoreCollection<Item>(
           jsonFile: File('${extractDir.path}/items.json'),
           strategy: duplicateStrategy,
-          fromMap: (map) => _mapMapToItem(map, appDocsDir.path), // Rewrites image path prefixes dynamically
+          fromMap: (map) => _mapMapToItem(map, appDocsDir.path),
           putAll: (items) async => await isar.items.putAll(items),
           deleteByUuids: (uuids) async => await isar.items.filter().group((q) {
             var filter = q.uuidEqualTo(uuids.first);
@@ -332,7 +297,7 @@ class RestoreService {
           findByUuid: (uuid) async => await isar.items.filter().uuidEqualTo(uuid).findFirst(),
         );
 
-        // Re-link category, unit, brand
+        // Re-link item relations
         final itemsJsonFile = File('${extractDir.path}/items.json');
         if (await itemsJsonFile.exists()) {
           final List list = jsonDecode(await itemsJsonFile.readAsString());
@@ -363,7 +328,7 @@ class RestoreService {
         }
       }
 
-      // Orders
+      // 8. Orders & OrderItems
       if (restoreOrders) {
         await _restoreCollection<Order>(
           jsonFile: File('${extractDir.path}/orders.json'),
@@ -380,24 +345,6 @@ class RestoreService {
           findByUuid: (uuid) async => await isar.orders.filter().uuidEqualTo(uuid).findFirst(),
         );
 
-        // Re-link Party
-        final ordersJsonFile = File('${extractDir.path}/orders.json');
-        if (await ordersJsonFile.exists()) {
-          final List list = jsonDecode(await ordersJsonFile.readAsString());
-          await isar.writeTxn(() async {
-            for (var itemMap in list) {
-              final currentUuid = itemMap['uuid'] as String;
-              final partyUuid = itemMap['partyUuid'] as String?;
-              final current = await isar.orders.filter().uuidEqualTo(currentUuid).findFirst();
-              if (current != null && partyUuid != null) {
-                current.party.value = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
-                await current.party.save();
-              }
-            }
-          });
-        }
-
-        // Order Items
         await _restoreCollection<OrderItem>(
           jsonFile: File('${extractDir.path}/order_items.json'),
           strategy: duplicateStrategy,
@@ -412,34 +359,9 @@ class RestoreService {
           }).deleteAll(),
           findByUuid: (uuid) async => await isar.orderItems.filter().uuidEqualTo(uuid).findFirst(),
         );
-
-        // Re-link order, item
-        final orderItemsJsonFile = File('${extractDir.path}/order_items.json');
-        if (await orderItemsJsonFile.exists()) {
-          final List list = jsonDecode(await orderItemsJsonFile.readAsString());
-          await isar.writeTxn(() async {
-            for (var itemMap in list) {
-              final currentUuid = itemMap['uuid'] as String;
-              final orderUuid = itemMap['orderUuid'] as String?;
-              final itemUuid = itemMap['itemUuid'] as String?;
-
-              final current = await isar.orderItems.filter().uuidEqualTo(currentUuid).findFirst();
-              if (current != null) {
-                if (orderUuid != null) {
-                  current.order.value = await isar.orders.filter().uuidEqualTo(orderUuid).findFirst();
-                }
-                if (itemUuid != null) {
-                  current.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
-                }
-                await current.order.save();
-                await current.item.save();
-              }
-            }
-          });
-        }
       }
 
-      // Invoices
+      // 9. Invoices & InvoiceItems
       if (restoreInvoices) {
         await _restoreCollection<Invoice>(
           jsonFile: File('${extractDir.path}/invoices.json'),
@@ -456,32 +378,6 @@ class RestoreService {
           findByUuid: (uuid) async => await isar.invoices.filter().uuidEqualTo(uuid).findFirst(),
         );
 
-        // Re-link party, order
-        final invoicesJsonFile = File('${extractDir.path}/invoices.json');
-        if (await invoicesJsonFile.exists()) {
-          final List list = jsonDecode(await invoicesJsonFile.readAsString());
-          await isar.writeTxn(() async {
-            for (var itemMap in list) {
-              final currentUuid = itemMap['uuid'] as String;
-              final partyUuid = itemMap['partyUuid'] as String?;
-              final orderUuid = itemMap['orderUuid'] as String?;
-
-              final current = await isar.invoices.filter().uuidEqualTo(currentUuid).findFirst();
-              if (current != null) {
-                if (partyUuid != null) {
-                  current.party.value = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
-                }
-                if (orderUuid != null) {
-                  current.order.value = await isar.orders.filter().uuidEqualTo(orderUuid).findFirst();
-                }
-                await current.party.save();
-                await current.order.save();
-              }
-            }
-          });
-        }
-
-        // Invoice Items
         await _restoreCollection<InvoiceItem>(
           jsonFile: File('${extractDir.path}/invoice_items.json'),
           strategy: duplicateStrategy,
@@ -497,7 +393,7 @@ class RestoreService {
           findByUuid: (uuid) async => await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst(),
         );
 
-        // Re-link invoice, item
+        // Re-link invoice parent relation
         final invoiceItemsJsonFile = File('${extractDir.path}/invoice_items.json');
         if (await invoiceItemsJsonFile.exists()) {
           final List list = jsonDecode(await invoiceItemsJsonFile.readAsString());
@@ -505,25 +401,183 @@ class RestoreService {
             for (var itemMap in list) {
               final currentUuid = itemMap['uuid'] as String;
               final invoiceUuid = itemMap['invoiceUuid'] as String?;
-              final itemUuid = itemMap['itemUuid'] as String?;
-
               final current = await isar.invoiceItems.filter().uuidEqualTo(currentUuid).findFirst();
-              if (current != null) {
-                if (invoiceUuid != null) {
-                  current.invoice.value = await isar.invoices.filter().uuidEqualTo(invoiceUuid).findFirst();
+              if (current != null && invoiceUuid != null) {
+                final inv = await isar.invoices.filter().uuidEqualTo(invoiceUuid).findFirst();
+                if (inv != null) {
+                  current.parentInvoiceId = inv.id;
+                  current.invoice.value = inv;
+                  await isar.invoiceItems.put(current);
                 }
-                if (itemUuid != null) {
-                  current.item.value = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
-                }
-                await current.invoice.save();
-                await current.item.save();
               }
             }
           });
         }
       }
 
-      // Sync Queues
+      // 10. Purchases & PurchaseItems
+      await _restoreCollection<Purchase>(
+        jsonFile: File('${extractDir.path}/purchases.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToPurchase(map),
+        putAll: (items) async => await isar.purchases.putAll(items),
+        deleteByUuids: (uuids) async => await isar.purchases.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.purchases.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      await _restoreCollection<PurchaseItem>(
+        jsonFile: File('${extractDir.path}/purchase_items.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToPurchaseItem(map),
+        putAll: (items) async => await isar.purchaseItems.putAll(items),
+        deleteByUuids: (uuids) async => await isar.purchaseItems.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.purchaseItems.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // Re-link purchase parent relation
+      final purchaseItemsJsonFile = File('${extractDir.path}/purchase_items.json');
+      if (await purchaseItemsJsonFile.exists()) {
+        final List list = jsonDecode(await purchaseItemsJsonFile.readAsString());
+        await isar.writeTxn(() async {
+          for (var itemMap in list) {
+            final currentUuid = itemMap['uuid'] as String;
+            final purchaseUuid = itemMap['purchaseUuid'] as String?;
+            final current = await isar.purchaseItems.filter().uuidEqualTo(currentUuid).findFirst();
+            if (current != null && purchaseUuid != null) {
+              final pur = await isar.purchases.filter().uuidEqualTo(purchaseUuid).findFirst();
+              if (pur != null) {
+                current.purchaseId = pur.id;
+                current.purchase.value = pur;
+                await isar.purchaseItems.put(current);
+              }
+            }
+          }
+        });
+      }
+
+      // 11. Expenses
+      await _restoreCollection<Expense>(
+        jsonFile: File('${extractDir.path}/expenses.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToExpense(map),
+        putAll: (items) async => await isar.expenses.putAll(items),
+        deleteByUuids: (uuids) async => await isar.expenses.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.expenses.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // 12. Transactions
+      await _restoreCollection<Transaction>(
+        jsonFile: File('${extractDir.path}/transactions.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToTransaction(map),
+        putAll: (items) async => await isar.transactions.putAll(items),
+        deleteByUuids: (uuids) async => await isar.transactions.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.transactions.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // 13. Bank Accounts
+      await _restoreCollection<BankAccount>(
+        jsonFile: File('${extractDir.path}/bank_accounts.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToBankAccount(map),
+        putAll: (items) async => await isar.bankAccounts.putAll(items),
+        deleteByUuids: (uuids) async => await isar.bankAccounts.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // 14. Credit Notes & Credit Note Items
+      await _restoreCollection<CreditNote>(
+        jsonFile: File('${extractDir.path}/credit_notes.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToCreditNote(map),
+        putAll: (items) async => await isar.creditNotes.putAll(items),
+        deleteByUuids: (uuids) async => await isar.creditNotes.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      await _restoreCollection<CreditNoteItem>(
+        jsonFile: File('${extractDir.path}/credit_note_items.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToCreditNoteItem(map),
+        putAll: (items) async => await isar.creditNoteItems.putAll(items),
+        deleteByUuids: (uuids) async => await isar.creditNoteItems.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.creditNoteItems.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // 15. Debit Notes & Debit Note Items
+      await _restoreCollection<DebitNote>(
+        jsonFile: File('${extractDir.path}/debit_notes.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToDebitNote(map),
+        putAll: (items) async => await isar.debitNotes.putAll(items),
+        deleteByUuids: (uuids) async => await isar.debitNotes.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      await _restoreCollection<DebitNoteItem>(
+        jsonFile: File('${extractDir.path}/debit_note_items.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToDebitNoteItem(map),
+        putAll: (items) async => await isar.debitNoteItems.putAll(items),
+        deleteByUuids: (uuids) async => await isar.debitNoteItems.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // 16. Sync Queues
       await _restoreCollection<SyncQueue>(
         jsonFile: File('${extractDir.path}/sync_queues.json'),
         strategy: duplicateStrategy,
@@ -539,7 +593,6 @@ class RestoreService {
         findByUuid: (uuid) async => await isar.syncQueues.filter().uuidEqualTo(uuid).findFirst(),
       );
 
-      // Clean up extracted files
       await extractDir.delete(recursive: true);
       if (isTemporaryDecrypted) {
         await File(zipToExtract).delete();
@@ -548,7 +601,6 @@ class RestoreService {
       logger.info('Restore operation completed successfully.');
     } catch (e, stackTrace) {
       logger.error('Restore operation failed', e, stackTrace);
-      // Cleanup temp directories on error
       if (await extractDir.exists()) {
         await extractDir.delete(recursive: true);
       }
@@ -559,7 +611,6 @@ class RestoreService {
     }
   }
 
-  /// Internal generic helper to restore an individual collection from a JSON dump
   Future<void> _restoreCollection<T>({
     required File jsonFile,
     required String strategy,
@@ -568,10 +619,7 @@ class RestoreService {
     required Future<void> Function(List<String> uuids) deleteByUuids,
     required Future<dynamic> Function(String uuid) findByUuid,
   }) async {
-    if (!await jsonFile.exists()) {
-      logger.warning('Backup file ${jsonFile.path} does not exist. Skipping collection restoration.');
-      return;
-    }
+    if (!await jsonFile.exists()) return;
 
     final fileContent = await jsonFile.readAsString();
     final List decodedList = jsonDecode(fileContent);
@@ -583,20 +631,15 @@ class RestoreService {
     for (var itemMap in decodedList) {
       final Map<String, dynamic> map = Map<String, dynamic>.from(itemMap);
       final uuid = map['uuid'] as String;
-
       final existingRecord = await findByUuid(uuid);
 
       if (existingRecord == null) {
-        // Record does not exist locally - always insert it
         toPut.add(fromMap(map));
       } else {
-        // Record exists locally - resolve conflicts using selected duplicate handling strategy
         if (strategy == 'replace') {
-          // Delete existing local record first, and put the new one from backup
           uuidsToDelete.add(uuid);
           toPut.add(fromMap(map));
         } else if (strategy == 'merge') {
-          // Merge: Only put if version of backup is higher/newer
           final localVersion = existingRecord.version as int;
           final backupVersion = map['version'] as int? ?? 1;
 
@@ -605,7 +648,6 @@ class RestoreService {
             toPut.add(fromMap(map));
           }
         }
-        // strategy 'skip': just ignore, do nothing
       }
     }
 
@@ -619,16 +661,10 @@ class RestoreService {
         }
       });
     }
-
-    logger.debug('Collection restored from ${jsonFile.path}: ${toPut.length} inserted/updated.');
   }
 
-  // --- Dynamic Model Parsers ---
-
-  /// Helper to dynamically fix local document path prefix if changing mobile device directory structures
   String _rewriteImagePath(String? path, String currentDocsPrefix) {
     if (path == null) return '';
-    // Look for product_images or thumbnails separator
     if (path.contains('product_images')) {
       final subPath = path.substring(path.indexOf('product_images'));
       return '$currentDocsPrefix/$subPath';
@@ -708,7 +744,9 @@ class RestoreService {
   Party _mapMapToParty(Map<String, dynamic> map) {
     return Party()
       ..uuid = map['uuid']
+      ..partyCode = map['partyCode']
       ..partyName = map['partyName']
+      ..partyType = map['partyType']
       ..gstNumber = map['gstNumber']
       ..mobileNumber = map['mobileNumber']
       ..whatsappNumber = map['whatsappNumber']
@@ -738,8 +776,10 @@ class RestoreService {
 
     return Item()
       ..uuid = map['uuid']
+      ..itemCode = map['itemCode']
       ..itemName = map['itemName']
       ..shortName = map['shortName']
+      ..description = map['description']
       ..hsnCode = map['hsnCode']
       ..gstApplicable = map['gstApplicable'] as bool? ?? true
       ..gstRate = (map['gstRate'] as num?)?.toDouble()
@@ -753,6 +793,7 @@ class RestoreService {
       ..currentStock = (map['currentStock'] as num?)?.toDouble()
       ..reorderLevel = (map['reorderLevel'] as num?)?.toDouble()
       ..minimumStock = (map['minimumStock'] as num?)?.toDouble()
+      ..primaryUnitName = map['primaryUnitName']
       ..secondaryUnit = map['secondaryUnit']
       ..conversionFactor = (map['conversionFactor'] as num?)?.toDouble()
       ..barcode = map['barcode']
@@ -781,23 +822,11 @@ class RestoreService {
       ..partyName = map['partyName']
       ..mobileNumber = map['mobileNumber']
       ..gstNumber = map['gstNumber']
-      ..latitude = (map['latitude'] as num?)?.toDouble()
-      ..longitude = (map['longitude'] as num?)?.toDouble()
-      ..locationAddress = map['locationAddress']
       ..subtotal = (map['subtotal'] as num?)?.toDouble()
       ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-      ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
       ..totalGST = (map['totalGST'] as num?)?.toDouble()
-      ..roundOff = (map['roundOff'] as num?)?.toDouble()
       ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
       ..remarks = map['remarks']
-      ..internalNotes = map['internalNotes']
-      ..cancelledBy = map['cancelledBy']
-      ..cancelledDate = map['cancelledDate'] != null ? DateTime.parse(map['cancelledDate']) : null
-      ..cancellationReason = map['cancellationReason']
-      ..createdBy = map['createdBy']
-      ..editedBy = map['editedBy']
-      ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime']) : null
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
       ..isDeleted = map['isDeleted'] as bool? ?? false
@@ -812,14 +841,8 @@ class RestoreService {
       ..itemName = map['itemName']
       ..hsnCode = map['hsnCode']
       ..quantity = (map['quantity'] as num?)?.toDouble()
-      ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
       ..unit = map['unit']
       ..rate = (map['rate'] as num?)?.toDouble()
-      ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
-      ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-      ..gstPercent = (map['gstPercent'] as num?)?.toDouble()
-      ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
       ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
@@ -835,8 +858,6 @@ class RestoreService {
       ..invoiceDate = map['invoiceDate'] != null ? DateTime.parse(map['invoiceDate']) : null
       ..invoiceType = map['invoiceType']
       ..invoiceStatus = map['invoiceStatus']
-      ..sourceOrderId = map['sourceOrderId'] as int?
-      ..sourceOrderNumber = map['sourceOrderNumber']
       ..partyId = map['partyId'] as int?
       ..partyName = map['partyName']
       ..gstNumber = map['gstNumber']
@@ -844,24 +865,12 @@ class RestoreService {
       ..subtotal = (map['subtotal'] as num?)?.toDouble()
       ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
       ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-      ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
-      ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
-      ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
       ..totalGST = (map['totalGST'] as num?)?.toDouble()
-      ..roundOff = (map['roundOff'] as num?)?.toDouble()
       ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
       ..paymentStatus = map['paymentStatus']
       ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
       ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
-      ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate']) : null
       ..remarks = map['remarks']
-      ..termsAndConditions = map['termsAndConditions']
-      ..cancelledBy = map['cancelledBy']
-      ..cancelledDate = map['cancelledDate'] != null ? DateTime.parse(map['cancelledDate']) : null
-      ..cancellationReason = map['cancellationReason']
-      ..createdBy = map['createdBy']
-      ..editedBy = map['editedBy']
-      ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime']) : null
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
       ..isDeleted = map['isDeleted'] as bool? ?? false
@@ -872,11 +881,214 @@ class RestoreService {
   InvoiceItem _mapMapToInvoiceItem(Map<String, dynamic> map) {
     return InvoiceItem()
       ..uuid = map['uuid']
+      ..parentInvoiceId = map['parentInvoiceId'] as int?
       ..itemId = map['itemId'] as int?
       ..itemName = map['itemName']
       ..hsnCode = map['hsnCode']
       ..quantity = (map['quantity'] as num?)?.toDouble()
       ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
+      ..unit = map['unit']
+      ..rate = (map['rate'] as num?)?.toDouble()
+      ..discount = (map['discount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..gstRate = (map['gstRate'] as num?)?.toDouble()
+      ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+      ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
+      ..batchNumber = map['batchNumber']
+      ..expiryDate = map['expiryDate']
+      ..mfgDate = map['mfgDate']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  Purchase _mapMapToPurchase(Map<String, dynamic> map) {
+    return Purchase()
+      ..uuid = map['uuid']
+      ..purchaseNumber = map['purchaseNumber']
+      ..supplierInvoiceNumber = map['supplierInvoiceNumber']
+      ..purchaseDate = map['purchaseDate'] != null ? DateTime.parse(map['purchaseDate']) : null
+      ..partyId = map['partyId'] as int?
+      ..partyName = map['partyName']
+      ..gstNumber = map['gstNumber']
+      ..address = map['address']
+      ..subtotal = (map['subtotal'] as num?)?.toDouble()
+      ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..totalGST = (map['totalGST'] as num?)?.toDouble()
+      ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
+      ..paymentStatus = map['paymentStatus']
+      ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
+      ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
+      ..remarks = map['remarks']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  PurchaseItem _mapMapToPurchaseItem(Map<String, dynamic> map) {
+    return PurchaseItem()
+      ..uuid = map['uuid']
+      ..purchaseId = map['purchaseId'] as int?
+      ..purchaseUuid = map['purchaseUuid']
+      ..itemId = map['itemId'] as int?
+      ..itemName = map['itemName']
+      ..hsnCode = map['hsnCode']
+      ..quantity = (map['quantity'] as num?)?.toDouble()
+      ..unit = map['unit']
+      ..rate = (map['rate'] as num?)?.toDouble()
+      ..discount = (map['discount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..gstRate = (map['gstRate'] as num?)?.toDouble()
+      ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+      ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
+      ..batchNumber = map['batchNumber']
+      ..expiryDate = map['expiryDate']
+      ..mfgDate = map['mfgDate']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  Expense _mapMapToExpense(Map<String, dynamic> map) {
+    return Expense()
+      ..uuid = map['uuid']
+      ..category = map['category']
+      ..amount = (map['amount'] as num?)?.toDouble()
+      ..expenseDate = map['expenseDate'] != null ? DateTime.parse(map['expenseDate']) : null
+      ..paymentMode = map['paymentMode']
+      ..remarks = map['remarks']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  Transaction _mapMapToTransaction(Map<String, dynamic> map) {
+    return Transaction()
+      ..uuid = map['uuid']
+      ..transactionNumber = map['transactionNumber']
+      ..transactionDate = map['transactionDate'] != null ? DateTime.parse(map['transactionDate']) : null
+      ..partyUuid = map['partyUuid']
+      ..partyName = map['partyName']
+      ..transactionType = map['transactionType']
+      ..amount = (map['amount'] as num?)?.toDouble()
+      ..paymentMode = map['paymentMode']
+      ..referenceNumber = map['referenceNumber']
+      ..remarks = map['remarks']
+      ..linkedBillUuid = map['linkedBillUuid']
+      ..linkedBillNumber = map['linkedBillNumber']
+      ..targetPartyUuid = map['targetPartyUuid']
+      ..targetPartyName = map['targetPartyName']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  BankAccount _mapMapToBankAccount(Map<String, dynamic> map) {
+    return BankAccount()
+      ..uuid = map['uuid']
+      ..accountName = map['accountName']
+      ..bankName = map['bankName']
+      ..accountNumber = map['accountNumber']
+      ..ifscCode = map['ifscCode']
+      ..branchName = map['branchName']
+      ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
+      ..currentBalance = (map['currentBalance'] as num?)?.toDouble()
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  CreditNote _mapMapToCreditNote(Map<String, dynamic> map) {
+    return CreditNote()
+      ..uuid = map['uuid']
+      ..creditNoteNumber = map['creditNoteNumber']
+      ..creditNoteDate = map['creditNoteDate'] != null ? DateTime.parse(map['creditNoteDate']) : null
+      ..originalInvoiceNumber = map['originalInvoiceNumber']
+      ..originalInvoiceUuid = map['originalInvoiceUuid']
+      ..partyId = map['partyId'] as int?
+      ..partyName = map['partyName']
+      ..gstNumber = map['gstNumber']
+      ..address = map['address']
+      ..subtotal = (map['subtotal'] as num?)?.toDouble()
+      ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..totalGST = (map['totalGST'] as num?)?.toDouble()
+      ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
+      ..remarks = map['remarks']
+      ..createdBy = map['createdBy']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  CreditNoteItem _mapMapToCreditNoteItem(Map<String, dynamic> map) {
+    return CreditNoteItem()
+      ..uuid = map['uuid']
+      ..itemId = map['itemId'] as int?
+      ..itemName = map['itemName']
+      ..hsnCode = map['hsnCode']
+      ..quantity = (map['quantity'] as num?)?.toDouble()
+      ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
+      ..rate = (map['rate'] as num?)?.toDouble()
+      ..discount = (map['discount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..gstRate = (map['gstRate'] as num?)?.toDouble()
+      ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+      ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  DebitNote _mapMapToDebitNote(Map<String, dynamic> map) {
+    return DebitNote()
+      ..uuid = map['uuid']
+      ..debitNoteNumber = map['debitNoteNumber']
+      ..debitNoteDate = map['debitNoteDate'] != null ? DateTime.parse(map['debitNoteDate']) : null
+      ..originalPurchaseNumber = map['originalPurchaseNumber']
+      ..originalPurchaseUuid = map['originalPurchaseUuid']
+      ..partyId = map['partyId'] as int?
+      ..partyName = map['partyName']
+      ..gstNumber = map['gstNumber']
+      ..address = map['address']
+      ..subtotal = (map['subtotal'] as num?)?.toDouble()
+      ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..totalGST = (map['totalGST'] as num?)?.toDouble()
+      ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
+      ..remarks = map['remarks']
+      ..createdBy = map['createdBy']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  DebitNoteItem _mapMapToDebitNoteItem(Map<String, dynamic> map) {
+    return DebitNoteItem()
+      ..uuid = map['uuid']
+      ..itemId = map['itemId'] as int?
+      ..itemName = map['itemName']
+      ..hsnCode = map['hsnCode']
+      ..quantity = (map['quantity'] as num?)?.toDouble()
       ..rate = (map['rate'] as num?)?.toDouble()
       ..discount = (map['discount'] as num?)?.toDouble()
       ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
