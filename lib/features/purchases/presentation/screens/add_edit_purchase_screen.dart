@@ -554,7 +554,11 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.purchaseUuid != null ? 'Edit Purchase Bill' : 'New Purchase Bill'),
+        title: Text(
+          widget.purchaseUuid != null
+              ? 'Edit Purchase Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
+              : 'New Purchase Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

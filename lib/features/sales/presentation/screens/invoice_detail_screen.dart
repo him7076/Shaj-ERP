@@ -68,7 +68,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               .filter()
               .isDeletedEqualTo(false)
               .and()
-              .group((q) => q.parentInvoiceIdEqualTo(targetId).or().invoice((i) => i.idEqualTo(targetId)))
+              .parentInvoiceIdEqualTo(targetId)
               .findAll();
         }
 

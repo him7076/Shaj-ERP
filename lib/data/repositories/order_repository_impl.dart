@@ -116,7 +116,8 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
             final double available = dbItem.currentStock ?? 0.0;
             final double requested = item.quantity ?? 0.0;
 
-            if (available < requested) {
+            final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
+            if (!allowNegativeStock && available < requested) {
               throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requested');
             }
 

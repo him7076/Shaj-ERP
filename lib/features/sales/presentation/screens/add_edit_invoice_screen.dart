@@ -57,6 +57,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   List<String> _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2'];
   String _selectedSalesman = 'Default Salesman';
 
+  String _voucherNumberDisplay = '';
+
   void _loadSalesmenAndModes() {
     try {
       final prefs = ref.read(sharedPreferencesProvider);
@@ -177,6 +179,14 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       ref.read(invoiceCartProvider.notifier).clear();
       if (widget.invoiceUuid != null) {
         await _loadInvoiceData();
+      } else {
+        try {
+          final repo = ref.read(invoiceRepositoryProvider);
+          final nextNo = await repo.generateNextInvoiceNumber();
+          if (mounted) {
+            setState(() => _voucherNumberDisplay = nextNo);
+          }
+        } catch (_) {}
       }
     });
   }
@@ -187,6 +197,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       final invoice = await db.invoices.filter().uuidEqualTo(widget.invoiceUuid).findFirst();
       if (invoice != null) {
         _existingInvoice = invoice;
+        _voucherNumberDisplay = invoice.invoiceNumber ?? '';
         _invoiceType = invoice.invoiceType ?? 'Tax Invoice';
         _invoiceDate = invoice.invoiceDate ?? DateTime.now();
         _dueDate = invoice.dueDate ?? DateTime.now();
@@ -225,7 +236,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 .filter()
                 .isDeletedEqualTo(false)
                 .and()
-                .group((q) => q.parentInvoiceIdEqualTo(targetId).or().invoice((i) => i.idEqualTo(targetId)))
+                .parentInvoiceIdEqualTo(targetId)
                 .findAll();
           }
 
@@ -735,7 +746,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.invoiceUuid != null ? 'Edit Sales Invoice' : 'Direct Tax Invoice'),
+          title: Text(
+            widget.invoiceUuid != null
+                ? 'Edit Sales Invoice ${_voucherNumberDisplay.isNotEmpty ? "(#$_voucherNumberDisplay)" : ""}'
+                : 'Direct Tax Invoice ${_voucherNumberDisplay.isNotEmpty ? "(#$_voucherNumberDisplay)" : ""}',
+          ),
         ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
