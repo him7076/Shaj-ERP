@@ -67,6 +67,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _loadItem() async {
     setState(() => _isLoading = true);
     try {
+      try {
+        await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
+      } catch (_) {}
       final repo = ref.read(itemRepositoryProvider);
       final isar = ref.read(databaseServiceProvider).isar;
       final fetchedItem = await repo.getByUuid(widget.itemUuid);

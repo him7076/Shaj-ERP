@@ -893,6 +893,7 @@ class SyncService {
 
     // Post-download pass: Ensure all line items are connected to parents in local Isar DB
     await _relinkAllRelations();
+    await recalculateAllItemStocksFromTransactions();
   }
 
   /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
@@ -976,6 +977,115 @@ class SyncService {
       });
     } catch (e) {
       logger.error('Error during post-sync relation re-linking pass', e);
+    }
+  }
+
+  /// Dynamically computes real current stock for all items from local transactions:
+  /// Current Stock = (openingStock ?? 0) + (Purchases) - (Sales) + (Sales Returns) - (Purchase Returns)
+  Future<void> recalculateAllItemStocksFromTransactions() async {
+    final isar = _dbService.isar;
+    logger.info('Recalculating item stocks dynamically from local transactions...');
+
+    try {
+      final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+      if (allItems.isEmpty) return;
+
+      final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+      final allCreditNoteItems = await isar.creditNoteItems.filter().isDeletedEqualTo(false).findAll();
+      final allDebitNoteItems = await isar.debitNoteItems.filter().isDeletedEqualTo(false).findAll();
+
+      // Load item links for accuracy
+      for (var ii in allInvItems) { try { await ii.item.load(); } catch (_) {} }
+      for (var pi in allPurItems) { try { await pi.item.load(); } catch (_) {} }
+      for (var cni in allCreditNoteItems) { try { await cni.item.load(); } catch (_) {} }
+      for (var dni in allDebitNoteItems) { try { await dni.item.load(); } catch (_) {} }
+
+      // Filter out deleted parent invoices/purchases
+      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final validInvIds = allInvoices.map((i) => i.id).toSet();
+      final validInvUuids = allInvoices.map((i) => i.uuid).whereType<String>().toSet();
+
+      final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final validPurIds = allPurchases.map((p) => p.id).toSet();
+      final validPurUuids = allPurchases.map((p) => p.uuid).whereType<String>().toSet();
+
+      await isar.writeTxn(() async {
+        for (var item in allItems) {
+          final itemUuid = item.uuid;
+          final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
+
+          // 1. Total Sales (InvoiceItems)
+          double totalSales = 0.0;
+          for (var ii in allInvItems) {
+            final isValidParent = (ii.parentInvoiceId != null && validInvIds.contains(ii.parentInvoiceId)) ||
+                (ii.parentInvoiceUuid != null && validInvUuids.contains(ii.parentInvoiceUuid)) ||
+                ii.invoice.value != null;
+            if (!isValidParent) continue;
+
+            final linkedUuid = ii.item.value?.uuid;
+            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+                (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
+
+            if (isMatch) {
+              totalSales += (ii.quantity ?? 0.0);
+            }
+          }
+
+          // 2. Total Purchases (PurchaseItems)
+          double totalPurchases = 0.0;
+          for (var pi in allPurItems) {
+            final isValidParent = (pi.purchaseId != null && validPurIds.contains(pi.purchaseId)) ||
+                (pi.purchaseUuid != null && validPurUuids.contains(pi.purchaseUuid)) ||
+                pi.purchase.value != null;
+            if (!isValidParent) continue;
+
+            final linkedUuid = pi.item.value?.uuid;
+            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+                (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
+
+            if (isMatch) {
+              totalPurchases += (pi.quantity ?? 0.0);
+            }
+          }
+
+          // 3. Sales Returns / Credit Notes (Stock In)
+          double totalSalesReturns = 0.0;
+          for (var cni in allCreditNoteItems) {
+            final linkedUuid = cni.item.value?.uuid;
+            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+                (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
+            if (isMatch) {
+              totalSalesReturns += (cni.quantity ?? 0.0);
+            }
+          }
+
+          // 4. Purchase Returns / Debit Notes (Stock Out)
+          double totalPurchaseReturns = 0.0;
+          for (var dni in allDebitNoteItems) {
+            final linkedUuid = dni.item.value?.uuid;
+            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+                (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
+            if (isMatch) {
+              totalPurchaseReturns += (dni.quantity ?? 0.0);
+            }
+          }
+
+          // Real Calculated Current Stock Formula
+          final opening = item.openingStock ?? 0.0;
+          final computedStock = opening + totalPurchases - totalSales + totalSalesReturns - totalPurchaseReturns;
+
+          // Update item's currentStock in local DB if transactions exist or if stock was 0
+          if (totalSales > 0 || totalPurchases > 0 || totalSalesReturns > 0 || totalPurchaseReturns > 0 || item.currentStock == 0.0) {
+            item.currentStock = computedStock;
+            await isar.items.put(item);
+          }
+        }
+      });
+
+      logger.info('Recalculated stocks for ${allItems.length} items from local transactions successfully.');
+    } catch (e, stackTrace) {
+      logger.error('Failed to recalculate item stocks from transactions', e, stackTrace);
     }
   }
 

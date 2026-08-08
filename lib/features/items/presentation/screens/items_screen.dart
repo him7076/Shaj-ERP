@@ -33,6 +33,18 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions().then((_) {
+          if (mounted) ref.invalidate(filteredItemsProvider);
+        });
+      } catch (_) {}
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
