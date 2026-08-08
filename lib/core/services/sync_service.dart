@@ -108,7 +108,8 @@ class SyncService {
   }
 
   DateTime _loadLastSyncTime() {
-    final timestamp = _prefs.getInt(AppConstants.keyLastSyncTime);
+    final activeFirmId = _dbService.activeFirmId;
+    final timestamp = _prefs.getInt('${AppConstants.keyLastSyncTime}_$activeFirmId') ?? _prefs.getInt(AppConstants.keyLastSyncTime);
     if (timestamp != null) {
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     }
@@ -116,7 +117,8 @@ class SyncService {
   }
 
   Future<void> _saveLastSyncTime(DateTime time) async {
-    await _prefs.setInt(AppConstants.keyLastSyncTime, time.millisecondsSinceEpoch);
+    final activeFirmId = _dbService.activeFirmId;
+    await _prefs.setInt('${AppConstants.keyLastSyncTime}_$activeFirmId', time.millisecondsSinceEpoch);
     _currentState = _currentState.copyWith(lastSyncTime: time);
   }
 
@@ -141,14 +143,18 @@ class SyncService {
 
       final localFirms = List<String>.from(_prefs.getStringList('firms_list') ?? ['firm_default']);
       final Set<String> updatedFirmsSet = Set.from(localFirms);
+      final Set<String> remoteDeletedFirms = {};
+      final Set<String> existingRemoteIds = {};
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
         final firmId = data['firmId'] as String? ?? doc.id;
         final firmName = data['firmName'] as String?;
         final isDeleted = data['isDeleted'] as bool? ?? false;
+        existingRemoteIds.add(firmId);
 
         if (isDeleted) {
+          remoteDeletedFirms.add(firmId);
           updatedFirmsSet.remove(firmId);
           await _prefs.remove('firm_name_$firmId');
         } else {
@@ -165,11 +171,15 @@ class SyncService {
 
       final updatedFirmsList = updatedFirmsSet.toList();
 
-      // 2. Upload local firms to Firestore if missing
+      // 2. Upload local firms to Firestore ONLY if missing in Firestore and NOT deleted remotely
       final batch = _firebaseService.firestore.batch();
       bool hasUploads = false;
 
       for (var firmId in updatedFirmsList) {
+        if (existingRemoteIds.contains(firmId) || remoteDeletedFirms.contains(firmId)) {
+          continue; // Do NOT overwrite existing remote firms or resurrect deleted firms!
+        }
+
         final firmName = _prefs.getString('firm_name_$firmId') ??
             (firmId == 'firm_default' ? 'Default Company' : 'New Company');
 
@@ -203,16 +213,22 @@ class SyncService {
     }
   }
 
-  /// Hard-delete a firm document in Firestore
+  /// Mark firm document as isDeleted: true in Firestore
   Future<void> deleteRemoteFirm(String firmId) async {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;
     try {
       final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
-      await docRef.delete();
-      logger.info('Permanently deleted firm $firmId from Firestore.');
+      await docRef.set({
+        'firmId': firmId,
+        'companyId': _firebaseService.companyId,
+        'isDeleted': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+        'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
+      }, SetOptions(merge: true));
+      logger.info('Marked firm $firmId as isDeleted: true in Firestore.');
     } catch (e) {
-      logger.error('Failed to delete firm $firmId in Firestore', e);
+      logger.error('Failed to mark firm $firmId as deleted in Firestore', e);
     }
   }
 
@@ -724,13 +740,21 @@ class SyncService {
       try {
         final localCount = await _getLocalRecordCount(entityType);
 
+        DateTime effectiveLastSync = lastSync;
+        if (effectiveLastSync.millisecondsSinceEpoch == 0 && localCount > 0) {
+          final maxLocalUpdated = await _getMaxLocalUpdatedAt(entityType);
+          if (maxLocalUpdated != null) {
+            effectiveLastSync = maxLocalUpdated;
+          }
+        }
+
         var query = _firebaseService.firestore
             .collection(collectionName)
             .where('companyId', isEqualTo: _firebaseService.companyId);
 
-        // If local database has records and lastSync is valid, filter by updatedAt diff
-        if (localCount > 0 && lastSync.millisecondsSinceEpoch > 0) {
-          query = query.where('updatedAt', isGreaterThan: lastSync.toIso8601String());
+        // If local database has records or a valid sync timestamp, filter by updatedAt diff
+        if (effectiveLastSync.millisecondsSinceEpoch > 0) {
+          query = query.where('updatedAt', isGreaterThan: effectiveLastSync.toIso8601String());
         }
 
         final querySnapshot = await query.get().timeout(const Duration(seconds: 5));
@@ -801,6 +825,10 @@ class SyncService {
               await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
             }
           } else {
+            if (data['isDeleted'] == true) {
+              logger.info('Skipping insert for remote record marked isDeleted for $entityType UUID: $uuid');
+              continue;
+            }
             logger.info('Inserting new remote record for $entityType UUID: $uuid');
             await _insertLocalRecord(entityType, data);
           }
@@ -918,6 +946,37 @@ class SyncService {
     } catch (_) {
       return 0;
     }
+  }
+
+  /// Helper to find maximum updatedAt timestamp among local records for an entity
+  Future<DateTime?> _getMaxLocalUpdatedAt(String entityType) async {
+    final isar = _dbService.isar;
+    try {
+      switch (entityType) {
+        case 'Party':
+          final r = await isar.partys.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Item':
+          final r = await isar.items.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Invoice':
+          final r = await isar.invoices.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Purchase':
+          final r = await isar.purchases.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Order':
+          final r = await isar.orders.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Expense':
+          final r = await isar.expenses.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Transaction':
+          final r = await isar.transactions.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+      }
+    } catch (_) {}
+    return null;
   }
 
   /// Helper mapping collection class names to firestore endpoints

@@ -1099,7 +1099,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final item = widget.cartItem;
-    final primaryUnit = item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
+    final primaryUnit = item.item.primaryUnitName ?? item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
     final secondaryUnit = item.item.secondaryUnit;
     final List<String> availableUnits = [
       primaryUnit,

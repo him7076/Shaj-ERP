@@ -272,7 +272,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       await item.unit.load();
     } catch (_) {}
 
-    final primaryUnitName = item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
 
     final newItem = PurchaseItem()
       ..itemId = item.id
@@ -1240,7 +1240,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final dbItem = _resolvedDbItem ?? item.item.value;
-    final primaryUnit = dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? item.unit ?? 'PCS';
+    final primaryUnit = dbItem?.primaryUnitName ?? dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? item.unit ?? 'PCS';
     final secondaryUnit = dbItem?.secondaryUnit;
     final List<String> availableUnits = [
       primaryUnit,
