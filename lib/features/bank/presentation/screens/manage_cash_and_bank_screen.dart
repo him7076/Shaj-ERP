@@ -751,5 +751,8 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                         },
                       ),
           ),
+        ],
+      ),
+    );
   }
 }
