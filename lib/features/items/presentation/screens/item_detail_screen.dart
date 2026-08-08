@@ -423,7 +423,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     final isOut = stockService.isOutOfStock(item);
 
     // Calculate Primary vs Secondary stock breakdown
-    final double primaryStock = item.currentStock ?? 0.0;
+    final double rawCurrent = item.currentStock ?? 0.0;
+    final double rawOpening = item.openingStock ?? 0.0;
+    final double primaryStock = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
     final String primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
     final String? secUnitName = item.secondaryUnit;
     final double? convFactor = item.conversionFactor;

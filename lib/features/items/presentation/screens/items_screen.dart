@@ -652,7 +652,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   }
 
   Widget _buildProductCard(Item item, ThemeData theme) {
-    final stockVal = item.currentStock ?? 0.0;
+    final rawCurrent = item.currentStock ?? 0.0;
+    final rawOpening = item.openingStock ?? 0.0;
+    final stockVal = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
     final reorderVal = item.reorderLevel ?? 0.0;
     final isOut = stockVal <= 0;
     final isLow = stockVal <= reorderVal && !isOut;

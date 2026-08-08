@@ -911,8 +911,16 @@ class WebMockIsar implements Isar {
           ..sellRate = map['sellRate'] as double?
           ..wholesaleRate = map['wholesaleRate'] as double?
           ..minimumSellingPrice = map['minimumSellingPrice'] as double?
-          ..openingStock = map['openingStock'] as double?
-          ..currentStock = map['currentStock'] as double?
+          ..openingStock = (map['openingStock'] as num?)?.toDouble()
+          ..currentStock = (() {
+            final c = (map['currentStock'] as num?)?.toDouble() ?? 0.0;
+            final s = (map['stock'] as num?)?.toDouble() ?? 0.0;
+            final o = (map['openingStock'] as num?)?.toDouble() ?? 0.0;
+            if (c > 0.0) return c;
+            if (s > 0.0) return s;
+            if (o > 0.0) return o;
+            return c;
+          })()
           ..reorderLevel = map['reorderLevel'] as double?
           ..minimumStock = map['minimumStock'] as double?
           ..secondaryUnit = map['secondaryUnit'] as String?
