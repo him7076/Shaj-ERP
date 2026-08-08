@@ -45,4 +45,16 @@ class ExpenseRepositoryImpl extends BaseIsarRepository<Expense> implements Expen
       throw DatabaseException('Failed to get expenses by category: $e');
     }
   }
+
+  @override
+  Future<String> generateNextVoucherNumber() async {
+    try {
+      final count = await collection.count();
+      final nextNum = 1001 + count;
+      return 'EXP-$nextNum';
+    } catch (e) {
+      final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(7);
+      return 'EXP-$timestamp';
+    }
+  }
 }

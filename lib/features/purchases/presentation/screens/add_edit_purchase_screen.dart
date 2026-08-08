@@ -1132,12 +1132,13 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   late TextEditingController _rateExclController;
   late TextEditingController _rateInclController;
   late TextEditingController _discController;
-  late TextEditingController _gstController;
+  late TextEditingController _freeQtyController;
   late TextEditingController _batchController;
   late TextEditingController _mfgDateController;
   late TextEditingController _expDateController;
 
   bool _isUpdatingLocally = false;
+  bool _showMoreDetails = false;
   Item? _resolvedDbItem;
 
   @override
@@ -1149,6 +1150,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
     final double incl = excl * (1 + gstPct / 100.0);
 
     _qtyController = TextEditingController(text: item.quantity?.toInt().toString() ?? '1');
+    _freeQtyController = TextEditingController(text: item.freeQuantity?.toInt().toString() ?? '0');
     _rateExclController = TextEditingController(text: excl.toStringAsFixed(2));
     _rateInclController = TextEditingController(text: incl.toStringAsFixed(2));
     _discController = TextEditingController(text: item.discount?.toString() ?? '0.0');
@@ -1215,6 +1217,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   @override
   void dispose() {
     _qtyController.dispose();
+    _freeQtyController.dispose();
     _rateExclController.dispose();
     _rateInclController.dispose();
     _discController.dispose();
@@ -1423,6 +1426,107 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                 ],
               ),
               const SizedBox(height: 8),
+
+              // Expandable Batch, Mfg/Exp Date & Free Qty
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _showMoreDetails = !_showMoreDetails;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _showMoreDetails ? '▲ Hide Batch, Free Qty & GST Details' : '▼ More Inputs (Free Qty, Batch, Expiry, GST %)',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_showMoreDetails) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _freeQtyController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final double? fq = double.tryParse(val);
+                                if (fq != null) {
+                                  setState(() => item.freeQuantity = fq);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _gstController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(labelText: 'GST %', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final double? gstVal = double.tryParse(val);
+                                if (gstVal != null) {
+                                  _triggerChanged(gst: gstVal);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _batchController,
+                              decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                item.batchNumber = val.trim();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mfgDateController,
+                              decoration: const InputDecoration(labelText: 'Mfg Date', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                item.mfgDate = val.trim();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _expDateController,
+                        decoration: const InputDecoration(labelText: 'Expiry Date (e.g. 12/28)', isDense: true, border: OutlineInputBorder()),
+                        onChanged: (val) {
+                          item.expiryDate = val.trim();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
 
               // Line Total Summary Pill
               Container(

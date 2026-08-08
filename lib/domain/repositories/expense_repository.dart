@@ -7,4 +7,7 @@ abstract class ExpenseRepository implements BaseRepository<Expense> {
 
   /// Retrieves list of expenses filtered by category or dates
   Future<List<Expense>> getExpensesByCategory(String category);
+
+  /// Generates the next sequential expense voucher number (e.g., EXP-1001)
+  Future<String> generateNextVoucherNumber();
 }

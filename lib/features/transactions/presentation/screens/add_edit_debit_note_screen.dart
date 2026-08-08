@@ -372,6 +372,24 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                         _buildNumberField(_rateController, 'Rate (₹)'),
                         const SizedBox(height: 12),
                         _buildNumberField(_discountController, 'Discount Amount (₹)'),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _batchController,
+                                decoration: const InputDecoration(labelText: 'Batch No.', border: OutlineInputBorder()),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _expDateController,
+                                decoration: const InputDecoration(labelText: 'Expiry Date', border: OutlineInputBorder()),
+                              ),
+                            ),
+                          ],
+                        ),
                       ] else ...[
                         Row(
                           children: [
@@ -380,6 +398,13 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                             Expanded(child: _buildNumberField(_rateController, 'Rate (₹)')),
                             const SizedBox(width: 12),
                             Expanded(child: _buildNumberField(_discountController, 'Discount Amount (₹)')),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _batchController,
+                                decoration: const InputDecoration(labelText: 'Batch No.', border: OutlineInputBorder()),
+                              ),
+                            ),
                           ],
                         ),
                       ],

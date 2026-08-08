@@ -1328,6 +1328,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
   late TextEditingController _expDateController;
 
   bool _isUpdatingLocally = false;
+  bool _showMoreDetails = false;
 
   @override
   void initState() {
@@ -1413,7 +1414,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
     if (!isDesktop) {
-      // Mobile-optimized item card layout
+      // Mobile-optimized item card layout with expandable advanced inputs
       return Card(
         margin: const EdgeInsets.symmetric(vertical: 4),
         elevation: 0,
@@ -1584,6 +1585,107 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                 ],
               ),
               const SizedBox(height: 8),
+
+              // Advanced Details Expandable Button & Panel
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _showMoreDetails = !_showMoreDetails;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _showMoreDetails ? '▲ Hide Batch, Free Qty & Tax Details' : '▼ More Inputs (Free Qty, Batch, Expiry, Disc ₹)',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_showMoreDetails) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _freeQtyController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final double? fq = double.tryParse(val);
+                                if (fq != null) {
+                                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, freeQuantity: fq);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _discAmountController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(labelText: 'Disc Amount (₹)', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final double? da = double.tryParse(val);
+                                if (da != null) {
+                                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, discountAmount: da);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _batchController,
+                              decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mfgDateController,
+                              decoration: const InputDecoration(labelText: 'Mfg Date', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _expDateController,
+                        decoration: const InputDecoration(labelText: 'Expiry Date (e.g. 12/28)', isDense: true, border: OutlineInputBorder()),
+                        onChanged: (val) {
+                          ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
 
               // Item Total Summary Pill
               Container(
