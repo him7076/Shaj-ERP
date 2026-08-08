@@ -9,6 +9,7 @@ import 'package:business_sahaj_erp/core/services/firebase_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/constants/app_constants.dart';
+import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 
 // Collections
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
