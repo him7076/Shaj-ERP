@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
@@ -71,7 +73,7 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
                   ..shortName = pUnit
                   ..createdAt = DateTime.now()
                   ..updatedAt = DateTime.now();
-                matched.id = await isar.units.put(matched);
+                matched.id = await isar.units.put(matched!);
               }
               itemToSave.unit.value = matched;
             }
