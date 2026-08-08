@@ -582,14 +582,16 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
             // Add Item Input Form Row
             if (isMobile) ...[
-              RawAutocomplete<String>(
-                textEditingController: _itemNameController,
+              Autocomplete<String>(
                 optionsBuilder: (textEditingValue) {
                   if (textEditingValue.text.isEmpty) return _expenseTemplates.map((e) => e['name'] as String);
                   final query = textEditingValue.text.toLowerCase();
                   return _expenseTemplates.map((e) => e['name'] as String).where((name) => name.toLowerCase().contains(query));
                 },
                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                  // Sync controller with _itemNameController
+                  controller.text = _itemNameController.text;
+                  controller.selection = _itemNameController.selection;
                   return TextField(
                     controller: controller,
                     focusNode: focusNode,
@@ -599,9 +601,13 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       border: OutlineInputBorder(),
                       isDense: true,
                     ),
+                    onChanged: (val) {
+                      _itemNameController.text = val;
+                    },
                   );
                 },
                 onSelected: (selection) {
+                  _itemNameController.text = selection;
                   final matched = _expenseTemplates.firstWhere((t) => t['name'] == selection, orElse: () => {});
                   if (matched.isNotEmpty) {
                     _itemRateController.text = (matched['defaultRate'] as double).toStringAsFixed(0);
@@ -652,14 +658,15 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 children: [
                   Expanded(
                     flex: 3,
-                    child: RawAutocomplete<String>(
-                      textEditingController: _itemNameController,
+                    child: Autocomplete<String>(
                       optionsBuilder: (textEditingValue) {
                         if (textEditingValue.text.isEmpty) return _expenseTemplates.map((e) => e['name'] as String);
                         final query = textEditingValue.text.toLowerCase();
                         return _expenseTemplates.map((e) => e['name'] as String).where((name) => name.toLowerCase().contains(query));
                       },
                       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                        controller.text = _itemNameController.text;
+                        controller.selection = _itemNameController.selection;
                         return TextField(
                           controller: controller,
                           focusNode: focusNode,
@@ -669,9 +676,13 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                             border: OutlineInputBorder(),
                             isDense: true,
                           ),
+                          onChanged: (val) {
+                            _itemNameController.text = val;
+                          },
                         );
                       },
                       onSelected: (selection) {
+                        _itemNameController.text = selection;
                         final matched = _expenseTemplates.firstWhere((t) => t['name'] == selection, orElse: () => {});
                         if (matched.isNotEmpty) {
                           _itemRateController.text = (matched['defaultRate'] as double).toStringAsFixed(0);

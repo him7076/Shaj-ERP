@@ -1132,7 +1132,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   late TextEditingController _rateExclController;
   late TextEditingController _rateInclController;
   late TextEditingController _discController;
-  late TextEditingController _freeQtyController;
+  late TextEditingController _gstController;
   late TextEditingController _batchController;
   late TextEditingController _mfgDateController;
   late TextEditingController _expDateController;
@@ -1150,7 +1150,6 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
     final double incl = excl * (1 + gstPct / 100.0);
 
     _qtyController = TextEditingController(text: item.quantity?.toInt().toString() ?? '1');
-    _freeQtyController = TextEditingController(text: item.freeQuantity?.toInt().toString() ?? '0');
     _rateExclController = TextEditingController(text: excl.toStringAsFixed(2));
     _rateInclController = TextEditingController(text: incl.toStringAsFixed(2));
     _discController = TextEditingController(text: item.discount?.toString() ?? '0.0');
@@ -1463,13 +1462,15 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                         children: [
                           Expanded(
                             child: TextFormField(
-                              controller: _freeQtyController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
+                              controller: _rateInclController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: OutlineInputBorder()),
                               onChanged: (val) {
-                                final double? fq = double.tryParse(val);
-                                if (fq != null) {
-                                  setState(() => item.freeQuantity = fq);
+                                final double? incl = double.tryParse(val);
+                                if (incl != null) {
+                                  final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                                  final excl = incl / (1 + gstPct / 100.0);
+                                  _triggerChanged(exclRate: excl);
                                 }
                               },
                             ),
