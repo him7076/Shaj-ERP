@@ -438,7 +438,11 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           isCash: isCash,
         ),
       ),
-    );// --- Unified Display Item for Account Transactions ---
+    );
+  }
+}
+
+// --- Unified Display Item for Account Transactions ---
 class AccountTransactionDisplayItem {
   final String transactionNumber;
   final String partyName;

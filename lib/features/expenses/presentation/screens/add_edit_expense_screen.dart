@@ -7,7 +7,9 @@ import 'package:business_sahaj_erp/features/expenses/presentation/providers/expe
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/widgets/expense_category_dialog.dart';
+import 'package:isar/isar.dart';
 
 class ExpenseLineItem {
   String name;
