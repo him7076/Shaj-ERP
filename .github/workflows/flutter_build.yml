@@ -45,11 +45,14 @@ jobs:
           commit_message: "chore: Auto-build web bundle for Vercel deployment"
           file_pattern: 'build/web/*'
 
+      - name: Build Universal Release APK
+        run: flutter build apk --release
+
       - name: Build APK (Split Per ABI)
         run: flutter build apk --split-per-abi
 
       - name: Upload APKs as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-apk-builds
+          name: Sahaj-ERP-Android-APKs
           path: build/app/outputs/flutter-apk/*.apk
