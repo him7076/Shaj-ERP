@@ -21,6 +21,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
   bool _showSearch = false;
+  int _displayLimit = 50;
 
   @override
   void initState() {
@@ -164,11 +165,38 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   );
                 }
 
+                final visibleList = orders.take(_displayLimit).toList();
+                final hasMore = orders.length > _displayLimit;
+
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  itemCount: orders.length,
+                  itemCount: visibleList.length + (hasMore ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final order = orders[index];
+                    if (index == visibleList.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _displayLimit += 50;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.arrow_downward_rounded),
+                            label: Text(
+                              'Load More Orders (Showing ${_displayLimit} of ${orders.length})',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final order = visibleList[index];
                     return _buildOrderCard(order, theme);
                   },
                 );

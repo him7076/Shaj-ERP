@@ -28,6 +28,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
   final TextEditingController _searchController = TextEditingController();
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
   bool _showSearch = false;
+  int _displayLimit = 50;
 
   @override
   void initState() {
@@ -485,12 +486,39 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                     ),
 
                     // List of purchases
-                    Expanded(
+                    final visibleList = list.take(_displayLimit).toList();
+                    final hasMore = list.length > _displayLimit;
+
+                    return Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: list.length,
+                        itemCount: visibleList.length + (hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          final purchase = list[index];
+                          if (index == visibleList.length) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              child: Center(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _displayLimit += 50;
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.arrow_downward_rounded),
+                                  label: Text(
+                                    'Load More Purchase Bills (Showing ${_displayLimit} of ${list.length})',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final purchase = visibleList[index];
                           final dateStr = purchase.purchaseDate != null
                               ? DateFormat('dd MMM yyyy').format(purchase.purchaseDate!)
                               : 'N/A';

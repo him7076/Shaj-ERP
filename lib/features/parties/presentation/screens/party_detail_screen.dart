@@ -31,6 +31,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
   Party? _party;
   bool _isLoading = true;
   bool _isCapturingLocation = false;
+  int _displayLimit = 50;
   late TabController _tabController;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
@@ -502,12 +503,39 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
           );
         }
 
+        final visibleList = partyTransactions.take(_displayLimit).toList();
+        final hasMore = partyTransactions.length > _displayLimit;
+
         return ListView.separated(
           padding: const EdgeInsets.all(16),
-          itemCount: partyTransactions.length,
+          itemCount: visibleList.length + (hasMore ? 1 : 0),
           separatorBuilder: (context, index) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
-            final txn = partyTransactions[index];
+            if (index == visibleList.length) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _displayLimit += 50;
+                      });
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.arrow_downward_rounded),
+                    label: Text(
+                      'Load More Ledger (Showing ${_displayLimit} of ${partyTransactions.length})',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final txn = visibleList[index];
             final isIncoming = txn.transactionType == 'Receipt' || txn.transactionType == 'Sales' || txn.transactionType == 'Other Income';
             final color = isIncoming ? Colors.green : Colors.red;
             final statusStr = txn.paymentStatus ?? (txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED');

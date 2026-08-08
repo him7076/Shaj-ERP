@@ -18,6 +18,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
   String _selectedCategoryFilter = 'All';
   bool _showSearch = false;
+  int _displayLimit = 50;
 
   @override
   void initState() {
@@ -231,12 +232,39 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     ),
 
                     // List
-                    Expanded(
+                    final visibleList = displayList.take(_displayLimit).toList();
+                    final hasMore = displayList.length > _displayLimit;
+
+                    return Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: displayList.length,
+                        itemCount: visibleList.length + (hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
-                          final expense = displayList[index];
+                          if (index == visibleList.length) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              child: Center(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _displayLimit += 50;
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.arrow_downward_rounded),
+                                  label: Text(
+                                    'Load More Expenses (Showing ${_displayLimit} of ${displayList.length})',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final expense = visibleList[index];
                           final dateStr = expense.expenseDate != null
                               ? DateFormat('dd MMM yyyy').format(expense.expenseDate!)
                               : 'N/A';

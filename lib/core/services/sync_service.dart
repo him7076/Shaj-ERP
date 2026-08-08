@@ -734,6 +734,7 @@ class SyncService {
         }
 
         final querySnapshot = await query.get().timeout(const Duration(seconds: 5));
+        await Future.delayed(const Duration(milliseconds: 15));
 
         if (querySnapshot.docs.isEmpty) continue;
 
@@ -1453,7 +1454,7 @@ class SyncService {
           ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble()
           ..reorderLevel = (data['reorderLevel'] as num?)?.toDouble()
           ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
-          ..primaryUnitName = (data['primaryUnitName'] as String?)?.isNotEmpty == true ? (data['primaryUnitName'] as String) : (data['unit'] as String? ?? 'PCS')
+          ..primaryUnitName = (data['primaryUnitName'] as String?)?.isNotEmpty == true ? (data['primaryUnitName'] as String) : ((data['unit'] as String?)?.isNotEmpty == true ? (data['unit'] as String) : null)
           ..secondaryUnit = data['secondaryUnit']
           ..conversionFactor = (data['conversionFactor'] as num?)?.toDouble()
           ..barcode = data['barcode']

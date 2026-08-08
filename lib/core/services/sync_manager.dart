@@ -45,13 +45,15 @@ class SyncManager {
   }
 
   void _triggerStartupSync() {
-    // Check initial connectivity and run sync if online
-    Connectivity().checkConnectivity().then((results) {
-      final isOnline = results.any((result) => result != ConnectivityResult.none);
-      if (isOnline) {
-        logger.info('Initial online connectivity detected. Running startup sync...');
-        _syncService.syncAll();
-      }
+    // Delay 3 seconds after boot so UI & dashboard render instantly first
+    Future.delayed(const Duration(seconds: 3), () {
+      Connectivity().checkConnectivity().then((results) {
+        final isOnline = results.any((result) => result != ConnectivityResult.none);
+        if (isOnline) {
+          logger.info('Initial online connectivity detected. Running background startup sync...');
+          _syncService.syncAll();
+        }
+      });
     });
   }
 

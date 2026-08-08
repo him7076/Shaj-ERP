@@ -26,6 +26,7 @@ class TransactionsScreen extends ConsumerStatefulWidget {
 class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   bool _showSearch = false;
   bool _showFilter = false;
+  int _displayLimit = 50;
 
   @override
   void initState() {
@@ -444,12 +445,39 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   );
                 }
 
+                final visibleList = list.take(_displayLimit).toList();
+                final hasMore = list.length > _displayLimit;
+
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: list.length,
+                  itemCount: visibleList.length + (hasMore ? 1 : 0),
                   separatorBuilder: (context, index) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
-                    final txn = list[index];
+                    if (index == visibleList.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _displayLimit += 50;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.arrow_downward_rounded),
+                            label: Text(
+                              'Load More Transactions (Showing ${_displayLimit} of ${list.length})',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final txn = visibleList[index];
                     final isIncoming = txn.transactionType == 'Receipt' ||
                         txn.transactionType == 'Sales' ||
                         txn.transactionType == 'Other Income';

@@ -31,6 +31,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
   bool _showSearch = false;
+  int _displayLimit = 50;
 
   @override
   void initState() {
@@ -449,11 +450,38 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   );
                 }
 
+                final visibleList = list.take(_displayLimit).toList();
+                final hasMore = list.length > _displayLimit;
+
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  itemCount: list.length,
+                  itemCount: visibleList.length + (hasMore ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final invoice = list[index];
+                    if (index == visibleList.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _displayLimit += 50;
+                              });
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.arrow_downward_rounded),
+                            label: Text(
+                              'Load More Invoices (Showing ${_displayLimit} of ${list.length})',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final invoice = visibleList[index];
                     return _buildInvoiceCard(invoice, theme);
                   },
                 );

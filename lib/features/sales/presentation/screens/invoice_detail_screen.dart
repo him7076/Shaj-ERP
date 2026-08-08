@@ -620,14 +620,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                 itemBuilder: (context, index) {
                   final item = _invoiceItems[index];
                   final masterItem = item.item.value;
-                  String unitStr = 'PCS';
-                  if (item.unit != null && item.unit!.isNotEmpty && item.unit != 'PCS') {
-                    unitStr = item.unit!;
-                  } else if (masterItem != null) {
-                    unitStr = masterItem.primaryUnitName ?? masterItem.unit.value?.shortName ?? masterItem.unit.value?.unitName ?? item.unit ?? 'PCS';
-                  } else if (item.unit != null && item.unit!.isNotEmpty) {
-                    unitStr = item.unit!;
-                  }
+                  String unitStr = (item.unit != null && item.unit!.isNotEmpty)
+                      ? item.unit!
+                      : (masterItem?.primaryUnitName ?? masterItem?.unit.value?.shortName ?? masterItem?.unit.value?.unitName ?? 'PCS');
 
                   final qty = item.quantity ?? 0.0;
                   final freeQty = item.freeQuantity ?? 0.0;

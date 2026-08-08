@@ -29,6 +29,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _showFilters = false;
   bool _showSearch = false;
+  int _displayLimit = 50;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   @override
@@ -429,19 +430,48 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                   );
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: childAspectRatio,
-                  ),
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final item = list[index];
-                    return _buildProductCard(item, theme);
-                  },
+                final visibleList = list.take(_displayLimit).toList();
+                final hasMore = list.length > _displayLimit;
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: childAspectRatio,
+                        ),
+                        itemCount: visibleList.length,
+                        itemBuilder: (context, index) {
+                          final item = visibleList[index];
+                          return _buildProductCard(item, theme);
+                        },
+                      ),
+                    ),
+                    if (hasMore)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _displayLimit += 50;
+                            });
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: const Icon(Icons.arrow_downward_rounded),
+                          label: Text(
+                            'Load More Products (Showing ${_displayLimit} of ${list.length})',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
