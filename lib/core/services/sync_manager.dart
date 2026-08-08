@@ -18,24 +18,24 @@ class SyncManager {
   void initialize() {
     logger.info('Initializing SyncManager background loops...');
 
-    // 1. Trigger sync on app startup (if online)
+    // 1. Trigger pending upload on app startup if offline changes exist
     _triggerStartupSync();
 
-    // 2. Monitor Internet connectivity changes to trigger sync on reconnect
+    // 2. Monitor Internet connectivity changes to trigger upload on reconnect
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       final isOnline = results.any((result) => result != ConnectivityResult.none);
       logger.info('Connectivity changed. Device is ${isOnline ? "Online" : "Offline"}');
       
       if (isOnline) {
-        logger.info('Connectivity recovered. Triggering auto-sync...');
-        _syncService.syncAll();
+        logger.info('Connectivity recovered. Uploading pending local changes...');
+        _syncService.syncPendingChangesQuietly();
       }
     });
 
-    // 3. Periodic Auto-Sync Timer (Every 60 minutes)
-    _autoSyncTimer = Timer.periodic(const Duration(minutes: 60), (timer) {
-      logger.info('Auto-sync timer fired. Starting sync cycle...');
-      _syncService.syncAll();
+    // 3. Periodic Quiet Background Upload Timer (Every 30 minutes)
+    _autoSyncTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
+      logger.info('Background upload timer fired. Uploading pending local changes...');
+      _syncService.syncPendingChangesQuietly();
     });
 
     // 4. Retry Backoff Poller (Every 60 seconds)
@@ -50,8 +50,8 @@ class SyncManager {
       Connectivity().checkConnectivity().then((results) {
         final isOnline = results.any((result) => result != ConnectivityResult.none);
         if (isOnline) {
-          logger.info('Initial online connectivity detected. Running background startup sync...');
-          _syncService.syncAll();
+          logger.info('Initial online connectivity detected. Uploading pending local changes...');
+          _syncService.syncPendingChangesQuietly();
         }
       });
     });

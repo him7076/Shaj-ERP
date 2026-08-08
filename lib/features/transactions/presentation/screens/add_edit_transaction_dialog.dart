@@ -348,6 +348,13 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
       await repo.saveTransaction(txn);
       
+      // Quiet background sync for newly saved transaction
+      Future.microtask(() {
+        try {
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+      });
+
       ref.invalidate(filteredTransactionsProvider);
       ref.invalidate(filteredInvoicesProvider);
       ref.invalidate(partiesListProvider);

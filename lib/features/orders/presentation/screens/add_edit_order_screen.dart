@@ -362,6 +362,13 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
       await repo.saveOrder(order, orderItems);
 
+      // Quiet background sync for newly saved order
+      Future.microtask(() {
+        try {
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+      });
+
       ref.invalidate(filteredOrdersProvider);
       ref.invalidate(dashboardAnalyticsProvider);
 

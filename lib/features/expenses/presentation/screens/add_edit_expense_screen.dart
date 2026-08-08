@@ -271,6 +271,13 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           .saveExpense(expense);
 
       if (success && mounted) {
+        // Quiet background sync for newly saved expense
+        Future.microtask(() {
+          try {
+            ref.read(syncServiceProvider).syncPendingChangesQuietly();
+          } catch (_) {}
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_existingExpense == null ? 'Expense voucher logged successfully.' : 'Expense voucher updated successfully.')),
         );
