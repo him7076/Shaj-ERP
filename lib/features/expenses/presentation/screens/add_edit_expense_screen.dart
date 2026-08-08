@@ -7,8 +7,7 @@ import 'package:business_sahaj_erp/features/expenses/presentation/providers/expe
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
-import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
-import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/widgets/expense_category_dialog.dart';
 
 class ExpenseLineItem {
   String name;
@@ -86,13 +85,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   Future<void> _initData() async {
     final repo = ref.read(expenseRepositoryProvider);
     final prefs = ref.read(sharedPreferencesProvider);
-    
-    List<String>? cats = prefs.getStringList('expense_categories');
-    if (cats == null || cats.isEmpty) {
-      cats = ['Rent', 'Salaries', 'Utilities', 'Tea & Snacks', 'Office Expense', 'Other'];
-      await prefs.setStringList('expense_categories', cats);
-    }
-    _categories = cats;
+
+    final catObjects = await ExpenseCategoryItem.getCategories(prefs);
+    _categories = catObjects.map((c) => c.name).toList();
 
     if (widget.expenseUuid != null) {
       final isar = ref.read(databaseServiceProvider).isar;
@@ -171,57 +166,24 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 
   Future<void> _showAddCategoryDialog() async {
-    final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final newCat = await showDialog<String>(
+    final newCatItem = await showDialog<ExpenseCategoryItem>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add Expense Category'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Category Name',
-                border: OutlineInputBorder(),
-              ),
-              validator: (val) {
-                if (val == null || val.trim().isEmpty) {
-                  return 'Please enter category name';
-                }
-                if (_categories.any((c) => c.toLowerCase() == val.trim().toLowerCase())) {
-                  return 'Category already exists';
-                }
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  Navigator.pop(context, controller.text.trim());
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => const ExpenseCategoryDialog(),
     );
 
-    if (newCat != null && newCat.isNotEmpty) {
-      setState(() {
-        _categories.add(newCat);
-        _selectedCategory = newCat;
-      });
+    if (newCatItem != null && newCatItem.name.isNotEmpty) {
       final prefs = ref.read(sharedPreferencesProvider);
-      await prefs.setStringList('expense_categories', _categories);
+      final currentList = await ExpenseCategoryItem.getCategories(prefs);
+      if (!currentList.any((c) => c.name.toLowerCase() == newCatItem.name.toLowerCase())) {
+        currentList.add(newCatItem);
+        await ExpenseCategoryItem.saveCategories(prefs, currentList);
+      }
+
+      final updatedCats = currentList.map((c) => c.name).toList();
+      setState(() {
+        _categories = updatedCats;
+        _selectedCategory = newCatItem.name;
+      });
     }
   }
 

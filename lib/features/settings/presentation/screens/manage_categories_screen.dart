@@ -10,6 +10,8 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 
+import 'package:business_sahaj_erp/features/expenses/presentation/widgets/expense_category_dialog.dart';
+
 class ManageCategoriesScreen extends ConsumerStatefulWidget {
   const ManageCategoriesScreen({Key? key}) : super(key: key);
 
@@ -22,6 +24,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
   List<String> _salesmen = [];
   List<String> _localities = [];
   List<String> _businessCategories = [];
+  List<ExpenseCategoryItem> _expenseCategories = [];
   List<Unit> _units = [];
 
   bool _isLoading = false;
@@ -60,6 +63,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
       _salesmen = prefs.getStringList('custom_salesmen_list') ?? _defaultSalesmen;
       _localities = prefs.getStringList('custom_localities_list') ?? _defaultLocalities;
       _businessCategories = prefs.getStringList('party_business_categories') ?? _defaultCategories;
+      _expenseCategories = await ExpenseCategoryItem.getCategories(prefs);
 
       _units = await isar.units.filter().isDeletedEqualTo(false).findAll();
     } catch (_) {
@@ -326,6 +330,17 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                       prefKey: 'party_business_categories',
                       onAdd: () => _addPrefItem(title: 'Add Business Category', labelText: 'Category Name', prefKey: 'party_business_categories'),
                     ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  _buildCategoryMenuCard(
+                    title: 'Expense Categories',
+                    subtitle: 'Manage direct & indirect operational expense heads (Rent, Freight, Salaries, etc.)',
+                    itemCount: _expenseCategories.length,
+                    icon: Icons.receipt_long_rounded,
+                    iconColor: const Color(0xFFD81B60),
+                    iconBg: const Color(0xFFFCE4EC),
+                    onTap: _openExpenseCategoriesSubScreen,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -884,6 +899,144 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
           ),
         );
       },
+    );
+  }
+
+  // --- Expense Categories Sub-Screen ---
+  void _openExpenseCategoriesSubScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => StatefulBuilder(
+          builder: (context, setSubState) {
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Manage Expense Categories', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              floatingActionButton: FloatingActionButton.extended(
+                onPressed: () async {
+                  final newCat = await showDialog<ExpenseCategoryItem>(
+                    context: context,
+                    builder: (_) => const ExpenseCategoryDialog(),
+                  );
+                  if (newCat != null && newCat.name.isNotEmpty) {
+                    final prefs = ref.read(sharedPreferencesProvider);
+                    if (!_expenseCategories.any((c) => c.name.toLowerCase() == newCat.name.toLowerCase())) {
+                      _expenseCategories.add(newCat);
+                      await ExpenseCategoryItem.saveCategories(prefs, _expenseCategories);
+                      await _loadAllCategories();
+                      setSubState(() {});
+                    }
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Category'),
+              ),
+              body: ListView.separated(
+                padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 90),
+                itemCount: _expenseCategories.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  final cat = _expenseCategories[index];
+                  final isDirect = cat.type == 'Direct Expense';
+
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      leading: CircleAvatar(
+                        backgroundColor: isDirect ? Colors.orange.withOpacity(0.12) : Colors.indigo.withOpacity(0.12),
+                        child: Icon(
+                          isDirect ? Icons.inventory_2_outlined : Icons.receipt_long_outlined,
+                          color: isDirect ? Colors.orange.shade800 : Colors.indigo,
+                        ),
+                      ),
+                      title: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDirect ? Colors.orange.withOpacity(0.15) : Colors.indigo.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                cat.type,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDirect ? Colors.orange.shade900 : Colors.indigo.shade900,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                            tooltip: 'Edit Category',
+                            onPressed: () async {
+                              final updated = await showDialog<ExpenseCategoryItem>(
+                                context: context,
+                                builder: (_) => ExpenseCategoryDialog(initialCategory: cat),
+                              );
+                              if (updated != null && updated.name.isNotEmpty) {
+                                final prefs = ref.read(sharedPreferencesProvider);
+                                _expenseCategories[index] = updated;
+                                await ExpenseCategoryItem.saveCategories(prefs, _expenseCategories);
+                                await _loadAllCategories();
+                                setSubState(() {});
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            tooltip: 'Delete Category',
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  title: const Text('Confirm Delete'),
+                                  content: Text('Are you sure you want to delete expense category "${cat.name}"?'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(c, true),
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                final prefs = ref.read(sharedPreferencesProvider);
+                                _expenseCategories.removeAt(index);
+                                await ExpenseCategoryItem.saveCategories(prefs, _expenseCategories);
+                                await _loadAllCategories();
+                                setSubState(() {});
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

@@ -8,6 +8,8 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 
 class ManageCashAndBankScreen extends ConsumerStatefulWidget {
   const ManageCashAndBankScreen({Key? key}) : super(key: key);
@@ -18,6 +20,7 @@ class ManageCashAndBankScreen extends ConsumerStatefulWidget {
 
 class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScreen> {
   List<BankAccount> _accounts = [];
+  double _cashBalance = 0.0;
   bool _isLoading = false;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
@@ -32,6 +35,74 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
     try {
       final isar = ref.read(databaseServiceProvider).isar;
       _accounts = await isar.bankAccounts.filter().isDeletedEqualTo(false).findAll();
+
+      final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+
+      // 1. Calculate Live Cash Balance
+      double cashInflows = 0.0;
+      double cashOutflows = 0.0;
+
+      for (var t in txns) {
+        final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
+        if (mode == 'cash' || mode.contains('cash') || mode.isEmpty) {
+          final amt = t.amount ?? 0.0;
+          if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
+            cashInflows += amt;
+          } else if (t.transactionType == 'Payment') {
+            cashOutflows += amt;
+          }
+        }
+      }
+
+      for (var inv in invoices) {
+        final status = (inv.paymentStatus ?? '').trim().toLowerCase();
+        final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
+        if (status == 'paid' || status == 'cash' || status.contains('cash')) {
+          cashInflows += paid;
+        }
+      }
+
+      for (var pur in purchases) {
+        final status = (pur.paymentStatus ?? '').trim().toLowerCase();
+        final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
+        if (status == 'paid' || status == 'cash' || status.contains('cash')) {
+          cashOutflows += paid;
+        }
+      }
+
+      for (var exp in expenses) {
+        final mode = (exp.paymentMode ?? 'cash').trim().toLowerCase();
+        if (mode == 'cash' || mode.contains('cash') || mode.isEmpty) {
+          cashOutflows += (exp.amount ?? 0.0);
+        }
+      }
+
+      _cashBalance = cashInflows - cashOutflows;
+
+      // 2. Calculate Live Bank Account Balances
+      for (var acc in _accounts) {
+        final name = (acc.accountName ?? '').trim().toLowerCase();
+        double bankInflows = 0.0;
+        double bankOutflows = 0.0;
+
+        for (var t in txns) {
+          final mode = (t.paymentMode ?? '').trim().toLowerCase();
+          if (mode == name || (mode.isNotEmpty && name.isNotEmpty && mode.contains(name))) {
+            final amt = t.amount ?? 0.0;
+            if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
+              bankInflows += amt;
+            } else if (t.transactionType == 'Payment') {
+              bankOutflows += amt;
+            }
+          }
+        }
+
+        final openBal = acc.openingBalance ?? 0.0;
+        acc.currentBalance = openBal + bankInflows - bankOutflows;
+      }
     } catch (_) {
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -39,7 +110,8 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
   }
 
   double get _totalLiquidBalance {
-    return _accounts.fold(0.0, (sum, acc) => sum + (acc.currentBalance ?? acc.openingBalance ?? 0.0));
+    final bankTotal = _accounts.fold(0.0, (sum, acc) => sum + (acc.currentBalance ?? acc.openingBalance ?? 0.0));
+    return bankTotal + _cashBalance;
   }
 
   @override
@@ -125,7 +197,19 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                         backgroundColor: Color(0xFFE8F5E9),
                         child: Icon(Icons.payments_rounded, color: Color(0xFF2E7D32), size: 28),
                       ),
-                      title: const Text('Cash in Hand', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      title: Row(
+                        children: [
+                          const Expanded(child: Text('Cash in Hand', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                          Text(
+                            currencyFormat.format(_cashBalance),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: _cashBalance >= 0 ? const Color(0xFF2E7D32) : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
                       subtitle: const Text('Default cash register account for daily store transactions'),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -354,8 +438,25 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           isCash: isCash,
         ),
       ),
-    );
-  }
+    );// --- Unified Display Item for Account Transactions ---
+class AccountTransactionDisplayItem {
+  final String transactionNumber;
+  final String partyName;
+  final String transactionType;
+  final DateTime date;
+  final double amount;
+  final bool isCredit;
+  final String? remarks;
+
+  AccountTransactionDisplayItem({
+    required this.transactionNumber,
+    required this.partyName,
+    required this.transactionType,
+    required this.date,
+    required this.amount,
+    required this.isCredit,
+    this.remarks,
+  });
 }
 
 // --- Account Transactions Detailed View Screen with Filters & Search ---
@@ -380,7 +481,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
   String _typeFilter = 'All'; // All, Receipt, Payment, Transfer
   String _sortBy = 'Newest First'; // Newest First, Oldest First, Highest Amount
 
-  List<Transaction> _allTransactions = [];
+  List<AccountTransactionDisplayItem> _allDisplayItems = [];
   bool _isLoading = false;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
@@ -395,43 +496,121 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
     try {
       final isar = ref.read(databaseServiceProvider).isar;
       final rawTxns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
-      _allTransactions = rawTxns;
+      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+
+      final List<AccountTransactionDisplayItem> items = [];
+
+      for (var t in rawTxns) {
+        final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
+        bool matches = false;
+        if (widget.isCash) {
+          matches = mode == 'cash' || mode.contains('cash') || mode.isEmpty;
+        } else {
+          final accName = widget.accountName.trim().toLowerCase();
+          matches = mode == accName || mode.contains(accName) || (accName.contains('bank') && (mode == 'bank' || mode == 'online' || mode == 'upi' || mode == 'cheque'));
+        }
+
+        if (matches) {
+          final isCredit = t.transactionType == 'Receipt' || t.transactionType == 'Other Income';
+          items.add(AccountTransactionDisplayItem(
+            transactionNumber: t.transactionNumber ?? 'TXN',
+            partyName: t.partyName ?? 'Party',
+            transactionType: t.transactionType ?? 'Payment',
+            date: t.transactionDate ?? t.createdAt,
+            amount: t.amount ?? 0.0,
+            isCredit: isCredit,
+            remarks: t.remarks,
+          ));
+        }
+      }
+
+      if (widget.isCash) {
+        for (var inv in invoices) {
+          final status = (inv.paymentStatus ?? '').trim().toLowerCase();
+          final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
+          if ((status == 'paid' || status == 'cash' || status.contains('cash')) && paid > 0) {
+            items.add(AccountTransactionDisplayItem(
+              transactionNumber: inv.invoiceNumber ?? 'INV',
+              partyName: inv.partyName ?? 'Customer',
+              transactionType: 'Sales (Cash)',
+              date: inv.invoiceDate ?? inv.createdAt,
+              amount: paid,
+              isCredit: true,
+              remarks: inv.remarks,
+            ));
+          }
+        }
+
+        for (var pur in purchases) {
+          final status = (pur.paymentStatus ?? '').trim().toLowerCase();
+          final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
+          if ((status == 'paid' || status == 'cash' || status.contains('cash')) && paid > 0) {
+            items.add(AccountTransactionDisplayItem(
+              transactionNumber: pur.purchaseNumber ?? 'PUR',
+              partyName: pur.partyName ?? 'Supplier',
+              transactionType: 'Purchase (Cash)',
+              date: pur.purchaseDate ?? pur.createdAt,
+              amount: paid,
+              isCredit: false,
+              remarks: pur.remarks,
+            ));
+          }
+        }
+
+        for (var exp in expenses) {
+          final mode = (exp.paymentMode ?? 'cash').trim().toLowerCase();
+          if (mode == 'cash' || mode.contains('cash') || mode.isEmpty) {
+            items.add(AccountTransactionDisplayItem(
+              transactionNumber: exp.voucherNo ?? 'EXP',
+              partyName: exp.partyName ?? exp.category ?? 'Expense',
+              transactionType: 'Expense (${exp.category ?? "General"})',
+              date: exp.expenseDate ?? exp.createdAt,
+              amount: exp.amount ?? 0.0,
+              isCredit: false,
+              remarks: exp.remarks,
+            ));
+          }
+        }
+      }
+
+      _allDisplayItems = items;
     } catch (_) {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  List<Transaction> get _filteredTransactions {
-    List<Transaction> list = _allTransactions.where((t) {
-      if (widget.isCash) {
-        return t.paymentMode == 'Cash' || t.paymentMode == null;
-      }
-      return t.paymentMode?.contains(widget.accountName) == true || t.paymentMode == 'Bank';
-    }).toList();
+  List<AccountTransactionDisplayItem> get _filteredTransactions {
+    List<AccountTransactionDisplayItem> list = List.from(_allDisplayItems);
 
     // Search filter
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       list = list.where((t) {
-        return (t.transactionNumber?.toLowerCase().contains(q) ?? false) ||
-            (t.partyName?.toLowerCase().contains(q) ?? false) ||
+        return t.transactionNumber.toLowerCase().contains(q) ||
+            t.partyName.toLowerCase().contains(q) ||
             (t.remarks?.toLowerCase().contains(q) ?? false);
       }).toList();
     }
 
     // Type filter
     if (_typeFilter != 'All') {
-      list = list.where((t) => t.transactionType == _typeFilter).toList();
+      if (_typeFilter == 'Receipt') {
+        list = list.where((t) => t.isCredit).toList();
+      } else if (_typeFilter == 'Payment') {
+        list = list.where((t) => !t.isCredit).toList();
+      }
     }
 
     // Sorting
     if (_sortBy == 'Newest First') {
-      list.sort((a, b) => (b.transactionDate ?? DateTime(2000)).compareTo(a.transactionDate ?? DateTime(2000)));
+      list.sort((a, b) => b.date.compareTo(a.date));
     } else if (_sortBy == 'Oldest First') {
-      list.sort((a, b) => (a.transactionDate ?? DateTime(2000)).compareTo(b.transactionDate ?? DateTime(2000)));
+      list.sort((a, b) => a.date.compareTo(b.date));
     } else if (_sortBy == 'Highest Amount') {
-      list.sort((a, b) => (b.amount ?? 0.0).compareTo(a.amount ?? 0.0));
+      list.sort((a, b) => b.amount.compareTo(a.amount));
     }
 
     return list;
@@ -442,8 +621,8 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
     final theme = Theme.of(context);
     final txns = _filteredTransactions;
 
-    final double totalInflow = txns.where((t) => t.transactionType == 'Receipt' || t.transactionType == 'Other Income').fold(0.0, (s, t) => s + (t.amount ?? 0.0));
-    final double totalOutflow = txns.where((t) => t.transactionType == 'Payment' || t.transactionType == 'Expense').fold(0.0, (s, t) => s + (t.amount ?? 0.0));
+    final double totalInflow = txns.where((t) => t.isCredit).fold(0.0, (s, t) => s + t.amount);
+    final double totalOutflow = txns.where((t) => !t.isCredit).fold(0.0, (s, t) => s + t.amount);
 
     return Scaffold(
       appBar: AppBar(
@@ -507,10 +686,8 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                         decoration: const InputDecoration(labelText: 'Type Filter', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
                         items: const [
                           DropdownMenuItem(value: 'All', child: Text('All Types')),
-                          DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Inflow)')),
-                          DropdownMenuItem(value: 'Payment', child: Text('Payment (Outflow)')),
-                          DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                          DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                          DropdownMenuItem(value: 'Receipt', child: Text('Receipt / Inflows (+)')),
+                          DropdownMenuItem(value: 'Payment', child: Text('Payment / Outflows (-)')),
                         ],
                         onChanged: (v) => setState(() => _typeFilter = v ?? 'All'),
                       ),
@@ -546,7 +723,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final t = txns[index];
-                          final isCredit = t.transactionType == 'Receipt' || t.transactionType == 'Other Income';
+                          final isCredit = t.isCredit;
 
                           return Card(
                             elevation: 0,
@@ -559,10 +736,10 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                                 backgroundColor: isCredit ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
                                 child: Icon(isCredit ? Icons.arrow_downward : Icons.arrow_upward, color: isCredit ? Colors.green : Colors.red),
                               ),
-                              title: Text('#${t.transactionNumber} - ${t.partyName ?? "Party"}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('Type: ${t.transactionType} • ${t.transactionDate != null ? DateFormat('dd-MM-yyyy').format(t.transactionDate!) : "N/A"}'),
+                              title: Text('#${t.transactionNumber} - ${t.partyName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text('Type: ${t.transactionType} • ${DateFormat('dd-MM-yyyy').format(t.date)}'),
                               trailing: Text(
-                                '${isCredit ? "+" : "-"}${currencyFormat.format(t.amount ?? 0.0)}',
+                                '${isCredit ? "+" : "-"}${currencyFormat.format(t.amount)}',
                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: isCredit ? Colors.green : Colors.red),
                               ),
                             ),
@@ -570,8 +747,5 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                         },
                       ),
           ),
-        ],
-      ),
-    );
   }
 }
