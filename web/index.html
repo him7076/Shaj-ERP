@@ -103,8 +103,45 @@
     </div>
     <div class="app-title">Business Sahaj ERP</div>
     <div class="app-subtitle">Loading Executive Suite...</div>
-    <div class="spinner-ring"></div>
   </div>
+  <script>
+    (function() {
+      function removeSplash() {
+        const splash = document.getElementById('loading-splash');
+        if (splash && splash.parentNode) {
+          splash.style.transition = 'opacity 0.4s ease-out';
+          splash.style.opacity = '0';
+          splash.style.pointerEvents = 'none';
+          setTimeout(function() {
+            if (splash.parentNode) {
+              splash.parentNode.removeChild(splash);
+            }
+          }, 450);
+        }
+      }
+
+      const observer = new MutationObserver(function() {
+        if (document.querySelector('flutter-view, flt-glasspane, canvas')) {
+          removeSplash();
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      const checkInterval = setInterval(function() {
+        if (document.querySelector('flutter-view, flt-glasspane, canvas')) {
+          removeSplash();
+          clearInterval(checkInterval);
+        }
+      }, 150);
+
+      setTimeout(function() {
+        removeSplash();
+        clearInterval(checkInterval);
+        try { observer.disconnect(); } catch (_) {}
+      }, 3000);
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
