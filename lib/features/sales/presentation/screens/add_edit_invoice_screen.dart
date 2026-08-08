@@ -443,7 +443,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..itemId = cartItem.item.id
           ..itemName = cartItem.item.itemName
           ..hsnCode = cartItem.item.hsnCode
-          ..unit = cartItem.unit ?? cartItem.item.unit.value?.shortName
+          ..unit = cartItem.unit ?? cartItem.item.primaryUnitName ?? cartItem.item.unit.value?.shortName ?? cartItem.item.unit.value?.unitName ?? 'PCS'
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
           ..rate = cartItem.rate

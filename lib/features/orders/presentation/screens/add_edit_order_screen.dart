@@ -341,7 +341,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           ..hsnCode = cartItem.item.hsnCode
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
-          ..unit = cartItem.unit ?? cartItem.item.unit.value?.shortName
+          ..unit = cartItem.unit ?? cartItem.item.primaryUnitName ?? cartItem.item.unit.value?.shortName ?? cartItem.item.unit.value?.unitName ?? 'PCS'
           ..rate = cartItem.rate
           ..discountAmount = cartItem.discountAmount
           ..discountPercent = cartItem.discountPercent

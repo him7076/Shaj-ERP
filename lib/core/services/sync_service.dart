@@ -337,6 +337,7 @@ class SyncService {
   }
 
   /// Downloads remote updates from Firestore into local Isar DB (Pull Cloud -> Local)
+  /// Safety Action: Wipes local DB for the active firm first, then pulls ALL cloud data freshly!
   Future<void> syncDataFromCloud() async {
     final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
     if (!cloudSyncEnabled) {
@@ -351,14 +352,26 @@ class SyncService {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;
 
-    logger.info('Downloading data from Firebase Cloud...');
+    logger.info('Purging local database and downloading fresh data from Firebase Cloud...');
     _updateState(SyncState(
       status: SyncStatus.syncing,
-      message: 'Downloading data from Cloud...',
+      message: 'Purging local DB & Downloading fresh Cloud data...',
       lastSyncTime: _currentState.lastSyncTime,
     ));
 
     try {
+      // 1. Purge local DB for active firm completely so old corrupted data is wiped
+      await _dbService.clearDatabase();
+
+      // 2. Clear firm-specific last sync timestamp so incremental filter is disabled
+      final activeFirmId = _dbService.activeFirmId;
+      await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
+      await _prefs.remove(AppConstants.keyLastSyncTime);
+
+      // 3. Re-seed standard commercial units in local DB
+      await DemoDataSeeder.seedStandardUnits(_dbService);
+
+      // 4. Download remote firm definitions & all Firestore collections for active firm
       await syncFirms();
       final epochStart = DateTime.fromMillisecondsSinceEpoch(0);
       final newSyncTime = DateTime.now();
@@ -367,7 +380,7 @@ class SyncService {
 
       _updateState(SyncState(
         status: SyncStatus.success,
-        message: 'Downloaded cloud data successfully',
+        message: 'Local DB purged & fresh cloud data downloaded successfully!',
         lastSyncTime: newSyncTime,
       ));
     } catch (e, stackTrace) {
@@ -382,6 +395,7 @@ class SyncService {
   }
 
   /// Forces all local records to be uploaded to Firebase Cloud (Push Local -> Cloud)
+  /// Safety Action: Wipes cloud Firestore data for the active firm first, then pushes ALL local records!
   Future<void> forceLocalDataToCloud() async {
     final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
     if (!cloudSyncEnabled) {
@@ -396,14 +410,18 @@ class SyncService {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;
 
-    logger.info('Enqueuing all local records & uploading to Firebase Cloud...');
+    logger.info('Wiping cloud data and pushing local records to Firebase Cloud...');
     _updateState(SyncState(
       status: SyncStatus.syncing,
-      message: 'Pushing local data to Cloud...',
+      message: 'Wiping cloud DB & Pushing local data to Cloud...',
       lastSyncTime: _currentState.lastSyncTime,
     ));
 
     try {
+      // 1. Wipe remote Firestore data for active firm first
+      await clearCloudDataForActiveFirm();
+
+      // 2. Reset sync queue retries and enqueue all local records for upload
       await _queueService.resetAllRetries();
       await _enqueueAllLocalRecordsForUpload(forceAll: true);
       await _uploadLocalChanges();
@@ -413,7 +431,7 @@ class SyncService {
 
       _updateState(SyncState(
         status: SyncStatus.success,
-        message: 'Pushed local data to cloud successfully',
+        message: 'Cloud data wiped & local data pushed successfully!',
         lastSyncTime: newSyncTime,
       ));
     } catch (e, stackTrace) {
@@ -594,6 +612,40 @@ class SyncService {
     await _prefs.remove(AppConstants.keyLastSyncTime);
     _currentState = _currentState.copyWith(lastSyncTime: DateTime.fromMillisecondsSinceEpoch(0));
     _stateController.add(_currentState);
+  }
+
+  /// Deletes all documents belonging to the active firm from Firestore
+  Future<void> clearCloudDataForActiveFirm() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    final companyId = _firebaseService.companyId;
+    final activeFirmId = _dbService.activeFirmId;
+    logger.info('Wiping all remote Firestore documents for firm: $activeFirmId');
+
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      final querySnapshot = await _firebaseService.firestore
+          .collection(collectionName)
+          .where('companyId', isEqualTo: companyId)
+          .where('firmId', isEqualTo: activeFirmId)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) continue;
+
+      final batch = _firebaseService.firestore.batch();
+      for (var doc in querySnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
   }
 
   /// Uploads all dirty local records marked isSynced == false

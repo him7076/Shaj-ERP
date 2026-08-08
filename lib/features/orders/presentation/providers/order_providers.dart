@@ -147,7 +147,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
   void addItem(Item item, {double qty = 1.0}) {
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
-    final defaultUnit = item.unit.value?.shortName ?? item.unit.value?.unitName;
+    final defaultUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
 
     final newItem = CartItemState(
       item: item,
