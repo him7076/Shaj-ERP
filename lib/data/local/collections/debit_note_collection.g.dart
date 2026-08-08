@@ -184,7 +184,7 @@ const DebitNoteSchema = CollectionSchema(
       single: true,
     ),
     r'debitNoteItems': LinkSchema(
-      id: -836472901699877,
+      id: 836472901699877,
       name: r'debitNoteItems',
       target: r'DebitNoteItem',
       single: false,

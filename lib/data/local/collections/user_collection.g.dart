@@ -15,7 +15,7 @@ extension GetUserCollection on Isar {
 
 const UserSchema = CollectionSchema(
   name: r'User',
-  id: -7838171048429,
+  id: 7838171048429,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
