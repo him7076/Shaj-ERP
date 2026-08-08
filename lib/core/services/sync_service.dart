@@ -1125,6 +1125,7 @@ class SyncService {
           'minimumSellingPrice': e.minimumSellingPrice,
           'openingStock': e.openingStock,
           'currentStock': e.currentStock,
+          'stock': e.currentStock,
           'reorderLevel': e.reorderLevel,
           'minimumStock': e.minimumStock,
           'primaryUnitName': e.primaryUnitName ?? e.unit.value?.shortName ?? e.unit.value?.unitName,
@@ -1563,7 +1564,7 @@ class SyncService {
           ..wholesaleRate = (data['wholesaleRate'] as num?)?.toDouble()
           ..minimumSellingPrice = (data['minimumSellingPrice'] as num?)?.toDouble()
           ..openingStock = (data['openingStock'] as num?)?.toDouble()
-          ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble()
+          ..currentStock = (data['currentStock'] as num?)?.toDouble() ?? (data['stock'] as num?)?.toDouble() ?? (data['openingStock'] as num?)?.toDouble() ?? 0.0
           ..reorderLevel = (data['reorderLevel'] as num?)?.toDouble()
           ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
           ..primaryUnitName = (data['primaryUnitName'] as String?)?.isNotEmpty == true ? (data['primaryUnitName'] as String) : ((data['unit'] as String?)?.isNotEmpty == true ? (data['unit'] as String) : null)

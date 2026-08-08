@@ -447,12 +447,16 @@ class WebMockIsar implements Isar {
         'parentInvoiceUuid': entity.parentInvoiceUuid,
         'quantity': entity.quantity,
         'freeQuantity': entity.freeQuantity,
+        'unit': entity.unit,
         'rate': entity.rate,
         'discount': entity.discount,
         'taxableAmount': entity.taxableAmount,
         'gstRate': entity.gstRate,
         'gstAmount': entity.gstAmount,
         'totalAmount': entity.totalAmount,
+        'batchNumber': entity.batchNumber,
+        'expiryDate': entity.expiryDate,
+        'mfgDate': entity.mfgDate,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -777,6 +781,7 @@ class WebMockIsar implements Isar {
         'parentDebitNoteId': entity.parentDebitNoteId,
         'quantity': entity.quantity,
         'freeQuantity': entity.freeQuantity,
+        'unit': entity.unit,
         'rate': entity.rate,
         'discount': entity.discount,
         'taxableAmount': entity.taxableAmount,
@@ -990,12 +995,16 @@ class WebMockIsar implements Isar {
           ..parentInvoiceUuid = map['parentInvoiceUuid'] as String?
           ..quantity = map['quantity'] as double?
           ..freeQuantity = map['freeQuantity'] as double?
+          ..unit = map['unit'] as String?
           ..rate = map['rate'] as double?
           ..discount = map['discount'] as double?
           ..taxableAmount = map['taxableAmount'] as double?
           ..gstRate = map['gstRate'] as double?
           ..gstAmount = map['gstAmount'] as double?
           ..totalAmount = map['totalAmount'] as double?
+          ..batchNumber = map['batchNumber'] as String?
+          ..expiryDate = map['expiryDate'] as String?
+          ..mfgDate = map['mfgDate'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
@@ -1229,6 +1238,7 @@ class WebMockIsar implements Isar {
           ..parentCreditNoteId = map['parentCreditNoteId'] as int?
           ..quantity = map['quantity'] as double?
           ..freeQuantity = map['freeQuantity'] as double?
+          ..unit = map['unit'] as String?
           ..rate = map['rate'] as double?
           ..discount = map['discount'] as double?
           ..taxableAmount = map['taxableAmount'] as double?
@@ -1281,6 +1291,7 @@ class WebMockIsar implements Isar {
           ..parentDebitNoteId = map['parentDebitNoteId'] as int?
           ..quantity = map['quantity'] as double?
           ..freeQuantity = map['freeQuantity'] as double?
+          ..unit = map['unit'] as String?
           ..rate = map['rate'] as double?
           ..discount = map['discount'] as double?
           ..taxableAmount = map['taxableAmount'] as double?
