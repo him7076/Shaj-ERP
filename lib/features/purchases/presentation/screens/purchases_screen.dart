@@ -421,6 +421,8 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                 // Calculate Totals
                 final double totalAmt = list.fold(0.0, (sum, p) => sum + (p.grandTotal ?? 0.0));
                 final double totalTax = list.fold(0.0, (sum, p) => sum + (p.totalGST ?? 0.0));
+                final visibleList = list.take(_displayLimit).toList();
+                final hasMore = list.length > _displayLimit;
 
                 return Column(
                   children: [
@@ -486,10 +488,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                     ),
 
                     // List of purchases
-                    final visibleList = list.take(_displayLimit).toList();
-                    final hasMore = list.length > _displayLimit;
-
-                    return Expanded(
+                    Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: visibleList.length + (hasMore ? 1 : 0),

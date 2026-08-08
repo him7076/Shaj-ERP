@@ -194,6 +194,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
                 // Compute total
                 final double totalExp = displayList.fold(0.0, (sum, e) => sum + (e.amount ?? 0.0));
+                final visibleList = displayList.take(_displayLimit).toList();
+                final hasMore = displayList.length > _displayLimit;
 
                 return Column(
                   children: [
@@ -232,10 +234,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     ),
 
                     // List
-                    final visibleList = displayList.take(_displayLimit).toList();
-                    final hasMore = displayList.length > _displayLimit;
-
-                    return Expanded(
+                    Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: visibleList.length + (hasMore ? 1 : 0),
