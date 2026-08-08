@@ -1216,7 +1216,6 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
   @override
   void dispose() {
     _qtyController.dispose();
-    _freeQtyController.dispose();
     _rateExclController.dispose();
     _rateInclController.dispose();
     _discController.dispose();
