@@ -57,6 +57,31 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
           final itemToSave = await isar.items.get(originalItem.id) ?? originalItem;
 
           if (entry.containsKey('itemName')) itemToSave.itemName = entry['itemName'] as String;
+          if (entry.containsKey('primaryUnitName')) {
+            final pUnit = (entry['primaryUnitName'] as String).trim();
+            itemToSave.primaryUnitName = pUnit;
+            if (pUnit.isNotEmpty) {
+              final unitRepo = ref.read(unitRepositoryProvider);
+              final allUnits = await unitRepo.getAll();
+              var matched = allUnits.where((u) => u.shortName?.trim().toLowerCase() == pUnit.toLowerCase() || u.unitName?.trim().toLowerCase() == pUnit.toLowerCase()).firstOrNull;
+              if (matched == null) {
+                matched = Unit()
+                  ..uuid = const Uuid().v4()
+                  ..unitName = pUnit
+                  ..shortName = pUnit
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now();
+                matched.id = await isar.units.put(matched);
+              }
+              itemToSave.unit.value = matched;
+            }
+          }
+          if (entry.containsKey('secondaryUnit')) {
+            itemToSave.secondaryUnit = (entry['secondaryUnit'] as String).trim();
+          }
+          if (entry.containsKey('conversionFactor')) {
+            itemToSave.conversionFactor = double.tryParse(entry['conversionFactor'].toString()) ?? 1.0;
+          }
           if (entry.containsKey('sellRate')) itemToSave.sellRate = double.tryParse(entry['sellRate'].toString());
           if (entry.containsKey('wholesaleRate')) itemToSave.wholesaleRate = double.tryParse(entry['wholesaleRate'].toString());
           if (entry.containsKey('mrp')) itemToSave.mrp = double.tryParse(entry['mrp'].toString());
@@ -210,6 +235,9 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
                                   ),
                                   columns: const [
                                     DataColumn(label: Text('Item Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    DataColumn(label: Text('Primary Unit', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    DataColumn(label: Text('Secondary Unit', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    DataColumn(label: Text('Conversion Factor', style: TextStyle(fontWeight: FontWeight.bold))),
                                     DataColumn(label: Text('Selling Rate (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
                                     DataColumn(label: Text('Wholesale (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
                                     DataColumn(label: Text('MRP (₹)', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -232,6 +260,37 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
                                               initialValue: item.itemName ?? '',
                                               decoration: const InputDecoration(isDense: true, border: InputBorder.none),
                                               onChanged: (v) => _onFieldChanged(item, 'itemName', v),
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          SizedBox(
+                                            width: 100,
+                                            child: TextFormField(
+                                              initialValue: item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS',
+                                              decoration: const InputDecoration(isDense: true, border: InputBorder.none),
+                                              onChanged: (v) => _onFieldChanged(item, 'primaryUnitName', v),
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          SizedBox(
+                                            width: 100,
+                                            child: TextFormField(
+                                              initialValue: item.secondaryUnit ?? '',
+                                              decoration: const InputDecoration(isDense: true, border: InputBorder.none, hintText: 'None'),
+                                              onChanged: (v) => _onFieldChanged(item, 'secondaryUnit', v),
+                                            ),
+                                          ),
+                                        ),
+                                        DataCell(
+                                          SizedBox(
+                                            width: 90,
+                                            child: TextFormField(
+                                              initialValue: (item.conversionFactor ?? 1.0).toString(),
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                              decoration: const InputDecoration(isDense: true, border: InputBorder.none),
+                                              onChanged: (v) => _onFieldChanged(item, 'conversionFactor', v),
                                             ),
                                           ),
                                         ),
