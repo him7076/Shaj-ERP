@@ -56,3 +56,15 @@ jobs:
         with:
           name: Sahaj-ERP-Android-APKs
           path: build/app/outputs/flutter-apk/*.apk
+
+      - name: Publish Direct Download APK to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: latest
+          name: "Sahaj ERP Android Release (Latest APK)"
+          body: "Official Sahaj ERP Android APK release. Direct download link available below."
+          draft: false
+          prerelease: false
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
