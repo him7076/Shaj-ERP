@@ -1015,6 +1015,18 @@ class SyncService {
           final itemUuid = item.uuid;
           final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
 
+          double _toPrimaryQty(String? lineUnit, double rawQty) {
+            if (rawQty <= 0) return 0.0;
+            final secUnit = item.secondaryUnit?.trim().toLowerCase();
+            final conv = item.conversionFactor;
+            final lineUnitLower = lineUnit?.trim().toLowerCase();
+
+            if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 1.0) {
+              return rawQty / conv;
+            }
+            return rawQty;
+          }
+
           // 1. Total Sales (InvoiceItems)
           double totalSales = 0.0;
           for (var ii in allInvItems) {
@@ -1028,7 +1040,7 @@ class SyncService {
                 (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
 
             if (isMatch) {
-              totalSales += (ii.quantity ?? 0.0);
+              totalSales += _toPrimaryQty(ii.unit, ii.quantity ?? 0.0);
             }
           }
 
@@ -1045,7 +1057,7 @@ class SyncService {
                 (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
 
             if (isMatch) {
-              totalPurchases += (pi.quantity ?? 0.0);
+              totalPurchases += _toPrimaryQty(pi.unit, pi.quantity ?? 0.0);
             }
           }
 
@@ -1056,7 +1068,7 @@ class SyncService {
             final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
                 (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
             if (isMatch) {
-              totalSalesReturns += (cni.quantity ?? 0.0);
+              totalSalesReturns += _toPrimaryQty(cni.unit, cni.quantity ?? 0.0);
             }
           }
 
@@ -1067,7 +1079,7 @@ class SyncService {
             final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
                 (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
             if (isMatch) {
-              totalPurchaseReturns += (dni.quantity ?? 0.0);
+              totalPurchaseReturns += _toPrimaryQty(dni.unit, dni.quantity ?? 0.0);
             }
           }
 
