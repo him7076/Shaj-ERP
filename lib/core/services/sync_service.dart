@@ -39,22 +39,36 @@ class SyncState {
   final SyncStatus status;
   final String message;
   final DateTime? lastSyncTime;
+  final double progress; // 0.0 to 1.0
+  final int currentStep;
+  final int totalSteps;
 
   const SyncState({
     required this.status,
     required this.message,
     this.lastSyncTime,
+    this.progress = 0.0,
+    this.currentStep = 0,
+    this.totalSteps = 0,
   });
+
+  int get percentage => (progress * 100).clamp(0, 100).toInt();
 
   SyncState copyWith({
     SyncStatus? status,
     String? message,
     DateTime? lastSyncTime,
+    double? progress,
+    int? currentStep,
+    int? totalSteps,
   }) {
     return SyncState(
       status: status ?? this.status,
       message: message ?? this.message,
       lastSyncTime: lastSyncTime ?? this.lastSyncTime,
+      progress: progress ?? this.progress,
+      currentStep: currentStep ?? this.currentStep,
+      totalSteps: totalSteps ?? this.totalSteps,
     );
   }
 }
@@ -287,8 +301,11 @@ class SyncService {
       logger.info('Firebase sync cycle completed successfully.');
       _updateState(SyncState(
         status: SyncStatus.success,
-        message: 'Sync completed successfully',
+        message: 'Sync completed successfully (100%)',
         lastSyncTime: newSyncTime,
+        progress: 1.0,
+        currentStep: 22,
+        totalSteps: 22,
       ));
     } catch (e, stackTrace) {
       logger.error('Firebase synchronization failed', e, stackTrace);
@@ -684,7 +701,23 @@ class SyncService {
     ];
     final activeFirmId = _dbService.activeFirmId;
 
-    for (var entityType in entityTypes) {
+    final totalSteps = entityTypes.length + 2;
+
+    for (int i = 0; i < entityTypes.length; i++) {
+      final entityType = entityTypes[i];
+      final stepIndex = i + 2;
+      final progress = stepIndex / totalSteps;
+      final percentage = (progress * 100).toInt();
+
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Syncing $entityType ($percentage%)...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: progress,
+        currentStep: stepIndex,
+        totalSteps: totalSteps,
+      ));
+
       final collectionName = _getFirestoreCollection(entityType);
       logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
 

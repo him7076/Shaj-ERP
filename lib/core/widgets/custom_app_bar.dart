@@ -330,26 +330,49 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
               const SizedBox(width: 8),
               IconButton(
-                tooltip: 'Sync Database Now',
+                tooltip: syncStateAsync.maybeWhen(
+                  data: (s) => s.status == SyncStatus.syncing
+                      ? 'Syncing: ${s.message}'
+                      : 'Sync Database Now',
+                  orElse: () => 'Sync Database Now',
+                ),
                 style: IconButton.styleFrom(
                   backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                 ),
-                icon: isSyncing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : syncStateAsync.maybeWhen(
-                        data: (state) => Icon(
-                          state.status == SyncStatus.failure
-                              ? Icons.sync_problem_rounded
-                              : Icons.sync_rounded,
-                          size: 20,
-                          color: state.status == SyncStatus.failure ? Colors.redAccent : theme.colorScheme.primary,
-                        ),
-                        orElse: () => Icon(Icons.sync_rounded, size: 20, color: theme.colorScheme.primary),
-                      ),
+                icon: syncStateAsync.maybeWhen(
+                  data: (state) {
+                    if (state.status == SyncStatus.syncing || isSyncing) {
+                      final pct = state.percentage;
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 26,
+                            height: 26,
+                            child: CircularProgressIndicator(
+                              value: state.progress > 0 ? state.progress : null,
+                              strokeWidth: 3,
+                              color: theme.colorScheme.primary,
+                              backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                            ),
+                          ),
+                          Text(
+                            '$pct%',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      );
+                    } else if (state.status == SyncStatus.failure) {
+                      return const Icon(Icons.sync_problem_rounded, size: 20, color: Colors.redAccent);
+                    }
+                    return Icon(Icons.sync_rounded, size: 20, color: theme.colorScheme.primary);
+                  },
+                  orElse: () => Icon(Icons.sync_rounded, size: 20, color: theme.colorScheme.primary),
+                ),
                 onPressed: isSyncing
                     ? null
                     : () async {

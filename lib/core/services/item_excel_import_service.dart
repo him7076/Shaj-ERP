@@ -375,6 +375,7 @@ class ItemExcelImportService {
             existingItem.gstApplicable = true;
             existingItem.gstRate = gstRate > 0 ? gstRate : existingItem.gstRate;
             existingItem.cessRate = cessRate > 0 ? cessRate : existingItem.cessRate;
+            existingItem.primaryUnitName = primaryUnitStr.isNotEmpty ? primaryUnitStr : (existingItem.primaryUnitName ?? unitObj?.shortName ?? 'PCS');
             existingItem.secondaryUnit = secUnitStr.isNotEmpty ? secUnitStr : existingItem.secondaryUnit;
             existingItem.conversionFactor = convFactor > 0 ? convFactor : existingItem.conversionFactor;
             existingItem.barcode = barcode.isNotEmpty ? barcode : existingItem.barcode;
@@ -432,6 +433,7 @@ class ItemExcelImportService {
               ..gstApplicable = true
               ..gstRate = gstRate
               ..cessRate = cessRate
+              ..primaryUnitName = primaryUnitStr.isNotEmpty ? primaryUnitStr : (unitObj?.shortName ?? 'PCS')
               ..secondaryUnit = secUnitStr
               ..conversionFactor = convFactor > 0 ? convFactor : 1.0
               ..barcode = barcode

@@ -218,11 +218,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         if (item.brand.value != null) {
           _selectedBrand = brands.firstWhere((b) => b.id == item.brand.value!.id);
         }
-        if (item.unit.value != null) {
-          _selectedUnit = units.where((u) => u.id == item.unit.value!.id).firstOrNull;
-        }
-        if (_selectedUnit == null && item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
+        if (item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
           _selectedUnit = units.where((u) => (u.shortName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase())).firstOrNull;
+        }
+        if (_selectedUnit == null && item.unit.value != null) {
+          _selectedUnit = units.where((u) => u.id == item.unit.value!.id).firstOrNull;
         }
         if (_selectedUnit == null && item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
           _selectedUnit = Unit()
