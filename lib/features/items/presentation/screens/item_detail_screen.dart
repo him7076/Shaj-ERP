@@ -78,11 +78,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
         final List<_ItemTransaction> txs = [];
         final itemName = fetchedItem.itemName?.trim().toLowerCase() ?? '';
-        final itemId = fetchedItem.id;
+        final itemUuid = fetchedItem.uuid;
 
         // 1. Fetch Sales Invoices for this item
         final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-        final matchedInvItems = allInvItems.where((ii) => ii.itemId == itemId || (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemName)).toList();
+        final matchedInvItems = allInvItems.where((ii) {
+          try { ii.item.loadSync(); } catch (_) {}
+          final linkedUuid = ii.item.value?.uuid;
+          if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            return linkedUuid == itemUuid;
+          }
+          final iiName = ii.itemName?.trim().toLowerCase() ?? '';
+          return itemName.isNotEmpty && iiName == itemName;
+        }).toList();
 
         for (var ii in matchedInvItems) {
           Invoice? inv;
@@ -108,7 +116,15 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
         // 2. Fetch Purchase Bills for this item
         final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
-        final matchedPurItems = allPurItems.where((pi) => pi.itemId == itemId || (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemName)).toList();
+        final matchedPurItems = allPurItems.where((pi) {
+          try { pi.item.loadSync(); } catch (_) {}
+          final linkedUuid = pi.item.value?.uuid;
+          if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            return linkedUuid == itemUuid;
+          }
+          final piName = pi.itemName?.trim().toLowerCase() ?? '';
+          return itemName.isNotEmpty && piName == itemName;
+        }).toList();
 
         for (var pi in matchedPurItems) {
           Purchase? pur;
@@ -134,7 +150,15 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
         // 3. Fetch Orders for this item
         final allOrdItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
-        final matchedOrdItems = allOrdItems.where((oi) => oi.itemId == itemId || (oi.itemName != null && oi.itemName!.trim().toLowerCase() == itemName)).toList();
+        final matchedOrdItems = allOrdItems.where((oi) {
+          try { oi.item.loadSync(); } catch (_) {}
+          final linkedUuid = oi.item.value?.uuid;
+          if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            return linkedUuid == itemUuid;
+          }
+          final oiName = oi.itemName?.trim().toLowerCase() ?? '';
+          return itemName.isNotEmpty && oiName == itemName;
+        }).toList();
 
         for (var oi in matchedOrdItems) {
           Order? ord;
