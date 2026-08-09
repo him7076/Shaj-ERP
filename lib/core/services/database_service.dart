@@ -133,16 +133,19 @@ class DatabaseService {
           logger.error('Failed to close duplicate database instance from memory: $closeError');
         }
 
-        // 2. Delete the database file (activeFirmId.isar)
+        // 2. Delete all database files (.isar and .isar.lock) to recover from schema mismatch
         if (!kIsWeb && dirPath != null) {
-          final isarFile = File('$dirPath/$activeFirmId.isar');
-          final isarLock = File('$dirPath/$activeFirmId.isar.lock');
           try {
-            if (await isarFile.exists()) {
-              await isarFile.delete();
-            }
-            if (await isarLock.exists()) {
-              await isarLock.delete();
+            final dir = Directory(dirPath);
+            if (await dir.exists()) {
+              final entities = dir.listSync();
+              for (final entity in entities) {
+                if (entity is File && (entity.path.endsWith('.isar') || entity.path.endsWith('.isar.lock'))) {
+                  try {
+                    await entity.delete();
+                  } catch (_) {}
+                }
+              }
             }
             logger.info('Successfully deleted old database files to recover from crash.');
           } catch (deleteError) {

@@ -210,7 +210,7 @@ const InvoiceSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: -8357342922828577102,
+      id: 866029114026198706,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -249,7 +249,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceStatus': IndexSchema(
-      id: -5735730272383103374,
+      id: 3487641764471672434,
       name: r'invoiceStatus',
       unique: false,
       replace: false,
@@ -6320,6 +6320,8 @@ extension InvoiceQueryProperty
     });
   }
 }
+
+
 
 
 

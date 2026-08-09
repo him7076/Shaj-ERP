@@ -15,7 +15,7 @@ extension GetTransactionCollection on Isar {
 
 const TransactionSchema = CollectionSchema(
   name: r'Transaction',
-  id: -5966855243702603709,
+  id: 3256516793152172099,
   properties: {
     r'amount': PropertySchema(
       id: 0,
@@ -120,7 +120,7 @@ const TransactionSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: -8357342922828577102,
+      id: 866029114026198706,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -3781,6 +3781,8 @@ extension TransactionQueryProperty
     });
   }
 }
+
+
 
 
 

@@ -195,7 +195,7 @@ const ItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: -8357342922828577102,
+      id: 866029114026198706,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -208,7 +208,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: -1252077162409092773,
+      id: 7971294874445683035,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -234,7 +234,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: -8254837250830308389,
+      id: 968534786024467419,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -260,7 +260,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: -9060510066592428774,
+      id: 162861970262347034,
       name: r'sku',
       unique: false,
       replace: false,
@@ -6106,6 +6106,8 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 }
+
+
 
 
 

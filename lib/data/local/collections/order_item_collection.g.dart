@@ -120,7 +120,7 @@ const OrderItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: -8357342922828577102,
+      id: 866029114026198706,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -2877,6 +2877,8 @@ extension OrderItemQueryProperty
     });
   }
 }
+
+
 
 
 
