@@ -15,7 +15,7 @@ extension GetPurchaseCollection on Isar {
 
 const PurchaseSchema = CollectionSchema(
   name: r'Purchase',
-  id: 9223369660364914757,
+  id: 6629328274423749,
   properties: {
     r'address': PropertySchema(
       id: 0,

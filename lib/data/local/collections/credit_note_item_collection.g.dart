@@ -130,13 +130,13 @@ const CreditNoteItemSchema = CollectionSchema(
   },
   links: {
     r'creditNote': LinkSchema(
-      id: 9222436618658938038,
+      id: 5964433615969418,
       name: r'creditNote',
       target: r'CreditNote',
       single: true,
     ),
     r'item': LinkSchema(
-      id: 9222509679299326159,
+      id: 6037494256357423,
       name: r'item',
       target: r'Item',
       single: true,

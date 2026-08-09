@@ -146,7 +146,7 @@ const TransactionSchema = CollectionSchema(
       ],
     ),
     r'transactionType': IndexSchema(
-      id: 9223363806325596719,
+      id: 4555288389032399,
       name: r'transactionType',
       unique: false,
       replace: false,

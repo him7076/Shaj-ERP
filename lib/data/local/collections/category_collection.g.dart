@@ -80,13 +80,13 @@ const CategorySchema = CollectionSchema(
   },
   links: {
     r'parentCategory': LinkSchema(
-      id: 9223365199604752015,
+      id: 2133591461971055,
       name: r'parentCategory',
       target: r'Category',
       single: true,
     ),
     r'subCategories': LinkSchema(
-      id: 9223370356929638798,
+      id: 7325892513089422,
       name: r'subCategories',
       target: r'Category',
       single: false,

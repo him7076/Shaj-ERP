@@ -136,7 +136,7 @@ const InvoiceItemSchema = CollectionSchema(
       single: true,
     ),
     r'item': LinkSchema(
-      id: 9222957467270907777,
+      id: 4536647228831617,
       name: r'item',
       target: r'Item',
       single: true,

@@ -15,7 +15,7 @@ extension GetPartyCollection on Isar {
 
 const PartySchema = CollectionSchema(
   name: r'Party',
-  id: 9223362904694760688,
+  id: 3653657597126672,
   properties: {
     r'addressLine1': PropertySchema(
       id: 0,
@@ -213,7 +213,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'partyCode': IndexSchema(
-      id: 9223364422829438162,
+      id: 5171791771805778,
       name: r'partyCode',
       unique: true,
       replace: false,
@@ -252,7 +252,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'gstNumber': IndexSchema(
-      id: 9223364771733410931,
+      id: 5520695744566467,
       name: r'gstNumber',
       unique: false,
       replace: false,

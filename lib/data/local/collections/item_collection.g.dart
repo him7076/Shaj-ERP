@@ -208,7 +208,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: 9223370344097716735,
+      id: 7313060573416959,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -234,7 +234,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: 9223362924682033897,
+      id: 3673644870335529,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -260,7 +260,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: 9223368688832336120,
+      id: 5657775192772600,
       name: r'sku',
       unique: false,
       replace: false,
@@ -288,7 +288,7 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: 9223370976185572074,
+      id: 7946329431738858,
       name: r'category',
       target: r'Category',
       single: true,

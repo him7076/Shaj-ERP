@@ -201,7 +201,7 @@ const OrderSchema = CollectionSchema(
       ],
     ),
     r'status': IndexSchema(
-      id: 9223370957823069604,
+      id: 7927966929380692,
       name: r'status',
       unique: false,
       replace: false,
@@ -222,7 +222,7 @@ const OrderSchema = CollectionSchema(
       single: true,
     ),
     r'orderItems': LinkSchema(
-      id: 9223370711633878436,
+      id: 7680597738238564,
       name: r'orderItems',
       target: r'OrderItem',
       single: false,
