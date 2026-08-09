@@ -15,7 +15,7 @@ extension GetBankAccountCollection on Isar {
 
 const BankAccountSchema = CollectionSchema(
   name: r'BankAccount',
-  id: int.parse('-8462551176384719150'),
+  id: -8462551176384719150,
   properties: {
     r'accountName': PropertySchema(
       id: 0,
@@ -90,7 +90,7 @@ const BankAccountSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: int.parse('-8357342922828577102'),
+      id: -8357342922828577102,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -2374,6 +2374,8 @@ extension BankAccountQueryProperty
     });
   }
 }
+
+
 
 
 

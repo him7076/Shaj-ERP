@@ -15,7 +15,7 @@ extension GetCategoryCollection on Isar {
 
 const CategorySchema = CollectionSchema(
   name: r'Category',
-  id: int.parse('547755970169752945'),
+  id: 547755970169752945,
   properties: {
     r'categoryName': PropertySchema(
       id: 0,
@@ -65,7 +65,7 @@ const CategorySchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: int.parse('-8357342922828577102'),
+      id: -8357342922828577102,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -1480,6 +1480,8 @@ extension CategoryQueryProperty
     });
   }
 }
+
+
 
 
 

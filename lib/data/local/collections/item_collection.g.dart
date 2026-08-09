@@ -15,7 +15,7 @@ extension GetItemCollection on Isar {
 
 const ItemSchema = CollectionSchema(
   name: r'Item',
-  id: int.parse('5967165952864249862'),
+  id: 5967165952864249862,
   properties: {
     r'barcode': PropertySchema(
       id: 0,
@@ -195,7 +195,7 @@ const ItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: int.parse('-8357342922828577102'),
+      id: -8357342922828577102,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -208,7 +208,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: int.parse('-1252077162409092773'),
+      id: -1252077162409092773,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -234,7 +234,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: int.parse('-8254837250830308389'),
+      id: -8254837250830308389,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -260,7 +260,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: int.parse('-9060510066592428774'),
+      id: -9060510066592428774,
       name: r'sku',
       unique: false,
       replace: false,
@@ -288,7 +288,7 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: int.parse('6616605887935172241'),
+      id: 6616605887935172241,
       name: r'category',
       target: r'Category',
       single: true,
@@ -6106,6 +6106,8 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 }
+
+
 
 
 

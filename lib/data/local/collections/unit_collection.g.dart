@@ -15,7 +15,7 @@ extension GetUnitCollection on Isar {
 
 const UnitSchema = CollectionSchema(
   name: r'Unit',
-  id: int.parse('-8131564753512552569'),
+  id: -8131564753512552569,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -65,7 +65,7 @@ const UnitSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: int.parse('-8357342922828577102'),
+      id: -8357342922828577102,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -1365,6 +1365,8 @@ extension UnitQueryProperty on QueryBuilder<Unit, Unit, QQueryProperty> {
     });
   }
 }
+
+
 
 
 

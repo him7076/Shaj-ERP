@@ -15,7 +15,7 @@ extension GetOrderCollection on Isar {
 
 const OrderSchema = CollectionSchema(
   name: r'Order',
-  id: int.parse('3145189127427554391'),
+  id: 3145189127427554391,
   properties: {
     r'cancellationReason': PropertySchema(
       id: 0,
@@ -175,7 +175,7 @@ const OrderSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: int.parse('-8357342922828577102'),
+      id: -8357342922828577102,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -201,7 +201,7 @@ const OrderSchema = CollectionSchema(
       ],
     ),
     r'status': IndexSchema(
-      id: int.parse('-4263385553539355601'),
+      id: -4263385553539355601,
       name: r'status',
       unique: false,
       replace: false,
@@ -216,13 +216,13 @@ const OrderSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: int.parse('887670541941039863'),
+      id: 887670541941039863,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'orderItems': LinkSchema(
-      id: int.parse('8544852400424638745'),
+      id: 8544852400424638745,
       name: r'orderItems',
       target: r'OrderItem',
       single: false,
@@ -5089,6 +5089,8 @@ extension OrderQueryProperty on QueryBuilder<Order, Order, QQueryProperty> {
     });
   }
 }
+
+
 
 
 
