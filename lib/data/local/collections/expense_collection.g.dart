@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'expense_collection.dart';
@@ -16,7 +15,7 @@ extension GetExpenseCollection on Isar {
 
 const ExpenseSchema = CollectionSchema(
   name: r'Expense',
-  id: kIsWeb ? 0 : -4604318666888,
+  id: 4604318666888,
   properties: {
     r'amount': PropertySchema(
       id: 0,
@@ -94,7 +93,7 @@ const ExpenseSchema = CollectionSchema(
       ],
     ),
     r'category': IndexSchema(
-      id: kIsWeb ? 0 : -7560358558326,
+      id: 7560358558326,
       name: r'category',
       unique: false,
       replace: false,
@@ -1893,4 +1892,5 @@ extension ExpenseQueryProperty
     });
   }
 }
+
 

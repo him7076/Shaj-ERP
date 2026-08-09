@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'invoice_item_collection.dart';
@@ -137,7 +136,7 @@ const InvoiceItemSchema = CollectionSchema(
       single: true,
     ),
     r'item': LinkSchema(
-      id: kIsWeb ? 0 : -414569583868031,
+      id: 414569583868031,
       name: r'item',
       target: r'Item',
       single: true,
@@ -2713,4 +2712,5 @@ extension InvoiceItemQueryProperty
     });
   }
 }
+
 

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'sync_queue_collection.dart';
@@ -16,7 +15,7 @@ extension GetSyncQueueCollection on Isar {
 
 const SyncQueueSchema = CollectionSchema(
   name: r'SyncQueue',
-  id: kIsWeb ? 0 : -1008958056975,
+  id: 1008958056975,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -117,7 +116,7 @@ const SyncQueueSchema = CollectionSchema(
       ],
     ),
     r'entityUuid': IndexSchema(
-      id: kIsWeb ? 0 : -1414110998250,
+      id: 1414110998250,
       name: r'entityUuid',
       unique: false,
       replace: false,
@@ -2337,4 +2336,5 @@ extension SyncQueueQueryProperty
     });
   }
 }
+
 

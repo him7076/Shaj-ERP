@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'user_collection.dart';
@@ -16,7 +15,7 @@ extension GetUserCollection on Isar {
 
 const UserSchema = CollectionSchema(
   name: r'User',
-  id: kIsWeb ? 0 : -7838171048429,
+  id: 7838171048429,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -1559,4 +1558,5 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 }
+
 

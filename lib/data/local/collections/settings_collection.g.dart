@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'settings_collection.dart';
@@ -16,7 +15,7 @@ extension GetSettingsCollection on Isar {
 
 const SettingsSchema = CollectionSchema(
   name: r'Settings',
-  id: kIsWeb ? 0 : -8656046621518,
+  id: 8656046621518,
   properties: {
     r'companyAddress': PropertySchema(
       id: 0,
@@ -2394,4 +2393,5 @@ extension SettingsQueryProperty
     });
   }
 }
+
 

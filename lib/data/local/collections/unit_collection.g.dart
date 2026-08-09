@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'unit_collection.dart';
@@ -1366,4 +1365,5 @@ extension UnitQueryProperty on QueryBuilder<Unit, Unit, QQueryProperty> {
     });
   }
 }
+
 
