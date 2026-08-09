@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'transaction_collection.dart';
@@ -146,7 +147,7 @@ const TransactionSchema = CollectionSchema(
       ],
     ),
     r'transactionType': IndexSchema(
-      id: 4555288389032399,
+      id: kIsWeb ? 0 : -8267383906769,
       name: r'transactionType',
       unique: false,
       replace: false,
@@ -3781,3 +3782,4 @@ extension TransactionQueryProperty
     });
   }
 }
+

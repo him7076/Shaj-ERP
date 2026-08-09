@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'brand_collection.dart';
@@ -1170,3 +1171,4 @@ extension BrandQueryProperty on QueryBuilder<Brand, Brand, QQueryProperty> {
     });
   }
 }
+

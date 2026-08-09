@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'order_item_collection.dart';
@@ -15,7 +16,7 @@ extension GetOrderItemCollection on Isar {
 
 const OrderItemSchema = CollectionSchema(
   name: r'OrderItem',
-  id: 7672704505776826,
+  id: kIsWeb ? 0 : -5113141332666,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -141,7 +142,7 @@ const OrderItemSchema = CollectionSchema(
       single: true,
     ),
     r'item': LinkSchema(
-      id: 4232406143996365,
+      id: kIsWeb ? 0 : -8590266203859,
       name: r'item',
       target: r'Item',
       single: true,
@@ -2877,3 +2878,4 @@ extension OrderItemQueryProperty
     });
   }
 }
+

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'debit_note_item_collection.dart';
@@ -15,7 +16,7 @@ extension GetDebitNoteItemCollection on Isar {
 
 const DebitNoteItemSchema = CollectionSchema(
   name: r'DebitNoteItem',
-  id: 7137330752538458,
+  id: kIsWeb ? 0 : -154120541221722,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -130,7 +131,7 @@ const DebitNoteItemSchema = CollectionSchema(
   },
   links: {
     r'debitNote': LinkSchema(
-      id: 7155366535695642,
+      id: kIsWeb ? 0 : -136084769660186,
       name: r'debitNote',
       target: r'DebitNote',
       single: true,
@@ -2772,3 +2773,4 @@ extension DebitNoteItemQueryProperty
     });
   }
 }
+

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'credit_note_item_collection.dart';
@@ -2791,3 +2792,4 @@ extension CreditNoteItemQueryProperty
     });
   }
 }
+

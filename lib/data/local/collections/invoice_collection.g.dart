@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'invoice_collection.dart';
@@ -15,7 +16,7 @@ extension GetInvoiceCollection on Isar {
 
 const InvoiceSchema = CollectionSchema(
   name: r'Invoice',
-  id: 5268348703479779,
+  id: kIsWeb ? 0 : -341399436017629,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -223,7 +224,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceNumber': IndexSchema(
-      id: 2424029640880916,
+      id: kIsWeb ? 0 : -623182176116500,
       name: r'invoiceNumber',
       unique: true,
       replace: false,
@@ -249,7 +250,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceStatus': IndexSchema(
-      id: 6701745692739180,
+      id: kIsWeb ? 0 : -197866124098148,
       name: r'invoiceStatus',
       unique: false,
       replace: false,
@@ -277,7 +278,7 @@ const InvoiceSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 5986314199843975,
+      id: kIsWeb ? 0 : -913534766693513,
       name: r'party',
       target: r'Party',
       single: true,
@@ -6320,3 +6321,4 @@ extension InvoiceQueryProperty
     });
   }
 }
+

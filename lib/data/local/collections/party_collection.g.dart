@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'party_collection.dart';
@@ -15,7 +16,7 @@ extension GetPartyCollection on Isar {
 
 const PartySchema = CollectionSchema(
   name: r'Party',
-  id: 3653657597126672,
+  id: kIsWeb ? 0 : -9169014745120,
   properties: {
     r'addressLine1': PropertySchema(
       id: 0,
@@ -213,7 +214,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'partyCode': IndexSchema(
-      id: 5171791771805778,
+      id: kIsWeb ? 0 : -7650880066646,
       name: r'partyCode',
       unique: true,
       replace: false,
@@ -252,7 +253,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'gstNumber': IndexSchema(
-      id: 5520695744566467,
+      id: kIsWeb ? 0 : -7301976093885,
       name: r'gstNumber',
       unique: false,
       replace: false,
@@ -6757,3 +6758,4 @@ extension PartyQueryProperty on QueryBuilder<Party, Party, QQueryProperty> {
     });
   }
 }
+

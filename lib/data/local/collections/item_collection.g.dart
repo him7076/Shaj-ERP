@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'item_collection.dart';
@@ -208,7 +209,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: 7313060573416959,
+      id: kIsWeb ? 0 : -1692757059073,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -234,7 +235,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: 3673644870335529,
+      id: kIsWeb ? 0 : -9149027471911,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -260,7 +261,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: 5657775192772600,
+      id: kIsWeb ? 0 : -3348042439688,
       name: r'sku',
       unique: false,
       replace: false,
@@ -288,7 +289,7 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: 7946329431738858,
+      id: kIsWeb ? 0 : -1059489203734,
       name: r'category',
       target: r'Category',
       single: true,
@@ -6106,3 +6107,4 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 }
+

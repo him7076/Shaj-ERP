@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'purchase_collection.dart';
@@ -15,7 +16,7 @@ extension GetPurchaseCollection on Isar {
 
 const PurchaseSchema = CollectionSchema(
   name: r'Purchase',
-  id: 6629328274423749,
+  id: kIsWeb ? 0 : -2376489861051,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -4089,3 +4090,4 @@ extension PurchaseQueryProperty
     });
   }
 }
+

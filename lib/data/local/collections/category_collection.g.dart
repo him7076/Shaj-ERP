@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'category_collection.dart';
@@ -80,13 +81,13 @@ const CategorySchema = CollectionSchema(
   },
   links: {
     r'parentCategory': LinkSchema(
-      id: 2133591461971055,
+      id: kIsWeb ? 0 : -6874105053793,
       name: r'parentCategory',
       target: r'Category',
       single: true,
     ),
     r'subCategories': LinkSchema(
-      id: 7325892513089422,
+      id: kIsWeb ? 0 : -1679925137010,
       name: r'subCategories',
       target: r'Category',
       single: false,
@@ -1480,3 +1481,4 @@ extension CategoryQueryProperty
     });
   }
 }
+

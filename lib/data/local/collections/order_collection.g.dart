@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'order_collection.dart';
@@ -201,7 +202,7 @@ const OrderSchema = CollectionSchema(
       ],
     ),
     r'status': IndexSchema(
-      id: 7927966929380692,
+      id: kIsWeb ? 0 : -1077851706204,
       name: r'status',
       unique: false,
       replace: false,
@@ -222,7 +223,7 @@ const OrderSchema = CollectionSchema(
       single: true,
     ),
     r'orderItems': LinkSchema(
-      id: 7680597738238564,
+      id: kIsWeb ? 0 : -1325220897380,
       name: r'orderItems',
       target: r'OrderItem',
       single: false,
@@ -5089,3 +5090,4 @@ extension OrderQueryProperty on QueryBuilder<Order, Order, QQueryProperty> {
     });
   }
 }
+
