@@ -15,7 +15,7 @@ extension GetCreditNoteCollection on Isar {
 
 const CreditNoteSchema = CollectionSchema(
   name: r'CreditNote',
-  id: 266119816388625,
+  id: int.parse('-6446852637244639344'),
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -150,7 +150,7 @@ const CreditNoteSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 213439734042772,
+      id: int.parse('-8357342922828577102'),
       name: r'uuid',
       unique: true,
       replace: false,
@@ -163,7 +163,7 @@ const CreditNoteSchema = CollectionSchema(
       ],
     ),
     r'creditNoteNumber': IndexSchema(
-      id: 6040026159086213,
+      id: int.parse('-4224090914426469759'),
       name: r'creditNoteNumber',
       unique: true,
       replace: false,
@@ -178,7 +178,7 @@ const CreditNoteSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 301369397714656,
+      id: int.parse('887670541941039863'),
       name: r'party',
       target: r'Party',
       single: true,
@@ -4249,5 +4249,9 @@ extension CreditNoteQueryProperty
     });
   }
 }
+
+
+
+
 
 

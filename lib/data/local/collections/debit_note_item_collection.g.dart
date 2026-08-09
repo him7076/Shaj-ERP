@@ -15,7 +15,7 @@ extension GetDebitNoteItemCollection on Isar {
 
 const DebitNoteItemSchema = CollectionSchema(
   name: r'DebitNoteItem',
-  id: 154120541221722,
+  id: int.parse('1871596225995751654'),
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -115,7 +115,7 @@ const DebitNoteItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 213439734042772,
+      id: int.parse('-8357342922828577102'),
       name: r'uuid',
       unique: true,
       replace: false,
@@ -136,7 +136,7 @@ const DebitNoteItemSchema = CollectionSchema(
       single: true,
     ),
     r'item': LinkSchema(
-      id: 245568048593715,
+      id: int.parse('2900776405502981158'),
       name: r'item',
       target: r'Item',
       single: true,
@@ -2772,5 +2772,9 @@ extension DebitNoteItemQueryProperty
     });
   }
 }
+
+
+
+
 
 
