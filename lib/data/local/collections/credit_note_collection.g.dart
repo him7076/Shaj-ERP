@@ -163,7 +163,7 @@ const CreditNoteSchema = CollectionSchema(
       ],
     ),
     r'creditNoteNumber': IndexSchema(
-      id: 859822656720859,
+      id: 9222512211197154949,
       name: r'creditNoteNumber',
       unique: true,
       replace: false,
@@ -184,7 +184,7 @@ const CreditNoteSchema = CollectionSchema(
       single: true,
     ),
     r'creditNoteItems': LinkSchema(
-      id: 864478493930310,
+      id: 9222507555365445498,
       name: r'creditNoteItems',
       target: r'CreditNoteItem',
       single: false,
