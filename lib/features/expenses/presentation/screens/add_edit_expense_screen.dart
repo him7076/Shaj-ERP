@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
@@ -95,21 +97,18 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     final catObjects = await ExpenseCategoryItem.getCategories(prefs);
     _categories = catObjects.map((c) => c.name).toList();
 
-    // Load saved custom expense item templates from SharedPreferences
-    final String? savedTemplatesRaw = prefs.getString('custom_expense_item_templates');
-    if (savedTemplatesRaw != null && savedTemplatesRaw.isNotEmpty) {
-      try {
-        final List<dynamic> decoded = jsonDecode(savedTemplatesRaw);
-        for (var item in decoded) {
-          if (item is Map && item.containsKey('name')) {
-            final String name = item['name'].toString();
-            if (!_expenseTemplates.any((t) => t['name'].toString().toLowerCase() == name.toLowerCase())) {
-              _expenseTemplates.add({'name': name, 'defaultRate': (item['defaultRate'] as num?)?.toDouble() ?? 0.0});
-            }
+    // Load saved custom expense item templates from Isar DB & SharedPreferences
+    try {
+      final isarRef = ref.read(databaseServiceProvider).isar;
+      final dbExpenseItems = await isarRef.collection<ExpenseItem>().filter().isDeletedEqualTo(false).findAll();
+      for (var item in dbExpenseItems) {
+        if (item.itemName != null && item.itemName!.isNotEmpty) {
+          if (!_expenseTemplates.any((t) => t['name'].toString().toLowerCase() == item.itemName!.toLowerCase())) {
+            _expenseTemplates.add({'name': item.itemName!, 'defaultRate': item.defaultRate ?? 0.0});
           }
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
 
     if (widget.expenseUuid != null) {
       final isar = ref.read(databaseServiceProvider).isar;
@@ -270,10 +269,32 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         _itemRateController.text = rate.toStringAsFixed(0);
       });
 
-      // Save custom item templates permanently to SharedPreferences
+      // Save custom item to Isar DB & Queue for Firebase Cloud Sync!
       try {
-        final prefs = ref.read(sharedPreferencesProvider);
-        await prefs.setString('custom_expense_item_templates', jsonEncode(_expenseTemplates));
+        final dbService = ref.read(databaseServiceProvider);
+        final isar = dbService.isar;
+
+        final existing = await isar.collection<ExpenseItem>().filter().itemNameEqualTo(name, caseSensitive: false).findFirst();
+        final expItem = existing ?? ExpenseItem();
+        expItem
+          ..uuid ??= DateTime.now().microsecondsSinceEpoch.toString()
+          ..itemName = name
+          ..defaultRate = rate
+          ..updatedAt = DateTime.now();
+
+        await isar.writeTxn(() async {
+          final id = await isar.collection<ExpenseItem>().put(expItem);
+          final queueItem = SyncQueue()
+            ..uuid = DateTime.now().microsecondsSinceEpoch.toString()
+            ..entityType = 'ExpenseItem'
+            ..entityId = id
+            ..entityUuid = expItem.uuid
+            ..operation = existing == null ? 'Insert' : 'Update';
+          await isar.syncQueues.put(queueItem);
+        });
+
+        // Trigger quiet background sync to upload new expense item to Firestore
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
     }
   }
@@ -293,7 +314,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   void _saveExpense() async {
     if (_isSaving) return;
 
-    final voucherNo = _voucherNoController.text.trim();
+    String voucherNo = _voucherNoController.text.trim();
     if (voucherNo.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a Voucher Number.')),
@@ -312,6 +333,49 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     setState(() => _isSaving = true);
 
     try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      final firebaseService = ref.read(firebaseServiceProvider);
+
+      // Check for duplicate voucher number locally and in cloud
+      bool isDuplicate = false;
+      final existingLocal = await isar.expenses.filter().voucherNoEqualTo(voucherNo).findFirst();
+      if (existingLocal != null && existingLocal.uuid != _existingExpense?.uuid) {
+        isDuplicate = true;
+      }
+
+      if (!isDuplicate && _existingExpense == null) {
+        try {
+          final querySnapshot = await firebaseService.firestore
+              .collection('expenses')
+              .where('companyId', isEqualTo: firebaseService.companyId)
+              .where('voucherNo', isEqualTo: voucherNo)
+              .limit(1)
+              .get()
+              .timeout(const Duration(seconds: 3));
+
+          if (querySnapshot.docs.isNotEmpty) {
+            isDuplicate = true;
+          }
+        } catch (_) {}
+      }
+
+      if (isDuplicate) {
+        final repo = ref.read(expenseRepositoryProvider);
+        final nextVoucher = await repo.generateNextVoucherNumber();
+        voucherNo = nextVoucher;
+        _voucherNoController.text = nextVoucher;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠️ Voucher number was already used on another device! Auto-updated to $nextVoucher and saving...'),
+              backgroundColor: Colors.amber.shade900,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+
       final expense = _existingExpense ?? Expense();
       expense
         ..voucherNo = voucherNo

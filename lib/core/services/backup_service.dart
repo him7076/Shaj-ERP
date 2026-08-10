@@ -27,6 +27,7 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_item_collectio
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
@@ -91,6 +92,7 @@ class BackupService {
         'purchases': await isar.purchases.where().findAll(),
         'purchase_items': await isar.purchaseItems.where().findAll(),
         'expenses': await isar.expenses.where().findAll(),
+        'expense_items': await isar.collection<ExpenseItem>().where().findAll(),
         'transactions': await isar.transactions.where().findAll(),
         'bank_accounts': await isar.bankAccounts.where().findAll(),
         'credit_notes': await isar.creditNotes.where().findAll(),
@@ -571,6 +573,12 @@ class BackupService {
           'paymentMode': e.paymentMode,
           'remarks': e.remarks,
           'itemsJson': e.itemsJson,
+        });
+      case 'expense_items':
+        final e = entity as ExpenseItem;
+        return baseMap..addAll({
+          'itemName': e.itemName,
+          'defaultRate': e.defaultRate,
         });
       case 'transactions':
         final e = entity as Transaction;

@@ -222,26 +222,46 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      // 5. Calculate Stock Valuation (Sum of item current stock values)
+      // 5. Calculate Stock Valuation (Based on Actual Purchase Invoices Cost Basis)
       final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
+      final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
+
       double closingVal = 0.0;
       double openingVal = 0.0;
 
       for (var item in items) {
-        final double itemRate = (item.buyRate != null && item.buyRate! > 0)
-            ? item.buyRate!
-            : (item.wholesaleRate != null && item.wholesaleRate! > 0)
-                ? item.wholesaleRate!
-                : (item.sellRate ?? 0.0);
+        // Actual Purchase Cost from Purchase Invoices
+        final itemPurchases = purchaseItems.where((p) => p.itemId == item.id).toList();
+        double totalPurchaseTaxableVal = 0.0;
+        double totalPurchaseQty = 0.0;
 
-        final double currentStock = item.currentStock ?? 0.0;
-        final double openingStock = item.openingStock ?? 0.0;
+        for (var pi in itemPurchases) {
+          final qty = (pi.quantity ?? 0.0);
+          final rate = (pi.rate ?? 0.0);
+          final taxable = (pi.taxableAmount != null && pi.taxableAmount! > 0)
+              ? pi.taxableAmount!
+              : (qty * rate);
+          totalPurchaseTaxableVal += taxable;
+          totalPurchaseQty += qty;
+        }
+
+        double actualUnitCost = totalPurchaseQty > 0
+            ? (totalPurchaseTaxableVal / totalPurchaseQty)
+            : ((item.buyRate != null && item.buyRate! > 0)
+                ? item.buyRate!
+                : (item.wholesaleRate != null && item.wholesaleRate! > 0)
+                    ? item.wholesaleRate!
+                    : (item.sellRate ?? 0.0));
+
+        final double rawCurrent = item.currentStock ?? 0.0;
+        final double rawOpening = item.openingStock ?? 0.0;
+        final double currentStock = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
 
         if (currentStock > 0) {
-          closingVal += (currentStock * itemRate);
+          closingVal += (currentStock * actualUnitCost);
         }
-        if (openingStock > 0) {
-          openingVal += (openingStock * itemRate);
+        if (rawOpening > 0) {
+          openingVal += (rawOpening * actualUnitCost);
         }
       }
 

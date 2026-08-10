@@ -23,6 +23,7 @@ import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
@@ -110,6 +111,7 @@ class DatabaseService {
             PurchaseSchema,
             PurchaseItemSchema,
             ExpenseSchema,
+            ExpenseItemSchema,
             TransactionSchema,
             BankAccountSchema,
             CreditNoteSchema,
@@ -175,6 +177,7 @@ class DatabaseService {
               PurchaseSchema,
               PurchaseItemSchema,
               ExpenseSchema,
+              ExpenseItemSchema,
               TransactionSchema,
               BankAccountSchema,
               CreditNoteSchema,

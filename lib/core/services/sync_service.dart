@@ -765,7 +765,7 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
     ];
     final activeFirmId = _dbService.activeFirmId;
@@ -1129,6 +1129,7 @@ class SyncService {
         case 'Invoice': return await isar.invoices.filter().idGreaterThan(-1).count();
         case 'Purchase': return await isar.purchases.filter().idGreaterThan(-1).count();
         case 'Expense': return await isar.expenses.filter().idGreaterThan(-1).count();
+        case 'ExpenseItem': return await isar.collection<ExpenseItem>().filter().idGreaterThan(-1).count();
         case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
         default: return 0;
       }
@@ -1160,6 +1161,9 @@ class SyncService {
         case 'Expense':
           final r = await isar.expenses.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
           return r?.updatedAt;
+        case 'ExpenseItem':
+          final r = await isar.collection<ExpenseItem>().filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
         case 'Transaction':
           final r = await isar.transactions.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
           return r?.updatedAt;
@@ -1185,6 +1189,7 @@ class SyncService {
       case 'Purchase': return 'purchases';
       case 'PurchaseItem': return 'purchase_items';
       case 'Expense': return 'expenses';
+      case 'ExpenseItem': return 'expense_items';
       case 'Transaction': return 'transactions';
       case 'BankAccount': return 'bank_accounts';
       case 'CreditNote': return 'credit_notes';
@@ -1537,6 +1542,12 @@ class SyncService {
           'remarks': e.remarks,
           'itemsJson': e.itemsJson,
         });
+      case 'ExpenseItem':
+        final e = entity as ExpenseItem;
+        return baseMap..addAll({
+          'itemName': e.itemName,
+          'defaultRate': e.defaultRate,
+        });
       case 'Transaction':
         final e = entity as Transaction;
         return baseMap..addAll({
@@ -1865,6 +1876,11 @@ class SyncService {
           ..remarks = data['remarks']
           ..itemsJson = data['itemsJson'];
         break;
+      case 'ExpenseItem':
+        entity = ExpenseItem()
+          ..itemName = data['itemName']
+          ..defaultRate = (data['defaultRate'] as num?)?.toDouble();
+        break;
       case 'Transaction':
         entity = Transaction()
           ..transactionNumber = data['transactionNumber']
@@ -2041,6 +2057,7 @@ class SyncService {
         case 'Purchase': await _dbService.isar.purchases.put(entity as Purchase); break;
         case 'PurchaseItem': await _dbService.isar.purchaseItems.put(entity as PurchaseItem); break;
         case 'Expense': await _dbService.isar.expenses.put(entity as Expense); break;
+        case 'ExpenseItem': await _dbService.isar.collection<ExpenseItem>().put(entity as ExpenseItem); break;
         case 'Transaction': await _dbService.isar.transactions.put(entity as Transaction); break;
         case 'BankAccount': await _dbService.isar.bankAccounts.put(entity as BankAccount); break;
         case 'CreditNote': await _dbService.isar.creditNotes.put(entity as CreditNote); break;
@@ -2074,6 +2091,7 @@ class SyncService {
         case 'Purchase': await _dbService.isar.purchases.put(entity as Purchase); break;
         case 'PurchaseItem': await _dbService.isar.purchaseItems.put(entity as PurchaseItem); break;
         case 'Expense': await _dbService.isar.expenses.put(entity as Expense); break;
+        case 'ExpenseItem': await _dbService.isar.collection<ExpenseItem>().put(entity as ExpenseItem); break;
         case 'Transaction': await _dbService.isar.transactions.put(entity as Transaction); break;
         case 'BankAccount': await _dbService.isar.bankAccounts.put(entity as BankAccount); break;
         case 'CreditNote': await _dbService.isar.creditNotes.put(entity as CreditNote); break;
