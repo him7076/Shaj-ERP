@@ -452,40 +452,51 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   );
                 }
 
+                final totalCount = list.length;
+                final totalSales = list.fold<double>(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
+                final totalBalanceDue = list.fold<double>(0.0, (sum, inv) => sum + (inv.pendingAmount ?? 0.0));
+
                 final visibleList = list.take(_displayLimit).toList();
                 final hasMore = list.length > _displayLimit;
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  itemCount: visibleList.length + (hasMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == visibleList.length) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Center(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                _displayLimit += 50;
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            icon: const Icon(Icons.arrow_downward_rounded),
-                            label: Text(
-                              'Load More Invoices (Showing ${_displayLimit} of ${list.length})',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
+                return Column(
+                  children: [
+                    _buildSummaryBanner(theme, totalCount, totalSales, totalBalanceDue),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        itemCount: visibleList.length + (hasMore ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == visibleList.length) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              child: Center(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _displayLimit += 50;
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  icon: const Icon(Icons.arrow_downward_rounded),
+                                  label: Text(
+                                    'Load More Invoices (Showing ${_displayLimit} of ${list.length})',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
 
-                    final invoice = visibleList[index];
-                    return _buildInvoiceCard(invoice, theme);
-                  },
+                          final invoice = visibleList[index];
+                          return _buildInvoiceCard(invoice, theme);
+                        },
+                      ),
+                    ),
+                  ],
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -857,6 +868,86 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSummaryBanner(ThemeData theme, int totalCount, double totalSales, double totalBalanceDue) {
+    final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+    return Container(
+      margin: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.15)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildSummaryCardItem(
+            theme: theme,
+            title: 'No. of Txns',
+            value: '$totalCount',
+            icon: Icons.receipt_long_rounded,
+            color: Colors.blue,
+          ),
+          Container(width: 1, height: 28, color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          _buildSummaryCardItem(
+            theme: theme,
+            title: 'Total Sale',
+            value: currencyFormat.format(totalSales),
+            icon: Icons.point_of_sale_rounded,
+            color: const Color(0xFF10B981),
+          ),
+          Container(width: 1, height: 28, color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          _buildSummaryCardItem(
+            theme: theme,
+            title: 'Balance Due',
+            value: currencyFormat.format(totalBalanceDue),
+            icon: Icons.pending_actions_rounded,
+            color: const Color(0xFFF59E0B),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCardItem({
+    required ThemeData theme,
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

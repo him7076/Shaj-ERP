@@ -34,6 +34,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 
 enum SyncStatus { idle, syncing, success, failure }
 
@@ -696,6 +697,7 @@ class SyncService {
           case 'CreditNoteItem': entity = await isar.creditNoteItems.get(entityId); break;
           case 'DebitNote': entity = await isar.debitNotes.get(entityId); break;
           case 'DebitNoteItem': entity = await isar.debitNoteItems.get(entityId); break;
+          case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
         }
 
         if (entity == null && queueItem.operation != 'Delete') {
@@ -767,7 +769,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'StockAdjustment'
     ];
     final activeFirmId = _dbService.activeFirmId;
 
@@ -1207,6 +1209,7 @@ class SyncService {
       case 'CreditNoteItem': return 'credit_note_items';
       case 'DebitNote': return 'debit_notes';
       case 'DebitNoteItem': return 'debit_note_items';
+      case 'StockAdjustment': return 'stock_adjustments';
       default: return entityType.toLowerCase();
     }
   }
@@ -1669,6 +1672,19 @@ class SyncService {
           'debitNoteUuid': e.debitNote.value?.uuid,
           'itemUuid': e.item.value?.uuid,
         });
+      case 'StockAdjustment':
+        final e = entity as StockAdjustment;
+        return baseMap..addAll({
+          'itemUuid': e.itemUuid,
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'adjustmentType': e.adjustmentType,
+          'quantity': e.quantity,
+          'unit': e.unit,
+          'adjustmentDate': e.adjustmentDate?.toIso8601String(),
+          'reason': e.reason,
+          'notes': e.notes,
+        });
       default:
         return baseMap;
     }
@@ -2032,6 +2048,18 @@ class SyncService {
           ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
           ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
         break;
+      case 'StockAdjustment':
+        entity = StockAdjustment()
+          ..itemUuid = data['itemUuid']
+          ..itemId = data['itemId']
+          ..itemName = data['itemName']
+          ..adjustmentType = data['adjustmentType']
+          ..quantity = (data['quantity'] as num?)?.toDouble()
+          ..unit = data['unit']
+          ..adjustmentDate = data['adjustmentDate'] != null ? DateTime.parse(data['adjustmentDate']) : null
+          ..reason = data['reason']
+          ..notes = data['notes'];
+        break;
     }
 
     if (entity != null) {
@@ -2075,6 +2103,7 @@ class SyncService {
         case 'CreditNoteItem': await _dbService.isar.creditNoteItems.put(entity as CreditNoteItem); break;
         case 'DebitNote': await _dbService.isar.debitNotes.put(entity as DebitNote); break;
         case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
+        case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
       }
     });
 
@@ -2109,6 +2138,7 @@ class SyncService {
         case 'CreditNoteItem': await _dbService.isar.creditNoteItems.put(entity as CreditNoteItem); break;
         case 'DebitNote': await _dbService.isar.debitNotes.put(entity as DebitNote); break;
         case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
+        case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
       }
     });
 

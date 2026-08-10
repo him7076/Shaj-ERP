@@ -126,7 +126,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                     invoice.paymentStatus = 'Unpaid';
                   }
                   invoice.updatedAt = DateTime.now();
+                  invoice.isSynced = false;
                   await isar.invoices.put(invoice);
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = _generateUuid()
+                    ..entityType = 'Invoice'
+                    ..entityId = invoice.id
+                    ..entityUuid = invoice.uuid
+                    ..operation = 'Update'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
                 }
               } else if (oldType == 'Payment' || oldType == 'Debit Note') {
                 final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
@@ -141,7 +150,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                     purchase.paymentStatus = 'Unpaid';
                   }
                   purchase.updatedAt = DateTime.now();
+                  purchase.isSynced = false;
                   await isar.purchases.put(purchase);
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = _generateUuid()
+                    ..entityType = 'Purchase'
+                    ..entityId = purchase.id
+                    ..entityUuid = purchase.uuid
+                    ..operation = 'Update'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
                 }
               }
             }
@@ -165,11 +183,20 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
             }
             party.updatedAt = DateTime.now();
+            party.isSynced = false;
             await isar.partys.put(party);
             if (!kIsWeb) {
               transaction.party.value = party;
               await transaction.party.save();
             }
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _generateUuid()
+              ..entityType = 'Party'
+              ..entityId = party.id
+              ..entityUuid = party.uuid
+              ..operation = 'Update'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
           }
         }
 
@@ -180,7 +207,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             targetParty.outstandingBalance = (targetParty.outstandingBalance ?? 0.0) + amt;
             targetParty.updatedAt = DateTime.now();
+            targetParty.isSynced = false;
             await isar.partys.put(targetParty);
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _generateUuid()
+              ..entityType = 'Party'
+              ..entityId = targetParty.id
+              ..entityUuid = targetParty.uuid
+              ..operation = 'Update'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
           }
         }
 
@@ -207,7 +243,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                   invoice.paymentStatus = 'Unpaid';
                 }
                 invoice.updatedAt = DateTime.now();
+                invoice.isSynced = false;
                 await isar.invoices.put(invoice);
+                await isar.syncQueues.put(SyncQueue()
+                  ..uuid = _generateUuid()
+                  ..entityType = 'Invoice'
+                  ..entityId = invoice.id
+                  ..entityUuid = invoice.uuid
+                  ..operation = 'Update'
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now());
               }
             } else if (type == 'Payment' || type == 'Debit Note') {
               final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
@@ -222,7 +267,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                   purchase.paymentStatus = 'Unpaid';
                 }
                 purchase.updatedAt = DateTime.now();
+                purchase.isSynced = false;
                 await isar.purchases.put(purchase);
+                await isar.syncQueues.put(SyncQueue()
+                  ..uuid = _generateUuid()
+                  ..entityType = 'Purchase'
+                  ..entityId = purchase.id
+                  ..entityUuid = purchase.uuid
+                  ..operation = 'Update'
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now());
               }
             }
           }

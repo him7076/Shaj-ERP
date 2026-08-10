@@ -24,6 +24,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_item_colle
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 
 class WebMockIsar implements Isar {
   final String firmId;
@@ -139,6 +140,7 @@ class WebMockIsar implements Isar {
     if (T == DebitNote) return 'debitNotes';
     if (T == DebitNoteItem) return 'debitNoteItems';
     if (T == DeletedVoucher) return 'deletedVouchers';
+    if (T == StockAdjustment) return 'stockAdjustments';
     return 'dynamics';
   }
 
@@ -181,6 +183,7 @@ class WebMockIsar implements Isar {
     if (name == 'debitNotes') return WebMockCollection<DebitNote>('debitNotes', _db, this);
     if (name == 'debitNoteItems') return WebMockCollection<DebitNoteItem>('debitNoteItems', _db, this);
     if (name == 'deletedVouchers') return WebMockCollection<DeletedVoucher>('deletedVouchers', _db, this);
+    if (name == 'stockAdjustments') return WebMockCollection<StockAdjustment>('stockAdjustments', _db, this);
 
     return WebMockCollection<dynamic>(name, _db, this);
   }
@@ -1324,6 +1327,24 @@ class WebMockIsar implements Isar {
           ..amount = map['amount'] as double?
           ..remarks = map['remarks'] as String?
           ..deletedAt = map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'StockAdjustment':
+        return StockAdjustment()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..itemUuid = map['itemUuid'] as String?
+          ..itemId = map['itemId'] as int?
+          ..itemName = map['itemName'] as String?
+          ..adjustmentType = map['adjustmentType'] as String?
+          ..quantity = (map['quantity'] as num?)?.toDouble()
+          ..unit = map['unit'] as String?
+          ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate'] as String) : null
+          ..reason = map['reason'] as String?
+          ..notes = map['notes'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool

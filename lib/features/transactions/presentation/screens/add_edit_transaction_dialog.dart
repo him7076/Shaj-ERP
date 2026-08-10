@@ -218,10 +218,9 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
   double getPendingToPay(dynamic bill) {
     final grandTotal = ((bill.grandTotal ?? 0.0) as num).toDouble();
-    final paidAmount = ((bill.paidAmount ?? 0.0) as num).toDouble();
+    final pendingAmount = ((bill.pendingAmount ?? grandTotal) as num).toDouble();
     final currentAlloc = _linkedAllocations[bill.uuid] ?? 0.0;
-    final otherPaid = paidAmount - currentAlloc;
-    return max(0.0, grandTotal - otherPaid);
+    return max(0.0, pendingAmount + currentAlloc);
   }
 
   void _autoAllocate() {
@@ -511,174 +510,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   ),
                   const SizedBox(height: 16),
                 ],
-                                // Linked bills section
-                if (_pendingBills.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.dividerColor),
-                      borderRadius: BorderRadius.circular(8),
-                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Link to Pending Bills',
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            TextButton.icon(
-                              onPressed: _autoAllocate,
-                              icon: const Icon(Icons.auto_awesome, size: 16),
-                              label: const Text('Auto Allocate'),
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ..._pendingBills.map((bill) {
-                          final uuid = bill.uuid as String;
-                          final controller = _allocControllers[uuid];
-                          if (controller == null) return const SizedBox();
-
-                          final pendingToPay = getPendingToPay(bill);
-                          final currentAlloc = _linkedAllocations[uuid] ?? 0.0;
-                          final isLinked = currentAlloc > 0;
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              children: [
-                                Checkbox(
-                                  value: isLinked,
-                                  onChanged: (val) {
-                                    final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
-                                    final allocatedSoFar = _linkedAllocations.entries
-                                        .where((e) => e.key != uuid)
-                                        .fold(0.0, (sum, e) => sum + e.value);
-                                    final remaining = max(0.0, totalTxn - allocatedSoFar);
-
-                                    setState(() {
-                                      if (val == true) {
-                                        final allocVal = min(remaining, pendingToPay);
-                                        _linkedAllocations[uuid] = double.parse(allocVal.toStringAsFixed(2));
-                                      } else {
-                                        _linkedAllocations.remove(uuid);
-                                      }
-                                      _updateControllers();
-                                    });
-                                  },
-                                ),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _transactionType == 'Receipt' || _transactionType == 'Credit Note'
-                                            ? 'Invoice #${bill.invoiceNumber ?? bill.uuid.substring(0, 8)}'
-                                            : 'Bill #${bill.purchaseNumber ?? bill.uuid.substring(0, 8)}',
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
-                                      ),
-                                      Text(
-                                        'Date: ${bill.createdAt != null ? DateFormat('dd-MM-yyyy').format(bill.createdAt) : "N/A"} | Bal: ₹${pendingToPay.toStringAsFixed(2)}',
-                                        style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 110,
-                                  height: 38,
-                                  child: TextFormField(
-                                    controller: controller,
-                                    focusNode: _allocFocusNodes[uuid],
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                    decoration: const InputDecoration(
-                                      prefixText: '₹',
-                                      hintText: '0.00',
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    onChanged: (val) {
-                                      final parsed = double.tryParse(val) ?? 0.0;
-                                      setState(() {
-                                        if (parsed > 0) {
-                                          _linkedAllocations[uuid] = parsed;
-                                        } else {
-                                          _linkedAllocations.remove(uuid);
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                        const Divider(),
-                        // Summary status row
-                        Builder(
-                          builder: (context) {
-                            final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
-                            final totalAllocated = _linkedAllocations.values.fold(0.0, (sum, val) => sum + val);
-                            final remaining = totalTxn - totalAllocated;
-
-                            Color statusColor = Colors.grey;
-                            String statusText = 'No allocation';
-
-                            if (totalTxn > 0) {
-                              if (totalAllocated.toStringAsFixed(2) == totalTxn.toStringAsFixed(2)) {
-                                statusColor = Colors.green;
-                                statusText = 'Fully Allocated';
-                              } else if (totalAllocated > totalTxn) {
-                                statusColor = Colors.red;
-                                statusText = 'Over-allocated by ₹${(totalAllocated - totalTxn).toStringAsFixed(2)}';
-                              } else {
-                                statusColor = Colors.orange;
-                                statusText = 'Unallocated: ₹${remaining.toStringAsFixed(2)}';
-                              }
-                            }
-
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Total Allocated: ₹${totalAllocated.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: statusColor.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    statusText,
-                                    style: TextStyle(
-                                      color: statusColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Amount & Direct Link Bills Button Row
+                                // Amount & Direct Link Bills Button Row
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -713,14 +545,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                             return;
                           }
                           await _fetchPendingBills();
-                          _autoAllocate();
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Auto-allocated to ${_linkedAllocations.length} pending bill(s)!'),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                            _showLinkBillsDialog(context);
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -730,7 +556,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         icon: const Icon(Icons.link_rounded, size: 18),
-                        label: const Text('Link Bills', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: Text(
+                          _linkedAllocations.isNotEmpty ? 'Linked (${_linkedAllocations.length})' : 'Link Bills',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
                       ),
                     ],
                   ],
@@ -878,6 +707,212 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
           ),
         ),
       ),
+    );
+  }
+
+  void _showLinkBillsDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
+            final totalAllocated = _linkedAllocations.values.fold(0.0, (sum, val) => sum + val);
+            final remainingUnallocated = max(0.0, totalTxn - totalAllocated);
+
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Container(
+                width: 580,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.link_rounded, color: theme.colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Link / Unlink Invoices & Bills',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(dialogContext),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    if (_pendingBills.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: Text('No pending bills found for this party.'),
+                        ),
+                      )
+                    else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () {
+                              _autoAllocate();
+                              setModalState(() {});
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.auto_awesome, size: 16),
+                            label: const Text('Auto Allocate'),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _linkedAllocations.clear();
+                                _updateControllers();
+                              });
+                              setModalState(() {});
+                            },
+                            style: TextButton.styleFrom(foregroundColor: Colors.red),
+                            icon: const Icon(Icons.link_off_rounded, size: 16),
+                            label: const Text('Unlink All'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 340),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: _pendingBills.map((bill) {
+                              final uuid = bill.uuid as String;
+                              final controller = _allocControllers[uuid];
+                              if (controller == null) return const SizedBox();
+
+                              final grandTotal = ((bill.grandTotal ?? 0.0) as num).toDouble();
+                              final pendingToPay = getPendingToPay(bill);
+                              final currentAlloc = _linkedAllocations[uuid] ?? 0.0;
+                              final isLinked = currentAlloc > 0;
+                              final remainingOnInvoice = max(0.0, pendingToPay - currentAlloc);
+
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: isLinked ? theme.colorScheme.primary.withOpacity(0.5) : theme.dividerColor),
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: isLinked ? theme.colorScheme.primaryContainer.withOpacity(0.1) : Colors.transparent,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Checkbox(
+                                      value: isLinked,
+                                      onChanged: (val) {
+                                        setModalState(() {
+                                          if (val == true) {
+                                            final allocVal = min(remainingUnallocated, pendingToPay);
+                                            _linkedAllocations[uuid] = double.parse(allocVal.toStringAsFixed(2));
+                                          } else {
+                                            _linkedAllocations.remove(uuid);
+                                          }
+                                          _updateControllers();
+                                        });
+                                        setState(() {});
+                                      },
+                                    ),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _transactionType == 'Receipt' || _transactionType == 'Credit Note'
+                                                ? 'Invoice #${bill.invoiceNumber ?? bill.uuid.substring(0, 8)}'
+                                                : 'Bill #${bill.purchaseNumber ?? bill.uuid.substring(0, 8)}',
+                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          Text(
+                                            'Total: ₹${grandTotal.toStringAsFixed(2)} | Pending: ₹${remainingOnInvoice.toStringAsFixed(2)}',
+                                            style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    SizedBox(
+                                      width: 100,
+                                      height: 38,
+                                      child: TextFormField(
+                                        controller: controller,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: const InputDecoration(
+                                          prefixText: '₹',
+                                          hintText: '0.00',
+                                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (val) {
+                                          final parsed = double.tryParse(val) ?? 0.0;
+                                          setModalState(() {
+                                            if (parsed > 0) {
+                                              _linkedAllocations[uuid] = parsed;
+                                            } else {
+                                              _linkedAllocations.remove(uuid);
+                                            }
+                                          });
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ),
+                                    if (isLinked) ...[
+                                      IconButton(
+                                        tooltip: 'Unlink Transaction',
+                                        icon: const Icon(Icons.link_off_rounded, color: Colors.red, size: 20),
+                                        onPressed: () {
+                                          setModalState(() {
+                                            _linkedAllocations.remove(uuid);
+                                            _updateControllers();
+                                          });
+                                          setState(() {});
+                                        },
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const Divider(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Txn: ₹${totalTxn.toStringAsFixed(2)} | Allocated: ₹${totalAllocated.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            setState(() {});
+                          },
+                          child: const Text('Done'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

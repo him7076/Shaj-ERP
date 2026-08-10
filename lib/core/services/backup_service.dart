@@ -34,6 +34,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -99,6 +100,7 @@ class BackupService {
         'credit_note_items': await isar.creditNoteItems.where().findAll(),
         'debit_notes': await isar.debitNotes.where().findAll(),
         'debit_note_items': await isar.debitNoteItems.where().findAll(),
+        'stock_adjustments': await isar.collection<StockAdjustment>().where().findAll(),
         'settings': await isar.settings.where().findAll(),
         'users': await isar.users.where().findAll(),
         'sync_queues': await isar.syncQueues.where().findAll(),
@@ -684,6 +686,19 @@ class BackupService {
           'gstRate': e.gstRate,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
+        });
+      case 'stock_adjustments':
+        final e = entity as StockAdjustment;
+        return baseMap..addAll({
+          'itemUuid': e.itemUuid,
+          'itemId': e.itemId,
+          'itemName': e.itemName,
+          'adjustmentType': e.adjustmentType,
+          'quantity': e.quantity,
+          'unit': e.unit,
+          'adjustmentDate': e.adjustmentDate?.toIso8601String(),
+          'reason': e.reason,
+          'notes': e.notes,
         });
       case 'settings':
         final e = entity as Settings;

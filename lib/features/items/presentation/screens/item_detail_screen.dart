@@ -10,6 +10,9 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_collection.da
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
@@ -19,7 +22,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
 class _ItemTransaction {
-  final String type; // 'Sale', 'Purchase', 'Order'
+  final String type; // 'Sale', 'Purchase', 'Order', 'Adjustment'
   final DateTime date;
   final String title;
   final String partyName;
@@ -28,6 +31,7 @@ class _ItemTransaction {
   final double rate;
   final double totalAmount;
   final String targetUuid;
+  final StockAdjustment? rawAdjustment;
 
   _ItemTransaction({
     required this.type,
@@ -39,6 +43,7 @@ class _ItemTransaction {
     required this.rate,
     required this.totalAmount,
     required this.targetUuid,
+    this.rawAdjustment,
   });
 }
 
@@ -184,6 +189,30 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
+        // 4. Fetch Stock Adjustments for this item
+        final adjustments = await isar.collection<StockAdjustment>()
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) => q.itemUuidEqualTo(itemUuid).or().itemNameEqualTo(fetchedItem.itemName))
+            .findAll();
+
+        for (var adj in adjustments) {
+          final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+          txs.add(_ItemTransaction(
+            type: 'Adjustment',
+            date: adj.adjustmentDate ?? adj.createdAt,
+            title: 'Stock Adjustment (${isAdd ? "Add +" : "Reduce -"})',
+            partyName: adj.reason ?? (isAdd ? 'Stock Added' : 'Stock Reduced'),
+            quantity: adj.quantity ?? 0.0,
+            unit: adj.unit ?? (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
+            rate: 0.0,
+            totalAmount: 0.0,
+            targetUuid: adj.uuid ?? adj.id.toString(),
+            rawAdjustment: adj,
+          ));
+        }
+
         // Sort descending by date
         txs.sort((a, b) => b.date.compareTo(a.date));
 
@@ -251,10 +280,44 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     }
   }
 
-  Future<void> _adjustStockDialog() async {
-    final qtyController = TextEditingController();
-    final reasonController = TextEditingController();
-    var isStockIn = true;
+  void _openTransactionDetail(_ItemTransaction tx) {
+    if (tx.type == 'Sale') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InvoiceDetailScreen(invoiceUuid: tx.targetUuid),
+        ),
+      ).then((_) => _loadItem());
+    } else if (tx.type == 'Purchase') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddEditPurchaseScreen(purchaseUuid: tx.targetUuid),
+        ),
+      ).then((_) => _loadItem());
+    } else if (tx.type == 'Order') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderDetailScreen(orderUuid: tx.targetUuid),
+        ),
+      ).then((_) => _loadItem());
+    } else if (tx.type == 'Adjustment' && tx.rawAdjustment != null) {
+      _showAdjustmentDetailModal(tx.rawAdjustment!);
+    }
+  }
+
+  Future<void> _adjustStockDialog({StockAdjustment? existingAdjustment}) async {
+    final isEditing = existingAdjustment != null;
+    final qtyController = TextEditingController(text: existingAdjustment?.quantity?.toString() ?? '');
+    final reasonController = TextEditingController(text: existingAdjustment?.reason ?? '');
+    var isStockIn = existingAdjustment != null ? (existingAdjustment.adjustmentType == 'Add' || existingAdjustment.adjustmentType == 'Stock In') : true;
+    var selectedDate = existingAdjustment?.adjustmentDate ?? DateTime.now();
+    
+    final primaryUnit = _item?.primaryUnitName ?? _item?.unit.value?.shortName ?? 'PCS';
+    final secondaryUnit = _item?.secondaryUnit;
+    var selectedUnit = existingAdjustment?.unit ?? primaryUnit;
+
     final formKey = GlobalKey<FormState>();
 
     final success = await showDialog<bool>(
@@ -263,7 +326,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Adjust Inventory Stock'),
+              title: Text(isEditing ? 'Edit Stock Adjustment' : 'Adjust Inventory Stock'),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -289,19 +352,70 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: qtyController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          labelText: 'Quantity',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Required';
-                          final val = double.tryParse(v);
-                          if (val == null || val <= 0) return 'Enter value > 0';
-                          return null;
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextFormField(
+                              controller: qtyController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(
+                                labelText: 'Quantity *',
+                                border: OutlineInputBorder(),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Required';
+                                final val = double.tryParse(v);
+                                if (val == null || val <= 0) return 'Enter value > 0';
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButtonFormField<String>(
+                              value: selectedUnit,
+                              decoration: const InputDecoration(
+                                labelText: 'Unit *',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem(value: primaryUnit, child: Text(primaryUnit)),
+                                if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit)
+                                  DropdownMenuItem(value: secondaryUnit, child: Text(secondaryUnit)),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setDialogState(() => selectedUnit = val);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (picked != null) {
+                            setDialogState(() => selectedDate = picked);
+                          }
                         },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Adjustment Date',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          child: Text(DateFormat('dd MMMM yyyy').format(selectedDate)),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -309,7 +423,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Reason for Adjustment',
                           border: OutlineInputBorder(),
-                          hintText: 'e.g. Purchase, Damage, Audit...',
+                          hintText: 'e.g. Audit, Damage, Manual Addition...',
                         ),
                         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                       ),
@@ -323,12 +437,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () async {
+                  onPressed: () {
                     if (formKey.currentState!.validate()) {
                       Navigator.pop(context, true);
                     }
                   },
-                  child: const Text('Apply'),
+                  child: Text(isEditing ? 'Save Changes' : 'Apply'),
                 ),
               ],
             );
@@ -340,24 +454,53 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     if (success == true && _item != null) {
       setState(() => _isLoading = true);
       try {
-        final stockService = ref.read(stockServiceProvider);
-        final adjustment = double.parse(qtyController.text);
-        final finalQty = isStockIn ? adjustment : -adjustment;
-        
-        await stockService.adjustStock(
-          _item!,
-          finalQty,
-          reasonController.text.trim(),
-        );
+        final isar = ref.read(databaseServiceProvider).isar;
+        final qty = double.parse(qtyController.text);
+        final reason = reasonController.text.trim();
+        final adjType = isStockIn ? 'Add' : 'Reduce';
 
+        final adj = existingAdjustment ?? StockAdjustment();
+        adj.uuid ??= const Uuid().v4();
+        adj.itemUuid = _item!.uuid;
+        adj.itemId = _item!.id;
+        adj.itemName = _item!.itemName;
+        adj.adjustmentType = adjType;
+        adj.quantity = qty;
+        adj.unit = selectedUnit;
+        adj.adjustmentDate = selectedDate;
+        adj.reason = reason;
+        adj.updatedAt = DateTime.now();
+        adj.createdAt = isEditing ? adj.createdAt : DateTime.now();
+        adj.isDeleted = false;
+        adj.isSynced = false;
+
+        await isar.writeTxn(() async {
+          final id = await isar.collection<StockAdjustment>().put(adj);
+          adj.id = id;
+
+          await isar.syncQueues.put(SyncQueue()
+            ..uuid = const Uuid().v4()
+            ..entityType = 'StockAdjustment'
+            ..entityId = id
+            ..entityUuid = adj.uuid
+            ..operation = isEditing ? 'Update' : 'Insert'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now());
+        });
+
+        try {
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+
+        await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
         await _loadItem();
         ref.invalidate(filteredItemsProvider);
         ref.invalidate(lowStockAlertProvider);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Stock levels adjusted successfully.'),
+            SnackBar(
+              content: Text(isEditing ? 'Adjustment updated successfully.' : 'Stock adjusted successfully.'),
               backgroundColor: Colors.green,
             ),
           );
@@ -378,29 +521,126 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     }
   }
 
-  void _openTransactionDetail(_ItemTransaction tx) {
-    if (tx.type == 'Sale') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => InvoiceDetailScreen(invoiceUuid: tx.targetUuid),
-        ),
-      ).then((_) => _loadItem());
-    } else if (tx.type == 'Purchase') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => AddEditPurchaseScreen(purchaseUuid: tx.targetUuid),
-        ),
-      ).then((_) => _loadItem());
-    } else if (tx.type == 'Order') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrderDetailScreen(orderUuid: tx.targetUuid),
-        ),
-      ).then((_) => _loadItem());
-    }
+  void _showAdjustmentDetailModal(StockAdjustment adj) {
+    final theme = Theme.of(context);
+    final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+    final dateStr = adj.adjustmentDate != null ? DateFormat('dd MMMM yyyy').format(adj.adjustmentDate!) : 'N/A';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isAdd ? Colors.green.withOpacity(0.15) : Colors.red.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isAdd ? Icons.add_circle_outline : Icons.remove_circle_outline,
+                  color: isAdd ? Colors.green : Colors.red,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Stock Adjustment Details',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDetailTable([
+                _DetailRow('Product Name', adj.itemName ?? 'N/A'),
+                _DetailRow('Adjustment Type', isAdd ? 'Stock In (+)' : 'Stock Out (-)'),
+                _DetailRow('Quantity & Unit', '${adj.quantity ?? 0.0} ${adj.unit ?? ''}'),
+                _DetailRow('Adjustment Date', dateStr),
+                _DetailRow('Reason', adj.reason ?? 'N/A', isBold: true),
+                if (adj.notes != null && adj.notes!.isNotEmpty)
+                  _DetailRow('Notes', adj.notes!),
+              ], theme),
+            ],
+          ),
+          actions: [
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              label: const Text('Delete'),
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Adjustment'),
+                    content: const Text('Are you sure you want to delete this stock adjustment? Item stock will be recalculated.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      TextButton(
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  setState(() => _isLoading = true);
+                  try {
+                    final isar = ref.read(databaseServiceProvider).isar;
+                    await isar.writeTxn(() async {
+                      adj.isDeleted = true;
+                      adj.updatedAt = DateTime.now();
+                      adj.isSynced = false;
+                      await isar.collection<StockAdjustment>().put(adj);
+
+                      await isar.syncQueues.put(SyncQueue()
+                        ..uuid = const Uuid().v4()
+                        ..entityType = 'StockAdjustment'
+                        ..entityId = adj.id
+                        ..entityUuid = adj.uuid
+                        ..operation = 'Delete'
+                        ..createdAt = DateTime.now()
+                        ..updatedAt = DateTime.now());
+                    });
+
+                    try {
+                      ref.read(syncServiceProvider).syncPendingChangesQuietly();
+                    } catch (_) {}
+
+                    await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
+                    await _loadItem();
+                    ref.invalidate(filteredItemsProvider);
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Stock adjustment deleted.')),
+                      );
+                    }
+                  } catch (e) {
+                    logger.error('Failed to delete adjustment', e);
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
+                }
+              },
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('Edit'),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _adjustStockDialog(existingAdjustment: adj);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -610,6 +850,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             } else if (tx.type == 'Order') {
                               badgeColor = Colors.orange;
                               badgeIcon = Icons.shopping_bag_outlined;
+                            } else if (tx.type == 'Adjustment') {
+                              final isAdd = tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In';
+                              badgeColor = isAdd ? Colors.purple : Colors.deepOrange;
+                              badgeIcon = isAdd ? Icons.add_circle_outline : Icons.remove_circle_outline;
                             }
 
                             return Card(
@@ -636,7 +880,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                       ),
                                     ),
                                     Text(
-                                      _currencyFormat.format(tx.totalAmount),
+                                      tx.type == 'Adjustment'
+                                          ? '${tx.quantity} ${tx.unit}'
+                                          : _currencyFormat.format(tx.totalAmount),
                                       style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor, fontSize: 14),
                                     ),
                                   ],

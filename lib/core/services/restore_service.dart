@@ -30,6 +30,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -765,7 +766,23 @@ class RestoreService {
         findByUuid: (uuid) async => await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(),
       );
 
-      // 16. Sync Queues
+      // 16. Stock Adjustments
+      await _restoreCollection<StockAdjustment>(
+        jsonFile: File('${extractDir.path}/stock_adjustments.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToStockAdjustment(map),
+        putAll: (items) async => await isar.collection<StockAdjustment>().putAll(items),
+        deleteByUuids: (uuids) async => await isar.collection<StockAdjustment>().filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      // 17. Sync Queues
       await _restoreCollection<SyncQueue>(
         jsonFile: File('${extractDir.path}/sync_queues.json'),
         strategy: duplicateStrategy,
@@ -1312,5 +1329,24 @@ class RestoreService {
       ..lastError = map['lastError']
       ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now()
       ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now();
+  }
+
+  StockAdjustment _mapMapToStockAdjustment(Map<String, dynamic> map) {
+    return StockAdjustment()
+      ..uuid = map['uuid']
+      ..itemUuid = map['itemUuid']
+      ..itemId = map['itemId'] as int?
+      ..itemName = map['itemName']
+      ..adjustmentType = map['adjustmentType']
+      ..quantity = (map['quantity'] as num?)?.toDouble()
+      ..unit = map['unit']
+      ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate']) : null
+      ..reason = map['reason']
+      ..notes = map['notes']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
   }
 }
