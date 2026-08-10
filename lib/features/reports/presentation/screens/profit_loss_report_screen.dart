@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
@@ -224,7 +225,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       // 5. Calculate Value-Based Stock Valuation (Without-Tax Purchase Taxable Base)
       final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
       final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
-      final invoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      final invoiceItems = await isar.collection<InvoiceItem>().filter().isDeletedEqualTo(false).findAll();
 
       double closingVal = 0.0;
       double openingVal = 0.0;
