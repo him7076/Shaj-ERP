@@ -143,9 +143,6 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
             if (invoices.isEmpty) {
               totalSales += (txn.amount ?? 0.0);
             }
-            paymentInDisc += (txn.discountAmount ?? 0.0);
-          } else if (type.contains('payment') || type.contains('payout')) {
-            paymentOutDisc += (txn.discountAmount ?? 0.0);
           } else if (type.contains('income')) {
             _otherIncome += (txn.amount ?? 0.0);
           }
@@ -180,7 +177,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       double totalCrNote = 0.0;
       for (var cn in creditNotes) {
         if (_isInDateRange(cn.creditNoteDate)) {
-          totalCrNote += (cn.totalAmount ?? 0.0);
+          totalCrNote += (cn.grandTotal ?? 0.0);
         }
       }
 
@@ -188,7 +185,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       double totalDrNote = 0.0;
       for (var dn in debitNotes) {
         if (_isInDateRange(dn.debitNoteDate)) {
-          totalDrNote += (dn.totalAmount ?? 0.0);
+          totalDrNote += (dn.grandTotal ?? 0.0);
         }
       }
 
@@ -369,7 +366,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
                 ),
                 Text(
                   'FINANCIAL HEALTH STATEMENT',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.emerald.shade300, letterSpacing: 1.2),
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: const Color(0xFF34D399), letterSpacing: 1.2),
                 ),
               ],
             ),

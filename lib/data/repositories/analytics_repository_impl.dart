@@ -54,7 +54,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         }
       }
 
-      // 2. Period Sales (Selected Range or All-Time fallback if empty)
+      // 2. Period Sales
       double monthlySales = 0.0;
       for (var inv in allInvoices) {
         if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, rangeStart, rangeEnd)) {
@@ -68,12 +68,8 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
           }
         }
       }
-      // If selected date range returned 0.0 but invoices exist, aggregate all invoices
-      if (monthlySales == 0.0 && allInvoices.isNotEmpty) {
-        monthlySales = allInvoices.fold(0.0, (sum, inv) => inv.paymentStatus != 'Cancelled' ? sum + (inv.grandTotal ?? 0.0) : sum);
-      }
 
-      // 3. Period Purchases (Selected Range or All-Time fallback if empty)
+      // 3. Period Purchases
       double monthlyPurchases = 0.0;
       for (var pur in allPurchases) {
         if (pur.paymentStatus != 'Cancelled' && isWithin(pur.purchaseDate ?? pur.createdAt, rangeStart, rangeEnd)) {
@@ -86,10 +82,6 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
             monthlyPurchases += (txn.amount ?? 0.0);
           }
         }
-      }
-      // If selected date range returned 0.0 but purchases exist, aggregate all purchases
-      if (monthlyPurchases == 0.0 && allPurchases.isNotEmpty) {
-        monthlyPurchases = allPurchases.fold(0.0, (sum, pur) => pur.paymentStatus != 'Cancelled' ? sum + (pur.grandTotal ?? 0.0) : sum);
       }
 
     // 3. Pending Orders Count
