@@ -131,7 +131,11 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       for (var inv in invoices) {
         if (_isInDateRange(inv.invoiceDate)) {
           totalSales += (inv.grandTotal ?? 0.0);
-          totalGstOutput += (inv.totalGST ?? 0.0);
+          double gst = inv.totalGST ?? ((inv.cgstAmount ?? 0.0) + (inv.sgstAmount ?? 0.0) + (inv.igstAmount ?? 0.0));
+          if (gst == 0.0 && inv.grandTotal != null && inv.taxableAmount != null && inv.grandTotal! > inv.taxableAmount!) {
+            gst = inv.grandTotal! - inv.taxableAmount!;
+          }
+          totalGstOutput += gst;
         }
       }
 
@@ -156,7 +160,11 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       for (var pur in purchases) {
         if (_isInDateRange(pur.purchaseDate)) {
           totalPurchases += (pur.grandTotal ?? 0.0);
-          totalGstInput += (pur.totalGST ?? 0.0);
+          double gstIn = pur.totalGST ?? ((pur.cgstAmount ?? 0.0) + (pur.sgstAmount ?? 0.0) + (pur.igstAmount ?? 0.0));
+          if (gstIn == 0.0 && pur.grandTotal != null && pur.taxableAmount != null && pur.grandTotal! > pur.taxableAmount!) {
+            gstIn = pur.grandTotal! - pur.taxableAmount!;
+          }
+          totalGstInput += gstIn;
         }
       }
 
@@ -212,14 +220,18 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      // 5. Calculate Stock Valuation
+      // 5. Calculate Stock Valuation (No hardcoded demo fallback)
       final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
       double closingVal = 0.0;
       double openingVal = 0.0;
       for (var item in items) {
         final rate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
-        closingVal += (item.currentStock ?? 0.0) * rate;
-        openingVal += (item.openingStock ?? 0.0) * rate;
+        if (item.currentStock != null && item.currentStock! > 0) {
+          closingVal += item.currentStock! * rate;
+        }
+        if (item.openingStock != null && item.openingStock! > 0) {
+          openingVal += item.openingStock! * rate;
+        }
       }
 
       setState(() {
@@ -229,14 +241,14 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         _debitNoteAmount = totalDrNote;
         _paymentOutDiscount = paymentOutDisc;
 
-        _closingStock = closingVal > 0 ? closingVal : 289429.42;
-        _openingStock = openingVal > 0 ? openingVal : 289429.42;
+        _closingStock = closingVal;
+        _openingStock = openingVal;
 
         _otherDirectExpense = directExp;
         _paymentInDiscount = paymentInDisc;
 
-        _gstPayable = (totalGstOutput - totalGstInput) > 0 ? (totalGstOutput - totalGstInput) : 0.0;
-        _gstReceivable = (totalGstInput - totalGstOutput) > 0 ? (totalGstInput - totalGstOutput) : 0.0;
+        _gstPayable = totalGstOutput;
+        _gstReceivable = totalGstInput;
 
         _otherExpense = indirectExp;
         _loanInterestExpense = interestExp;
