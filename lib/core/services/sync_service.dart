@@ -805,13 +805,21 @@ class SyncService {
             .collection(collectionName)
             .where('companyId', isEqualTo: _firebaseService.companyId);
 
-        // If local database has records or a valid sync timestamp, filter by updatedAt diff
-        if (effectiveLastSync.millisecondsSinceEpoch > 0) {
-          query = query.where('updatedAt', isGreaterThan: effectiveLastSync.toIso8601String());
+        // Filter by updatedAt ONLY IF local records exist for this entity
+        if (localCount > 0 && effectiveLastSync.millisecondsSinceEpoch > 0) {
+          query = query.where('updatedAt', isGreaterThan: effectiveLastSync.toUtc().toIso8601String());
         }
 
-        final querySnapshot = await query.get().timeout(const Duration(seconds: 5));
+        var querySnapshot = await query.get().timeout(const Duration(seconds: 5));
         await Future.delayed(const Duration(milliseconds: 10));
+
+        // Fallback: If query returned 0 documents and localCount is 0, query all documents for company
+        if (querySnapshot.docs.isEmpty && localCount == 0) {
+          final fallbackQuery = _firebaseService.firestore
+              .collection(collectionName)
+              .where('companyId', isEqualTo: _firebaseService.companyId);
+          querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 5));
+        }
 
         if (querySnapshot.docs.isEmpty) continue;
 
@@ -1191,8 +1199,8 @@ class SyncService {
   Future<Map<String, dynamic>> _mapEntityToMap(String entityType, dynamic entity) async {
     final baseMap = {
       'uuid': entity.uuid,
-      'createdAt': entity.createdAt.toIso8601String(),
-      'updatedAt': entity.updatedAt.toIso8601String(),
+      'createdAt': entity.createdAt.toUtc().toIso8601String(),
+      'updatedAt': entity.updatedAt.toUtc().toIso8601String(),
       'version': entity.version,
       'isDeleted': entity.isDeleted,
       'deviceId': _firebaseService.deviceId,
