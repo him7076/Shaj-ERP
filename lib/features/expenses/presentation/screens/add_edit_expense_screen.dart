@@ -95,6 +95,22 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     final catObjects = await ExpenseCategoryItem.getCategories(prefs);
     _categories = catObjects.map((c) => c.name).toList();
 
+    // Load saved custom expense item templates from SharedPreferences
+    final String? savedTemplatesRaw = prefs.getString('custom_expense_item_templates');
+    if (savedTemplatesRaw != null && savedTemplatesRaw.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = jsonDecode(savedTemplatesRaw);
+        for (var item in decoded) {
+          if (item is Map && item.containsKey('name')) {
+            final String name = item['name'].toString();
+            if (!_expenseTemplates.any((t) => t['name'].toString().toLowerCase() == name.toLowerCase())) {
+              _expenseTemplates.add({'name': name, 'defaultRate': (item['defaultRate'] as num?)?.toDouble() ?? 0.0});
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
     if (widget.expenseUuid != null) {
       final isar = ref.read(databaseServiceProvider).isar;
       final expense = await isar.expenses.filter().uuidEqualTo(widget.expenseUuid).findFirst();
@@ -104,7 +120,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         _partyNameController.text = expense.partyName ?? '';
         _amountController.text = (expense.amount ?? 0.0).toStringAsFixed(2);
         _remarksController.text = expense.remarks ?? '';
-        _selectedCategory = expense.category ?? 'Office Expense';
+        _selectedCategory = expense.category ?? '';
         _selectedPaymentMode = expense.paymentMode ?? 'Cash';
         _expenseDate = expense.expenseDate ?? DateTime.now();
         _customRoundOff = expense.roundOff;
@@ -247,10 +263,18 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       final rate = (result['defaultRate'] as double);
 
       setState(() {
-        _expenseTemplates.add({'name': name, 'defaultRate': rate});
+        if (!_expenseTemplates.any((t) => t['name'].toString().toLowerCase() == name.toLowerCase())) {
+          _expenseTemplates.add({'name': name, 'defaultRate': rate});
+        }
         _itemNameController.text = name;
         _itemRateController.text = rate.toStringAsFixed(0);
       });
+
+      // Save custom item templates permanently to SharedPreferences
+      try {
+        final prefs = ref.read(sharedPreferencesProvider);
+        await prefs.setString('custom_expense_item_templates', jsonEncode(_expenseTemplates));
+      } catch (_) {}
     }
   }
 
@@ -409,6 +433,39 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     );
   }
 
+  Future<void> _showEditVoucherDialog() async {
+    final editCtrl = TextEditingController(text: _voucherNoController.text);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Edit Voucher Number', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: editCtrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Voucher Number',
+            hintText: 'e.g. EXP-1, EXP-2',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, editCtrl.text.trim()),
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      setState(() {
+        _voucherNoController.text = result;
+      });
+    }
+  }
+
   Widget _buildHeaderCard(ThemeData theme, bool isMobile, bool isDark) {
     return Card(
       elevation: 0,
@@ -439,16 +496,26 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.withOpacity(0.4)),
-                  ),
-                  child: Text(
-                    _voucherNoController.text.isEmpty ? 'EXP-1001' : _voucherNoController.text,
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 12),
+                InkWell(
+                  onTap: _showEditVoucherDialog,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _voucherNoController.text.isEmpty ? 'EXP-1' : _voucherNoController.text,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 12),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit_outlined, size: 12, color: Colors.amber),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -456,16 +523,6 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             const Divider(height: 24),
 
             if (isMobile) ...[
-              TextFormField(
-                controller: _voucherNoController,
-                decoration: const InputDecoration(
-                  labelText: 'Voucher No. *',
-                  prefixIcon: Icon(Icons.numbers_rounded),
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-              const SizedBox(height: 14),
               _buildCategorySelector(),
               const SizedBox(height: 14),
               _buildDatePicker(context),
@@ -482,19 +539,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             ] else ...[
               Row(
                 children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _voucherNoController,
-                      decoration: const InputDecoration(
-                        labelText: 'Voucher No. *',
-                        prefixIcon: Icon(Icons.numbers_rounded),
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(child: _buildCategorySelector()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildDatePicker(context)),
                 ],
               ),
               const SizedBox(height: 14),

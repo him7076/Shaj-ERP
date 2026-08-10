@@ -50,6 +50,27 @@ class ExpenseRepositoryImpl extends BaseIsarRepository<Expense> implements Expen
   Future<String> generateNextVoucherNumber() async {
     try {
       final expenses = await collection.filter().isDeletedEqualTo(false).findAll();
+
+      // Migration: Convert old EXP-100x format to clean EXP-x format
+      bool migrated = false;
+      for (var exp in expenses) {
+        final vNo = exp.voucherNo;
+        if (vNo != null && vNo.startsWith('EXP-100')) {
+          final suffix = vNo.replaceFirst('EXP-100', '');
+          final numVal = int.tryParse(suffix);
+          if (numVal != null && numVal > 0) {
+            exp.voucherNo = 'EXP-$numVal';
+            migrated = true;
+          }
+        }
+      }
+
+      if (migrated) {
+        await isar.writeTxn(() async {
+          await collection.putAll(expenses);
+        });
+      }
+
       int maxNum = 0;
       final regExp = RegExp(r'\d+');
 
