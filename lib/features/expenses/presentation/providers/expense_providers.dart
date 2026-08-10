@@ -32,10 +32,15 @@ class ExpenseNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> saveExpense(Expense expense) async {
     state = const AsyncValue.loading();
     try {
-      if (expense.id == 0 || expense.id == null) {
+      if (expense.id <= 0) {
         await _repository.create(expense);
       } else {
-        await _repository.update(expense);
+        final existing = await _repository.getById(expense.id);
+        if (existing == null) {
+          await _repository.create(expense);
+        } else {
+          await _repository.update(expense);
+        }
       }
       state = const AsyncValue.data(null);
       _ref.invalidate(expenseListProvider);

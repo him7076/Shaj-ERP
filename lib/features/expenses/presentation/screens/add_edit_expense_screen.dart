@@ -1156,11 +1156,15 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
       focusNode: _focusNode,
       displayStringForOption: (cat) => cat,
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (query.isEmpty) {
           return optionsList;
         }
-        final query = textEditingValue.text.toLowerCase();
-        return optionsList.where((c) => c.toLowerCase().contains(query));
+        final matches = widget.categories.where((c) => c.toLowerCase().contains(query)).toList();
+        return [
+          ...matches,
+          widget.createNewTag,
+        ];
       },
       onSelected: (cat) {
         widget.onChanged(cat);

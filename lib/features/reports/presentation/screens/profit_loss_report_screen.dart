@@ -221,46 +221,62 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      // 5. Calculate Stock Valuation based on Actual Purchase Rates
+      // 5. Calculate Value-Based Stock Valuation (Without-Tax Purchase Taxable Base)
       final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
       final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
+      final invoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
 
       double closingVal = 0.0;
       double openingVal = 0.0;
       for (var item in items) {
-        // Find actual purchase rates from purchase history for this item
-        double actualPurchaseRate = 0.0;
+        // 1. Total Taxable Purchase Amount (Without Tax) for this item
         final itemPurchases = purchaseItems.where((p) => p.itemId == item.id).toList();
-        if (itemPurchases.isNotEmpty) {
-          double totalCost = 0.0;
-          double totalQty = 0.0;
-          for (var pi in itemPurchases) {
-            final qty = (pi.quantity ?? 0.0);
-            final rate = (pi.rate ?? 0.0);
-            if (qty > 0 && rate > 0) {
-              totalCost += (qty * rate);
-              totalQty += qty;
-            }
-          }
-          if (totalQty > 0) {
-            actualPurchaseRate = totalCost / totalQty;
-          }
+        double totalPurchaseTaxableVal = 0.0;
+        double totalPurchaseQty = 0.0;
+
+        for (var pi in itemPurchases) {
+          final qty = (pi.quantity ?? 0.0);
+          final rate = (pi.rate ?? 0.0);
+          final taxable = (pi.taxableAmount != null && pi.taxableAmount! > 0)
+              ? pi.taxableAmount!
+              : (qty * rate);
+          totalPurchaseTaxableVal += taxable;
+          totalPurchaseQty += qty;
         }
 
-        // Fallback hierarchy: actual purchase history rate -> buyRate -> wholesaleRate -> sellRate
-        if (actualPurchaseRate <= 0.0) {
-          actualPurchaseRate = (item.buyRate != null && item.buyRate! > 0)
-              ? item.buyRate!
-              : (item.wholesaleRate != null && item.wholesaleRate! > 0)
-                  ? item.wholesaleRate!
-                  : (item.sellRate ?? 0.0);
+        // Without-Tax Purchase Cost per unit
+        double unitPurchaseCostWithoutTax = totalPurchaseQty > 0
+            ? (totalPurchaseTaxableVal / totalPurchaseQty)
+            : ((item.buyRate != null && item.buyRate! > 0)
+                ? item.buyRate!
+                : (item.wholesaleRate != null && item.wholesaleRate! > 0)
+                    ? item.wholesaleRate!
+                    : (item.sellRate ?? 0.0));
+
+        // 2. Value-Based Closing Stock Calculation:
+        // Total Purchase Value minus Sold COGS Value
+        final itemSales = invoiceItems.where((i) => i.itemId == item.id).toList();
+        double totalSoldQty = 0.0;
+        for (var si in itemSales) {
+          totalSoldQty += (si.quantity ?? 0.0) + (si.freeQuantity ?? 0.0);
         }
 
-        if (item.currentStock != null && item.currentStock! > 0) {
-          closingVal += item.currentStock! * actualPurchaseRate;
+        double itemClosingStockVal = 0.0;
+        if (totalPurchaseQty > 0) {
+          double remainingQty = totalPurchaseQty - totalSoldQty;
+          if (remainingQty < 0) remainingQty = (item.currentStock ?? 0.0);
+          itemClosingStockVal = remainingQty * unitPurchaseCostWithoutTax;
+        } else {
+          // If no purchase transactions recorded yet, use current stock * without-tax rate
+          itemClosingStockVal = (item.currentStock ?? 0.0) * unitPurchaseCostWithoutTax;
         }
+
+        if (itemClosingStockVal > 0) {
+          closingVal += itemClosingStockVal;
+        }
+
         if (item.openingStock != null && item.openingStock! > 0) {
-          openingVal += item.openingStock! * actualPurchaseRate;
+          openingVal += item.openingStock! * unitPurchaseCostWithoutTax;
         }
       }
 
