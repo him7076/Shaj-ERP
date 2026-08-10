@@ -11,6 +11,7 @@ import 'package:business_sahaj_erp/data/local/collections/transaction_collection
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 class ManageCashAndBankScreen extends ConsumerStatefulWidget {
   const ManageCashAndBankScreen({Key? key}) : super(key: key);
@@ -388,16 +389,18 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
 
                 await isar.writeTxn(() async {
                   await isar.bankAccounts.put(acc);
+                  await isar.syncQueues.put(SyncQueue()
+                    ..uuid = const Uuid().v4()
+                    ..entityType = 'BankAccount'
+                    ..entityId = acc.id
+                    ..entityUuid = acc.uuid
+                    ..operation = isEdit ? 'Update' : 'Insert'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now());
                 });
 
                 try {
-                  final queueService = ref.read(syncQueueServiceProvider);
-                  await queueService.addToQueue(
-                    entityType: 'BankAccount',
-                    entityId: acc.id,
-                    operation: isEdit ? 'UPDATE' : 'CREATE',
-                  );
-                  ref.read(syncServiceProvider).syncAll();
+                  ref.read(syncServiceProvider).syncPendingChangesQuietly();
                 } catch (_) {}
 
                 ref.invalidate(bankAccountsListProvider);
@@ -438,16 +441,18 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
         acc.isSynced = false;
         acc.updatedAt = DateTime.now();
         await isar.bankAccounts.put(acc);
+        await isar.syncQueues.put(SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'BankAccount'
+          ..entityId = acc.id
+          ..entityUuid = acc.uuid
+          ..operation = 'Delete'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now());
       });
 
       try {
-        final queueService = ref.read(syncQueueServiceProvider);
-        await queueService.addToQueue(
-          entityType: 'BankAccount',
-          entityId: acc.id,
-          operation: 'DELETE',
-        );
-        ref.read(syncServiceProvider).syncAll();
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
 
       ref.invalidate(bankAccountsListProvider);
