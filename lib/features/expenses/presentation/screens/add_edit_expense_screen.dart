@@ -338,7 +338,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
       // Check for duplicate voucher number locally and in cloud
       bool isDuplicate = false;
-      final existingLocal = await isar.expenses.filter().voucherNoEqualTo(voucherNo).findFirst();
+      final allExpenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+      final existingLocal = allExpenses.where((e) => e.voucherNo == voucherNo).firstOrNull;
       if (existingLocal != null && existingLocal.uuid != _existingExpense?.uuid) {
         isDuplicate = true;
       }
