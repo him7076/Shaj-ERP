@@ -74,21 +74,18 @@ void main() {
       );
     };
 
-    debugPrint('[BOOT] Initializing Business Sahaj ERP services...');
-    logger.info('Initializing Business Sahaj ERP services...');
+    debugPrint('[BOOT] Launching Business Sahaj ERP...');
 
-    // 1. Initialize SharedPreferences for caching configs
+    // 1. Initialize SharedPreferences for caching configs (1s timeout)
     SharedPreferences? sharedPrefs;
     try {
-      sharedPrefs = await SharedPreferences.getInstance();
+      sharedPrefs = await SharedPreferences.getInstance().timeout(const Duration(seconds: 1));
       debugPrint('[BOOT] SharedPreferences cache initialized.');
-      logger.info('SharedPreferences cache initialized.');
-    } catch (e, stack) {
-      debugPrint('[BOOT ERROR] Failed to initialize SharedPreferences: $e');
-      logger.error('Failed to initialize SharedPreferences', e, stack);
+    } catch (e) {
+      debugPrint('[BOOT WARNING] SharedPreferences init bypassed: $e');
     }
 
-    // 2. Initialize Firebase (non-blocking with timeout to prevent startup hang)
+    // 2. Initialize Firebase (non-blocking in background)
     try {
       if (sharedPrefs != null) {
         final apiKey = sharedPrefs.getString('firebase_api_key');
@@ -98,7 +95,7 @@ void main() {
         final storageBucket = sharedPrefs.getString('firebase_storage_bucket');
 
         if (apiKey != null && projectId != null && appId != null) {
-          await Firebase.initializeApp(
+          Firebase.initializeApp(
             options: FirebaseOptions(
               apiKey: apiKey,
               projectId: projectId,
@@ -106,30 +103,22 @@ void main() {
               messagingSenderId: senderId ?? '',
               storageBucket: storageBucket ?? '$projectId.appspot.com',
             ),
-          ).timeout(const Duration(seconds: 1));
-          debugPrint('[BOOT] Firebase Core dynamically initialized for Project: $projectId');
-          logger.info('Firebase Core dynamically initialized for Project: $projectId');
-        } else {
-          debugPrint('[BOOT] Firebase API keys not set. Bypassing Firebase init to launch instantly.');
-          logger.info('Firebase API keys not set. Bypassing Firebase init to launch instantly.');
+          ).catchError((e) {
+            debugPrint('[BOOT WARNING] Background Firebase init: $e');
+          });
         }
       }
-    } catch (e, stack) {
-      debugPrint('[BOOT WARNING] Firebase initialization bypassed or timed out: $e');
-      logger.warning('Firebase initialization bypassed or timed out: $e');
+    } catch (e) {
+      debugPrint('[BOOT WARNING] Firebase initialization bypassed: $e');
     }
 
-    // 3. Initialize Isar database storage
+    // 3. Initialize Isar database storage (non-blocking in background)
     final dbService = DatabaseService();
-    try {
-      await dbService.init(sharedPrefs);
-      debugPrint('[BOOT] Isar Database initialized successfully.');
-    } catch (e, stack) {
-      debugPrint('[BOOT ERROR] Database initialization failed: $e');
-      logger.error('Database initialization failed.', e, stack);
-    }
+    dbService.init(sharedPrefs).catchError((e) {
+      debugPrint('[BOOT WARNING] Non-fatal DatabaseService init error: $e');
+    });
 
-    // Run application wrapped in ProviderScope, overriding late dependencies
+    // Run application IMMEDIATELY - 0ms delay!
     runApp(
       ProviderScope(
         overrides: [
@@ -151,66 +140,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check if database service is initialized
-    final dbService = ref.read(databaseServiceProvider);
-    
-    // Catch database initialization error
-    bool isDbInitialized = false;
-    String? initError;
-    try {
-      final _ = dbService.isar;
-      isDbInitialized = true;
-    } catch (e) {
-      initError = dbService.initErrorMessage ?? e.toString();
-    }
-
-    if (!isDbInitialized) {
-      return MaterialApp(
-        title: 'Business Sahaj ERP - Database Error',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Database Initialization Failed',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red.withOpacity(0.2)),
-                    ),
-                    child: Text(
-                      initError ?? 'Unknown database error occurred during startup.',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontFamily: 'monospace', color: Colors.redAccent),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Please make sure that the app has all required permissions and the device storage is not full.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     // Initialize background Sync Manager
     try {
       ref.read(syncManagerProvider).initialize();

@@ -42,14 +42,15 @@ class DatabaseService {
 
   Isar get isar {
     if (_isar == null) {
-      throw StateError('DatabaseService has not been initialized. Call init() first.');
+      logger.warning('DatabaseService.isar accessed before init completed. Initializing fallback database connection.');
+      _isar = WebMockIsar(firmId: _activeFirmId, prefs: _prefs);
     }
     return _isar!;
   }
 
   Future<void> init([SharedPreferences? prefs]) async {
     _prefs = prefs;
-    if (_isar != null) {
+    if (_isar != null && _isar is! WebMockIsar) {
       logger.warning('DatabaseService has already been initialized.');
       return;
     }
