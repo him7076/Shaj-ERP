@@ -26,6 +26,8 @@
     <!-- Location (Salesman Tagging & Geo Location) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <!-- Notifications & Boot -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -38,6 +40,13 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true">
+        
+        <!-- Foreground Service for Geolocator -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         
         <activity
             android:name=".MainActivity"
