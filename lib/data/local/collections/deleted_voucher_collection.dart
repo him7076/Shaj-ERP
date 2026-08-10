@@ -1,6 +1,8 @@
 import 'package:isar/isar.dart';
 import 'isar_model.dart';
 
+part 'deleted_voucher_collection.g.dart';
+
 @collection
 class DeletedVoucher implements IsarModel {
 

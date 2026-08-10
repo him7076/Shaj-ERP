@@ -29,6 +29,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -114,6 +115,7 @@ class DatabaseService {
             CreditNoteItemSchema,
             DebitNoteSchema,
             DebitNoteItemSchema,
+            DeletedVoucherSchema,
           ],
           name: activeFirmId,
           directory: dirPath ?? '',
@@ -153,35 +155,41 @@ class DatabaseService {
           }
         }
         
-        // 3. Retry opening Isar database
-        _isar = await Isar.open(
-          [
-            CategorySchema,
-            UnitSchema,
-            BrandSchema,
-            PartySchema,
-            ItemSchema,
-            OrderItemSchema,
-            OrderSchema,
-            InvoiceItemSchema,
-            InvoiceSchema,
-            SettingsSchema,
-            UserSchema,
-            SyncQueueSchema,
-            PurchaseSchema,
-            PurchaseItemSchema,
-            ExpenseSchema,
-            TransactionSchema,
-            BankAccountSchema,
-            CreditNoteSchema,
-            CreditNoteItemSchema,
-            DebitNoteSchema,
-            DebitNoteItemSchema,
-          ],
-          name: activeFirmId,
-          directory: dirPath ?? '',
-          inspector: !kIsWeb && !kReleaseMode,
-        );
+        // 3. Retry opening Isar database with fallback
+        try {
+          _isar = await Isar.open(
+            [
+              CategorySchema,
+              UnitSchema,
+              BrandSchema,
+              PartySchema,
+              ItemSchema,
+              OrderItemSchema,
+              OrderSchema,
+              InvoiceItemSchema,
+              InvoiceSchema,
+              SettingsSchema,
+              UserSchema,
+              SyncQueueSchema,
+              PurchaseSchema,
+              PurchaseItemSchema,
+              ExpenseSchema,
+              TransactionSchema,
+              BankAccountSchema,
+              CreditNoteSchema,
+              CreditNoteItemSchema,
+              DebitNoteSchema,
+              DebitNoteItemSchema,
+              DeletedVoucherSchema,
+            ],
+            name: activeFirmId,
+            directory: dirPath ?? '',
+            inspector: !kIsWeb && !kReleaseMode,
+          );
+        } catch (retryError) {
+          logger.error('Failed to open native Isar database on retry: $retryError. Initializing fallback database connection to prevent app crash.', retryError);
+          _isar = WebMockIsar(firmId: activeFirmId, prefs: prefs);
+        }
       }
 
       logger.info('Isar Database ($activeFirmId) v$currentDatabaseVersion initialized successfully.');
