@@ -9,6 +9,7 @@ import 'package:business_sahaj_erp/data/local/collections/transaction_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/export_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
@@ -222,14 +223,14 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
 
       // 5. Calculate Stock Valuation based on Actual Purchase Rates
       final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
-      final purchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+      final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
 
       double closingVal = 0.0;
       double openingVal = 0.0;
       for (var item in items) {
         // Find actual purchase rates from purchase history for this item
         double actualPurchaseRate = 0.0;
-        final itemPurchases = purchaseItems.where((p) => p.itemId == item.id || (item.uuid != null && p.itemUuid == item.uuid)).toList();
+        final itemPurchases = purchaseItems.where((p) => p.itemId == item.id).toList();
         if (itemPurchases.isNotEmpty) {
           double totalCost = 0.0;
           double totalQty = 0.0;

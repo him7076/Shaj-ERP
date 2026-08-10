@@ -641,9 +641,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     );
                   }).toList(),
                   ActionChip(
-                    avatar: const Icon(Icons.add_circle_outline_rounded, size: 14, color: Colors.emerald),
-                    label: const Text('+ Create Item', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.emerald)),
-                    backgroundColor: Colors.emerald.withOpacity(0.1),
+                    avatar: const Icon(Icons.add_circle_outline_rounded, size: 14, color: Color(0xFF10B981)),
+                    label: const Text('+ Create Item', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                    backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
                     onPressed: _showAddExpenseItemDialog,
                   ),
                 ],
@@ -1182,15 +1182,15 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
                   final cat = options.elementAt(index);
                   final isCreateNew = cat == widget.createNewTag;
                   return ListTile(
-                    tileColor: isCreateNew ? Colors.emerald.withOpacity(0.1) : null,
+                    tileColor: isCreateNew ? const Color(0xFF10B981).withOpacity(0.1) : null,
                     leading: isCreateNew
-                        ? const Icon(Icons.add_circle_outline_rounded, color: Colors.emerald)
+                        ? const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF10B981))
                         : const Icon(Icons.category_outlined, size: 20),
                     title: Text(
                       cat,
                       style: TextStyle(
                         fontWeight: isCreateNew ? FontWeight.bold : FontWeight.normal,
-                        color: isCreateNew ? Colors.emerald : null,
+                        color: isCreateNew ? const Color(0xFF10B981) : null,
                       ),
                     ),
                     onTap: () => onSelected(cat),
