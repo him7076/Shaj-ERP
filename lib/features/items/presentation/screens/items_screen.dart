@@ -839,7 +839,12 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     try {
       final isar = ref.read(databaseServiceProvider).isar;
       final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
-      final itemPurchases = purchaseItems.where((p) => p.itemId == item.id).toList();
+      final itemPurchases = purchaseItems.where((p) {
+        final matchUuid = (p.item.value?.uuid != null && p.item.value?.uuid == item.uuid) || (p.itemUuid != null && p.itemUuid == item.uuid);
+        final matchName = p.itemName != null && p.itemName!.trim().toLowerCase() == item.itemName?.trim().toLowerCase();
+        final matchId = p.itemId != null && p.itemId == item.id;
+        return matchUuid || matchName || matchId;
+      }).toList();
 
       if (itemPurchases.isNotEmpty) {
         double totalTaxable = 0.0;

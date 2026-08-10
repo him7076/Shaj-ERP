@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
@@ -58,6 +60,40 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         item = await isar.partys.get(idVal);
       }
       item ??= await isar.partys.filter().uuidEqualTo(widget.partyUuid).findFirst();
+
+      if (item != null) {
+        final partyUuid = item.uuid;
+        final partyNameLower = item.partyName?.trim().toLowerCase();
+        final partyId = item.id;
+
+        double totalPending = 0.0;
+        if (item.partyType == 'Supplier') {
+          final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+          for (var pur in purchases) {
+            final match = (partyUuid != null && pur.partyUuid == partyUuid) ||
+                          (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
+                          pur.partyId == partyId;
+            if (match && pur.paymentStatus != 'Cancelled') {
+              totalPending += (pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0)));
+            }
+          }
+        } else {
+          final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+          for (var inv in invoices) {
+            final match = (partyUuid != null && inv.partyUuid == partyUuid) ||
+                          (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
+                          inv.partyId == partyId;
+            if (match && inv.paymentStatus != 'Cancelled') {
+              totalPending += (inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0)));
+            }
+          }
+        }
+
+        if (totalPending > 0 || (item.outstandingBalance ?? 0.0) == 0.0) {
+          final opening = item.openingBalance ?? 0.0;
+          item.outstandingBalance = totalPending > 0 ? totalPending : opening;
+        }
+      }
 
       setState(() {
         _party = item;
@@ -483,17 +519,88 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     );
   }
 
+  Future<List<_PartyActivityItem>> _loadAllPartyActivities() async {
+    if (_party == null) return [];
+    final isar = ref.read(databaseServiceProvider).isar;
+    final partyUuid = _party!.uuid;
+    final partyNameLower = _party!.partyName?.trim().toLowerCase();
+    final partyId = _party!.id;
+
+    final List<_PartyActivityItem> list = [];
+
+    // 1. Invoices
+    final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    for (var inv in invoices) {
+      final match = (partyUuid != null && inv.partyUuid == partyUuid) ||
+                    (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
+                    inv.partyId == partyId;
+      if (match && inv.paymentStatus != 'Cancelled') {
+        list.add(_PartyActivityItem(
+          id: inv.id,
+          number: inv.invoiceNumber ?? 'INV-${inv.id}',
+          type: 'Sales Invoice',
+          amount: inv.grandTotal ?? 0.0,
+          pendingAmount: inv.pendingAmount ?? (inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0),
+          status: inv.paymentStatus ?? 'UNPAID',
+          mode: inv.paymentMode ?? 'Credit',
+          date: inv.invoiceDate ?? inv.createdAt,
+        ));
+      }
+    }
+
+    // 2. Purchases
+    final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    for (var pur in purchases) {
+      final match = (partyUuid != null && pur.partyUuid == partyUuid) ||
+                    (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
+                    pur.partyId == partyId;
+      if (match && pur.paymentStatus != 'Cancelled') {
+        list.add(_PartyActivityItem(
+          id: pur.id,
+          number: pur.purchaseNumber ?? 'PUR-${pur.id}',
+          type: 'Purchase Bill',
+          amount: pur.grandTotal ?? 0.0,
+          pendingAmount: pur.pendingAmount ?? (pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0),
+          status: pur.paymentStatus ?? 'UNPAID',
+          mode: pur.paymentMode ?? 'Credit',
+          date: pur.purchaseDate ?? pur.createdAt,
+        ));
+      }
+    }
+
+    // 3. Transactions (Receipts, Payments, etc.)
+    final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+    for (var t in txns) {
+      final match = (partyUuid != null && t.partyUuid == partyUuid) ||
+                    (partyNameLower != null && t.partyName?.trim().toLowerCase() == partyNameLower) ||
+                    t.partyId == partyId;
+      if (match) {
+        list.add(_PartyActivityItem(
+          id: t.id,
+          number: t.transactionNumber ?? 'TXN-${t.id}',
+          type: t.transactionType ?? 'Transaction',
+          amount: t.amount ?? 0.0,
+          pendingAmount: 0.0,
+          status: t.paymentStatus ?? (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED'),
+          mode: t.paymentMode ?? 'Cash',
+          date: t.transactionDate ?? t.createdAt,
+        ));
+      }
+    }
+
+    // Sort by date descending
+    list.sort((a, b) => b.date.compareTo(a.date));
+    return list;
+  }
+
   Widget _buildLiveTransactionsTab(ThemeData theme) {
-    final transactionsAsync = ref.watch(filteredTransactionsProvider);
-
-    return transactionsAsync.when(
-      data: (allTransactions) {
-        final partyTransactions = allTransactions.where((t) {
-          final matchesUuid = t.partyUuid != null && t.partyUuid!.isNotEmpty && _party!.uuid != null && t.partyUuid == _party!.uuid;
-          final matchesName = t.partyName != null && t.partyName!.isNotEmpty && _party!.partyName != null && t.partyName?.trim().toLowerCase() == _party!.partyName?.trim().toLowerCase();
-          return matchesUuid || matchesName;
-        }).toList();
-
+    return FutureBuilder<List<_PartyActivityItem>>(
+      future: _loadAllPartyActivities(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final partyTransactions = snapshot.data ?? [];
         if (partyTransactions.isEmpty) {
           return Center(
             child: Column(
@@ -501,7 +608,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
               children: [
                 Icon(Icons.receipt_long_outlined, size: 48, color: theme.colorScheme.outline),
                 const SizedBox(height: 12),
-                const Text('No transactions recorded for this party yet.', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('No transactions or invoices recorded for this party yet.', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
                   onPressed: () => AddEditTransactionDialog.show(context, initialParty: _party),
@@ -546,9 +653,9 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
             }
 
             final txn = visibleList[index];
-            final isIncoming = txn.transactionType == 'Receipt' || txn.transactionType == 'Sales' || txn.transactionType == 'Other Income';
+            final isIncoming = txn.type == 'Sales Invoice' || txn.type == 'Receipt';
             final color = isIncoming ? Colors.green : Colors.red;
-            final statusStr = txn.paymentStatus ?? (txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED');
+            final statusStr = txn.status;
 
             return Card(
               elevation: 0,
@@ -563,7 +670,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                 ),
                 title: Row(
                   children: [
-                    Text(txn.transactionNumber ?? 'TXN', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(txn.number, style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -571,25 +678,25 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                         color: color.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(txn.transactionType ?? '', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                      child: Text(txn.type, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
                     ),
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: statusStr == 'PAID' ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                        color: statusStr == 'PAID' || statusStr == 'CLEARED' ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(statusStr.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusStr == 'PAID' ? Colors.green.shade800 : Colors.orange.shade900)),
+                      child: Text(statusStr.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusStr == 'PAID' || statusStr == 'CLEARED' ? Colors.green.shade800 : Colors.orange.shade900)),
                     ),
                   ],
                 ),
                 subtitle: Text(
-                  'Date: ${txn.transactionDate != null ? DateFormat('dd MMM yyyy').format(txn.transactionDate!) : "N/A"} | Mode: ${txn.paymentMode ?? "Cash"}',
+                  'Date: ${DateFormat('dd MMM yyyy').format(txn.date)} | Mode: ${txn.mode}',
                   style: const TextStyle(fontSize: 11),
                 ),
                 trailing: Text(
-                  currencyFormat.format(txn.amount ?? 0.0),
+                  currencyFormat.format(txn.amount),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: color),
                 ),
               ),
@@ -597,8 +704,6 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
           },
         );
       },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Failed to load party transactions: $e')),
     );
   }
 
@@ -755,4 +860,26 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
       ),
     );
   }
+}
+
+class _PartyActivityItem {
+  final int id;
+  final String number;
+  final String type;
+  final double amount;
+  final double pendingAmount;
+  final String status;
+  final String mode;
+  final DateTime date;
+
+  _PartyActivityItem({
+    required this.id,
+    required this.number,
+    required this.type,
+    required this.amount,
+    required this.pendingAmount,
+    required this.status,
+    required this.mode,
+    required this.date,
+  });
 }

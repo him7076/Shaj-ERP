@@ -140,43 +140,30 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     final db = ref.read(databaseServiceProvider).isar;
     
     try {
+      final partyUuid = _selectedParty!.uuid;
+      final partyNameLower = _selectedParty!.partyName?.trim().toLowerCase();
+      final partyId = _selectedParty!.id;
+
       if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
         final allInvoices = await db.invoices
             .filter()
             .isDeletedEqualTo(false)
-            .and()
-            .partyIdEqualTo(_selectedParty!.id)
             .findAll();
-        
-        final list = allInvoices.where((inv) {
-          final isUnpaidOrPartial = inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid';
+
+        _pendingBills = allInvoices.where((inv) {
+          final matchParty = (partyUuid != null && inv.partyUuid == partyUuid) ||
+                             (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
+                             (inv.partyId == partyId);
+          if (!matchParty) return false;
+          final isUnpaidOrPartial = inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid' || (inv.pendingAmount != null && inv.pendingAmount! > 0);
           final isLinked = _linkedAllocations.containsKey(inv.uuid);
           return isUnpaidOrPartial || isLinked;
         }).toList();
-        
-        setState(() {
-          _pendingBills = list;
-          _updateControllers();
-        });
+
       } else if (_transactionType == 'Payment' || _transactionType == 'Debit Note') {
         final allPurchases = await db.purchases
             .filter()
             .isDeletedEqualTo(false)
-            .and()
-            .partyIdEqualTo(_selectedParty!.id)
-            .findAll();
-        
-        final list = allPurchases.where((p) {
-          final isUnpaidOrPartial = p.paymentStatus == 'Unpaid' || p.paymentStatus == 'Partially Paid';
-          final isLinked = _linkedAllocations.containsKey(p.uuid);
-          return isUnpaidOrPartial || isLinked;
-        }).toList();
-        
-        setState(() {
-          _pendingBills = list;
-          _updateControllers();
-        });
-      } else {
         setState(() {
           _pendingBills = [];
           _updateControllers();
@@ -371,6 +358,28 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
         setState(() => _isSaving = false);
       }
     }
+  Widget _buildTypeToggleChip(String type, String label, IconData icon, Color color) {
+    final selected = _transactionType == type;
+    final isDisabled = widget.transaction != null || widget.initialType != null;
+    return ChoiceChip(
+      showCheckmark: false,
+      avatar: Icon(icon, size: 14, color: selected ? Colors.white : color),
+      label: Text(label, style: TextStyle(color: selected ? Colors.white : color, fontWeight: FontWeight.bold, fontSize: 12)),
+      selected: selected,
+      selectedColor: color,
+      backgroundColor: color.withOpacity(0.1),
+      onSelected: isDisabled
+          ? null
+          : (val) {
+              if (val) {
+                setState(() {
+                  _transactionType = type;
+                  _pendingBills = [];
+                });
+                _fetchPendingBills();
+              }
+            },
+    );
   }
 
   @override
@@ -394,62 +403,88 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(Icons.account_balance_wallet_rounded, color: theme.colorScheme.primary, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          widget.transaction != null ? 'Edit Transaction' : 'Record Transaction',
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                      ],
+                // Modern Gradient Header Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _transactionType == 'Receipt' || _transactionType == 'Credit Note' || _transactionType == 'Other Income'
+                          ? [const Color(0xFF059669), const Color(0xFF10B981)]
+                          : [const Color(0xFFDC2626), const Color(0xFFEF4444)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const Divider(height: 28, thickness: 0.5),
-
-                // Transaction Type Dropdown
-                DropdownButtonFormField<String>(
-                  value: _transactionType,
-                  decoration: const InputDecoration(
-                    labelText: 'Transaction Type',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.swap_horiz),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (_transactionType == 'Receipt' ? Colors.green : Colors.red).withOpacity(0.25),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
-                    DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                    DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note (Sales Return)')),
-                    DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note (Purchase Return)')),
-                    DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                    DropdownMenuItem(value: 'Transfer', child: Text('Party to Party Transfer')),
-                    DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
-                  ],
-                  onChanged: (widget.transaction != null || widget.initialType != null)
-                      ? null
-                      : (val) {
-                          if (val != null) {
-                            setState(() {
-                              _transactionType = val;
-                              _pendingBills = [];
-                            });
-                            _fetchPendingBills();
-                          }
-                        },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              _transactionType == 'Receipt' ? Icons.south_west_rounded : Icons.north_east_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.transaction != null
+                                    ? 'Edit ${_transactionType}'
+                                    : 'New ${_transactionType} Entry',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                _transactionType == 'Receipt' ? 'Money Received (Payment In)' : 'Money Paid (Payment Out)',
+                                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Fast Type Toggle Selector
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildTypeToggleChip('Receipt', 'Payment In', Icons.arrow_downward_rounded, Colors.green),
+                      const SizedBox(width: 8),
+                      _buildTypeToggleChip('Payment', 'Payment Out', Icons.arrow_upward_rounded, Colors.red),
+                      const SizedBox(width: 8),
+                      _buildTypeToggleChip('Credit Note', 'Sales Return', Icons.assignment_return_rounded, Colors.orange),
+                      const SizedBox(width: 8),
+                      _buildTypeToggleChip('Debit Note', 'Pur Return', Icons.undo_rounded, Colors.deepOrange),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 16),
 

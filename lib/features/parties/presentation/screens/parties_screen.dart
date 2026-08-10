@@ -561,8 +561,10 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
   Widget _buildPartyCard(Party party, {String? distanceBadge}) {
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
-    final balance = party.openingBalance ?? 0.0;
-    final isReceivable = party.balanceType == 'Dr';
+    final rawOut = party.outstandingBalance ?? 0.0;
+    final rawOpen = party.openingBalance ?? 0.0;
+    final balance = (rawOut != 0.0) ? rawOut : rawOpen;
+    final isReceivable = party.partyType != 'Supplier' && (party.balanceType == 'Dr' || balance >= 0);
     final glowColor = isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981);
     
     final VoidCallback handleTap = () {

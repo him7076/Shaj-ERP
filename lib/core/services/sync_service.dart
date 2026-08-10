@@ -1104,11 +1104,29 @@ class SyncService {
           }
         }
 
+        // 5. Manual Stock Adjustments (Stock In / Stock Out)
+        final allStockAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+        double totalAdjustments = 0.0;
+        for (var adj in allStockAdjustments) {
+          final isMatch = (adj.itemUuid != null && adj.itemUuid!.isNotEmpty && adj.itemUuid == itemUuid) ||
+              (adj.itemName != null && adj.itemName!.trim().toLowerCase() == itemNameLower) ||
+              (adj.itemId != null && adj.itemId == item.id);
+          if (isMatch) {
+            final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+            final qty = _toPrimaryQty(adj.unit, adj.quantity ?? 0.0);
+            if (isAdd) {
+              totalAdjustments += qty;
+            } else {
+              totalAdjustments -= qty;
+            }
+          }
+        }
+
         // Real Calculated Current Stock Formula
         final opening = item.openingStock ?? 0.0;
-        final computedStock = opening + totalPurchases - totalSales + totalSalesReturns - totalPurchaseReturns;
+        final computedStock = opening + totalPurchases - totalSales + totalSalesReturns - totalPurchaseReturns + totalAdjustments;
 
-        if (totalSales > 0 || totalPurchases > 0 || totalSalesReturns > 0 || totalPurchaseReturns > 0 || item.currentStock == 0.0) {
+        if (totalSales > 0 || totalPurchases > 0 || totalSalesReturns > 0 || totalPurchaseReturns > 0 || totalAdjustments != 0 || item.currentStock == 0.0) {
           item.currentStock = computedStock;
           itemsToUpdate.add(item);
         }

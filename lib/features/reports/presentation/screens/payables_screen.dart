@@ -31,7 +31,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
       body: partiesAsync.when(
         data: (allParties) {
           final supplierParties = allParties
-              .where((p) => p.partyType == 'Supplier' && (p.outstandingBalance ?? 0.0) > 0)
+              .where((p) => p.partyType == 'Supplier' && ((p.outstandingBalance ?? 0.0) > 0 || (p.openingBalance ?? 0.0) > 0))
               .toList();
 
           final cities = {'All', ...supplierParties.map((p) => p.city ?? 'Unassigned').where((l) => l.isNotEmpty)};
@@ -57,7 +57,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
             filtered.sort((a, b) => (a.partyName ?? '').compareTo(b.partyName ?? ''));
           }
 
-          final totalPayables = supplierParties.fold(0.0, (sum, p) => sum + (p.outstandingBalance ?? 0.0));
+          final totalPayables = supplierParties.fold(0.0, (sum, p) => sum + ((p.outstandingBalance != null && p.outstandingBalance! != 0) ? p.outstandingBalance! : (p.openingBalance ?? 0.0)));
 
           return Column(
             children: [
@@ -171,7 +171,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                         separatorBuilder: (context, index) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final party = filtered[index];
-                          final due = party.outstandingBalance ?? 0.0;
+                          final due = (party.outstandingBalance != null && party.outstandingBalance! != 0) ? party.outstandingBalance! : (party.openingBalance ?? 0.0);
                           final initial = (party.partyName?.isNotEmpty == true) ? party.partyName![0].toUpperCase() : 'S';
 
                           return Card(
