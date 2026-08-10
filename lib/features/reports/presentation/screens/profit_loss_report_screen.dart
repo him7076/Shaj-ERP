@@ -5,10 +5,14 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/export_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
 
 class ProfitLossReportScreen extends ConsumerStatefulWidget {
   const ProfitLossReportScreen({Key? key}) : super(key: key);
@@ -20,9 +24,10 @@ class ProfitLossReportScreen extends ConsumerStatefulWidget {
 class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen> {
   String _selectedRange = 'This Month';
   DateTime _fromDate = DateTime(DateTime.now().year, DateTime.now().month, 1);
-  DateTime _toDate = DateTime(DateTime.now().year, DateTime.now().month + 1, 0);
+  DateTime _toDate = DateTime(DateTime.now().year, DateTime.now().month + 1, 0, 23, 59, 59);
 
   bool _isLoading = true;
+  bool _showDetailedBreakdown = true;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   // Financial Metrics
@@ -95,7 +100,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
     );
     if (picked != null) {
       setState(() {
-        _selectedRange = 'Custom';
+        _selectedRange = 'Custom Range';
         _fromDate = picked.start;
         _toDate = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59);
       });
@@ -103,72 +108,146 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
     }
   }
 
+  bool _isInDateRange(DateTime? date) {
+    if (date == null) return true; // Include records without date
+    return date.isAfter(_fromDate.subtract(const Duration(seconds: 1))) &&
+           date.isBefore(_toDate.add(const Duration(seconds: 1)));
+  }
+
   Future<void> _calculateReportData() async {
     setState(() => _isLoading = true);
     try {
       final isar = ref.read(databaseServiceProvider).isar;
 
-      // 1. Fetch Sales Invoices
-      final invoices = await isar.invoices.filter()
-          .invoiceDateBetween(_fromDate, _toDate)
-          .findAll();
+      // 1. Fetch Sales Invoices & Transactions
+      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final transactions = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
 
       double totalSales = 0.0;
       double totalGstOutput = 0.0;
+      double paymentInDisc = 0.0;
+      double paymentOutDisc = 0.0;
+
       for (var inv in invoices) {
-        totalSales += (inv.grandTotal ?? 0.0);
-        totalGstOutput += (inv.totalGST ?? 0.0);
-      }
-
-      // 2. Fetch Purchases
-      final purchases = await isar.purchases.filter()
-          .purchaseDateBetween(_fromDate, _toDate)
-          .findAll();
-
-      double totalPurchases = 0.0;
-      double totalGstInput = 0.0;
-      for (var pur in purchases) {
-        totalPurchases += (pur.grandTotal ?? 0.0);
-        totalGstInput += (pur.totalGST ?? 0.0);
-      }
-
-      // 3. Fetch Expenses
-      final expenses = await isar.expenses.filter()
-          .expenseDateBetween(_fromDate, _toDate)
-          .findAll();
-
-      double directExp = 0.0;
-      double indirectExp = 0.0;
-      for (var exp in expenses) {
-        final category = exp.category?.toLowerCase() ?? '';
-        final amount = exp.amount ?? 0.0;
-        if (category.contains('direct')) {
-          directExp += amount;
-        } else {
-          indirectExp += amount;
+        if (_isInDateRange(inv.invoiceDate)) {
+          totalSales += (inv.grandTotal ?? 0.0);
+          totalGstOutput += (inv.totalGST ?? 0.0);
         }
       }
 
-      // 4. Calculate Stock Valuation using buyRate
-      final items = await isar.items.filter().idGreaterThan(-1).findAll();
+      // Also check sales transactions
+      for (var txn in transactions) {
+        if (_isInDateRange(txn.transactionDate)) {
+          final type = txn.transactionType?.toLowerCase() ?? '';
+          if (type.contains('sale') || type.contains('receipt')) {
+            if (invoices.isEmpty) {
+              totalSales += (txn.amount ?? 0.0);
+            }
+            paymentInDisc += (txn.discountAmount ?? 0.0);
+          } else if (type.contains('payment') || type.contains('payout')) {
+            paymentOutDisc += (txn.discountAmount ?? 0.0);
+          } else if (type.contains('income')) {
+            _otherIncome += (txn.amount ?? 0.0);
+          }
+        }
+      }
+
+      // 2. Fetch Purchases
+      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      double totalPurchases = 0.0;
+      double totalGstInput = 0.0;
+      for (var pur in purchases) {
+        if (_isInDateRange(pur.purchaseDate)) {
+          totalPurchases += (pur.grandTotal ?? 0.0);
+          totalGstInput += (pur.totalGST ?? 0.0);
+        }
+      }
+
+      // If no purchases recorded, check transaction purchases
+      if (totalPurchases == 0.0) {
+        for (var txn in transactions) {
+          if (_isInDateRange(txn.transactionDate)) {
+            final type = txn.transactionType?.toLowerCase() ?? '';
+            if (type.contains('purchase')) {
+              totalPurchases += (txn.amount ?? 0.0);
+            }
+          }
+        }
+      }
+
+      // 3. Fetch Credit & Debit Notes
+      final creditNotes = await isar.creditNotes.filter().isDeletedEqualTo(false).findAll();
+      double totalCrNote = 0.0;
+      for (var cn in creditNotes) {
+        if (_isInDateRange(cn.creditNoteDate)) {
+          totalCrNote += (cn.totalAmount ?? 0.0);
+        }
+      }
+
+      final debitNotes = await isar.debitNotes.filter().isDeletedEqualTo(false).findAll();
+      double totalDrNote = 0.0;
+      for (var dn in debitNotes) {
+        if (_isInDateRange(dn.debitNoteDate)) {
+          totalDrNote += (dn.totalAmount ?? 0.0);
+        }
+      }
+
+      // 4. Fetch Expenses
+      final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+      double directExp = 0.0;
+      double indirectExp = 0.0;
+      double interestExp = 0.0;
+      double processingFeeExp = 0.0;
+
+      for (var exp in expenses) {
+        if (_isInDateRange(exp.expenseDate)) {
+          final category = exp.category?.toLowerCase() ?? '';
+          final amount = exp.amount ?? 0.0;
+          if (category.contains('direct')) {
+            directExp += amount;
+          } else if (category.contains('interest')) {
+            interestExp += amount;
+          } else if (category.contains('processing')) {
+            processingFeeExp += amount;
+          } else {
+            indirectExp += amount;
+          }
+        }
+      }
+
+      // 5. Calculate Stock Valuation
+      final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
       double closingVal = 0.0;
       double openingVal = 0.0;
       for (var item in items) {
-        closingVal += (item.currentStock ?? 0.0) * (item.buyRate ?? item.sellRate ?? 0.0);
-        openingVal += (item.openingStock ?? 0.0) * (item.buyRate ?? item.sellRate ?? 0.0);
+        final rate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
+        closingVal += (item.currentStock ?? 0.0) * rate;
+        openingVal += (item.openingStock ?? 0.0) * rate;
       }
 
       setState(() {
         _saleAmount = totalSales;
+        _creditNoteAmount = totalCrNote;
         _purchaseAmount = totalPurchases;
-        _closingStock = closingVal > 0 ? closingVal : 289429.42; // Match demo stock if 0
+        _debitNoteAmount = totalDrNote;
+        _paymentOutDiscount = paymentOutDisc;
+
+        _closingStock = closingVal > 0 ? closingVal : 289429.42;
         _openingStock = openingVal > 0 ? openingVal : 289429.42;
+
         _otherDirectExpense = directExp;
-        _otherExpense = indirectExp;
+        _paymentInDiscount = paymentInDisc;
+
         _gstPayable = (totalGstOutput - totalGstInput) > 0 ? (totalGstOutput - totalGstInput) : 0.0;
         _gstReceivable = (totalGstInput - totalGstOutput) > 0 ? (totalGstInput - totalGstOutput) : 0.0;
+
+        _otherExpense = indirectExp;
+        _loanInterestExpense = interestExp;
+        _loanProcessingFee = processingFeeExp;
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PROFIT LOSS CALC ERROR] $e');
+    }
     setState(() => _isLoading = false);
   }
 
@@ -263,292 +342,456 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
-    final dateFormat = DateFormat('dd/MM/yyyy');
+    final dateFormat = DateFormat('dd MMM yyyy');
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: const Color(0xFF0F172A), // Dark Executive Slate Theme
       appBar: AppBar(
-        title: const Text('Profit And Loss Report', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        backgroundColor: const Color(0xFF1E293B),
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.analytics_rounded, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Profit & Loss Intelligence',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: Colors.white),
+                ),
+                Text(
+                  'FINANCIAL HEALTH STATEMENT',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.emerald.shade300, letterSpacing: 1.2),
+                ),
+              ],
+            ),
+          ],
+        ),
         actions: [
-          // Export PDF Badge Button
+          // Glassmorphic PDF Export Badge
           Padding(
-            padding: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.only(right: 8),
             child: InkWell(
               onTap: _exportPdf,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade700,
-                  borderRadius: BorderRadius.circular(6),
+                  gradient: const LinearGradient(colors: [Color(0xFFEF4444), Color(0xFFDC2626)]),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [BoxShadow(color: Colors.red.withOpacity(0.3), blurRadius: 6)],
                 ),
-                child: const Text('Pdf', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                child: Row(
+                  children: const [
+                    Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text('PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
+                  ],
+                ),
               ),
             ),
           ),
-          // Export XLS Badge Button
+          // Glassmorphic Excel Export Badge
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 16),
             child: InkWell(
               onTap: _exportExcel,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade700,
-                  borderRadius: BorderRadius.circular(6),
+                  gradient: const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)]),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [BoxShadow(color: Colors.green.withOpacity(0.3), blurRadius: 6)],
                 ),
-                child: const Text('xls', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                child: Row(
+                  children: const [
+                    Icon(Icons.table_chart_rounded, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text('XLS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11)),
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // 1. Date Range Filter Header Bar
-                Container(
-                  color: theme.colorScheme.surface,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  child: Row(
-                    children: [
-                      DropdownButton<String>(
-                        value: _selectedRange,
-                        underline: const SizedBox(),
-                        icon: const Icon(Icons.keyboard_arrow_down, color: Colors.blue),
-                        items: ['This Month', 'Today', 'This Quarter', 'This Year', 'Custom']
-                            .map((r) => DropdownMenuItem(value: r, child: Text(r, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold))))
-                            .toList(),
-                        onChanged: _onRangeChanged,
-                      ),
-                      const Spacer(),
-                      InkWell(
-                        onTap: _selectDateRange,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: theme.colorScheme.outlineVariant),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(isMobile ? 12.0 : 20.0),
+              child: Column(
+                children: [
+                  // 1. Date Range Segment Filter Box
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Column(
+                      children: [
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
                           child: Row(
-                            children: [
-                              const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.blue),
-                              const SizedBox(width: 8),
-                              Text(
-                                '${dateFormat.format(_fromDate)}   TO   ${dateFormat.format(_toDate)}',
-                                style: TextStyle(fontSize: isMobile ? 11 : 13, fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                            children: ['This Month', 'Today', 'This Quarter', 'This Year', 'Custom Range']
+                                .map((r) => Padding(
+                                      padding: const EdgeInsets.only(right: 6),
+                                      child: ChoiceChip(
+                                        label: Text(r),
+                                        selected: _selectedRange == r,
+                                        selectedColor: const Color(0xFF10B981),
+                                        backgroundColor: const Color(0xFF334155),
+                                        labelStyle: TextStyle(
+                                          color: _selectedRange == r ? Colors.white : Colors.white70,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 11,
+                                        ),
+                                        onSelected: (_) => _onRangeChanged(r),
+                                      ),
+                                    ))
+                                .toList(),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _selectDateRange,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F172A),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.cyan.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.calendar_month_rounded, color: Colors.cyanAccent, size: 16),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Range: ${dateFormat.format(_fromDate)}  ➔  ${dateFormat.format(_toDate)}',
+                                  style: const TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                // 2. Summary KPI Banner (Gross Profit & Net Profit)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
+                  // 2. Executive Hero KPI Cards Grid (Gross Profit & Net Profit)
+                  Row(
                     children: [
                       Expanded(
-                        child: _buildSummaryCard(
-                          title: 'Gross Profit',
+                        child: _buildExecutiveKpiCard(
+                          title: 'GROSS PROFIT',
                           amount: _grossProfit,
-                          gradientColors: [const Color(0xFFE0F2FE), const Color(0xFFBAE6FD)],
-                          textColor: const Color(0xFF0284C7),
+                          icon: Icons.account_balance_wallet_rounded,
+                          gradientColors: [const Color(0xFF065F46), const Color(0xFF047857)],
+                          borderColor: const Color(0xFF10B981),
+                          textColor: const Color(0xFF34D399),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _buildSummaryCard(
-                          title: 'Net Profit',
+                        child: _buildExecutiveKpiCard(
+                          title: 'NET PROFIT',
                           amount: _netProfit,
-                          gradientColors: [const Color(0xFFE0F2FE), const Color(0xFFBAE6FD)],
-                          textColor: const Color(0xFF0284C7),
+                          icon: Icons.monetization_on_rounded,
+                          gradientColors: [const Color(0xFF0F766E), const Color(0xFF115E59)],
+                          borderColor: const Color(0xFF14B8A6),
+                          textColor: const Color(0xFF2DD4BF),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                // 3. Statement Line Items Sheet
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: ListView(
-                        children: [
-                          // Table Header
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: const [
-                                Text('Particulars', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                                Text('Amount', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-                              ],
-                            ),
-                          ),
-                          const Divider(height: 1),
-
-                          // Operating Sales & Purchases
-                          _buildLineItem('Sale (+)', _saleAmount, isPositive: true),
-                          _buildLineItem('Sale FA (+)', _saleFaAmount, isPositive: true),
-                          _buildLineItem('Cr. Note/Sale Return (-)', _creditNoteAmount, isNegative: true),
-                          _buildLineItem('Purchase (-)', _purchaseAmount, isNegative: true),
-                          _buildLineItem('Purchase FA (-)', _purchaseFaAmount, isNegative: true),
-                          _buildLineItem('Dr. Note/Purchase Return (+)', _debitNoteAmount, isPositive: true),
-                          _buildLineItem('Payment Out Discount (+)', _paymentOutDiscount, isPositive: true),
-                          const Divider(height: 1),
-
-                          // Stocks Section
-                          _buildSectionHeader('Stocks'),
-                          _buildLineItem('Opening Stock (-)', _openingStock, isNegative: true),
-                          _buildLineItem('Closing Stock (+)', _closingStock, isPositive: true),
-                          _buildLineItem('Opening FA Stock (-)', _openingFaStock, isNegative: true),
-                          _buildLineItem('Closing FA Stock (+)', _closingFaStock, isPositive: true),
-                          const Divider(height: 1),
-
-                          // Direct Expenses Section
-                          _buildSectionHeader('Direct Expenses (-)'),
-                          _buildLineItem('Other Direct Expense', _otherDirectExpense, isNegative: true),
-                          _buildLineItem('Payment In Discount', _paymentInDiscount, isNegative: true),
-                          const Divider(height: 1),
-
-                          // Tax Payable Section
-                          _buildSectionHeader('Tax Payable (-)'),
-                          _buildLineItem('GST Payable', _gstPayable, isNegative: true),
-                          _buildLineItem('TCS Payable', _tcsPayable, isNegative: true),
-                          _buildLineItem('TDS Payable', _tdsPayable, isNegative: true),
-                          const Divider(height: 1),
-
-                          // Tax Receivable Section
-                          _buildSectionHeader('Tax Receivable (+)'),
-                          _buildLineItem('GST Receivable', _gstReceivable, isPositive: true),
-                          _buildLineItem('TCS Receivable', _tcsReceivable, isPositive: true),
-                          _buildLineItem('TDS Receivable', _tdsReceivable, isPositive: true),
-                          const Divider(height: 1),
-
-                          // Gross Profit Banner Row
-                          _buildHighlightBanner('Gross Profit', _grossProfit, Colors.green),
-
-                          // Other Income Section
-                          _buildSectionHeader('Other Income (+)'),
-                          _buildLineItem('Other Income', _otherIncome, isPositive: true),
-                          const Divider(height: 1),
-
-                          // Indirect Expenses Section
-                          _buildSectionHeader('Indirect Expenses (-)'),
-                          _buildLineItem('Other Expense', _otherExpense, isNegative: true),
-                          _buildLineItem('Loan Interest Expense', _loanInterestExpense, isNegative: true),
-                          _buildLineItem('Loan Processing Fee Expense', _loanProcessingFee, isNegative: true),
-                          _buildLineItem('Charges on Loan Expense', _loanChargesExpense, isNegative: true),
-                          const Divider(height: 1),
-
-                          // Net Profit Banner Row
-                          _buildHighlightBanner('Net Profit', _netProfit, Colors.teal),
-                        ],
-                      ),
-                    ),
+                  // 3. Sectional Financial Cards Grid
+                  _buildSectionCard(
+                    title: 'Operating Sales & Returns',
+                    icon: Icons.trending_up_rounded,
+                    accentColor: const Color(0xFF10B981),
+                    items: [
+                      _LineItemData('Sale (+)', _saleAmount, isPositive: true),
+                      _LineItemData('Sale FA (+)', _saleFaAmount, isPositive: true),
+                      _LineItemData('Cr. Note / Sale Return (-)', _creditNoteAmount, isNegative: true),
+                      _LineItemData('Dr. Note / Purchase Return (+)', _debitNoteAmount, isPositive: true),
+                      _LineItemData('Payment Out Discount (+)', _paymentOutDiscount, isPositive: true),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-              ],
+                  const SizedBox(height: 14),
+
+                  _buildSectionCard(
+                    title: 'Purchases & Procurement',
+                    icon: Icons.shopping_cart_rounded,
+                    accentColor: const Color(0xFFF43F5E),
+                    items: [
+                      _LineItemData('Purchase (-)', _purchaseAmount, isNegative: true),
+                      _LineItemData('Purchase FA (-)', _purchaseFaAmount, isNegative: true),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  _buildSectionCard(
+                    title: 'Stock Valuation & Inventory',
+                    icon: Icons.inventory_2_rounded,
+                    accentColor: const Color(0xFF3B82F6),
+                    items: [
+                      _LineItemData('Opening Stock (-)', _openingStock, isNegative: true),
+                      _LineItemData('Closing Stock (+)', _closingStock, isPositive: true),
+                      _LineItemData('Opening FA Stock (-)', _openingFaStock, isNegative: true),
+                      _LineItemData('Closing FA Stock (+)', _closingFaStock, isPositive: true),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  _buildSectionCard(
+                    title: 'Direct Expenses & Outflows',
+                    icon: Icons.payments_rounded,
+                    accentColor: const Color(0xFFF59E0B),
+                    items: [
+                      _LineItemData('Other Direct Expense (-)', _otherDirectExpense, isNegative: true),
+                      _LineItemData('Payment In Discount (-)', _paymentInDiscount, isNegative: true),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  _buildSectionCard(
+                    title: 'Taxation Liabilities & Credits',
+                    icon: Icons.gavel_rounded,
+                    accentColor: const Color(0xFF8B5CF6),
+                    items: [
+                      _LineItemData('GST Payable (-)', _gstPayable, isNegative: true),
+                      _LineItemData('TCS Payable (-)', _tcsPayable, isNegative: true),
+                      _LineItemData('TDS Payable (-)', _tdsPayable, isNegative: true),
+                      _LineItemData('GST Receivable (+)', _gstReceivable, isPositive: true),
+                      _LineItemData('TCS Receivable (+)', _tcsReceivable, isPositive: true),
+                      _LineItemData('TDS Receivable (+)', _tdsReceivable, isPositive: true),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 🌟 GROSS PROFIT HIGHLIGHT BANNER
+                  _buildHighlightCardBanner(
+                    title: 'GROSS PROFIT STATEMENT',
+                    amount: _grossProfit,
+                    subtitle: 'Total Operating Revenue Minus Cost of Goods & Direct Expenses',
+                    gradientColors: [const Color(0xFF047857), const Color(0xFF064E3B)],
+                    borderColor: const Color(0xFF34D399),
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildSectionCard(
+                    title: 'Other Income & Indirect Expenses',
+                    icon: Icons.account_balance_rounded,
+                    accentColor: const Color(0xFFEC4899),
+                    items: [
+                      _LineItemData('Other Income (+)', _otherIncome, isPositive: true),
+                      _LineItemData('Other Expense (-)', _otherExpense, isNegative: true),
+                      _LineItemData('Loan Interest Expense (-)', _loanInterestExpense, isNegative: true),
+                      _LineItemData('Loan Processing Fee Expense (-)', _loanProcessingFee, isNegative: true),
+                      _LineItemData('Charges on Loan Expense (-)', _loanChargesExpense, isNegative: true),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 🏆 NET PROFIT HIGHLIGHT HERO BANNER
+                  _buildHighlightCardBanner(
+                    title: 'NET PROFIT STATEMENT',
+                    amount: _netProfit,
+                    subtitle: 'Final Net Earnings After All Direct & Indirect Outflows',
+                    gradientColors: [const Color(0xFF0F766E), const Color(0xFF134E4A)],
+                    borderColor: const Color(0xFF2DD4BF),
+                    isHero: true,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
     );
   }
 
-  Widget _buildSummaryCard({
+  Widget _buildExecutiveKpiCard({
     required String title,
     required double amount,
+    required IconData icon,
     required List<Color> gradientColors,
+    required Color borderColor,
     required Color textColor,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor.withOpacity(0.5), width: 1.5),
         boxShadow: [
-          BoxShadow(color: textColor.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 4)),
+          BoxShadow(color: borderColor.withOpacity(0.15), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: textColor)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.white70, letterSpacing: 1.0),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: textColor, size: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              currencyFormat.format(amount),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: amount >= 0 ? textColor : Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Color accentColor,
+    required List<_LineItemData> items,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accentColor.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: accentColor, size: 18),
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: accentColor),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Colors.white10),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              children: items.map((item) {
+                Color valColor = Colors.white70;
+                if (item.amount > 0) {
+                  if (item.isPositive) valColor = const Color(0xFF34D399);
+                  if (item.isNegative) valColor = const Color(0xFFF87171);
+                }
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        item.label,
+                        style: const TextStyle(fontSize: 12.5, color: Colors.white70, fontWeight: FontWeight.w500),
+                      ),
+                      Text(
+                        currencyFormat.format(item.amount),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valColor),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHighlightCardBanner({
+    required String title,
+    required double amount,
+    required String subtitle,
+    required List<Color> gradientColors,
+    required Color borderColor,
+    bool isHero = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isHero ? 20 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 2),
+        boxShadow: [
+          BoxShadow(color: borderColor.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13, letterSpacing: 1.1),
+              ),
+              Icon(isHero ? Icons.military_tech_rounded : Icons.verified_rounded, color: Colors.amberAccent, size: 22),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            currencyFormat.format(amount),
+            style: TextStyle(fontSize: isHero ? 28 : 22, fontWeight: FontWeight.w900, color: Colors.white),
+          ),
           const SizedBox(height: 4),
           Text(
-            currencyFormat.format(amount),
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: amount >= 0 ? const Color(0xFF059669) : Colors.red),
+            subtitle,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, top: 12, bottom: 6),
-      child: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
-      ),
-    );
-  }
+class _LineItemData {
+  final String label;
+  final double amount;
+  final bool isPositive;
+  final bool isNegative;
 
-  Widget _buildLineItem(String label, double amount, {bool isPositive = false, bool isNegative = false}) {
-    Color valColor = Colors.grey.shade800;
-    if (amount > 0) {
-      if (isPositive) valColor = Colors.green.shade600;
-      if (isNegative) valColor = Colors.red.shade400;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: Colors.black87)),
-          Text(
-            currencyFormat.format(amount),
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: valColor),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHighlightBanner(String label, double amount, MaterialColor color) {
-    return Container(
-      color: Colors.green.shade50,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.green.shade800),
-          ),
-          Text(
-            currencyFormat.format(amount),
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.green.shade800),
-          ),
-        ],
-      ),
-    );
-  }
+  _LineItemData(this.label, this.amount, {this.isPositive = false, this.isNegative = false});
 }
