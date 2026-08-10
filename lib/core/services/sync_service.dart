@@ -27,6 +27,7 @@ import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
@@ -1129,7 +1130,7 @@ class SyncService {
         case 'Invoice': return await isar.invoices.filter().idGreaterThan(-1).count();
         case 'Purchase': return await isar.purchases.filter().idGreaterThan(-1).count();
         case 'Expense': return await isar.expenses.filter().idGreaterThan(-1).count();
-        case 'ExpenseItem': return await isar.collection<ExpenseItem>().filter().idGreaterThan(-1).count();
+        case 'ExpenseItem': return await isar.collection<ExpenseItem>().count();
         case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
         default: return 0;
       }
@@ -1162,8 +1163,10 @@ class SyncService {
           final r = await isar.expenses.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
           return r?.updatedAt;
         case 'ExpenseItem':
-          final r = await isar.collection<ExpenseItem>().filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
-          return r?.updatedAt;
+          final list = await isar.collection<ExpenseItem>().where().findAll();
+          if (list.isEmpty) return null;
+          list.sort((a, b) => (a.updatedAt ?? DateTime(1970)).compareTo(b.updatedAt ?? DateTime(1970)));
+          return list.last.updatedAt;
         case 'Transaction':
           final r = await isar.transactions.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
           return r?.updatedAt;
