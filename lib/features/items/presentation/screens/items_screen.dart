@@ -771,16 +771,29 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
               const Spacer(),
 
-              // Bottom row: Price + Stock badge
+              // Bottom row: Price + Stock Value + Stock badge
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    currencyFormat.format(item.sellRate ?? 0.0),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: theme.colorScheme.primary,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currencyFormat.format(item.sellRate ?? 0.0),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      Text(
+                        'Val: ${currencyFormat.format(stockVal * ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0)))}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

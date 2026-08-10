@@ -64,10 +64,11 @@ class MainLayout extends StatelessWidget {
           location.contains('/edit') ||
           location.contains('/item/') ||
           location.contains('/party/');
+      final isDashboard = location == '/' || location == '/dashboard' || location.isEmpty;
 
       return Scaffold(
         key: _scaffoldKey,
-        appBar: isDetailScreen ? null : const CustomAppBar(),
+        appBar: (!isDetailScreen && isDashboard) ? const CustomAppBar() : null,
         drawer: const CustomDrawer(isPermanent: false),
         backgroundColor: theme.colorScheme.background,
         body: SafeArea(

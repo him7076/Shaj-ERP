@@ -1518,11 +1518,16 @@ class SyncService {
       case 'Expense':
         final e = entity as Expense;
         return baseMap..addAll({
+          'voucherNo': e.voucherNo,
+          'partyName': e.partyName,
           'category': e.category,
+          'subtotal': e.subtotal,
+          'roundOff': e.roundOff,
           'amount': e.amount,
           'expenseDate': e.expenseDate?.toIso8601String(),
           'paymentMode': e.paymentMode,
           'remarks': e.remarks,
+          'itemsJson': e.itemsJson,
         });
       case 'Transaction':
         final e = entity as Transaction;
@@ -1841,11 +1846,16 @@ class SyncService {
         break;
       case 'Expense':
         entity = Expense()
+          ..voucherNo = data['voucherNo']
+          ..partyName = data['partyName']
           ..category = data['category']
+          ..subtotal = (data['subtotal'] as num?)?.toDouble()
+          ..roundOff = (data['roundOff'] as num?)?.toDouble()
           ..amount = (data['amount'] as num?)?.toDouble()
           ..expenseDate = data['expenseDate'] != null ? DateTime.parse(data['expenseDate']) : null
           ..paymentMode = data['paymentMode']
-          ..remarks = data['remarks'];
+          ..remarks = data['remarks']
+          ..itemsJson = data['itemsJson'];
         break;
       case 'Transaction':
         entity = Transaction()

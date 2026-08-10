@@ -561,11 +561,16 @@ class BackupService {
       case 'expenses':
         final e = entity as Expense;
         return baseMap..addAll({
+          'voucherNo': e.voucherNo,
+          'partyName': e.partyName,
           'category': e.category,
+          'subtotal': e.subtotal,
+          'roundOff': e.roundOff,
           'amount': e.amount,
           'expenseDate': e.expenseDate?.toIso8601String(),
           'paymentMode': e.paymentMode,
           'remarks': e.remarks,
+          'itemsJson': e.itemsJson,
         });
       case 'transactions':
         final e = entity as Transaction;
