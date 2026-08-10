@@ -375,19 +375,6 @@ class CustomDrawer extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      // Cloud Sync Button
-                      IconButton(
-                        tooltip: 'Trigger Cloud Sync',
-                        icon: const Icon(Icons.cloud_sync_rounded, size: 20, color: Color(0xFF10B981)),
-                        onPressed: () {
-                          try {
-                            ref.read(syncServiceProvider).syncAll();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('⚡ Sync triggered in background'), backgroundColor: Color(0xFF10B981)),
-                            );
-                          } catch (_) {}
-                        },
-                      ),
                       // Logout Button
                       IconButton(
                         tooltip: 'Logout Account',

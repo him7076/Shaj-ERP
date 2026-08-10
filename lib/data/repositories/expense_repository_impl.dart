@@ -49,12 +49,31 @@ class ExpenseRepositoryImpl extends BaseIsarRepository<Expense> implements Expen
   @override
   Future<String> generateNextVoucherNumber() async {
     try {
-      final count = await collection.count();
-      final nextNum = 1001 + count;
+      final expenses = await collection.filter().isDeletedEqualTo(false).findAll();
+      int maxNum = 0;
+      final regExp = RegExp(r'\d+');
+
+      for (var exp in expenses) {
+        final vNo = exp.voucherNo;
+        if (vNo != null && vNo.isNotEmpty) {
+          final matches = regExp.allMatches(vNo);
+          if (matches.isNotEmpty) {
+            final numStr = matches.last.group(0);
+            if (numStr != null) {
+              final parsed = int.tryParse(numStr);
+              if (parsed != null && parsed > maxNum) {
+                maxNum = parsed;
+              }
+            }
+          }
+        }
+      }
+
+      final nextNum = maxNum + 1;
       return 'EXP-$nextNum';
     } catch (e) {
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString().substring(7);
-      return 'EXP-$timestamp';
+      final count = await collection.count();
+      return 'EXP-${count + 1}';
     }
   }
 }

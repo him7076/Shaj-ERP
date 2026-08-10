@@ -67,7 +67,7 @@ class MainLayout extends StatelessWidget {
 
       return Scaffold(
         key: _scaffoldKey,
-        appBar: null, // Top Title AppBar completely hidden on mobile for maximum vertical space
+        appBar: isDetailScreen ? null : const CustomAppBar(),
         drawer: const CustomDrawer(isPermanent: false),
         backgroundColor: theme.colorScheme.background,
         body: SafeArea(

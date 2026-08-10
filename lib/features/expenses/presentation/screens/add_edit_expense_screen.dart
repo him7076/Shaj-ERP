@@ -58,7 +58,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   final _itemQtyController = TextEditingController(text: '1');
   final _itemRateController = TextEditingController();
 
-  String _selectedCategory = 'Office Expense';
+  String _selectedCategory = '';
   String _selectedPaymentMode = 'Cash';
   DateTime _expenseDate = DateTime.now();
   double? _customRoundOff;
@@ -1209,8 +1209,12 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
         return TextField(
           controller: controller,
           focusNode: focusNode,
+          onTap: () {
+            controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+          },
           decoration: const InputDecoration(
             labelText: 'Expense Category *',
+            hintText: 'Search or Select Category',
             prefixIcon: Icon(Icons.category_outlined),
             border: OutlineInputBorder(),
             isDense: true,

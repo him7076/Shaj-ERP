@@ -811,11 +811,12 @@ class SyncService {
         }
 
         final querySnapshot = await query.get().timeout(const Duration(seconds: 5));
-        await Future.delayed(const Duration(milliseconds: 15));
+        await Future.delayed(const Duration(milliseconds: 10));
 
         if (querySnapshot.docs.isEmpty) continue;
 
         for (var doc in querySnapshot.docs) {
+          await Future.delayed(const Duration(milliseconds: 2));
           final data = doc.data();
           final uuid = data['uuid'] as String?;
           if (uuid == null) continue;
@@ -1010,90 +1011,95 @@ class SyncService {
       final validPurIds = allPurchases.map((p) => p.id).toSet();
       final validPurUuids = allPurchases.map((p) => p.uuid).whereType<String>().toSet();
 
-      await isar.writeTxn(() async {
-        for (var item in allItems) {
-          final itemUuid = item.uuid;
-          final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
+      final List<Item> itemsToUpdate = [];
 
-          double _toPrimaryQty(String? lineUnit, double rawQty) {
-            if (rawQty <= 0) return 0.0;
-            final secUnit = item.secondaryUnit?.trim().toLowerCase();
-            final conv = item.conversionFactor;
-            final lineUnitLower = lineUnit?.trim().toLowerCase();
+      for (var item in allItems) {
+        final itemUuid = item.uuid;
+        final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
 
-            if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 1.0) {
-              return rawQty / conv;
-            }
-            return rawQty;
+        double _toPrimaryQty(String? lineUnit, double rawQty) {
+          if (rawQty <= 0) return 0.0;
+          final secUnit = item.secondaryUnit?.trim().toLowerCase();
+          final conv = item.conversionFactor;
+          final lineUnitLower = lineUnit?.trim().toLowerCase();
+
+          if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 1.0) {
+            return rawQty / conv;
           }
+          return rawQty;
+        }
 
-          // 1. Total Sales (InvoiceItems)
-          double totalSales = 0.0;
-          for (var ii in allInvItems) {
-            final isValidParent = (ii.parentInvoiceId != null && validInvIds.contains(ii.parentInvoiceId)) ||
-                (ii.parentInvoiceUuid != null && validInvUuids.contains(ii.parentInvoiceUuid)) ||
-                ii.invoice.value != null;
-            if (!isValidParent) continue;
+        // 1. Total Sales (InvoiceItems)
+        double totalSales = 0.0;
+        for (var ii in allInvItems) {
+          final isValidParent = (ii.parentInvoiceId != null && validInvIds.contains(ii.parentInvoiceId)) ||
+              (ii.parentInvoiceUuid != null && validInvUuids.contains(ii.parentInvoiceUuid)) ||
+              ii.invoice.value != null;
+          if (!isValidParent) continue;
 
-            final linkedUuid = ii.item.value?.uuid;
-            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-                (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
+          final linkedUuid = ii.item.value?.uuid;
+          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+              (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
 
-            if (isMatch) {
-              totalSales += _toPrimaryQty(ii.unit, ii.quantity ?? 0.0);
-            }
-          }
-
-          // 2. Total Purchases (PurchaseItems)
-          double totalPurchases = 0.0;
-          for (var pi in allPurItems) {
-            final isValidParent = (pi.purchaseId != null && validPurIds.contains(pi.purchaseId)) ||
-                (pi.purchaseUuid != null && validPurUuids.contains(pi.purchaseUuid)) ||
-                pi.purchase.value != null;
-            if (!isValidParent) continue;
-
-            final linkedUuid = pi.item.value?.uuid;
-            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-                (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
-
-            if (isMatch) {
-              totalPurchases += _toPrimaryQty(pi.unit, pi.quantity ?? 0.0);
-            }
-          }
-
-          // 3. Sales Returns / Credit Notes (Stock In)
-          double totalSalesReturns = 0.0;
-          for (var cni in allCreditNoteItems) {
-            final linkedUuid = cni.item.value?.uuid;
-            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-                (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
-            if (isMatch) {
-              totalSalesReturns += _toPrimaryQty(cni.unit, cni.quantity ?? 0.0);
-            }
-          }
-
-          // 4. Purchase Returns / Debit Notes (Stock Out)
-          double totalPurchaseReturns = 0.0;
-          for (var dni in allDebitNoteItems) {
-            final linkedUuid = dni.item.value?.uuid;
-            final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-                (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
-            if (isMatch) {
-              totalPurchaseReturns += _toPrimaryQty(dni.unit, dni.quantity ?? 0.0);
-            }
-          }
-
-          // Real Calculated Current Stock Formula
-          final opening = item.openingStock ?? 0.0;
-          final computedStock = opening + totalPurchases - totalSales + totalSalesReturns - totalPurchaseReturns;
-
-          // Update item's currentStock in local DB if transactions exist or if stock was 0
-          if (totalSales > 0 || totalPurchases > 0 || totalSalesReturns > 0 || totalPurchaseReturns > 0 || item.currentStock == 0.0) {
-            item.currentStock = computedStock;
-            await isar.items.put(item);
+          if (isMatch) {
+            totalSales += _toPrimaryQty(ii.unit, ii.quantity ?? 0.0);
           }
         }
-      });
+
+        // 2. Total Purchases (PurchaseItems)
+        double totalPurchases = 0.0;
+        for (var pi in allPurItems) {
+          final isValidParent = (pi.purchaseId != null && validPurIds.contains(pi.purchaseId)) ||
+              (pi.purchaseUuid != null && validPurUuids.contains(pi.purchaseUuid)) ||
+              pi.purchase.value != null;
+          if (!isValidParent) continue;
+
+          final linkedUuid = pi.item.value?.uuid;
+          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+              (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
+
+          if (isMatch) {
+            totalPurchases += _toPrimaryQty(pi.unit, pi.quantity ?? 0.0);
+          }
+        }
+
+        // 3. Sales Returns / Credit Notes (Stock In)
+        double totalSalesReturns = 0.0;
+        for (var cni in allCreditNoteItems) {
+          final linkedUuid = cni.item.value?.uuid;
+          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+              (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
+          if (isMatch) {
+            totalSalesReturns += _toPrimaryQty(cni.unit, cni.quantity ?? 0.0);
+          }
+        }
+
+        // 4. Purchase Returns / Debit Notes (Stock Out)
+        double totalPurchaseReturns = 0.0;
+        for (var dni in allDebitNoteItems) {
+          final linkedUuid = dni.item.value?.uuid;
+          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
+              (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
+          if (isMatch) {
+            totalPurchaseReturns += _toPrimaryQty(dni.unit, dni.quantity ?? 0.0);
+          }
+        }
+
+        // Real Calculated Current Stock Formula
+        final opening = item.openingStock ?? 0.0;
+        final computedStock = opening + totalPurchases - totalSales + totalSalesReturns - totalPurchaseReturns;
+
+        if (totalSales > 0 || totalPurchases > 0 || totalSalesReturns > 0 || totalPurchaseReturns > 0 || item.currentStock == 0.0) {
+          item.currentStock = computedStock;
+          itemsToUpdate.add(item);
+        }
+      }
+
+      if (itemsToUpdate.isNotEmpty) {
+        await isar.writeTxn(() async {
+          await isar.items.putAll(itemsToUpdate);
+        });
+      }
 
       logger.info('Recalculated stocks for ${allItems.length} items from local transactions successfully.');
     } catch (e, stackTrace) {
