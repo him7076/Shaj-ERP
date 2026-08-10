@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 
 class ExpenseCategoryItem {
   final String name;
@@ -43,13 +45,33 @@ class ExpenseCategoryItem {
     }
   }
 
-  static Future<void> saveCategories(SharedPreferences prefs, List<ExpenseCategoryItem> categories) async {
+  static Future<void> saveCategories(SharedPreferences prefs, List<ExpenseCategoryItem> categories, [Isar? isar]) async {
     final rawList = categories.map((cat) => jsonEncode(cat.toJson())).toList();
     await prefs.setStringList('custom_expense_categories_v2', rawList);
 
     // Also update legacy string list for backward compatibility
     final legacyList = categories.map((cat) => cat.name).toList();
     await prefs.setStringList('expense_categories', legacyList);
+
+    // Sync categories into Isar Category collection if Isar is available
+    if (isar != null) {
+      try {
+        await isar.writeTxn(() async {
+          for (var cat in categories) {
+            final existing = await isar.categorys.filter().categoryNameEqualTo(cat.name).findFirst();
+            if (existing == null) {
+              final newCat = Category()
+                ..uuid = 'cat_${DateTime.now().millisecondsSinceEpoch}_${cat.name.hashCode}'
+                ..categoryName = cat.name
+                ..description = cat.type
+                ..createdAt = DateTime.now()
+                ..updatedAt = DateTime.now();
+              await isar.categorys.put(newCat);
+            }
+          }
+        });
+      } catch (_) {}
+    }
   }
 }
 

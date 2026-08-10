@@ -220,17 +220,46 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      // 5. Calculate Stock Valuation (No hardcoded demo fallback)
+      // 5. Calculate Stock Valuation based on Actual Purchase Rates
       final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
+      final purchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+
       double closingVal = 0.0;
       double openingVal = 0.0;
       for (var item in items) {
-        final rate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
+        // Find actual purchase rates from purchase history for this item
+        double actualPurchaseRate = 0.0;
+        final itemPurchases = purchaseItems.where((p) => p.itemId == item.id || (item.uuid != null && p.itemUuid == item.uuid)).toList();
+        if (itemPurchases.isNotEmpty) {
+          double totalCost = 0.0;
+          double totalQty = 0.0;
+          for (var pi in itemPurchases) {
+            final qty = (pi.quantity ?? 0.0);
+            final rate = (pi.rate ?? 0.0);
+            if (qty > 0 && rate > 0) {
+              totalCost += (qty * rate);
+              totalQty += qty;
+            }
+          }
+          if (totalQty > 0) {
+            actualPurchaseRate = totalCost / totalQty;
+          }
+        }
+
+        // Fallback hierarchy: actual purchase history rate -> buyRate -> wholesaleRate -> sellRate
+        if (actualPurchaseRate <= 0.0) {
+          actualPurchaseRate = (item.buyRate != null && item.buyRate! > 0)
+              ? item.buyRate!
+              : (item.wholesaleRate != null && item.wholesaleRate! > 0)
+                  ? item.wholesaleRate!
+                  : (item.sellRate ?? 0.0);
+        }
+
         if (item.currentStock != null && item.currentStock! > 0) {
-          closingVal += item.currentStock! * rate;
+          closingVal += item.currentStock! * actualPurchaseRate;
         }
         if (item.openingStock != null && item.openingStock! > 0) {
-          openingVal += item.openingStock! * rate;
+          openingVal += item.openingStock! * actualPurchaseRate;
         }
       }
 

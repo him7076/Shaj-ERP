@@ -53,7 +53,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   final _amountController = TextEditingController();
   final _remarksController = TextEditingController();
 
-  // Line item add inputs
+  // Line item inputs
   final _itemNameController = TextEditingController();
   final _itemQtyController = TextEditingController(text: '1');
   final _itemRateController = TextEditingController();
@@ -62,6 +62,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   String _selectedPaymentMode = 'Cash';
   DateTime _expenseDate = DateTime.now();
   double? _customRoundOff;
+  bool _isSaving = false;
 
   Expense? _existingExpense;
   List<String> _categories = [];
@@ -77,6 +78,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     {'name': 'Electricity / Utility Bill', 'defaultRate': 1000.0},
     {'name': 'Repair & Maintenance', 'defaultRate': 500.0},
   ];
+
+  static const String _createNewCategoryTag = '+ Create New Category';
+  static const String _createNewItemTag = '+ Create New Expense Item';
 
   @override
   void initState() {
@@ -141,9 +145,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
   void _addLineItem() {
     final name = _itemNameController.text.trim();
-    if (name.isEmpty) {
+    if (name.isEmpty || name == _createNewItemTag) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter an item name.')),
+        const SnackBar(content: Text('Please enter an item description.')),
       );
       return;
     }
@@ -175,16 +179,77 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
     if (newCatItem != null && newCatItem.name.isNotEmpty) {
       final prefs = ref.read(sharedPreferencesProvider);
+      final isar = ref.read(databaseServiceProvider).isar;
+
       final currentList = await ExpenseCategoryItem.getCategories(prefs);
       if (!currentList.any((c) => c.name.toLowerCase() == newCatItem.name.toLowerCase())) {
         currentList.add(newCatItem);
-        await ExpenseCategoryItem.saveCategories(prefs, currentList);
+        await ExpenseCategoryItem.saveCategories(prefs, currentList, isar);
       }
 
       final updatedCats = currentList.map((c) => c.name).toList();
       setState(() {
         _categories = updatedCats;
         _selectedCategory = newCatItem.name;
+      });
+    }
+  }
+
+  Future<void> _showAddExpenseItemDialog() async {
+    final nameCtrl = TextEditingController();
+    final rateCtrl = TextEditingController();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Create New Expense Item', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Expense Item Name *',
+                hintText: 'e.g. Printer Cartridge, Tea, Courier',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: rateCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Default Rate / Cost (₹)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (nameCtrl.text.trim().isNotEmpty) {
+                final rateVal = double.tryParse(rateCtrl.text.trim()) ?? 0.0;
+                Navigator.pop(ctx, {'name': nameCtrl.text.trim(), 'defaultRate': rateVal});
+              }
+            },
+            child: const Text('Create Item'),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result['name'].toString().isNotEmpty) {
+      final name = result['name'].toString();
+      final rate = (result['defaultRate'] as double);
+
+      setState(() {
+        _expenseTemplates.add({'name': name, 'defaultRate': rate});
+        _itemNameController.text = name;
+        _itemRateController.text = rate.toStringAsFixed(0);
       });
     }
   }
@@ -202,18 +267,30 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 
   void _saveExpense() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      final totalAmt = _grandTotal;
-      if (totalAmt <= 0.0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a valid expense amount or add line items.')),
-        );
-        return;
-      }
+    if (_isSaving) return;
 
+    final voucherNo = _voucherNoController.text.trim();
+    if (voucherNo.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a Voucher Number.')),
+      );
+      return;
+    }
+
+    final totalAmt = _grandTotal;
+    if (totalAmt <= 0.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid expense amount or add line items.')),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
       final expense = _existingExpense ?? Expense();
       expense
-        ..voucherNo = _voucherNoController.text.trim()
+        ..voucherNo = voucherNo
         ..partyName = _partyNameController.text.trim()
         ..category = _selectedCategory
         ..subtotal = _subtotal
@@ -235,7 +312,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           .saveExpense(expense);
 
       if (success && mounted) {
-        // Quiet background sync for newly saved expense
+        // Quiet background sync
         Future.microtask(() {
           try {
             ref.read(syncServiceProvider).syncPendingChangesQuietly();
@@ -243,10 +320,25 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_existingExpense == null ? 'Expense voucher logged successfully.' : 'Expense voucher updated successfully.')),
+          SnackBar(
+            content: Text(_existingExpense == null ? 'Expense voucher saved successfully.' : 'Expense voucher updated successfully.'),
+            backgroundColor: const Color(0xFF10B981),
+          ),
         );
         Navigator.pop(context);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save expense voucher. Please try again.')),
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving expense: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -263,8 +355,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 28),
-            onPressed: _saveExpense,
+            icon: _isSaving
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 28),
+            onPressed: _isSaving ? null : _saveExpense,
             tooltip: 'Save Expense Voucher',
           ),
           const SizedBox(width: 8),
@@ -291,7 +385,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
               // Save Action Button
               ElevatedButton.icon(
-                onPressed: _saveExpense,
+                onPressed: _isSaving ? null : _saveExpense,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color(0xFF6366F1),
@@ -299,10 +393,12 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 2,
                 ),
-                icon: const Icon(Icons.save_rounded),
-                label: const Text(
-                  'SAVE EXPENSE VOUCHER',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 0.5),
+                icon: _isSaving
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save_rounded),
+                label: Text(
+                  _isSaving ? 'SAVING VOUCHER...' : 'SAVE EXPENSE VOUCHER',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 0.5),
                 ),
               ),
               const SizedBox(height: 40),
@@ -368,7 +464,6 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 14),
               _buildCategorySelector(),
@@ -396,7 +491,6 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                         border: OutlineInputBorder(),
                         isDense: true,
                       ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -429,26 +523,19 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 
   Widget _buildCategorySelector() {
-    return Row(
-      children: [
-        Expanded(
-          child: SearchableCategoryDropdown(
-            categories: _categories,
-            selectedCategory: _selectedCategory,
-            onChanged: (val) {
-              setState(() {
-                _selectedCategory = val;
-              });
-            },
-          ),
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          icon: const Icon(Icons.add_rounded),
-          tooltip: 'Add Category',
-          onPressed: _showAddCategoryDialog,
-        ),
-      ],
+    return EmbeddedCategoryDropdown(
+      categories: _categories,
+      selectedCategory: _selectedCategory,
+      createNewTag: _createNewCategoryTag,
+      onChanged: (val) {
+        if (val == _createNewCategoryTag) {
+          _showAddCategoryDialog();
+        } else {
+          setState(() {
+            _selectedCategory = val;
+          });
+        }
+      },
     );
   }
 
@@ -483,6 +570,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 
   Widget _buildLineItemsCard(ThemeData theme, bool isMobile, bool isDark) {
+    final itemOptions = [
+      ..._expenseTemplates.map((e) => e['name'] as String),
+      _createNewItemTag,
+    ];
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -531,22 +623,30 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: _expenseTemplates.map((t) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: ActionChip(
-                      avatar: const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF6366F1)),
-                      label: Text(t['name'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                      onPressed: () {
-                        setState(() {
-                          _itemNameController.text = t['name'];
-                          _itemRateController.text = (t['defaultRate'] as double).toStringAsFixed(0);
-                        });
-                      },
-                    ),
-                  );
-                }).toList(),
+                children: [
+                  ..._expenseTemplates.map((t) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: ActionChip(
+                        avatar: const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF6366F1)),
+                        label: Text(t['name'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                        onPressed: () {
+                          setState(() {
+                            _itemNameController.text = t['name'];
+                            _itemRateController.text = (t['defaultRate'] as double).toStringAsFixed(0);
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                  ActionChip(
+                    avatar: const Icon(Icons.add_circle_outline_rounded, size: 14, color: Colors.emerald),
+                    label: const Text('+ Create Item', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.emerald)),
+                    backgroundColor: Colors.emerald.withOpacity(0.1),
+                    onPressed: _showAddExpenseItemDialog,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -555,12 +655,11 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             if (isMobile) ...[
               Autocomplete<String>(
                 optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return _expenseTemplates.map((e) => e['name'] as String);
+                  if (textEditingValue.text.isEmpty) return itemOptions;
                   final query = textEditingValue.text.toLowerCase();
-                  return _expenseTemplates.map((e) => e['name'] as String).where((name) => name.toLowerCase().contains(query));
+                  return itemOptions.where((name) => name.toLowerCase().contains(query));
                 },
                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                  // Sync controller with _itemNameController
                   controller.text = _itemNameController.text;
                   controller.selection = _itemNameController.selection;
                   return TextField(
@@ -578,10 +677,14 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   );
                 },
                 onSelected: (selection) {
-                  _itemNameController.text = selection;
-                  final matched = _expenseTemplates.firstWhere((t) => t['name'] == selection, orElse: () => {});
-                  if (matched.isNotEmpty) {
-                    _itemRateController.text = (matched['defaultRate'] as double).toStringAsFixed(0);
+                  if (selection == _createNewItemTag) {
+                    _showAddExpenseItemDialog();
+                  } else {
+                    _itemNameController.text = selection;
+                    final matched = _expenseTemplates.firstWhere((t) => t['name'] == selection, orElse: () => {});
+                    if (matched.isNotEmpty) {
+                      _itemRateController.text = (matched['defaultRate'] as double).toStringAsFixed(0);
+                    }
                   }
                 },
               ),
@@ -631,9 +734,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     flex: 3,
                     child: Autocomplete<String>(
                       optionsBuilder: (textEditingValue) {
-                        if (textEditingValue.text.isEmpty) return _expenseTemplates.map((e) => e['name'] as String);
+                        if (textEditingValue.text.isEmpty) return itemOptions;
                         final query = textEditingValue.text.toLowerCase();
-                        return _expenseTemplates.map((e) => e['name'] as String).where((name) => name.toLowerCase().contains(query));
+                        return itemOptions.where((name) => name.toLowerCase().contains(query));
                       },
                       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
                         controller.text = _itemNameController.text;
@@ -653,10 +756,14 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                         );
                       },
                       onSelected: (selection) {
-                        _itemNameController.text = selection;
-                        final matched = _expenseTemplates.firstWhere((t) => t['name'] == selection, orElse: () => {});
-                        if (matched.isNotEmpty) {
-                          _itemRateController.text = (matched['defaultRate'] as double).toStringAsFixed(0);
+                        if (selection == _createNewItemTag) {
+                          _showAddExpenseItemDialog();
+                        } else {
+                          _itemNameController.text = selection;
+                          final matched = _expenseTemplates.firstWhere((t) => t['name'] == selection, orElse: () => {});
+                          if (matched.isNotEmpty) {
+                            _itemRateController.text = (matched['defaultRate'] as double).toStringAsFixed(0);
+                          }
                         }
                       },
                     ),
@@ -832,12 +939,6 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 onChanged: (val) {
                   setState(() {});
                 },
-                validator: (v) {
-                  if (_lineItems.isEmpty && (v == null || v.trim().isEmpty || double.tryParse(v) == null)) {
-                    return 'Please enter valid total expense amount';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
             ],
@@ -857,7 +958,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   )),
                 ];
 
-                if (_selectedPaymentMode != null && !dropdownItems.any((item) => item.value == _selectedPaymentMode)) {
+                if (!dropdownItems.any((item) => item.value == _selectedPaymentMode)) {
                   dropdownItems.add(DropdownMenuItem(value: _selectedPaymentMode, child: Text(_selectedPaymentMode)));
                 }
 
@@ -1000,23 +1101,25 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 }
 
-class SearchableCategoryDropdown extends StatefulWidget {
+class EmbeddedCategoryDropdown extends StatefulWidget {
   final List<String> categories;
   final String selectedCategory;
+  final String createNewTag;
   final ValueChanged<String> onChanged;
 
-  const SearchableCategoryDropdown({
+  const EmbeddedCategoryDropdown({
     Key? key,
     required this.categories,
     required this.selectedCategory,
+    required this.createNewTag,
     required this.onChanged,
   }) : super(key: key);
 
   @override
-  State<SearchableCategoryDropdown> createState() => _SearchableCategoryDropdownState();
+  State<EmbeddedCategoryDropdown> createState() => _EmbeddedCategoryDropdownState();
 }
 
-class _SearchableCategoryDropdownState extends State<SearchableCategoryDropdown> {
+class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
   late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
 
@@ -1027,7 +1130,7 @@ class _SearchableCategoryDropdownState extends State<SearchableCategoryDropdown>
   }
 
   @override
-  void didUpdateWidget(covariant SearchableCategoryDropdown oldWidget) {
+  void didUpdateWidget(covariant EmbeddedCategoryDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selectedCategory != oldWidget.selectedCategory) {
       _controller.text = widget.selectedCategory;
@@ -1043,16 +1146,21 @@ class _SearchableCategoryDropdownState extends State<SearchableCategoryDropdown>
 
   @override
   Widget build(BuildContext context) {
+    final optionsList = [
+      ...widget.categories,
+      widget.createNewTag,
+    ];
+
     return RawAutocomplete<String>(
       textEditingController: _controller,
       focusNode: _focusNode,
       displayStringForOption: (cat) => cat,
       optionsBuilder: (TextEditingValue textEditingValue) {
         if (textEditingValue.text.isEmpty) {
-          return widget.categories;
+          return optionsList;
         }
         final query = textEditingValue.text.toLowerCase();
-        return widget.categories.where((c) => c.toLowerCase().contains(query));
+        return optionsList.where((c) => c.toLowerCase().contains(query));
       },
       onSelected: (cat) {
         widget.onChanged(cat);
@@ -1072,8 +1180,19 @@ class _SearchableCategoryDropdownState extends State<SearchableCategoryDropdown>
                 itemCount: options.length,
                 itemBuilder: (context, index) {
                   final cat = options.elementAt(index);
+                  final isCreateNew = cat == widget.createNewTag;
                   return ListTile(
-                    title: Text(cat),
+                    tileColor: isCreateNew ? Colors.emerald.withOpacity(0.1) : null,
+                    leading: isCreateNew
+                        ? const Icon(Icons.add_circle_outline_rounded, color: Colors.emerald)
+                        : const Icon(Icons.category_outlined, size: 20),
+                    title: Text(
+                      cat,
+                      style: TextStyle(
+                        fontWeight: isCreateNew ? FontWeight.bold : FontWeight.normal,
+                        color: isCreateNew ? Colors.emerald : null,
+                      ),
+                    ),
                     onTap: () => onSelected(cat),
                   );
                 },
