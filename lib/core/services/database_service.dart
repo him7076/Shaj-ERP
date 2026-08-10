@@ -120,7 +120,7 @@ class DatabaseService {
           name: activeFirmId,
           directory: dirPath ?? '',
           inspector: !kIsWeb && !kReleaseMode,
-        );
+        ).timeout(const Duration(seconds: 4));
       } catch (openError) {
         logger.warning('Failed to open Isar database directly: $openError. Attempting to clear database file to resolve schema mismatch.');
         
