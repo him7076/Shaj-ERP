@@ -54,7 +54,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         }
       }
 
-      // 2. Period Sales
+      // 2. Period Sales (Invoices + Standalone Sales Transactions only)
       double monthlySales = 0.0;
       for (var inv in allInvoices) {
         if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, rangeStart, rangeEnd)) {
@@ -62,14 +62,14 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         }
       }
       for (var txn in allTransactions) {
-        if ((txn.transactionType == 'Sales' || txn.transactionType == 'Receipt') && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
+        if (txn.transactionType == 'Sales' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
           if (!allInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
             monthlySales += (txn.amount ?? 0.0);
           }
         }
       }
 
-      // 3. Period Purchases
+      // 3. Period Purchases (Purchase Bills + Standalone Purchase Transactions only)
       double monthlyPurchases = 0.0;
       for (var pur in allPurchases) {
         if (pur.paymentStatus != 'Cancelled' && isWithin(pur.purchaseDate ?? pur.createdAt, rangeStart, rangeEnd)) {
@@ -77,7 +77,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         }
       }
       for (var txn in allTransactions) {
-        if ((txn.transactionType == 'Purchase' || txn.transactionType == 'Payment') && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
+        if (txn.transactionType == 'Purchase' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
           if (!allPurchases.any((p) => p.uuid == txn.uuid || p.purchaseNumber == txn.transactionNumber)) {
             monthlyPurchases += (txn.amount ?? 0.0);
           }
@@ -97,11 +97,15 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     double totalOutstanding = 0.0;
     double totalPayable = 0.0;
     for (var p in parties) {
-      final bal = p.outstandingBalance ?? 0.0;
-      if (p.partyType == 'Supplier') {
-        totalPayable += bal;
-      } else {
-        totalOutstanding += bal;
+      final bal = (p.outstandingBalance != null && p.outstandingBalance! != 0)
+          ? p.outstandingBalance!
+          : (p.openingBalance ?? 0.0);
+      if (bal > 0) {
+        if (p.partyType == 'Supplier' || p.balanceType == 'Cr') {
+          totalPayable += bal;
+        } else {
+          totalOutstanding += bal;
+        }
       }
     }
 
