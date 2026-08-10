@@ -26,7 +26,7 @@ void main() async {
     logger.error('Failed to initialize SharedPreferences', e);
   }
 
-  // 2. Initialize Firebase (with try-catch to avoid crashes during early setup without google-services config)
+  // 2. Initialize Firebase (non-blocking with timeout to prevent startup hang)
   try {
     if (sharedPrefs != null) {
       final apiKey = sharedPrefs.getString('firebase_api_key');
@@ -44,18 +44,14 @@ void main() async {
             messagingSenderId: senderId ?? '',
             storageBucket: storageBucket ?? '$projectId.appspot.com',
           ),
-        );
+        ).timeout(const Duration(seconds: 1));
         logger.info('Firebase Core dynamically initialized for Project: $projectId');
       } else {
-        await Firebase.initializeApp();
-        logger.info('Firebase Core initialized with default config.');
+        logger.info('Firebase API keys not set. Bypassing Firebase init to launch instantly.');
       }
-    } else {
-      await Firebase.initializeApp();
-      logger.info('Firebase Core initialized successfully.');
     }
   } catch (e) {
-    logger.warning('Firebase initialization bypassed: Configuration files might be missing. Details: $e');
+    logger.warning('Firebase initialization bypassed or timed out: $e');
   }
 
   // 3. Initialize Isar database storage
