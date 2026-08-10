@@ -802,17 +802,23 @@ class SyncService {
           }
         }
 
+        // Apply 2-minute safety window to prevent missing records from clock skews
+        DateTime? filterCutoff;
+        if (effectiveLastSync.millisecondsSinceEpoch > 0) {
+          filterCutoff = effectiveLastSync.subtract(const Duration(minutes: 2));
+        }
+
         var query = _firebaseService.firestore
             .collection(collectionName)
             .where('companyId', isEqualTo: _firebaseService.companyId);
 
         // Filter by updatedAt ONLY IF local records exist for this entity
-        if (localCount > 0 && effectiveLastSync.millisecondsSinceEpoch > 0) {
-          query = query.where('updatedAt', isGreaterThan: effectiveLastSync.toUtc().toIso8601String());
+        if (localCount > 0 && filterCutoff != null) {
+          query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
         }
 
         var querySnapshot = await query.get().timeout(const Duration(seconds: 5));
-        await Future.delayed(const Duration(milliseconds: 10));
+        await Future.delayed(const Duration(milliseconds: 5));
 
         // Fallback: If query returned 0 documents and localCount is 0, query all documents for company
         if (querySnapshot.docs.isEmpty && localCount == 0) {
@@ -1022,7 +1028,9 @@ class SyncService {
 
       final List<Item> itemsToUpdate = [];
 
-      for (var item in allItems) {
+      for (int k = 0; k < allItems.length; k++) {
+        if (k % 5 == 0) await Future.delayed(const Duration(milliseconds: 1));
+        final item = allItems[k];
         final itemUuid = item.uuid;
         final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
 

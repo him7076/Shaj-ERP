@@ -646,10 +646,15 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        'Party: ${tx.partyName}  •  $dateStr',
-                                        style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                                      Expanded(
+                                        child: Text(
+                                          'Party: ${tx.partyName}  •  $dateStr',
+                                          style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         '${tx.quantity} ${tx.unit}',
                                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),

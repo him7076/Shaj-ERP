@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
@@ -785,13 +786,19 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                           color: theme.colorScheme.primary,
                         ),
                       ),
-                      Text(
-                        'Val: ${currencyFormat.format(stockVal * ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0)))}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF10B981),
-                        ),
+                      FutureBuilder<double>(
+                        future: _getWeightedAvgPurchaseRate(item),
+                        builder: (context, snapshot) {
+                          final unitRate = snapshot.data ?? ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
+                          return Text(
+                            'Val: ${currencyFormat.format(stockVal * unitRate)}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF10B981),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -824,5 +831,38 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         ),
       ),
     );
+  }
+
+  Future<double> _getWeightedAvgPurchaseRate(Item item) async {
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      final purchaseItems = await isar.collection<PurchaseItem>()
+          .filter()
+          .itemIdEqualTo(item.id)
+          .and()
+          .isDeletedEqualTo(false)
+          .findAll();
+
+      if (purchaseItems.isNotEmpty) {
+        double totalTaxable = 0.0;
+        double totalQty = 0.0;
+        for (var pi in purchaseItems) {
+          final q = pi.quantity ?? 0.0;
+          final r = pi.rate ?? 0.0;
+          final tax = (pi.taxableAmount != null && pi.taxableAmount! > 0) ? pi.taxableAmount! : (q * r);
+          totalTaxable += tax;
+          totalQty += q;
+        }
+        if (totalQty > 0) {
+          return totalTaxable / totalQty; // Weighted Average Unit Purchase Rate
+        }
+      }
+    } catch (_) {}
+
+    return (item.buyRate != null && item.buyRate! > 0)
+        ? item.buyRate!
+        : (item.wholesaleRate != null && item.wholesaleRate! > 0)
+            ? item.wholesaleRate!
+            : (item.sellRate ?? 0.0);
   }
 }
