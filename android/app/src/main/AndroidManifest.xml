@@ -41,12 +41,10 @@
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true">
         
-        <!-- Foreground Service for Geolocator -->
-        <service
-            android:name="com.baseflow.geolocator.GeolocatorLocationService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="location" />
+        <!-- Disable automatic Geolocator location service auto-binding on boot -->
+        <meta-data
+            android:name="com.baseflow.geolocator.LOCATION_SERVICE_NOTIFICATIONS_ENABLED"
+            android:value="false" />
         
         <activity
             android:name=".MainActivity"
