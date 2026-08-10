@@ -15,7 +15,7 @@ extension GetExpenseCollection on Isar {
 
 const ExpenseSchema = CollectionSchema(
   name: r'Expense',
-  id: 3657664774349452039,
+  id: 741876924609287,
   properties: {
     r'amount': PropertySchema(
       id: 0,
@@ -80,7 +80,7 @@ const ExpenseSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 866029114026198706,
+      id: 1337985571063474,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -93,7 +93,7 @@ const ExpenseSchema = CollectionSchema(
       ],
     ),
     r'category': IndexSchema(
-      id: 6616605887935172241,
+      id: 5321634955284113,
       name: r'category',
       unique: false,
       replace: false,

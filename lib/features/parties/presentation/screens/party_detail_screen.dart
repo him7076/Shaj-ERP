@@ -76,6 +76,16 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
       final repo = ref.read(partyRepositoryProvider);
 
       final position = await gps.getCurrentLocation();
+      if (position == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to capture GPS location or permission denied.')),
+          );
+        }
+        setState(() => _isCapturingLocation = false);
+        return;
+      }
+
       final geocodedAddress = await gps.reverseGeocode(position.latitude, position.longitude);
       final mapUrl = gps.getGoogleMapUrl(position.latitude, position.longitude);
 

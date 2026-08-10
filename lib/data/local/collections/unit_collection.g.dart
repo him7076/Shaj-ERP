@@ -15,7 +15,7 @@ extension GetUnitCollection on Isar {
 
 const UnitSchema = CollectionSchema(
   name: r'Unit',
-  id: 1091807283342223239,
+  id: 1936173518563207,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -65,7 +65,7 @@ const UnitSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 866029114026198706,
+      id: 1337985571063474,
       name: r'uuid',
       unique: true,
       replace: false,

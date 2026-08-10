@@ -15,7 +15,7 @@ extension GetSettingsCollection on Isar {
 
 const SettingsSchema = CollectionSchema(
   name: r'Settings',
-  id: 2128947680272237256,
+  id: 3248656153363144,
   properties: {
     r'companyAddress': PropertySchema(
       id: 0,
@@ -90,7 +90,7 @@ const SettingsSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 866029114026198706,
+      id: 1337985571063474,
       name: r'uuid',
       unique: true,
       replace: false,

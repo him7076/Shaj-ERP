@@ -144,6 +144,10 @@ class NearbyPartyNotifier extends StateNotifier<AsyncValue<List<NearbyParty>>> {
     try {
       // 1. Capture user GPS location coordinates
       final position = await _gpsService.getCurrentLocation();
+      if (position == null) {
+        state = const AsyncValue.data([]);
+        return;
+      }
       
       // 2. Fetch all active parties
       final allParties = await _repo.getAll();

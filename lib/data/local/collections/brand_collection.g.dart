@@ -15,7 +15,7 @@ extension GetBrandCollection on Isar {
 
 const BrandSchema = CollectionSchema(
   name: r'Brand',
-  id: 8377822875140910710,
+  id: 1127568231788150,
   properties: {
     r'brandName': PropertySchema(
       id: 0,
@@ -60,7 +60,7 @@ const BrandSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 866029114026198706,
+      id: 1337985571063474,
       name: r'uuid',
       unique: true,
       replace: false,

@@ -194,10 +194,12 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     try {
       final gps = ref.read(gpsServiceProvider);
       final pos = await gps.getCurrentLocation();
-      setState(() {
-        _currentPosition = pos;
-      });
-      logger.info('Captured location coordinates: ${pos.latitude}, ${pos.longitude}');
+      if (pos != null) {
+        setState(() {
+          _currentPosition = pos;
+        });
+        logger.info('Captured location coordinates: ${pos.latitude}, ${pos.longitude}');
+      }
     } catch (e) {
       logger.error('Failed to capture location coordinates', e);
     } finally {

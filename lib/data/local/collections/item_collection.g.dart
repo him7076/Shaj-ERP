@@ -15,7 +15,7 @@ extension GetItemCollection on Isar {
 
 const ItemSchema = CollectionSchema(
   name: r'Item',
-  id: 5967165952864249862,
+  id: 4400046225713158,
   properties: {
     r'barcode': PropertySchema(
       id: 0,
@@ -195,7 +195,7 @@ const ItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 866029114026198706,
+      id: 1337985571063474,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -208,7 +208,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: 7971294874445683035,
+      id: 8930733254646107,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -234,7 +234,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: 968534786024467419,
+      id: 4764465767181275,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -260,7 +260,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: 162861970262347034,
+      id: 732383677009178,
       name: r'sku',
       unique: false,
       replace: false,
@@ -288,7 +288,7 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: 6616605887935172241,
+      id: 5321634955284113,
       name: r'category',
       target: r'Category',
       single: true,
