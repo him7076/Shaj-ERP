@@ -15,6 +15,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/providers/repor
 import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -61,9 +62,9 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         return;
       }
 
-      await Printing.sharePdf(
-        bytes: Uint8List.fromList(sampleBytes),
-        filename: 'Purchase_Import_Sample_Template.xlsx',
+      await ExcelDownloadHelper.downloadExcel(
+        sampleBytes,
+        'Purchase_Import_Sample_Template.xlsx',
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

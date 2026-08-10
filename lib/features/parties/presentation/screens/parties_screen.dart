@@ -15,6 +15,7 @@ import 'package:business_sahaj_erp/core/services/party_excel_import_service.dart
 import 'package:business_sahaj_erp/core/widgets/liquid_glass_card.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 import 'party_detail_screen.dart';
 import 'add_edit_party_screen.dart';
 
@@ -46,9 +47,9 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
         return;
       }
 
-      await Printing.sharePdf(
-        bytes: Uint8List.fromList(sampleBytes),
-        filename: 'Party_Import_Sample_Template.xlsx',
+      await ExcelDownloadHelper.downloadExcel(
+        sampleBytes,
+        'Party_Import_Sample_Template.xlsx',
       );
 
       ScaffoldMessenger.of(context).showSnackBar(

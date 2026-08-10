@@ -18,6 +18,7 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/item_excel_import_service.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 
 class ItemsScreen extends ConsumerStatefulWidget {
   const ItemsScreen({Key? key}) : super(key: key);
@@ -61,9 +62,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         return;
       }
 
-      await Printing.sharePdf(
-        bytes: Uint8List.fromList(sampleBytes),
-        filename: 'Items_Import_Sample_Template.xlsx',
+      await ExcelDownloadHelper.downloadExcel(
+        sampleBytes,
+        'Items_Import_Sample_Template.xlsx',
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
