@@ -837,13 +837,13 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   Future<double> _getWeightedAvgPurchaseRate(Item item) async {
     try {
       final isar = ref.read(databaseServiceProvider).isar;
-      final allPurchases = await isar.collection<PurchaseItem>().where().findAll();
-      final purchaseItems = allPurchases.where((p) => p.itemId == item.id && p.isDeleted == false).toList();
+      final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
+      final itemPurchases = purchaseItems.where((p) => p.itemId == item.id).toList();
 
-      if (purchaseItems.isNotEmpty) {
+      if (itemPurchases.isNotEmpty) {
         double totalTaxable = 0.0;
         double totalQty = 0.0;
-        for (var pi in purchaseItems) {
+        for (var pi in itemPurchases) {
           final q = pi.quantity ?? 0.0;
           final r = pi.rate ?? 0.0;
           final tax = (pi.taxableAmount != null && pi.taxableAmount! > 0) ? pi.taxableAmount! : (q * r);
