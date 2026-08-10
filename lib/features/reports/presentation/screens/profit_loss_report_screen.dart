@@ -149,13 +149,13 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      // 4. Calculate Stock Valuation
+      // 4. Calculate Stock Valuation using buyRate
       final items = await isar.items.filter().idGreaterThan(-1).findAll();
       double closingVal = 0.0;
       double openingVal = 0.0;
       for (var item in items) {
-        closingVal += (item.currentStock ?? 0.0) * (item.purchaseRate ?? item.sellRate ?? 0.0);
-        openingVal += (item.openingStock ?? 0.0) * (item.purchaseRate ?? item.sellRate ?? 0.0);
+        closingVal += (item.currentStock ?? 0.0) * (item.buyRate ?? item.sellRate ?? 0.0);
+        openingVal += (item.openingStock ?? 0.0) * (item.buyRate ?? item.sellRate ?? 0.0);
       }
 
       setState(() {
@@ -206,13 +206,21 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       ['NET PROFIT', currencyFormat.format(_netProfit)],
     ];
 
-    await ExportService.exportToPdf(
-      context: context,
-      title: 'Profit & Loss Statement',
-      subtitle: '${DateFormat('dd/MM/yyyy').format(_fromDate)} TO ${DateFormat('dd/MM/yyyy').format(_toDate)}',
-      headers: ['Particulars', 'Amount (₹)'],
-      data: rows,
-    );
+    try {
+      final exportService = ExportService();
+      await exportService.exportToPDF(
+        title: 'Profit & Loss Statement',
+        subtitle: '${DateFormat('dd/MM/yyyy').format(_fromDate)} TO ${DateFormat('dd/MM/yyyy').format(_toDate)}',
+        headers: ['Particulars', 'Amount (₹)'],
+        rows: rows,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _exportExcel() async {
@@ -235,12 +243,20 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       ['NET PROFIT', _netProfit],
     ];
 
-    await ExportService.exportToExcel(
-      context: context,
-      title: 'Profit_Loss_Report_${DateFormat('dd_MM_yyyy').format(_fromDate)}',
-      headers: ['Particulars', 'Amount'],
-      data: rows,
-    );
+    try {
+      final exportService = ExportService();
+      await exportService.exportToExcel(
+        title: 'Profit_Loss_Report_${DateFormat('dd_MM_yyyy').format(_fromDate)}',
+        headers: ['Particulars', 'Amount'],
+        rows: rows,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -427,7 +443,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
                           const Divider(height: 1),
 
                           // Gross Profit Banner Row
-                          _buildHighlightBanner('Gross Profit', _grossProfit, Colors.emerald),
+                          _buildHighlightBanner('Gross Profit', _grossProfit, Colors.green),
 
                           // Other Income Section
                           _buildSectionHeader('Other Income (+)'),
