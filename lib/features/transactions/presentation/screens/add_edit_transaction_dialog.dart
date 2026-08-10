@@ -151,7 +151,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allInvoices.where((inv) {
-          final matchParty = (partyUuid != null && inv.partyUuid == partyUuid) ||
+          final matchParty = (partyUuid != null && inv.party.value?.uuid == partyUuid) ||
                              (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
                              (inv.partyId == partyId);
           if (!matchParty) return false;
@@ -164,11 +164,21 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
         final allPurchases = await db.purchases
             .filter()
             .isDeletedEqualTo(false)
-        setState(() {
-          _pendingBills = [];
-          _updateControllers();
-        });
+            .findAll();
+
+        _pendingBills = allPurchases.where((pur) {
+          final matchParty = (partyUuid != null && pur.party.value?.uuid == partyUuid) ||
+                             (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
+                             (pur.partyId == partyId);
+          if (!matchParty) return false;
+          final isUnpaidOrPartial = pur.paymentStatus == 'Unpaid' || pur.paymentStatus == 'Partially Paid' || (pur.pendingAmount != null && pur.pendingAmount! > 0);
+          final isLinked = _linkedAllocations.containsKey(pur.uuid);
+          return isUnpaidOrPartial || isLinked;
+        }).toList();
+      } else {
+        _pendingBills = [];
       }
+      _updateControllers();
     } catch (e) {
       // Quietly ignore
     }
@@ -358,6 +368,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
         setState(() => _isSaving = false);
       }
     }
+  }
+
   Widget _buildTypeToggleChip(String type, String label, IconData icon, Color color) {
     final selected = _transactionType == type;
     final isDisabled = widget.transaction != null || widget.initialType != null;

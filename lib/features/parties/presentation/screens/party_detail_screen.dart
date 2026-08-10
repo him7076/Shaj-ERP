@@ -70,7 +70,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         if (item.partyType == 'Supplier') {
           final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
           for (var pur in purchases) {
-            final match = (partyUuid != null && pur.partyUuid == partyUuid) ||
+            final match = (partyUuid != null && pur.party.value?.uuid == partyUuid) ||
                           (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
                           pur.partyId == partyId;
             if (match && pur.paymentStatus != 'Cancelled') {
@@ -80,7 +80,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         } else {
           final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
           for (var inv in invoices) {
-            final match = (partyUuid != null && inv.partyUuid == partyUuid) ||
+            final match = (partyUuid != null && inv.party.value?.uuid == partyUuid) ||
                           (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
                           inv.partyId == partyId;
             if (match && inv.paymentStatus != 'Cancelled') {
@@ -531,7 +531,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 1. Invoices
     final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
     for (var inv in invoices) {
-      final match = (partyUuid != null && inv.partyUuid == partyUuid) ||
+      final match = (partyUuid != null && inv.party.value?.uuid == partyUuid) ||
                     (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
                     inv.partyId == partyId;
       if (match && inv.paymentStatus != 'Cancelled') {
@@ -542,7 +542,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
           amount: inv.grandTotal ?? 0.0,
           pendingAmount: inv.pendingAmount ?? (inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0),
           status: inv.paymentStatus ?? 'UNPAID',
-          mode: inv.paymentMode ?? 'Credit',
+          mode: inv.invoiceType ?? 'Credit',
           date: inv.invoiceDate ?? inv.createdAt,
         ));
       }
@@ -551,7 +551,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 2. Purchases
     final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
     for (var pur in purchases) {
-      final match = (partyUuid != null && pur.partyUuid == partyUuid) ||
+      final match = (partyUuid != null && pur.party.value?.uuid == partyUuid) ||
                     (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
                     pur.partyId == partyId;
       if (match && pur.paymentStatus != 'Cancelled') {
@@ -562,7 +562,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
           amount: pur.grandTotal ?? 0.0,
           pendingAmount: pur.pendingAmount ?? (pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0),
           status: pur.paymentStatus ?? 'UNPAID',
-          mode: pur.paymentMode ?? 'Credit',
+          mode: 'Credit',
           date: pur.purchaseDate ?? pur.createdAt,
         ));
       }
@@ -573,7 +573,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     for (var t in txns) {
       final match = (partyUuid != null && t.partyUuid == partyUuid) ||
                     (partyNameLower != null && t.partyName?.trim().toLowerCase() == partyNameLower) ||
-                    t.partyId == partyId;
+                    (t.party.value?.id != null && t.party.value?.id == partyId);
       if (match) {
         list.add(_PartyActivityItem(
           id: t.id,

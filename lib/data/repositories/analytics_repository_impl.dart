@@ -103,7 +103,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       double salesPending = 0.0;
       final partyInvoices = allInvoices.where((inv) {
-        final match = (pUuid != null && inv.partyUuid == pUuid) ||
+        final match = (pUuid != null && inv.party.value?.uuid == pUuid) ||
                       (pName != null && inv.partyName?.trim().toLowerCase() == pName) ||
                       inv.partyId == pId;
         return match && inv.paymentStatus != 'Cancelled';
@@ -114,7 +114,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       double purchasePending = 0.0;
       final partyPurchases = allPurchases.where((pur) {
-        final match = (pUuid != null && pur.partyUuid == pUuid) ||
+        final match = (pUuid != null && pur.party.value?.uuid == pUuid) ||
                       (pName != null && pur.partyName?.trim().toLowerCase() == pName) ||
                       pur.partyId == pId;
         return match && pur.paymentStatus != 'Cancelled';
