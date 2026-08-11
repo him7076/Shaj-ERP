@@ -300,6 +300,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         );
                       }).toList(),
+                    ),
                     const SizedBox(height: 18),
 
                     const Text(
