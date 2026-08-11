@@ -181,7 +181,8 @@ class ReportService {
       igstAmount += inv.igstAmount ?? 0.0;
       totalGST += invGst;
 
-      final gstin = inv.partyGstin?.trim() ?? '';
+      try { await inv.party.load(); } catch (_) {}
+      final gstin = inv.party.value?.gstin?.trim() ?? '';
       if (gstin.length >= 15) {
         b2bTaxable += invTaxable;
         b2bGst += invGst;

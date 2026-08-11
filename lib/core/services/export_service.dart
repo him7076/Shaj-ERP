@@ -7,7 +7,7 @@ import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
-import 'dart:io' if (dart.library.html) 'dart:html';
+import 'dart:io';
 
 class ExportService {
   /// Generates a professional multi-page PDF report and initiates the native share dialog.
