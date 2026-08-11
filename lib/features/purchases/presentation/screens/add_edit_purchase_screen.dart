@@ -355,6 +355,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         purchase.party.value = _selectedParty;
       }
 
+      await Future.delayed(Duration.zero);
       final success = await ref
           .read(purchaseNotifierProvider.notifier)
           .savePurchase(purchase, _draftItems);

@@ -141,7 +141,6 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     
     try {
       final partyUuid = _selectedParty!.uuid;
-      final partyNameLower = _selectedParty!.partyName?.trim().toLowerCase();
       final partyId = _selectedParty!.id;
 
       if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
@@ -151,7 +150,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allInvoices.where((inv) {
-          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
+          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && (inv.partyUuid == partyUuid || inv.party.value?.uuid == partyUuid)) ||
                              (partyId > 0 && inv.partyId == partyId);
           if (!matchParty) return false;
           final isUnpaidOrPartial = inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid' || (inv.pendingAmount != null && inv.pendingAmount! > 0);
@@ -166,7 +165,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allPurchases.where((pur) {
-          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && pur.party.value?.uuid == partyUuid) ||
+          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && (pur.partyUuid == partyUuid || pur.party.value?.uuid == partyUuid)) ||
                              (partyId > 0 && pur.partyId == partyId);
           if (!matchParty) return false;
           final isUnpaidOrPartial = pur.paymentStatus == 'Unpaid' || pur.paymentStatus == 'Partially Paid' || (pur.pendingAmount != null && pur.pendingAmount! > 0);
@@ -502,7 +501,6 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 if (_transactionType != 'Expense' && _transactionType != 'Other Income') ...[
                   partiesAsync.when(
                     data: (parties) {
-                      // Filter parties based on type during creation; retain full list during edit to match _selectedParty
                       List<Party> filteredParties = parties;
                       if (widget.transaction == null && widget.initialParty == null) {
                         if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
@@ -512,15 +510,21 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                         }
                       }
 
-                      // Ensure _selectedParty is included in filteredParties list if non-null
-                      if (_selectedParty != null && !filteredParties.any((p) => p.uuid == _selectedParty!.uuid)) {
+                      bool matchesParty(Party p, Party target) {
+                        if (target.uuid != null && target.uuid!.isNotEmpty && p.uuid == target.uuid) return true;
+                        if (target.id > 0 && p.id == target.id) return true;
+                        return false;
+                      }
+
+                      // Ensure _selectedParty is ALWAYS included in filteredParties list if non-null
+                      if (_selectedParty != null && !filteredParties.any((p) => matchesParty(p, _selectedParty!))) {
                         filteredParties = [ ...filteredParties, _selectedParty! ];
                       }
 
                       return SearchablePartyDropdown(
                         parties: filteredParties,
-                        selectedParty: _selectedParty != null && filteredParties.any((p) => p.uuid == _selectedParty!.uuid)
-                            ? filteredParties.firstWhere((p) => p.uuid == _selectedParty!.uuid)
+                        selectedParty: _selectedParty != null && filteredParties.any((p) => matchesParty(p, _selectedParty!))
+                            ? filteredParties.firstWhere((p) => matchesParty(p, _selectedParty!))
                             : null,
                         labelText: _transactionType == 'Receipt' || _transactionType == 'Credit Note'
                             ? 'Customer / Party'

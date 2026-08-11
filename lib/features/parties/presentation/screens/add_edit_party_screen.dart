@@ -476,6 +476,9 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
 
       if (_isEditMode) {
         await repo.update(party);
+        if (party.uuid != null && party.partyName != null) {
+          await ref.read(databaseServiceProvider).cascadeRenameParty(party.uuid!, party.partyName!);
+        }
       } else {
         await repo.create(party);
       }

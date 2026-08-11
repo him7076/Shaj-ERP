@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 
+import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+
 enum DuesSortOption { highestDues, lowestDues, partyName }
 
 class PayablesScreen extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final partiesAsync = ref.watch(partiesListProvider);
+    final purchasesAsync = ref.watch(purchaseListProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -30,8 +33,34 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
       ),
       body: partiesAsync.when(
         data: (allParties) {
+          final purchases = purchasesAsync.asData?.value ?? [];
+          final Map<String, double> partyUuidDues = {};
+          final Map<int, double> partyIdDues = {};
+
+          for (var pur in purchases) {
+            final pending = pur.pendingAmount ?? 
+                ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+            if (pending > 0 && (pur.paymentStatus == 'Unpaid' || pur.paymentStatus == 'Partially Paid' || pur.paymentStatus == null)) {
+              if (pur.partyUuid != null && pur.partyUuid!.isNotEmpty) {
+                partyUuidDues[pur.partyUuid!] = (partyUuidDues[pur.partyUuid!] ?? 0.0) + pending;
+              }
+              if (pur.partyId != null && pur.partyId! > 0) {
+                partyIdDues[pur.partyId!] = (partyIdDues[pur.partyId!] ?? 0.0) + pending;
+              }
+            }
+          }
+
+          double getPartyDue(Party p) {
+            final uuidDue = p.uuid != null ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
+            final idDue = p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0;
+            final purchaseDue = uuidDue > 0 ? uuidDue : idDue;
+            if (purchaseDue > 0) return purchaseDue;
+            if (p.outstandingBalance != null && p.outstandingBalance! != 0) return p.outstandingBalance!;
+            return p.openingBalance ?? 0.0;
+          }
+
           final supplierParties = allParties
-              .where((p) => p.partyType == 'Supplier' && ((p.outstandingBalance ?? 0.0) > 0 || (p.openingBalance ?? 0.0) > 0))
+              .where((p) => p.partyType == 'Supplier' && getPartyDue(p) > 0)
               .toList();
 
           final cities = {'All', ...supplierParties.map((p) => p.city ?? 'Unassigned').where((l) => l.isNotEmpty)};
@@ -50,14 +79,14 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
 
           // Sort
           if (_sortOption == DuesSortOption.highestDues) {
-            filtered.sort((a, b) => (b.outstandingBalance ?? 0.0).compareTo(a.outstandingBalance ?? 0.0));
+            filtered.sort((a, b) => getPartyDue(b).compareTo(getPartyDue(a)));
           } else if (_sortOption == DuesSortOption.lowestDues) {
-            filtered.sort((a, b) => (a.outstandingBalance ?? 0.0).compareTo(b.outstandingBalance ?? 0.0));
+            filtered.sort((a, b) => getPartyDue(a).compareTo(getPartyDue(b)));
           } else if (_sortOption == DuesSortOption.partyName) {
             filtered.sort((a, b) => (a.partyName ?? '').compareTo(b.partyName ?? ''));
           }
 
-          final totalPayables = supplierParties.fold(0.0, (sum, p) => sum + ((p.outstandingBalance != null && p.outstandingBalance! != 0) ? p.outstandingBalance! : (p.openingBalance ?? 0.0)));
+          final totalPayables = supplierParties.fold(0.0, (sum, p) => sum + getPartyDue(p));
 
           return Column(
             children: [
@@ -171,7 +200,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                         separatorBuilder: (context, index) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final party = filtered[index];
-                          final due = (party.outstandingBalance != null && party.outstandingBalance! != 0) ? party.outstandingBalance! : (party.openingBalance ?? 0.0);
+                          final due = getPartyDue(party);
                           final initial = (party.partyName?.isNotEmpty == true) ? party.partyName![0].toUpperCase() : 'S';
 
                           return Card(

@@ -50,11 +50,32 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
     ];
 
     await exportService.exportToPDF(
-      title: 'GST Filings HSN Summary',
-      subtitle: 'Date Range: ${DateFormat('yyyy-MM-dd').format(_startDate)} to ${DateFormat('yyyy-MM-dd').format(_endDate)}',
+      title: 'GSTR-1 Tax Filings & HSN Summary',
+      subtitle: 'Period: ${DateFormat('dd-MM-yyyy').format(_startDate)} to ${DateFormat('dd-MM-yyyy').format(_endDate)} | B2B: ${currencyFormat.format(summary.b2bTotalGST)} (${summary.b2bInvoiceCount} Invoices) | B2C: ${currencyFormat.format(summary.b2cTotalGST)} (${summary.b2cInvoiceCount} Invoices)',
       headers: headers,
       rows: rows,
       totals: totals,
+    );
+  }
+
+  void _exportExcel(GSTReportSummary summary) async {
+    final exportService = ref.read(exportServiceProvider);
+
+    final headers = ['HSN Code', 'Quantity Sold', 'Taxable Amount (₹)', 'GST Rate %', 'GST Amount (₹)'];
+    final rows = summary.hsnSummaries.map((hsn) {
+      return [
+        hsn.hsnCode,
+        hsn.quantity,
+        hsn.taxableAmount,
+        '${hsn.gstRate}%',
+        hsn.gstAmount,
+      ];
+    }).toList();
+
+    await exportService.exportToExcel(
+      title: 'GSTR1_Report_${DateFormat('yyyy_MM').format(_startDate)}',
+      headers: headers,
+      rows: rows,
     );
   }
 
@@ -69,10 +90,20 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
         title: const Text('GST Filings & HSN Summary'),
         actions: [
           reportAsync.when(
-            data: (summary) => IconButton(
-              icon: const Icon(Icons.picture_as_pdf_rounded),
-              tooltip: 'Export GST Summary PDF',
-              onPressed: () => _exportPDF(summary),
+            data: (summary) => Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.picture_as_pdf_rounded),
+                  tooltip: 'Export GSTR-1 PDF Report',
+                  onPressed: () => _exportPDF(summary),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.table_chart_rounded),
+                  tooltip: 'Export GSTR-1 Excel Report',
+                  onPressed: () => _exportExcel(summary),
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
             loading: () => const SizedBox(),
             error: (_, __) => const SizedBox(),

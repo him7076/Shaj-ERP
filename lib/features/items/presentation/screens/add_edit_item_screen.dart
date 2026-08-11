@@ -577,6 +577,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         await repo.create(item);
       } else {
         await repo.update(item);
+        if (item.uuid != null && item.itemName != null) {
+          await ref.read(databaseServiceProvider).cascadeRenameItem(item.uuid!, item.itemName!);
+        }
       }
 
       ref.invalidate(filteredItemsProvider);

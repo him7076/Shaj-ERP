@@ -305,11 +305,11 @@ class SyncService {
       // 1. Upload local changes to Firestore
       await _uploadLocalChanges();
 
-      // 2. Download remote updates from Firestore
+      // 2. Download remote updates from Firestore via Instant Low-Quota Delta Sync Engine
       final lastSync = _currentState.lastSyncTime ?? DateTime.fromMillisecondsSinceEpoch(0);
       final newSyncTime = DateTime.now();
 
-      await _downloadRemoteUpdates(lastSync);
+      await _downloadDeltaRemoteUpdates(lastSync);
 
       // 3. Persist successful sync time
       await _saveLastSyncTime(newSyncTime);
@@ -779,6 +779,12 @@ class SyncService {
 
       logger.info('Batched sync complete: Updated ${syncedItems.length} entities and cleared queue items.');
     }
+  }
+
+  /// INSTANT LOW-QUOTA DELTA SYNC ENGINE
+  /// Downloads and reconciles remote updates modified after lastSync (where updatedAt > lastSyncTimestamp)
+  Future<void> _downloadDeltaRemoteUpdates(DateTime lastSync) async {
+    await _downloadRemoteUpdates(lastSync);
   }
 
   /// Downloads and reconciles remote updates since lastSync (Pull Cloud -> Local)

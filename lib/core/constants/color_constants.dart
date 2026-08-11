@@ -35,8 +35,11 @@ class ColorConstants {
   static const Color errorContainerDark = Color(0xFF881337); // Rose 900
   static const Color onErrorContainerDark = Color(0xFFFFE4E6); // Rose 100
 
-  // 16 Theme Presets Color Resolvers (8 Gradients + 8 Solid Accents)
-  static Color getPrimary(AppThemePreset preset, Brightness brightness) {
+  // 16 Theme Presets Color Resolvers (8 Gradients + 8 Solid Accents + Custom)
+  static Color getPrimary(AppThemePreset preset, Brightness brightness, {Color? customPrimary}) {
+    if (preset == AppThemePreset.custom && customPrimary != null) {
+      return customPrimary;
+    }
     switch (preset) {
       // 8 Dual-Tone Gradients
       case AppThemePreset.emeraldTeal: return const Color(0xFF059669);
@@ -58,14 +61,17 @@ class ColorConstants {
       case AppThemePreset.forestGreen: return const Color(0xFF14532D);
 
       case AppThemePreset.custom:
-        return const Color(0xFF4F46E5);
+        return customPrimary ?? const Color(0xFF4F46E5);
 
       case AppThemePreset.executiveIndigo:
       default: return const Color(0xFF4F46E5);
     }
   }
 
-  static Color getSecondary(AppThemePreset preset, Brightness brightness) {
+  static Color getSecondary(AppThemePreset preset, Brightness brightness, {Color? customSecondary}) {
+    if (preset == AppThemePreset.custom && customSecondary != null) {
+      return customSecondary;
+    }
     switch (preset) {
       // 8 Dual-Tone Gradients
       case AppThemePreset.emeraldTeal: return const Color(0xFF14B8A6);
@@ -87,7 +93,7 @@ class ColorConstants {
       case AppThemePreset.forestGreen: return const Color(0xFF14532D);
 
       case AppThemePreset.custom:
-        return const Color(0xFF818CF8);
+        return customSecondary ?? const Color(0xFF818CF8);
 
       case AppThemePreset.executiveIndigo:
       default: return const Color(0xFF818CF8);

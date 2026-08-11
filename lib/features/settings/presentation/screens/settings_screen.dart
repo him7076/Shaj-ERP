@@ -298,8 +298,60 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ],
                             ),
                           ),
-                        );
-                      }).toList(),
+                    const SizedBox(height: 18),
+
+                    const Text(
+                      'Custom Full Spectrum & Dual-Color Gradient Engine:',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+
+                    InkWell(
+                      onTap: () => _showFullSpectrumColorPicker(context),
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: currentThemeState.themePreset == AppThemePreset.custom && currentThemeState.customPrimaryColor != null && currentThemeState.customSecondaryColor != null
+                              ? LinearGradient(colors: [currentThemeState.customPrimaryColor!, currentThemeState.customSecondaryColor!])
+                              : LinearGradient(colors: [theme.colorScheme.primary, theme.colorScheme.secondary]),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (currentThemeState.customPrimaryColor ?? theme.colorScheme.primary).withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                              child: const Icon(Icons.color_lens_rounded, color: Colors.white, size: 24),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    currentThemeState.themePreset == AppThemePreset.custom ? 'Custom Spectrum Color Active' : 'Custom Dual-Color Gradient Picker',
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'Pick ANY custom solid RGB/HSV color or create a custom dual-color gradient combination.',
+                                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1831,6 +1883,143 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showFullSpectrumColorPicker(BuildContext context) {
+    final themeState = ref.read(themeProvider);
+    Color color1 = themeState.customPrimaryColor ?? Theme.of(context).colorScheme.primary;
+    Color color2 = themeState.customSecondaryColor ?? Theme.of(context).colorScheme.secondary;
+
+    final List<Color> spectrumPalette = [
+      const Color(0xFF4F46E5), const Color(0xFF6366F1), const Color(0xFF818CF8),
+      const Color(0xFF059669), const Color(0xFF10B981), const Color(0xFF34D399),
+      const Color(0xFF0284C7), const Color(0xFF06B6D4), const Color(0xFF38BDF8),
+      const Color(0xFFE11D48), const Color(0xFFF43F5E), const Color(0xFFFB7185),
+      const Color(0xFFD97706), const Color(0xFFF59E0B), const Color(0xFFFBBF24),
+      const Color(0xFF6D28D9), const Color(0xFF7C3AED), const Color(0xFFA855F7),
+      const Color(0xFF991B1B), const Color(0xFFDC2626), const Color(0xFFEF4444),
+      const Color(0xFF1E3A8A), const Color(0xFF0F172A), const Color(0xFF1F2937),
+    ];
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: const [
+                  Icon(Icons.palette_rounded, color: Colors.indigo, size: 26),
+                  SizedBox(width: 10),
+                  Text('Full Spectrum & Dual-Color Engine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: SizedBox(
+                  width: 440,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Gradient Preview Box
+                      Container(
+                        width: double.infinity,
+                        height: 90,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [color1, color2]),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color1.withOpacity(0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Text('LIVE GRADIENT PREVIEW', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                            SizedBox(height: 4),
+                            Text('Business Sahaj ERP Theme', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      const Text('Color 1 (Primary Accent):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: spectrumPalette.map((c) {
+                          final isSelected = color1.value == c.value;
+                          return InkWell(
+                            onTap: () => setDialogState(() => color1 = c),
+                            borderRadius: BorderRadius.circular(20),
+                            child: CircleAvatar(
+                              radius: 15,
+                              backgroundColor: c,
+                              child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      const Text('Color 2 (Gradient Secondary):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: spectrumPalette.map((c) {
+                          final isSelected = color2.value == c.value;
+                          return InkWell(
+                            onTap: () => setDialogState(() => color2 = c),
+                            borderRadius: BorderRadius.circular(20),
+                            child: CircleAvatar(
+                              radius: 15,
+                              backgroundColor: c,
+                              child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.palette),
+                  label: const Text('Apply Custom Theme'),
+                  style: ElevatedButton.styleFrom(backgroundColor: color1, foregroundColor: Colors.white),
+                  onPressed: () async {
+                    await ref.read(themeProvider.notifier).setCustomColors(color1, color2);
+                    if (context.mounted) {
+                      Navigator.pop(dialogCtx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('⚡ Custom Full Spectrum & Dual-Color Theme applied!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -318,13 +318,13 @@ class DatabaseService {
     }
   }
 
-  /// Cascading rename Party Name across all transactions, invoices, and purchases
+  /// Cascading rename Party Name across all transactions, invoices, purchases, orders, credit notes, and debit notes
   Future<void> cascadeRenameParty(String partyUuid, String newPartyName) async {
     if (partyUuid.isEmpty || newPartyName.trim().isEmpty) return;
     try {
       final name = newPartyName.trim();
       await isar.writeTxn(() async {
-        final invoices = await isar.invoices.filter().party((q) => q.uuidEqualTo(partyUuid)).findAll();
+        final invoices = await isar.invoices.filter().group((q) => q.partyUuidEqualTo(partyUuid).or().party((p) => p.uuidEqualTo(partyUuid))).findAll();
         for (var inv in invoices) {
           inv.partyName = name;
           inv.isSynced = false;
@@ -332,12 +332,20 @@ class DatabaseService {
           await isar.invoices.put(inv);
         }
 
-        final purchases = await isar.purchases.filter().party((q) => q.uuidEqualTo(partyUuid)).findAll();
+        final purchases = await isar.purchases.filter().group((q) => q.partyUuidEqualTo(partyUuid).or().party((p) => p.uuidEqualTo(partyUuid))).findAll();
         for (var pur in purchases) {
           pur.partyName = name;
           pur.isSynced = false;
           pur.updatedAt = DateTime.now();
           await isar.purchases.put(pur);
+        }
+
+        final orders = await isar.orders.filter().group((q) => q.partyUuidEqualTo(partyUuid).or().party((p) => p.uuidEqualTo(partyUuid))).findAll();
+        for (var ord in orders) {
+          ord.partyName = name;
+          ord.isSynced = false;
+          ord.updatedAt = DateTime.now();
+          await isar.orders.put(ord);
         }
 
         final txns = await isar.transactions.filter().partyUuidEqualTo(partyUuid).findAll();
@@ -347,30 +355,68 @@ class DatabaseService {
           t.updatedAt = DateTime.now();
           await isar.transactions.put(t);
         }
+
+        final creditNotes = await isar.creditNotes.filter().partyUuidEqualTo(partyUuid).findAll();
+        for (var cn in creditNotes) {
+          cn.partyName = name;
+          cn.isSynced = false;
+          cn.updatedAt = DateTime.now();
+          await isar.creditNotes.put(cn);
+        }
+
+        final debitNotes = await isar.debitNotes.filter().partyUuidEqualTo(partyUuid).findAll();
+        for (var dn in debitNotes) {
+          dn.partyName = name;
+          dn.isSynced = false;
+          dn.updatedAt = DateTime.now();
+          await isar.debitNotes.put(dn);
+        }
       });
+      logger.info('Cascaded party rename to "$name" for UUID: $partyUuid');
     } catch (e) {
       logger.error('Failed to cascade rename party', e);
     }
   }
 
-  /// Cascading rename Item Name across all line item collections
+  /// Cascading rename Item Name across all line item collections and stock adjustments
   Future<void> cascadeRenameItem(String itemUuid, String newItemName) async {
     if (itemUuid.isEmpty || newItemName.trim().isEmpty) return;
     try {
       final name = newItemName.trim();
       await isar.writeTxn(() async {
-        final invItems = await isar.invoiceItems.filter().item((q) => q.uuidEqualTo(itemUuid)).findAll();
+        final invItems = await isar.invoiceItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
         for (var ii in invItems) {
           ii.itemName = name;
           ii.isSynced = false;
           await isar.invoiceItems.put(ii);
         }
 
-        final purItems = await isar.purchaseItems.filter().item((q) => q.uuidEqualTo(itemUuid)).findAll();
+        final purItems = await isar.purchaseItems.filter().group((q) => q.purchaseUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
         for (var pi in purItems) {
           pi.itemName = name;
           pi.isSynced = false;
           await isar.purchaseItems.put(pi);
+        }
+
+        final ordItems = await isar.orderItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        for (var oi in ordItems) {
+          oi.itemName = name;
+          oi.isSynced = false;
+          await isar.orderItems.put(oi);
+        }
+
+        final cniItems = await isar.creditNoteItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        for (var cni in cniItems) {
+          cni.itemName = name;
+          cni.isSynced = false;
+          await isar.creditNoteItems.put(cni);
+        }
+
+        final dniItems = await isar.debitNoteItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        for (var dni in dniItems) {
+          dni.itemName = name;
+          dni.isSynced = false;
+          await isar.debitNoteItems.put(dni);
         }
 
         final adjs = await isar.collection<StockAdjustment>().filter().itemUuidEqualTo(itemUuid).findAll();
@@ -381,8 +427,93 @@ class DatabaseService {
           await isar.collection<StockAdjustment>().put(adj);
         }
       });
+      logger.info('Cascaded item rename to "$name" for UUID: $itemUuid');
     } catch (e) {
       logger.error('Failed to cascade rename item', e);
+    }
+  }
+
+  /// Cascading rename Category Name across items and expenses
+  Future<void> cascadeRenameCategory(String oldCategoryName, String newCategoryName) async {
+    if (oldCategoryName.trim().isEmpty || newCategoryName.trim().isEmpty) return;
+    try {
+      final oldName = oldCategoryName.trim();
+      final newName = newCategoryName.trim();
+      await isar.writeTxn(() async {
+        final expenses = await isar.expenses.filter().categoryEqualTo(oldName).findAll();
+        for (var exp in expenses) {
+          exp.category = newName;
+          exp.isSynced = false;
+          exp.updatedAt = DateTime.now();
+          await isar.expenses.put(exp);
+        }
+      });
+      logger.info('Cascaded category rename from "$oldName" to "$newName"');
+    } catch (e) {
+      logger.error('Failed to cascade rename category', e);
+    }
+  }
+
+  /// Cascading rename Unit Name across items and line item units
+  Future<void> cascadeRenameUnit(String oldUnitName, String newUnitName) async {
+    if (oldUnitName.trim().isEmpty || newUnitName.trim().isEmpty) return;
+    try {
+      final oldName = oldUnitName.trim();
+      final newName = newUnitName.trim();
+      await isar.writeTxn(() async {
+        final items = await isar.items.filter().primaryUnitNameEqualTo(oldName).findAll();
+        for (var item in items) {
+          item.primaryUnitName = newName;
+          item.isSynced = false;
+          item.updatedAt = DateTime.now();
+          await isar.items.put(item);
+        }
+
+        final invItems = await isar.invoiceItems.filter().unitEqualTo(oldName).findAll();
+        for (var ii in invItems) {
+          ii.unit = newName;
+          ii.isSynced = false;
+          await isar.invoiceItems.put(ii);
+        }
+
+        final purItems = await isar.purchaseItems.filter().unitEqualTo(oldName).findAll();
+        for (var pi in purItems) {
+          pi.unit = newName;
+          pi.isSynced = false;
+          await isar.purchaseItems.put(pi);
+        }
+
+        final ordItems = await isar.orderItems.filter().unitEqualTo(oldName).findAll();
+        for (var oi in ordItems) {
+          oi.unit = newName;
+          oi.isSynced = false;
+          await isar.orderItems.put(oi);
+        }
+      });
+      logger.info('Cascaded unit rename from "$oldName" to "$newName"');
+    } catch (e) {
+      logger.error('Failed to cascade rename unit', e);
+    }
+  }
+
+  /// Cascading rename Bank Account Name across transactions paymentMode
+  Future<void> cascadeRenameBankAccount(String oldAccountName, String newAccountName) async {
+    if (oldAccountName.trim().isEmpty || newAccountName.trim().isEmpty) return;
+    try {
+      final oldName = oldAccountName.trim();
+      final newName = newAccountName.trim();
+      await isar.writeTxn(() async {
+        final txns = await isar.transactions.filter().paymentModeEqualTo(oldName).findAll();
+        for (var t in txns) {
+          t.paymentMode = newName;
+          t.isSynced = false;
+          t.updatedAt = DateTime.now();
+          await isar.transactions.put(t);
+        }
+      });
+      logger.info('Cascaded bank account rename from "$oldName" to "$newName"');
+    } catch (e) {
+      logger.error('Failed to cascade rename bank account', e);
     }
   }
 

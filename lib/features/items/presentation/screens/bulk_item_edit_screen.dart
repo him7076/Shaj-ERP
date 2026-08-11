@@ -67,13 +67,14 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
               final allUnits = await unitRepo.getAll();
               var matched = allUnits.where((u) => u.shortName?.trim().toLowerCase() == pUnit.toLowerCase() || u.unitName?.trim().toLowerCase() == pUnit.toLowerCase()).firstOrNull;
               if (matched == null) {
-                matched = Unit()
+                final newUnit = Unit()
                   ..uuid = const Uuid().v4()
                   ..unitName = pUnit
                   ..shortName = pUnit
                   ..createdAt = DateTime.now()
                   ..updatedAt = DateTime.now();
-                matched.id = await isar.units.put(matched!);
+                await isar.units.put(newUnit);
+                matched = newUnit;
               }
               itemToSave.unit.value = matched;
             }

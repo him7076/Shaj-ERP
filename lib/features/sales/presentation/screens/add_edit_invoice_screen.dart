@@ -463,6 +463,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         return invItem;
       }).toList();
 
+      await Future.delayed(Duration.zero);
       await repo.saveInvoice(invoice, invoiceItems);
 
       ref.invalidate(filteredInvoicesProvider);

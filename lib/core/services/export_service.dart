@@ -174,9 +174,13 @@ class ExportService {
         return filename;
       }
 
-      final tempDir = await getTemporaryDirectory();
-      final pdfFile = File('${tempDir.path}/Report_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await pdfFile.writeAsBytes(pdfBytes);
+      String savedPath = filename;
+      try {
+        final tempDir = await getTemporaryDirectory();
+        final pdfFile = File('${tempDir.path}/Report_${DateTime.now().millisecondsSinceEpoch}.pdf');
+        await pdfFile.writeAsBytes(pdfBytes);
+        savedPath = pdfFile.path;
+      } catch (_) {}
 
       // Open print/share dialog using printing package
       await Printing.sharePdf(
@@ -184,8 +188,8 @@ class ExportService {
         filename: filename,
       );
 
-      logger.info('PDF generated and shared successfully at: ${pdfFile.path}');
-      return pdfFile.path;
+      logger.info('PDF generated and shared successfully at: $savedPath');
+      return savedPath;
     } catch (e, stackTrace) {
       logger.error('Failed to export PDF report', e, stackTrace);
       throw ExportException('Failed to export PDF report: $e');
@@ -257,17 +261,26 @@ class ExportService {
         return fileName;
       }
 
-      final directory = await getApplicationDocumentsDirectory();
-      final reportsDir = Directory('${directory.path}/exports');
-      if (!await reportsDir.exists()) {
-        await reportsDir.create(recursive: true);
-      }
+      String filePath = fileName;
+      try {
+        final directory = await getApplicationDocumentsDirectory();
+        final reportsDir = Directory('${directory.path}/exports');
+        if (!await reportsDir.exists()) {
+          await reportsDir.create(recursive: true);
+        }
 
-      final file = File('${reportsDir.path}/$fileName');
-      await file.writeAsBytes(fileBytes, flush: true);
+        final file = File('${reportsDir.path}/$fileName');
+        await file.writeAsBytes(fileBytes, flush: true);
+        filePath = file.path;
+      } catch (_) {}
 
-      logger.info('Excel sheet exported successfully at: ${file.path}');
-      return file.path;
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(fileBytes),
+        filename: fileName,
+      );
+
+      logger.info('Excel sheet exported successfully at: $filePath');
+      return filePath;
     } catch (e, stackTrace) {
       logger.error('Failed to export Excel report', e, stackTrace);
       throw ExportException('Failed to export Excel report: $e');
