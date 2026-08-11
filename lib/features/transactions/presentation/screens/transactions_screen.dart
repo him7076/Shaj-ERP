@@ -89,9 +89,171 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         context,
         MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
       ).then((_) => ref.invalidate(filteredTransactionsProvider));
+    } else if (txn.transactionType == 'Receipt' || txn.transactionType == 'Payment' || txn.transactionType == 'Other Income') {
+      _showReceiptDetailModal(context, txn);
     } else {
       AddEditTransactionDialog.show(context, transaction: txn);
     }
+  }
+
+  void _showReceiptDetailModal(BuildContext context, Transaction txn) {
+    final theme = Theme.of(context);
+    final isIncoming = txn.transactionType == 'Receipt' || txn.transactionType == 'Other Income';
+    final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final dateStr = txn.transactionDate != null ? DateFormat('dd MMMM yyyy').format(txn.transactionDate!) : 'N/A';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isIncoming ? Colors.green : Colors.red).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isIncoming ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                  color: isIncoming ? Colors.green : Colors.red,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${txn.transactionType ?? "Voucher"} Details',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Voucher No: ${txn.transactionNumber ?? "N/A"}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        currencyFormat.format(txn.amount ?? 0.0),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isIncoming ? Colors.green : Colors.red,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text('Party Name'),
+                  subtitle: Text(
+                    txn.partyName ?? 'General Party',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.calendar_today_outlined),
+                  title: const Text('Transaction Date'),
+                  subtitle: Text(dateStr),
+                ),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.payment_outlined),
+                  title: const Text('Payment Mode'),
+                  subtitle: Text(txn.paymentMode ?? 'Cash'),
+                ),
+                if (txn.referenceNumber != null && txn.referenceNumber!.isNotEmpty)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.numbers),
+                    title: const Text('Reference / Ref No'),
+                    subtitle: Text(txn.referenceNumber!),
+                  ),
+                if (txn.linkedBillNumber != null && txn.linkedBillNumber!.isNotEmpty)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.link),
+                    title: const Text('Linked Invoice / Bill'),
+                    subtitle: Text(txn.linkedBillNumber!),
+                  ),
+                if (txn.remarks != null && txn.remarks!.isNotEmpty)
+                  ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.notes),
+                    title: const Text('Remarks'),
+                    subtitle: Text(txn.remarks!),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Delete'),
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Transaction'),
+                    content: const Text('Are you sure you want to delete this voucher? Outstanding balance will be updated.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  await ref.read(transactionRepositoryProvider).deleteTransaction(txn);
+                  ref.invalidate(filteredTransactionsProvider);
+                }
+              },
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('Edit Voucher'),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                AddEditTransactionDialog.show(context, transaction: txn);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

@@ -225,6 +225,34 @@ class ReportService {
     );
   }
 
+  /// Accurate Total Receivables (Customer dues & Debit balance)
+  Future<double> getTotalReceivables() async {
+    final isar = _dbService.isar;
+    final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+    double total = 0.0;
+    for (var p in parties) {
+      final bal = p.outstandingBalance ?? 0.0;
+      if (bal > 0 && (p.partyType == 'Customer' || p.balanceType == 'Debit')) {
+        total += bal;
+      }
+    }
+    return total;
+  }
+
+  /// Accurate Total Payables (Supplier dues & Credit balance)
+  Future<double> getTotalPayables() async {
+    final isar = _dbService.isar;
+    final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+    double total = 0.0;
+    for (var p in parties) {
+      final bal = p.outstandingBalance ?? 0.0;
+      if (bal > 0 && (p.partyType == 'Supplier' || p.balanceType == 'Credit')) {
+        total += bal;
+      }
+    }
+    return total;
+  }
+
   /// 4. Outstanding Accounts Report
   Future<OutstandingReportSummary> getOutstandingReport() async {
     final isar = _dbService.isar;

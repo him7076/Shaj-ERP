@@ -504,12 +504,19 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 if (_transactionType != 'Expense' && _transactionType != 'Other Income') ...[
                   partiesAsync.when(
                     data: (parties) {
-                      // Filter parties based on type
+                      // Filter parties based on type during creation; retain full list during edit to match _selectedParty
                       List<Party> filteredParties = parties;
-                      if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
-                        filteredParties = parties.where((p) => p.partyType != 'Supplier').toList();
-                      } else if (_transactionType == 'Payment' || _transactionType == 'Debit Note') {
-                        filteredParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                      if (widget.transaction == null && widget.initialParty == null) {
+                        if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
+                          filteredParties = parties.where((p) => p.partyType != 'Supplier').toList();
+                        } else if (_transactionType == 'Payment' || _transactionType == 'Debit Note') {
+                          filteredParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                        }
+                      }
+
+                      // Ensure _selectedParty is included in filteredParties list if non-null
+                      if (_selectedParty != null && !filteredParties.any((p) => p.uuid == _selectedParty!.uuid)) {
+                        filteredParties = [ ...filteredParties, _selectedParty! ];
                       }
 
                       return SearchablePartyDropdown(
