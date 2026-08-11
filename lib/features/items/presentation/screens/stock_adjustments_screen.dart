@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/features/items/presentation/widgets/stock_adjustment_dialog.dart';
 
 class StockAdjustmentsScreen extends ConsumerStatefulWidget {
   const StockAdjustmentsScreen({Key? key}) : super(key: key);
@@ -252,9 +253,9 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
   }
 
   Future<void> _openAddEditDialog({StockAdjustment? existingAdjustment}) async {
-    final success = await showDialog<bool>(
-      context: context,
-      builder: (context) => AddEditStockAdjustmentDialog(existingAdjustment: existingAdjustment),
+    final success = await StockAdjustmentDialog.show(
+      context,
+      existingAdjustment: existingAdjustment,
     );
 
     if (success == true) {

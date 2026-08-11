@@ -13,10 +13,12 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 
 class AddEditPartyScreen extends ConsumerStatefulWidget {
   final Party? party;
+  final String? initialName;
 
   const AddEditPartyScreen({
     Key? key,
     this.party,
+    this.initialName,
   }) : super(key: key);
 
   @override
@@ -110,6 +112,9 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       _populateFields();
     } else {
       _autoGenerateCode();
+      if (widget.initialName != null && widget.initialName!.trim().isNotEmpty) {
+        _nameController.text = widget.initialName!.trim();
+      }
     }
   }
 

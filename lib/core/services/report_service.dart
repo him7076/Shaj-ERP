@@ -179,45 +179,27 @@ class ReportService {
     final Map<String, _HsnAggregate> hsnMap = {};
 
     for (var inv in invoices) {
-      final invTaxable = inv.taxableAmount ?? 0.0;
-      final invGst = inv.totalGST ?? 0.0;
+      // Aggregating HSN details and item totals from invoice items
+      final items = (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
+          .where((item) => item.parentInvoiceId == inv.id || (inv.uuid != null && inv.uuid!.isNotEmpty && item.parentInvoiceUuid == inv.uuid))
+          .toList();
 
-      taxableAmount += invTaxable;
-      cgstAmount += inv.cgstAmount ?? 0.0;
-      sgstAmount += inv.sgstAmount ?? 0.0;
-      igstAmount += inv.igstAmount ?? 0.0;
-      totalGST += invGst;
-
-      try { await inv.party.load(); } catch (_) {}
-      final gstin = inv.party.value?.gstNumber?.trim() ?? '';
-      if (gstin.length >= 15) {
-        b2bTaxable += invTaxable;
-        b2bGst += invGst;
-        b2bCount++;
-      } else {
-        b2cTaxable += invTaxable;
-        b2cGst += invGst;
-        b2cCount++;
-      }
-
-      // Aggregating HSN details from invoice items
-      final items = kIsWeb
-          ? (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
-              .where((item) => item.parentInvoiceId == inv.id)
-              .toList()
-          : await isar.invoiceItems
-              .filter()
-              .invoice((q) => q.idEqualTo(inv.id))
-              .and()
-              .isDeletedEqualTo(false)
-              .findAll();
+      double calculatedItemTaxable = 0.0;
+      double calculatedItemGst = 0.0;
 
       for (var item in items) {
         final hsn = item.hsnCode ?? 'N/A';
         final qty = (item.quantity ?? 0.0) + (item.freeQuantity ?? 0.0);
-        final taxVal = item.taxableAmount ?? 0.0;
         final rate = item.gstRate ?? 0.0;
-        final taxAmt = item.gstAmount ?? 0.0;
+        final taxVal = (item.taxableAmount != null && item.taxableAmount! > 0)
+            ? item.taxableAmount!
+            : ((item.quantity ?? 0.0) * (item.rate ?? 0.0) - (item.discount ?? 0.0));
+        final taxAmt = (item.gstAmount != null && item.gstAmount! > 0)
+            ? item.gstAmount!
+            : (taxVal * rate / 100.0);
+
+        calculatedItemTaxable += taxVal;
+        calculatedItemGst += taxAmt;
 
         final key = '${hsn}_$rate';
         if (hsnMap.containsKey(key)) {
@@ -231,6 +213,39 @@ class ReportService {
             gstAmount: taxAmt,
           );
         }
+      }
+
+      double invTaxable = inv.taxableAmount ?? 0.0;
+      double invGst = inv.totalGST ?? 0.0;
+
+      if (invTaxable == 0 && calculatedItemTaxable > 0) invTaxable = calculatedItemTaxable;
+      if (invGst == 0 && calculatedItemGst > 0) invGst = calculatedItemGst;
+
+      taxableAmount += invTaxable;
+      totalGST += invGst;
+
+      if ((inv.cgstAmount ?? 0) > 0 || (inv.sgstAmount ?? 0) > 0 || (inv.igstAmount ?? 0) > 0) {
+        cgstAmount += inv.cgstAmount ?? 0.0;
+        sgstAmount += inv.sgstAmount ?? 0.0;
+        igstAmount += inv.igstAmount ?? 0.0;
+      } else {
+        cgstAmount += invGst / 2.0;
+        sgstAmount += invGst / 2.0;
+      }
+
+      try { await inv.party.load(); } catch (_) {}
+      final gstin = (inv.party.value?.gstNumber?.trim().isNotEmpty == true)
+          ? inv.party.value!.gstNumber!.trim()
+          : (inv.gstNumber?.trim() ?? '');
+
+      if (gstin.length >= 15) {
+        b2bTaxable += invTaxable;
+        b2bGst += invGst;
+        b2bCount++;
+      } else {
+        b2cTaxable += invTaxable;
+        b2cGst += invGst;
+        b2cCount++;
       }
     }
 
@@ -501,20 +516,39 @@ class ReportService {
   Future<StockReportSummary> getStockReport({String? status}) async {
     final isar = _dbService.isar;
     final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
+
+    final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    final validPurIds = allPurchases.map((p) => p.id).toSet();
+    final validPurUuids = allPurchases.map((p) => p.uuid).whereType<String>().toSet();
+
     final allPurItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
 
-    // Map item ID/UUID -> (totalAmt, totalQty) for Weighted Average Purchase Rate calculation
+    // Map item ID / UUID / Name -> (totalAmt, totalQty) for Weighted Average Purchase Rate calculation
     final Map<String, double> itemPurTotalAmt = {};
     final Map<String, double> itemPurTotalQty = {};
 
     for (var pi in allPurItems) {
-      final key = pi.itemId?.toString() ?? pi.item.value?.uuid;
-      if (key != null && key.isNotEmpty) {
-        final qty = pi.quantity ?? 0.0;
-        final rate = pi.rate ?? 0.0;
-        if (qty > 0) {
-          itemPurTotalAmt[key] = (itemPurTotalAmt[key] ?? 0.0) + (qty * rate);
-          itemPurTotalQty[key] = (itemPurTotalQty[key] ?? 0.0) + qty;
+      final isValidParent = (pi.purchaseId != null && validPurIds.contains(pi.purchaseId)) ||
+          (pi.purchaseUuid != null && validPurUuids.contains(pi.purchaseUuid)) ||
+          pi.purchase.value != null;
+      if (!isValidParent) continue;
+
+      try { pi.item.loadSync(); } catch (_) {}
+      final linkedUuid = pi.item.value?.uuid;
+      final itemIdStr = pi.itemId?.toString();
+      final itemNameKey = pi.itemName?.trim().toLowerCase();
+
+      final keys = <String>{};
+      if (linkedUuid != null && linkedUuid.isNotEmpty) keys.add(linkedUuid);
+      if (itemIdStr != null && itemIdStr.isNotEmpty && itemIdStr != '0') keys.add(itemIdStr);
+      if (itemNameKey != null && itemNameKey.isNotEmpty) keys.add('name_$itemNameKey');
+
+      final qty = pi.quantity ?? 0.0;
+      final rate = pi.rate ?? 0.0;
+      if (qty > 0) {
+        for (var k in keys) {
+          itemPurTotalAmt[k] = (itemPurTotalAmt[k] ?? 0.0) + (qty * rate);
+          itemPurTotalQty[k] = (itemPurTotalQty[k] ?? 0.0) + qty;
         }
       }
     }
@@ -530,9 +564,10 @@ class ReportService {
       final stock = item.currentStock ?? 0.0;
       final key1 = item.id.toString();
       final key2 = item.uuid ?? '';
+      final key3 = 'name_${item.itemName?.trim().toLowerCase() ?? ""}';
 
-      final totalPurAmt = (itemPurTotalAmt[key1] ?? 0.0) + (itemPurTotalAmt[key2] ?? 0.0);
-      final totalPurQty = (itemPurTotalQty[key1] ?? 0.0) + (itemPurTotalQty[key2] ?? 0.0);
+      final totalPurAmt = itemPurTotalAmt[key2] ?? itemPurTotalAmt[key1] ?? itemPurTotalAmt[key3] ?? 0.0;
+      final totalPurQty = itemPurTotalQty[key2] ?? itemPurTotalQty[key1] ?? itemPurTotalQty[key3] ?? 0.0;
 
       final double effectiveRate = (totalPurQty > 0) ? (totalPurAmt / totalPurQty) : (item.buyRate ?? 0.0);
       final value = stock * effectiveRate;

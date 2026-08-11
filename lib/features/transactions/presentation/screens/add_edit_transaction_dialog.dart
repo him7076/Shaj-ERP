@@ -106,7 +106,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       }
     }
 
-    // Synchronously initialize linked party before first render
+    // Synchronously initialize linked party before first render so Party Name NEVER appears blank
     if (widget.transaction != null) {
       try {
         widget.transaction!.party.loadSync();
@@ -121,8 +121,16 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
           if (pUuid != null && pUuid.isNotEmpty) {
             _selectedParty = isar.partys.filter().uuidEqualTo(pUuid).findFirstSync();
           }
-          _selectedParty ??= isar.partys.filter().partyNameEqualTo(widget.transaction!.partyName ?? '').findFirstSync();
+          final pName = widget.transaction!.partyName;
+          if (_selectedParty == null && pName != null && pName.isNotEmpty) {
+            _selectedParty = isar.partys.filter().partyNameEqualTo(pName).findFirstSync();
+          }
         } catch (_) {}
+      }
+      if (_selectedParty == null && (widget.transaction!.partyName != null || widget.transaction!.partyUuid != null)) {
+        _selectedParty = Party()
+          ..uuid = widget.transaction!.partyUuid ?? ''
+          ..partyName = widget.transaction!.partyName ?? 'Party Account';
       }
     } else if (widget.initialParty != null) {
       _selectedParty = widget.initialParty;
@@ -545,8 +553,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
                       return SearchablePartyDropdown(
                         parties: filteredParties,
-                        selectedParty: _selectedParty != null && filteredParties.any((p) => matchesParty(p, _selectedParty!))
-                            ? filteredParties.firstWhere((p) => matchesParty(p, _selectedParty!))
+                        selectedParty: _selectedParty != null
+                            ? (filteredParties.any((p) => matchesParty(p, _selectedParty!))
+                                ? filteredParties.firstWhere((p) => matchesParty(p, _selectedParty!))
+                                : _selectedParty)
                             : null,
                         labelText: _transactionType == 'Receipt' || _transactionType == 'Credit Note'
                             ? 'Customer / Party'

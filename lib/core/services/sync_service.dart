@@ -858,40 +858,40 @@ class SyncService {
         for (int d = 0; d < querySnapshot.docs.length; d++) {
           if (d % 10 == 0) await Future.delayed(Duration.zero);
 
-          final doc = querySnapshot.docs[d];
-          final data = doc.data();
-          final uuid = data['uuid'] as String?;
-          if (uuid == null) continue;
-
-          // Firm-wise filtering
-          final docFirmId = data['firmId'] as String?;
-          if (docFirmId != null && docFirmId.isNotEmpty && docFirmId != activeFirmId) {
-            continue;
-          }
-
-          final isar = _dbService.isar;
-          dynamic localRecord;
-
-          switch (entityType) {
-            case 'Party': localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Item': localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Category': localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
-          }
-
           try {
+            final doc = querySnapshot.docs[d];
+            final data = doc.data();
+            final uuid = data['uuid'] as String?;
+            if (uuid == null) continue;
+
+            // Firm-wise filtering
+            final docFirmId = data['firmId'] as String?;
+            if (docFirmId != null && docFirmId.isNotEmpty && docFirmId != activeFirmId) {
+              continue;
+            }
+
+            final isar = _dbService.isar;
+            dynamic localRecord;
+
+            switch (entityType) {
+              case 'Party': localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Item': localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Category': localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
+            }
+
             if (localRecord != null) {
               // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
               if (localRecord.isSynced == false) {
@@ -927,7 +927,7 @@ class SyncService {
               await _insertLocalRecord(entityType, data);
             }
           } catch (docErr) {
-            logger.warning('Skipped bad $entityType doc (UUID: $uuid): $docErr');
+            logger.warning('Skipped bad $entityType doc: $docErr');
           }
         }
       } catch (e) {
@@ -937,7 +937,24 @@ class SyncService {
 
     // Post-download pass: Re-link relations and recalculate item stocks with yielding
     try {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Relinking database relationships (96%)...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.96,
+        currentStep: totalSteps - 1,
+        totalSteps: totalSteps,
+      ));
       await _relinkAllRelations();
+
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Recalculating inventory stock balances (98%)...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.98,
+        currentStep: totalSteps,
+        totalSteps: totalSteps,
+      ));
       await recalculateAllItemStocksFromTransactions();
     } catch (e, stackTrace) {
       logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
@@ -2117,17 +2134,17 @@ class SyncService {
         break;
       case 'StockAdjustment':
         entity = StockAdjustment()
-          ..itemUuid = data['itemUuid']
-          ..itemId = data['itemId']
-          ..itemName = data['itemName']
-          ..adjustmentType = data['adjustmentType']
-          ..quantity = double.tryParse(data['quantity']?.toString() ?? '0') ?? (data['quantity'] as num?)?.toDouble()
-          ..unit = data['unit']
-          ..ratePerUnit = double.tryParse(data['ratePerUnit']?.toString() ?? '0') ?? (data['ratePerUnit'] as num?)?.toDouble()
-          ..totalValue = double.tryParse(data['totalValue']?.toString() ?? '0') ?? (data['totalValue'] as num?)?.toDouble()
+          ..itemUuid = data['itemUuid'] as String?
+          ..itemId = (data['itemId'] as num?)?.toInt()
+          ..itemName = data['itemName'] as String?
+          ..adjustmentType = data['adjustmentType'] as String?
+          ..quantity = double.tryParse(data['quantity']?.toString() ?? '0') ?? (data['quantity'] as num?)?.toDouble() ?? 0.0
+          ..unit = data['unit'] as String?
+          ..ratePerUnit = double.tryParse(data['ratePerUnit']?.toString() ?? '0') ?? (data['ratePerUnit'] as num?)?.toDouble() ?? 0.0
+          ..totalValue = double.tryParse(data['totalValue']?.toString() ?? '0') ?? (data['totalValue'] as num?)?.toDouble() ?? 0.0
           ..adjustmentDate = data['adjustmentDate'] != null ? DateTime.tryParse(data['adjustmentDate'].toString()) : null
-          ..reason = data['reason']
-          ..notes = data['notes'];
+          ..reason = data['reason'] as String?
+          ..notes = data['notes'] as String?;
         break;
     }
 

@@ -54,30 +54,32 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
       displayStringForOption: (party) => party.partyName ?? '',
       optionsBuilder: (TextEditingValue textEditingValue) {
         final query = textEditingValue.text.trim().toLowerCase();
+        List<Party> filtered = [];
         if (query.isEmpty) {
-          return widget.parties;
+          filtered = widget.parties;
+        } else {
+          filtered = widget.parties.where((p) {
+            final name = p.partyName?.toLowerCase() ?? '';
+            final phone = p.mobileNumber?.toLowerCase() ?? '';
+            return name.contains(query) || phone.contains(query);
+          }).toList();
         }
-        final filtered = widget.parties.where((p) {
-          final name = p.partyName?.toLowerCase() ?? '';
-          final phone = p.mobileNumber?.toLowerCase() ?? '';
-          return name.contains(query) || phone.contains(query);
-        }).toList();
 
-        if (filtered.isEmpty) {
-          return [
-            Party()
-              ..uuid = 'NEW_ACTION'
-              ..partyName = '+ Create New "${textEditingValue.text.trim()}"'
-          ];
-        }
-        return filtered;
+        final createActionParty = Party()
+          ..uuid = 'NEW_ACTION'
+          ..partyName = query.isNotEmpty
+              ? '+ Create New Party "$query"'
+              : '+ Create New Party Account';
+
+        return [...filtered, createActionParty];
       },
       onSelected: (party) {
         if (party.uuid == 'NEW_ACTION') {
+          final query = _controller.text.trim();
           FocusScope.of(context).unfocus();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
+            MaterialPageRoute(builder: (context) => AddEditPartyScreen(initialName: query.isNotEmpty ? query : null)),
           );
           return;
         }
@@ -97,7 +99,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
             color: theme.colorScheme.surface,
             child: Container(
               width: dropdownWidth,
-              constraints: const BoxConstraints(maxHeight: 220),
+              constraints: const BoxConstraints(maxHeight: 240),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
@@ -106,9 +108,10 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
               child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
-                itemCount: options.length + 1,
+                itemCount: options.length,
                 itemBuilder: (context, index) {
-                  if (index == options.length) {
+                  final party = options.elementAt(index);
+                  if (party.uuid == 'NEW_ACTION') {
                     return Container(
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primaryContainer.withOpacity(0.12),
@@ -118,32 +121,14 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
                         dense: true,
                         leading: Icon(Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary, size: 18),
                         title: Text(
-                          '+ Create New Party Account',
+                          party.partyName ?? '+ Create New Party Account',
                           style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.primary, fontSize: 12.5),
                         ),
-                        onTap: () {
-                          FocusScope.of(context).unfocus();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
-                          );
-                        },
+                        onTap: () => onSelected(party),
                       ),
                     );
                   }
 
-                  final party = options.elementAt(index);
-                  if (party.uuid == 'NEW_ACTION') {
-                    return ListTile(
-                      dense: true,
-                      leading: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 18),
-                      title: Text(
-                        party.partyName ?? '+ Create New Party',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13),
-                      ),
-                      onTap: () => onSelected(party),
-                    );
-                  }
                   final double bal = party.outstandingBalance ?? 0.0;
                   final Color balColor = bal > 0 ? Colors.green : (bal < 0 ? Colors.red : Colors.grey);
                   final String balText = bal > 0 

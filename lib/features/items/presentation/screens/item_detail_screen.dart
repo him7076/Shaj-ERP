@@ -18,6 +18,7 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
+import 'package:business_sahaj_erp/features/items/presentation/widgets/stock_adjustment_dialog.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
@@ -190,17 +191,23 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         }
 
         // 4. Fetch Stock Adjustments for this item
-        final adjustments = await isar.collection<StockAdjustment>()
+        final allAdjustments = await isar.collection<StockAdjustment>()
             .filter()
             .isDeletedEqualTo(false)
-            .and()
-            .group((q) => q.itemUuidEqualTo(itemUuid).or().itemNameEqualTo(fetchedItem.itemName))
             .findAll();
+
+        final adjustments = allAdjustments.where((adj) {
+          final matchUuid = (adj.itemUuid != null && adj.itemUuid!.isNotEmpty && adj.itemUuid == itemUuid);
+          final matchId = (adj.itemId != null && adj.itemId == fetchedItem.id);
+          final matchName = (adj.itemName != null && fetchedItem.itemName != null && adj.itemName!.trim().toLowerCase() == fetchedItem.itemName!.trim().toLowerCase());
+          return matchUuid || matchId || matchName;
+        }).toList();
 
         for (var adj in adjustments) {
           final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
-          final adjRate = fetchedItem.buyRate ?? 0.0;
+          final adjRate = adj.ratePerUnit ?? fetchedItem.buyRate ?? 0.0;
           final adjQty = adj.quantity ?? 0.0;
+          final adjTotalVal = adj.totalValue ?? (adjQty * adjRate);
           txs.add(_ItemTransaction(
             type: 'Adjustment',
             date: adj.adjustmentDate ?? adj.createdAt,
@@ -209,7 +216,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             quantity: adjQty,
             unit: adj.unit ?? (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
             rate: adjRate,
-            totalAmount: adjQty * adjRate,
+            totalAmount: adjTotalVal,
             targetUuid: adj.uuid ?? adj.id.toString(),
             rawAdjustment: adj,
           ));
@@ -310,230 +317,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   }
 
   Future<void> _adjustStockDialog({StockAdjustment? existingAdjustment}) async {
-    final isEditing = existingAdjustment != null;
-    final qtyController = TextEditingController(text: existingAdjustment?.quantity?.toString() ?? '');
-    final rateController = TextEditingController(text: existingAdjustment?.ratePerUnit?.toString() ?? _item?.buyRate?.toString() ?? '');
-    final reasonController = TextEditingController(text: existingAdjustment?.reason ?? '');
-    var isStockIn = existingAdjustment != null ? (existingAdjustment.adjustmentType == 'Add' || existingAdjustment.adjustmentType == 'Stock In') : true;
-    var selectedDate = existingAdjustment?.adjustmentDate ?? DateTime.now();
-    
-    final primaryUnit = _item?.primaryUnitName ?? _item?.unit.value?.shortName ?? 'PCS';
-    final secondaryUnit = _item?.secondaryUnit;
-    var selectedUnit = existingAdjustment?.unit ?? primaryUnit;
-
-    final formKey = GlobalKey<FormState>();
-
-    final success = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text(isEditing ? 'Edit Stock Adjustment' : 'Adjust Inventory Stock'),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SegmentedButton<bool>(
-                        segments: const [
-                          ButtonSegment<bool>(
-                            value: true,
-                            label: Text('Stock In (+)'),
-                            icon: Icon(Icons.add),
-                          ),
-                          ButtonSegment<bool>(
-                            value: false,
-                            label: Text('Stock Out (-)'),
-                            icon: Icon(Icons.remove),
-                          ),
-                        ],
-                        selected: {isStockIn},
-                        onSelectionChanged: (val) {
-                          setDialogState(() => isStockIn = val.first);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextFormField(
-                              controller: qtyController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: const InputDecoration(
-                                labelText: 'Quantity *',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (v) {
-                                if (v == null || v.isEmpty) return 'Required';
-                                final val = double.tryParse(v);
-                                if (val == null || val <= 0) return 'Enter value > 0';
-                                return null;
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 2,
-                            child: DropdownButtonFormField<String>(
-                              value: selectedUnit,
-                              decoration: const InputDecoration(
-                                labelText: 'Unit *',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: [
-                                DropdownMenuItem(value: primaryUnit, child: Text(primaryUnit)),
-                                if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit)
-                                  DropdownMenuItem(value: secondaryUnit, child: Text(secondaryUnit)),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setDialogState(() => selectedUnit = val);
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: rateController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: const InputDecoration(
-                          labelText: 'Rate per Unit (₹)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.currency_rupee),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: selectedDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
-                          );
-                          if (picked != null) {
-                            setDialogState(() => selectedDate = picked);
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Adjustment Date',
-                            border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.calendar_today),
-                          ),
-                          child: Text(DateFormat('dd MMMM yyyy').format(selectedDate)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: reasonController,
-                        decoration: const InputDecoration(
-                          labelText: 'Reason for Adjustment',
-                          border: OutlineInputBorder(),
-                          hintText: 'e.g. Audit, Damage, Manual Addition...',
-                        ),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      Navigator.pop(context, true);
-                    }
-                  },
-                  child: Text(isEditing ? 'Save Changes' : 'Apply'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final success = await StockAdjustmentDialog.show(
+      context,
+      initialItem: _item,
+      existingAdjustment: existingAdjustment,
     );
 
-    if (success == true && _item != null) {
-      setState(() => _isLoading = true);
-      try {
-        final isar = ref.read(databaseServiceProvider).isar;
-        final qty = double.parse(qtyController.text);
-        final rate = double.tryParse(rateController.text) ?? (_item?.buyRate ?? 0.0);
-        final reason = reasonController.text.trim();
-        final adjType = isStockIn ? 'Add' : 'Reduce';
-
-        final adj = existingAdjustment ?? StockAdjustment();
-        adj.uuid ??= const Uuid().v4();
-        adj.itemUuid = _item!.uuid;
-        adj.itemId = _item!.id;
-        adj.itemName = _item!.itemName;
-        adj.adjustmentType = adjType;
-        adj.quantity = qty;
-        adj.unit = selectedUnit;
-        adj.ratePerUnit = rate;
-        adj.totalValue = qty * rate;
-        adj.adjustmentDate = selectedDate;
-        adj.reason = reason;
-        adj.updatedAt = DateTime.now();
-        adj.createdAt = isEditing ? adj.createdAt : DateTime.now();
-        adj.isDeleted = false;
-        adj.isSynced = false;
-
-        await isar.writeTxn(() async {
-          final id = await isar.collection<StockAdjustment>().put(adj);
-          adj.id = id;
-
-          await isar.syncQueues.put(SyncQueue()
-            ..uuid = const Uuid().v4()
-            ..entityType = 'StockAdjustment'
-            ..entityId = id
-            ..entityUuid = adj.uuid
-            ..operation = isEditing ? 'Update' : 'Insert'
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now());
-        });
-
-        try {
-          ref.read(syncServiceProvider).syncPendingChangesQuietly();
-        } catch (_) {}
-
-        await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
-        await _loadItem();
-        ref.invalidate(filteredItemsProvider);
-        ref.invalidate(lowStockAlertProvider);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isEditing ? 'Adjustment updated successfully.' : 'Stock adjusted successfully.'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        logger.error('Failed to adjust stock', e);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Adjustment failed: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+    if (success == true) {
+      await _loadItem();
     }
   }
 
@@ -915,7 +706,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Party: ${tx.partyName}  •  $dateStr',
+                                          isAdj
+                                              ? 'Reason: ${tx.partyName}  •  Rate: ${_currencyFormat.format(tx.rate)}  •  $dateStr'
+                                              : 'Party: ${tx.partyName}  •  $dateStr',
                                           style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
                                           overflow: TextOverflow.ellipsis,
                                           maxLines: 1,
@@ -924,7 +717,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                       const SizedBox(width: 8),
                                       Text(
                                         '${tx.quantity} ${tx.unit}',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isAdj ? badgeColor : null),
                                       ),
                                     ],
                                   ),
