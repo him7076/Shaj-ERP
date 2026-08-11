@@ -148,14 +148,14 @@ class MyApp extends ConsumerWidget {
       logger.error('Failed to initialize sync manager on boot', e, stack);
     }
 
-    final themeMode = ref.watch(themeProvider);
+    final themeState = ref.watch(themeProvider);
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       title: 'Business Sahaj ERP',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeMode,
+      theme: AppTheme.getLightTheme(themeState.accentPreset),
+      darkTheme: AppTheme.getDarkTheme(themeState.accentPreset),
+      themeMode: themeState.themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

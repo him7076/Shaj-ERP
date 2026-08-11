@@ -18,6 +18,8 @@ import 'package:business_sahaj_erp/features/orders/presentation/providers/order_
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 
+import 'package:business_sahaj_erp/core/constants/color_constants.dart';
+
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
@@ -53,7 +55,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentThemeMode = ref.watch(themeProvider);
+    final currentThemeState = ref.watch(themeProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final prefs = ref.watch(sharedPreferencesProvider);
@@ -120,7 +122,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Appearance & Theme Mode',
+                          'Appearance & Theme Customization',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
@@ -129,10 +131,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const Divider(height: 28, thickness: 0.5),
                     const Text(
-                      'Choose your preferred visual theme for Shaj ERP:',
+                      'Choose Theme Mode:',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     
                     SegmentedButton<ThemeMode>(
                       segments: const <ButtonSegment<ThemeMode>>[
@@ -152,10 +154,72 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           icon: Icon(Icons.settings_suggest_rounded),
                         ),
                       ],
-                      selected: <ThemeMode>{currentThemeMode},
+                      selected: <ThemeMode>{currentThemeState.themeMode},
                       onSelectionChanged: (Set<ThemeMode> newSelection) {
                         ref.read(themeProvider.notifier).setThemeMode(newSelection.first);
                       },
+                    ),
+                    const SizedBox(height: 20),
+
+                    const Text(
+                      'Accent Color Preset:',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: AccentColorPreset.values.map((preset) {
+                        final color = ColorConstants.getPrimary(preset, theme.brightness);
+                        final isSelected = currentThemeState.accentPreset == preset;
+
+                        String label;
+                        switch (preset) {
+                          case AccentColorPreset.cyan: label = 'Ocean Cyan'; break;
+                          case AccentColorPreset.emerald: label = 'Emerald Pro'; break;
+                          case AccentColorPreset.purple: label = 'Royal Sunset'; break;
+                          case AccentColorPreset.indigo:
+                          default: label = 'Indigo SaaS'; break;
+                        }
+
+                        return InkWell(
+                          onTap: () {
+                            ref.read(themeProvider.notifier).setAccentPreset(preset);
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? color.withOpacity(0.15) : theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? color : theme.colorScheme.outlineVariant,
+                                width: isSelected ? 2.0 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 8,
+                                  backgroundColor: color,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    color: isSelected ? color : theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),
