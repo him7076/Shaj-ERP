@@ -12,7 +12,7 @@ import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
 class StockAdjustmentsScreen extends ConsumerStatefulWidget {
-  const StockAdjustmentsScreen({Key? key}) : super(Key: key);
+  const StockAdjustmentsScreen({Key? key}) : super(key: key);
 
   @override
   ConsumerState<StockAdjustmentsScreen> createState() => _StockAdjustmentsScreenState();
