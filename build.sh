@@ -21,7 +21,7 @@ echo "Checking Flutter version..."
 flutter --version
 
 echo "Compiling Flutter Web (Release mode)..."
-flutter build web --release
+flutter build web --release --pwa-strategy=none
 
 echo "=== Vercel Flutter Web Build Completed Successfully ==="
 
