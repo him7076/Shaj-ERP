@@ -817,6 +817,7 @@ class SyncService {
       logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
 
       try {
+        final localCount = await _getLocalRecordCount(entityType);
         final SharedPreferences prefs = await SharedPreferences.getInstance();
         final String? lastCloudSyncStr = prefs.getString('last_cloud_sync_timestamp_$entityType');
         DateTime? filterCutoff;
