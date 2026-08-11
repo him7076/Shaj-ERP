@@ -63,7 +63,8 @@ class SyncQueueService {
   /// Atomically remove sync queue items created at or before cutoff timestamp
   Future<void> removeQueueItemsBefore(DateTime cutoff) async {
     try {
-      final itemsToDelete = await _queueCollection.filter().createdAtLessOrEqual(cutoff).findAll();
+      final allQueue = await _queueCollection.filter().idGreaterThan(-1).findAll();
+      final itemsToDelete = allQueue.where((e) => e.createdAt.isBefore(cutoff) || e.createdAt.isAtSameMomentAs(cutoff)).toList();
       if (itemsToDelete.isEmpty) return;
       final ids = itemsToDelete.map((e) => e.id).toList();
       await removeQueueItemsByIds(ids);
