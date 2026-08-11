@@ -41,8 +41,9 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
             final pending = inv.pendingAmount ?? 
                 ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
             if (pending > 0 && (inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid' || inv.paymentStatus == null)) {
-              if (inv.partyUuid != null && inv.partyUuid!.isNotEmpty) {
-                partyUuidDues[inv.partyUuid!] = (partyUuidDues[inv.partyUuid!] ?? 0.0) + pending;
+              final pUuid = inv.party.value?.uuid;
+              if (pUuid != null && pUuid.isNotEmpty) {
+                partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
               }
               if (inv.partyId != null && inv.partyId! > 0) {
                 partyIdDues[inv.partyId!] = (partyIdDues[inv.partyId!] ?? 0.0) + pending;

@@ -41,8 +41,9 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
             final pending = pur.pendingAmount ?? 
                 ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
             if (pending > 0 && (pur.paymentStatus == 'Unpaid' || pur.paymentStatus == 'Partially Paid' || pur.paymentStatus == null)) {
-              if (pur.partyUuid != null && pur.partyUuid!.isNotEmpty) {
-                partyUuidDues[pur.partyUuid!] = (partyUuidDues[pur.partyUuid!] ?? 0.0) + pending;
+              final pUuid = pur.party.value?.uuid;
+              if (pUuid != null && pUuid.isNotEmpty) {
+                partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
               }
               if (pur.partyId != null && pur.partyId! > 0) {
                 partyIdDues[pur.partyId!] = (partyIdDues[pur.partyId!] ?? 0.0) + pending;

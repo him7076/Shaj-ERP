@@ -98,7 +98,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           paymentMode: t.paymentMode ?? 'Cash',
           debit: isDebit ? amt : 0.0,
           credit: isCredit ? amt : 0.0,
-          remarks: t.notes ?? '',
+          remarks: t.remarks ?? '',
         ));
       }
     }
@@ -110,7 +110,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
         vouchers.add(_DayBookVoucher(
           date: exp.expenseDate ?? DateTime.now(),
           voucherType: 'Expense',
-          voucherNo: exp.expenseNumber ?? 'N/A',
+          voucherNo: exp.voucherNo ?? 'N/A',
           partyName: exp.category ?? 'General Expense',
           paymentMode: exp.paymentMode ?? 'Cash',
           debit: 0.0,

@@ -324,7 +324,7 @@ class DatabaseService {
     try {
       final name = newPartyName.trim();
       await isar.writeTxn(() async {
-        final invoices = await isar.invoices.filter().group((q) => q.partyUuidEqualTo(partyUuid).or().party((p) => p.uuidEqualTo(partyUuid))).findAll();
+        final invoices = await isar.invoices.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
         for (var inv in invoices) {
           inv.partyName = name;
           inv.isSynced = false;
@@ -332,7 +332,7 @@ class DatabaseService {
           await isar.invoices.put(inv);
         }
 
-        final purchases = await isar.purchases.filter().group((q) => q.partyUuidEqualTo(partyUuid).or().party((p) => p.uuidEqualTo(partyUuid))).findAll();
+        final purchases = await isar.purchases.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
         for (var pur in purchases) {
           pur.partyName = name;
           pur.isSynced = false;
@@ -340,7 +340,7 @@ class DatabaseService {
           await isar.purchases.put(pur);
         }
 
-        final orders = await isar.orders.filter().group((q) => q.partyUuidEqualTo(partyUuid).or().party((p) => p.uuidEqualTo(partyUuid))).findAll();
+        final orders = await isar.orders.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
         for (var ord in orders) {
           ord.partyName = name;
           ord.isSynced = false;
@@ -356,7 +356,7 @@ class DatabaseService {
           await isar.transactions.put(t);
         }
 
-        final creditNotes = await isar.creditNotes.filter().partyUuidEqualTo(partyUuid).findAll();
+        final creditNotes = await isar.creditNotes.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
         for (var cn in creditNotes) {
           cn.partyName = name;
           cn.isSynced = false;
@@ -364,7 +364,7 @@ class DatabaseService {
           await isar.creditNotes.put(cn);
         }
 
-        final debitNotes = await isar.debitNotes.filter().partyUuidEqualTo(partyUuid).findAll();
+        final debitNotes = await isar.debitNotes.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
         for (var dn in debitNotes) {
           dn.partyName = name;
           dn.isSynced = false;
@@ -384,35 +384,35 @@ class DatabaseService {
     try {
       final name = newItemName.trim();
       await isar.writeTxn(() async {
-        final invItems = await isar.invoiceItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        final invItems = await isar.invoiceItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
         for (var ii in invItems) {
           ii.itemName = name;
           ii.isSynced = false;
           await isar.invoiceItems.put(ii);
         }
 
-        final purItems = await isar.purchaseItems.filter().group((q) => q.purchaseUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        final purItems = await isar.purchaseItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
         for (var pi in purItems) {
           pi.itemName = name;
           pi.isSynced = false;
           await isar.purchaseItems.put(pi);
         }
 
-        final ordItems = await isar.orderItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        final ordItems = await isar.orderItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
         for (var oi in ordItems) {
           oi.itemName = name;
           oi.isSynced = false;
           await isar.orderItems.put(oi);
         }
 
-        final cniItems = await isar.creditNoteItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        final cniItems = await isar.creditNoteItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
         for (var cni in cniItems) {
           cni.itemName = name;
           cni.isSynced = false;
           await isar.creditNoteItems.put(cni);
         }
 
-        final dniItems = await isar.debitNoteItems.filter().group((q) => q.itemUuidEqualTo(itemUuid).or().item((i) => i.uuidEqualTo(itemUuid))).findAll();
+        final dniItems = await isar.debitNoteItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
         for (var dni in dniItems) {
           dni.itemName = name;
           dni.isSynced = false;
@@ -461,7 +461,8 @@ class DatabaseService {
       final oldName = oldUnitName.trim();
       final newName = newUnitName.trim();
       await isar.writeTxn(() async {
-        final items = await isar.items.filter().primaryUnitNameEqualTo(oldName).findAll();
+        final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+        final items = allItems.where((i) => i.primaryUnitName == oldName).toList();
         for (var item in items) {
           item.primaryUnitName = newName;
           item.isSynced = false;
@@ -469,21 +470,24 @@ class DatabaseService {
           await isar.items.put(item);
         }
 
-        final invItems = await isar.invoiceItems.filter().unitEqualTo(oldName).findAll();
+        final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+        final invItems = allInvItems.where((ii) => ii.unit == oldName).toList();
         for (var ii in invItems) {
           ii.unit = newName;
           ii.isSynced = false;
           await isar.invoiceItems.put(ii);
         }
 
-        final purItems = await isar.purchaseItems.filter().unitEqualTo(oldName).findAll();
+        final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+        final purItems = allPurItems.where((pi) => pi.unit == oldName).toList();
         for (var pi in purItems) {
           pi.unit = newName;
           pi.isSynced = false;
           await isar.purchaseItems.put(pi);
         }
 
-        final ordItems = await isar.orderItems.filter().unitEqualTo(oldName).findAll();
+        final allOrdItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
+        final ordItems = allOrdItems.where((oi) => oi.unit == oldName).toList();
         for (var oi in ordItems) {
           oi.unit = newName;
           oi.isSynced = false;
