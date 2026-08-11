@@ -106,44 +106,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
 
   Future<void> _captureGPSLocation() async {
     if (_party == null) return;
-    setState(() => _isCapturingLocation = true);
-    try {
-      final gps = ref.read(gpsServiceProvider);
-      final repo = ref.read(partyRepositoryProvider);
-
-      final position = await gps.getCurrentLocation();
-      if (position == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to capture GPS location or permission denied.')),
-          );
-        }
-        setState(() => _isCapturingLocation = false);
-        return;
-      }
-
-      final geocodedAddress = await gps.reverseGeocode(position.latitude, position.longitude);
-      final mapUrl = gps.getGoogleMapUrl(position.latitude, position.longitude);
-
-      await repo.updateGPSLocation(
-        _party!.uuid!,
-        position.latitude,
-        position.longitude,
-        geocodedAddress,
-        mapUrl,
-      );
-
-      await _loadPartyDetails();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('GPS coordinates captured & updated successfully!'), backgroundColor: Colors.green),
-        );
-      }
-    } catch (e) {
-      ErrorDialog.show(context, title: 'GPS Capture Failed', message: e.toString());
-    }
-    setState(() => _isCapturingLocation = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Location services have been disabled.')),
+    );
   }
 
   void _launchWhatsApp(String phone) {

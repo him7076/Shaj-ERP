@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
@@ -39,8 +38,6 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
   final _formKey = GlobalKey<FormState>();
   final ScrollController _itemsScrollController = ScrollController();
 
-  Position? _currentPosition;
-  bool _loadingLocation = false;
   bool _isSaving = false;
 
   final TextEditingController _remarksController = TextEditingController();
@@ -189,24 +186,6 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     }
   }
 
-  Future<void> _fetchGPSLocation() async {
-    setState(() => _loadingLocation = true);
-    try {
-      final gps = ref.read(gpsServiceProvider);
-      final pos = await gps.getCurrentLocation();
-      if (pos != null) {
-        setState(() {
-          _currentPosition = pos;
-        });
-        logger.info('Captured location coordinates: ${pos.latitude}, ${pos.longitude}');
-      }
-    } catch (e) {
-      logger.error('Failed to capture location coordinates', e);
-    } finally {
-      setState(() => _loadingLocation = false);
-    }
-  }
-
   @override
   void dispose() {
     _remarksController.dispose();
@@ -314,15 +293,6 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       order.partyName = cart.selectedParty!.partyName;
       order.mobileNumber = cart.selectedParty!.mobileNumber;
       order.gstNumber = cart.selectedParty!.gstNumber;
-      
-      if (_currentPosition != null) {
-        order.latitude = _currentPosition!.latitude;
-        order.longitude = _currentPosition!.longitude;
-        order.locationAddress = await ref.read(gpsServiceProvider).reverseGeocode(
-              _currentPosition!.latitude,
-              _currentPosition!.longitude,
-            );
-      }
 
       order.subtotal = totals['subtotal'];
       order.discountAmount = totals['discountAmount'];

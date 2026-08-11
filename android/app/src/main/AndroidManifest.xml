@@ -23,12 +23,6 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
 
-    <!-- Location (Salesman Tagging & Geo Location) -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-
     <!-- Notifications & Boot -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -40,18 +34,6 @@
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true">
-        
-        <!-- Disable automatic Geolocator location service auto-binding on boot -->
-        <meta-data
-            android:name="com.baseflow.geolocator.LOCATION_SERVICE_NOTIFICATIONS_ENABLED"
-            android:value="false" />
-
-        <!-- Explicit declaration of Geolocator location service to prevent Android 14+ ANR service timeout -->
-        <service
-            android:name="com.baseflow.geolocator.GeolocatorLocationService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="location" />
         
         <activity
             android:name=".MainActivity"

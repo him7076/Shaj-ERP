@@ -43,9 +43,8 @@ dependencies:
   pdf: ^3.10.8
   printing: ^5.11.1
 
-  # Media & Location Pickers
+  # Media Pickers
   image_picker: ^1.1.2
-  geolocator: ^12.0.0
   google_maps_flutter: ^2.7.0
 
   # Network Status Monitoring

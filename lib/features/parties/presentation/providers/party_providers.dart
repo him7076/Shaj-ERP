@@ -1,13 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/party_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/party_repository_impl.dart';
 import 'package:business_sahaj_erp/data/local/party_local_data_source.dart';
 import 'package:business_sahaj_erp/data/remote/party_remote_data_source.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
-import 'package:business_sahaj_erp/core/services/gps_service.dart';
-import 'package:business_sahaj_erp/core/utils/distance_calculator.dart';
 
 // Local DataSource Provider
 final partyLocalDataSourceProvider = Provider<PartyLocalDataSource>((ref) {
@@ -27,11 +24,6 @@ final partyRepositoryProvider = Provider<PartyRepository>((ref) {
   final local = ref.watch(partyLocalDataSourceProvider);
   final remote = ref.watch(partyRemoteDataSourceProvider);
   return PartyRepositoryImpl(isar, local, remote);
-});
-
-// GPS Service Provider
-final gpsServiceProvider = Provider<GpsService>((ref) {
-  return GpsService();
 });
 
 // Search & Filter State structure
@@ -135,51 +127,19 @@ class NearbyParty {
 // State notifier managing GPS position and distance matrix mapping
 class NearbyPartyNotifier extends StateNotifier<AsyncValue<List<NearbyParty>>> {
   final PartyRepository _repo;
-  final GpsService _gpsService;
+class NearbyPartyNotifier extends StateNotifier<AsyncValue<List<NearbyParty>>> {
+  final PartyRepository _repo;
 
-  NearbyPartyNotifier(this._repo, this._gpsService) : super(const AsyncValue.loading());
+  NearbyPartyNotifier(this._repo) : super(const AsyncValue.data([]));
 
   Future<void> findNearbyParties() async {
-    state = const AsyncValue.loading();
-    try {
-      // 1. Capture user GPS location coordinates
-      final position = await _gpsService.getCurrentLocation();
-      if (position == null) {
-        state = const AsyncValue.data([]);
-        return;
-      }
-      
-      // 2. Fetch all active parties
-      final allParties = await _repo.getAll();
-      
-      final List<NearbyParty> nearbyList = [];
-      for (var party in allParties) {
-        if (party.latitude != null && party.longitude != null) {
-          // 3. Compute offline Haversine distance
-          final distance = DistanceCalculator.calculateDistanceInMeters(
-            position.latitude,
-            position.longitude,
-            party.latitude!,
-            party.longitude!,
-          );
-          nearbyList.add(NearbyParty(party: party, distanceInMeters: distance));
-        }
-      }
-
-      // 4. Sort ascending (closest first)
-      nearbyList.sort((a, b) => a.distanceInMeters.compareTo(b.distanceInMeters));
-      
-      state = AsyncValue.data(nearbyList);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    state = const AsyncValue.data([]);
   }
 }
 
 final nearbyPartyProvider = StateNotifierProvider<NearbyPartyNotifier, AsyncValue<List<NearbyParty>>>((ref) {
   final repo = ref.watch(partyRepositoryProvider);
-  final gps = ref.watch(gpsServiceProvider);
-  return NearbyPartyNotifier(repo, gps);
+  return NearbyPartyNotifier(repo);
 });
 
 // Provider that returns all active parties
