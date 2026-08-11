@@ -499,7 +499,7 @@ class ReportService {
   Future<StockReportSummary> getStockReport({String? status}) async {
     final isar = _dbService.isar;
     final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
-    final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+    final allPurItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
 
     // Map item ID/UUID -> (totalAmt, totalQty) for Weighted Average Purchase Rate calculation
     final Map<String, double> itemPurTotalAmt = {};
@@ -555,7 +555,7 @@ class ReportService {
           sku: item.sku ?? 'N/A',
           currentStock: stock,
           reorderLevel: reorder,
-          buyRate: buy,
+          buyRate: effectiveRate,
           stockValue: value,
           status: itemStatus,
         ));

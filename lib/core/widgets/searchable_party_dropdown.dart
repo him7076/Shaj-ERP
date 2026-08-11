@@ -77,7 +77,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
           FocusScope.of(context).unfocus();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddEditPartyScreen(initialName: _controller.text.trim())),
+            MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
           );
           return;
         }
@@ -125,7 +125,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
                           FocusScope.of(context).unfocus();
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => AddEditPartyScreen(initialName: _controller.text.trim())),
+                            MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
                           );
                         },
                       ),
