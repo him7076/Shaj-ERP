@@ -1061,10 +1061,12 @@ class SyncService {
       final validPurIds = allPurchases.map((p) => p.id).toSet();
       final validPurUuids = allPurchases.map((p) => p.uuid).whereType<String>().toSet();
 
+      final allStockAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+
       final List<Item> itemsToUpdate = [];
 
       for (int k = 0; k < allItems.length; k++) {
-        if (k % 10 == 0) await Future.delayed(Duration.zero);
+        if (k % 5 == 0) await Future.delayed(Duration.zero);
         final item = allItems[k];
         final itemUuid = item.uuid;
         final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
@@ -1138,7 +1140,6 @@ class SyncService {
         }
 
         // 5. Manual Stock Adjustments (Stock In / Stock Out)
-        final allStockAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
         double totalAdjustments = 0.0;
         for (var adj in allStockAdjustments) {
           final isMatch = (adj.itemUuid != null && adj.itemUuid!.isNotEmpty && adj.itemUuid == itemUuid) ||

@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
-
-enum AccentColorPreset {
-  indigo,  // Indigo SaaS (#6366F1)
-  cyan,    // Ocean Cyan (#0EA5E9)
-  emerald, // Emerald Pro (#10B981)
-  purple,  // Royal Sunset (#8B5CF6)
-}
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class ColorConstants {
   // Slate/Zinc Neutral Surfaces
@@ -41,54 +35,31 @@ class ColorConstants {
   static const Color errorContainerDark = Color(0xFF881337); // Rose 900
   static const Color onErrorContainerDark = Color(0xFFFFE4E6); // Rose 100
 
-  // Accent Presets Color Maps
-  static Color getPrimary(AccentColorPreset preset, Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
+  // Dual-Tone Gradient Presets Color Resolvers
+  static Color getPrimary(AppGradientPreset preset, Brightness brightness) {
     switch (preset) {
-      case AccentColorPreset.cyan:
-        return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0EA5E9);
-      case AccentColorPreset.emerald:
-        return isDark ? const Color(0xFF34D399) : const Color(0xFF10B981);
-      case AccentColorPreset.purple:
-        return isDark ? const Color(0xFFA78BFA) : const Color(0xFF8B5CF6);
-      case AccentColorPreset.indigo:
-      default:
-        return isDark ? const Color(0xFF818CF8) : const Color(0xFF6366F1);
+      case AppGradientPreset.emeraldTeal: return const Color(0xFF059669);
+      case AppGradientPreset.sunsetRose: return const Color(0xFFE11D48);
+      case AppGradientPreset.amberGold: return const Color(0xFFD97706);
+      case AppGradientPreset.obsidianCyan: return const Color(0xFF0284C7);
+      case AppGradientPreset.executiveIndigo:
+      default: return const Color(0xFF4F46E5);
     }
   }
 
-  static Color getPrimaryContainer(AccentColorPreset preset, Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
+  static Color getSecondary(AppGradientPreset preset, Brightness brightness) {
     switch (preset) {
-      case AccentColorPreset.cyan:
-        return isDark ? const Color(0xFF0369A1) : const Color(0xFFE0F2FE);
-      case AccentColorPreset.emerald:
-        return isDark ? const Color(0xFF047857) : const Color(0xFFD1FAE5);
-      case AccentColorPreset.purple:
-        return isDark ? const Color(0xFF6D28D9) : const Color(0xFFF3E8FF);
-      case AccentColorPreset.indigo:
-      default:
-        return isDark ? const Color(0xFF3730A3) : const Color(0xFFEEF2FF);
-    }
-  }
-
-  static Color getOnPrimaryContainer(AccentColorPreset preset, Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    switch (preset) {
-      case AccentColorPreset.cyan:
-        return isDark ? const Color(0xFFE0F2FE) : const Color(0xFF0369A1);
-      case AccentColorPreset.emerald:
-        return isDark ? const Color(0xFFD1FAE5) : const Color(0xFF065F46);
-      case AccentColorPreset.purple:
-        return isDark ? const Color(0xFFF3E8FF) : const Color(0xFF581C87);
-      case AccentColorPreset.indigo:
-      default:
-        return isDark ? const Color(0xFFEEF2FF) : const Color(0xFF312E81);
+      case AppGradientPreset.emeraldTeal: return const Color(0xFF14B8A6);
+      case AppGradientPreset.sunsetRose: return const Color(0xFFC084FC);
+      case AppGradientPreset.amberGold: return const Color(0xFFF97316);
+      case AppGradientPreset.obsidianCyan: return const Color(0xFF06B6D4);
+      case AppGradientPreset.executiveIndigo:
+      default: return const Color(0xFF818CF8);
     }
   }
 
   // Legacy static color compatibility
-  static const Color primaryLight = Color(0xFF6366F1);
+  static const Color primaryLight = Color(0xFF4F46E5);
   static const Color onPrimaryLight = Colors.white;
   static const Color primaryContainerLight = Color(0xFFEEF2FF);
   static const Color onPrimaryContainerLight = Color(0xFF312E81);

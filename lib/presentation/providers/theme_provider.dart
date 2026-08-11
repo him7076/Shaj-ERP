@@ -2,24 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/constants/app_constants.dart';
-import 'package:business_sahaj_erp/core/constants/color_constants.dart';
+
+enum AppGradientPreset {
+  executiveIndigo, // #4F46E5 -> #818CF8
+  emeraldTeal,     // #059669 -> #14B8A6
+  sunsetRose,      // #E11D48 -> #C084FC
+  amberGold,       // #D97706 -> #F97316
+  obsidianCyan,    // #0284C7 -> #06B6D4
+}
 
 class ThemeState {
   final ThemeMode themeMode;
-  final AccentColorPreset accentPreset;
+  final AppGradientPreset gradientPreset;
 
   const ThemeState({
     this.themeMode = ThemeMode.system,
-    this.accentPreset = AccentColorPreset.indigo,
+    this.gradientPreset = AppGradientPreset.executiveIndigo,
   });
 
   ThemeState copyWith({
     ThemeMode? themeMode,
-    AccentColorPreset? accentPreset,
+    AppGradientPreset? gradientPreset,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
-      accentPreset: accentPreset ?? this.accentPreset,
+      gradientPreset: gradientPreset ?? this.gradientPreset,
     );
   }
 }
@@ -43,7 +50,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
   void _loadTheme() {
     final themeString = _prefs.getString(AppConstants.keyThemeMode);
-    final accentString = _prefs.getString('key_accent_preset');
+    final gradientString = _prefs.getString('key_gradient_preset');
 
     ThemeMode mode = ThemeMode.system;
     if (themeString != null) {
@@ -55,18 +62,19 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       }
     }
 
-    AccentColorPreset preset = AccentColorPreset.indigo;
-    if (accentString != null) {
-      switch (accentString) {
-        case 'cyan': preset = AccentColorPreset.cyan; break;
-        case 'emerald': preset = AccentColorPreset.emerald; break;
-        case 'purple': preset = AccentColorPreset.purple; break;
-        case 'indigo':
-        default: preset = AccentColorPreset.indigo; break;
+    AppGradientPreset preset = AppGradientPreset.executiveIndigo;
+    if (gradientString != null) {
+      switch (gradientString) {
+        case 'emeraldTeal': preset = AppGradientPreset.emeraldTeal; break;
+        case 'sunsetRose': preset = AppGradientPreset.sunsetRose; break;
+        case 'amberGold': preset = AppGradientPreset.amberGold; break;
+        case 'obsidianCyan': preset = AppGradientPreset.obsidianCyan; break;
+        case 'executiveIndigo':
+        default: preset = AppGradientPreset.executiveIndigo; break;
       }
     }
 
-    state = ThemeState(themeMode: mode, accentPreset: preset);
+    state = ThemeState(themeMode: mode, gradientPreset: preset);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -80,9 +88,9 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     await _prefs.setString(AppConstants.keyThemeMode, themeString);
   }
 
-  Future<void> setAccentPreset(AccentColorPreset preset) async {
-    state = state.copyWith(accentPreset: preset);
-    await _prefs.setString('key_accent_preset', preset.name);
+  Future<void> setGradientPreset(AppGradientPreset preset) async {
+    state = state.copyWith(gradientPreset: preset);
+    await _prefs.setString('key_gradient_preset', preset.name);
   }
 
   Future<void> toggleTheme() async {

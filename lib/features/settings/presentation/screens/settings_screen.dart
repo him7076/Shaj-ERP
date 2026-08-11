@@ -162,7 +162,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 20),
 
                     const Text(
-                      'Accent Color Preset:',
+                      'Dual-Tone Gradient Theme Preset:',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
@@ -170,41 +170,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
-                      children: AccentColorPreset.values.map((preset) {
-                        final color = ColorConstants.getPrimary(preset, theme.brightness);
-                        final isSelected = currentThemeState.accentPreset == preset;
+                      children: AppGradientPreset.values.map((preset) {
+                        final primaryColor = ColorConstants.getPrimary(preset, theme.brightness);
+                        final secondaryColor = ColorConstants.getSecondary(preset, theme.brightness);
+                        final isSelected = currentThemeState.gradientPreset == preset;
 
                         String label;
                         switch (preset) {
-                          case AccentColorPreset.cyan: label = 'Ocean Cyan'; break;
-                          case AccentColorPreset.emerald: label = 'Emerald Pro'; break;
-                          case AccentColorPreset.purple: label = 'Royal Sunset'; break;
-                          case AccentColorPreset.indigo:
-                          default: label = 'Indigo SaaS'; break;
+                          case AppGradientPreset.emeraldTeal: label = 'Emerald Teal'; break;
+                          case AppGradientPreset.sunsetRose: label = 'Sunset Rose'; break;
+                          case AppGradientPreset.amberGold: label = 'Amber Gold'; break;
+                          case AppGradientPreset.obsidianCyan: label = 'Obsidian Cyan'; break;
+                          case AppGradientPreset.executiveIndigo:
+                          default: label = 'Executive Indigo'; break;
                         }
 
                         return InkWell(
                           onTap: () {
-                            ref.read(themeProvider.notifier).setAccentPreset(preset);
+                            ref.read(themeProvider.notifier).setGradientPreset(preset);
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? color.withOpacity(0.15) : theme.colorScheme.surface,
+                              color: isSelected ? primaryColor.withOpacity(0.15) : theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: isSelected ? color : theme.colorScheme.outlineVariant,
+                                color: isSelected ? primaryColor : theme.colorScheme.outlineVariant,
                                 width: isSelected ? 2.0 : 1.0,
                               ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                CircleAvatar(
-                                  radius: 8,
-                                  backgroundColor: color,
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(
+                                      colors: [primaryColor, secondaryColor],
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
@@ -212,7 +220,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                    color: isSelected ? color : theme.colorScheme.onSurface,
+                                    color: isSelected ? primaryColor : theme.colorScheme.onSurface,
                                   ),
                                 ),
                               ],

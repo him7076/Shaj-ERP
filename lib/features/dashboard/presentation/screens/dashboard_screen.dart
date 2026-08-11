@@ -363,11 +363,18 @@ class DashboardScreen extends ConsumerWidget {
       width: double.infinity,
       padding: EdgeInsets.all(isMobile ? 14 : 24),
       decoration: BoxDecoration(
-        gradient: AppDecorations.primaryIndigoGradient,
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.secondary,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.3),
+            color: theme.colorScheme.primary.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

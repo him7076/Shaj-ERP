@@ -48,12 +48,11 @@ class CustomDrawer extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Color(0xFF1E1B4B),
-                    Color(0xFF312E81),
-                    Color(0xFF4338CA),
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

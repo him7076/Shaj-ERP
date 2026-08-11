@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/constants/color_constants.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme => getLightTheme(AccentColorPreset.indigo);
-  static ThemeData get darkTheme => getDarkTheme(AccentColorPreset.indigo);
+  static ThemeData get lightTheme => getLightTheme(AppGradientPreset.executiveIndigo);
+  static ThemeData get darkTheme => getDarkTheme(AppGradientPreset.executiveIndigo);
 
   // Light Theme Builder
-  static ThemeData getLightTheme(AccentColorPreset preset) {
+  static ThemeData getLightTheme(AppGradientPreset preset) {
     final primary = ColorConstants.getPrimary(preset, Brightness.light);
-    final primaryContainer = ColorConstants.getPrimaryContainer(preset, Brightness.light);
-    final onPrimaryContainer = ColorConstants.getOnPrimaryContainer(preset, Brightness.light);
+    final secondary = ColorConstants.getSecondary(preset, Brightness.light);
 
     return ThemeData(
       useMaterial3: true,
@@ -21,12 +21,12 @@ class AppTheme {
       colorScheme: ColorScheme.light(
         primary: primary,
         onPrimary: Colors.white,
-        primaryContainer: primaryContainer,
-        onPrimaryContainer: onPrimaryContainer,
-        secondary: const Color(0xFF0EA5E9),
+        primaryContainer: primary.withOpacity(0.12),
+        onPrimaryContainer: primary,
+        secondary: secondary,
         onSecondary: Colors.white,
-        secondaryContainer: const Color(0xFFE0F2FE),
-        onSecondaryContainer: const Color(0xFF0369A1),
+        secondaryContainer: secondary.withOpacity(0.12),
+        onSecondaryContainer: secondary,
         tertiary: const Color(0xFF8B5CF6),
         onTertiary: Colors.white,
         error: ColorConstants.errorLight,
@@ -115,10 +115,9 @@ class AppTheme {
   }
 
   // Dark Theme Builder
-  static ThemeData getDarkTheme(AccentColorPreset preset) {
+  static ThemeData getDarkTheme(AppGradientPreset preset) {
     final primary = ColorConstants.getPrimary(preset, Brightness.dark);
-    final primaryContainer = ColorConstants.getPrimaryContainer(preset, Brightness.dark);
-    final onPrimaryContainer = ColorConstants.getOnPrimaryContainer(preset, Brightness.dark);
+    final secondary = ColorConstants.getSecondary(preset, Brightness.dark);
 
     return ThemeData(
       useMaterial3: true,
@@ -129,13 +128,28 @@ class AppTheme {
       dialogBackgroundColor: ColorConstants.surfaceDark,
       colorScheme: ColorScheme.dark(
         primary: primary,
-        onPrimary: const Color(0xFF0F172A),
-        primaryContainer: primaryContainer,
-        onPrimaryContainer: onPrimaryContainer,
-        secondary: const Color(0xFF38BDF8),
-        onSecondary: const Color(0xFF0C4A6E),
-        secondaryContainer: const Color(0xFF0369A1),
-        onSecondaryContainer: const Color(0xFFE0F2FE),
+        onPrimary: Colors.white,
+        primaryContainer: primary.withOpacity(0.2),
+        onPrimaryContainer: primary,
+        secondary: secondary,
+        onSecondary: Colors.white,
+        secondaryContainer: secondary.withOpacity(0.2),
+        onSecondaryContainer: secondary,
+        tertiary: const Color(0xFFA78BFA),
+        onTertiary: const Color(0xFF4C1D95),
+        error: ColorConstants.errorDark,
+        onError: ColorConstants.onErrorDark,
+        errorContainer: ColorConstants.errorContainerDark,
+        onErrorContainer: ColorConstants.onErrorContainerDark,
+        background: ColorConstants.backgroundDark,
+        onBackground: ColorConstants.onBackgroundDark,
+        surface: ColorConstants.surfaceDark,
+        onSurface: ColorConstants.onSurfaceDark,
+        surfaceVariant: ColorConstants.surfaceVariantDark,
+        onSurfaceVariant: ColorConstants.onSurfaceVariantDark,
+        outline: ColorConstants.outlineDark,
+        outlineVariant: const Color(0xFF475569),
+      ),
         tertiary: const Color(0xFFA78BFA),
         onTertiary: const Color(0xFF4C1D95),
         error: ColorConstants.errorDark,
