@@ -312,6 +312,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _adjustStockDialog({StockAdjustment? existingAdjustment}) async {
     final isEditing = existingAdjustment != null;
     final qtyController = TextEditingController(text: existingAdjustment?.quantity?.toString() ?? '');
+    final rateController = TextEditingController(text: existingAdjustment?.ratePerUnit?.toString() ?? _item?.buyRate?.toString() ?? '');
     final reasonController = TextEditingController(text: existingAdjustment?.reason ?? '');
     var isStockIn = existingAdjustment != null ? (existingAdjustment.adjustmentType == 'Add' || existingAdjustment.adjustmentType == 'Stock In') : true;
     var selectedDate = existingAdjustment?.adjustmentDate ?? DateTime.now();
@@ -398,6 +399,16 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      TextFormField(
+                        controller: rateController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Rate per Unit (₹)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.currency_rupee),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       InkWell(
                         onTap: () async {
                           final picked = await showDatePicker(
@@ -458,6 +469,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       try {
         final isar = ref.read(databaseServiceProvider).isar;
         final qty = double.parse(qtyController.text);
+        final rate = double.tryParse(rateController.text) ?? (_item?.buyRate ?? 0.0);
         final reason = reasonController.text.trim();
         final adjType = isStockIn ? 'Add' : 'Reduce';
 
@@ -469,6 +481,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         adj.adjustmentType = adjType;
         adj.quantity = qty;
         adj.unit = selectedUnit;
+        adj.ratePerUnit = rate;
+        adj.totalValue = qty * rate;
         adj.adjustmentDate = selectedDate;
         adj.reason = reason;
         adj.updatedAt = DateTime.now();
@@ -560,8 +574,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 _DetailRow('Product Name', adj.itemName ?? 'N/A'),
                 _DetailRow('Adjustment Type', isAdd ? 'Stock In (+)' : 'Stock Out (-)'),
                 _DetailRow('Quantity & Unit', '${adj.quantity ?? 0.0} ${adj.unit ?? ''}'),
-                _DetailRow('Rate per Unit', _currencyFormat.format(_item?.buyRate ?? 0.0)),
-                _DetailRow('Total Value', _currencyFormat.format((adj.quantity ?? 0.0) * (_item?.buyRate ?? 0.0)), isBold: true),
+                _DetailRow('Rate per Unit', _currencyFormat.format(adj.ratePerUnit ?? _item?.buyRate ?? 0.0)),
+                _DetailRow('Total Value', _currencyFormat.format(adj.totalValue ?? ((adj.quantity ?? 0.0) * (adj.ratePerUnit ?? _item?.buyRate ?? 0.0))), isBold: true),
                 _DetailRow('Adjustment Date', dateStr),
                 _DetailRow('Reason', adj.reason ?? 'N/A'),
                 if (adj.notes != null && adj.notes!.isNotEmpty)

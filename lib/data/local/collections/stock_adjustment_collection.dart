@@ -21,6 +21,8 @@ class StockAdjustment implements IsarModel {
   String? adjustmentType; // 'Add' or 'Reduce'
   double? quantity;
   String? unit; // Primary or Secondary unit (e.g. Pcs, Box, Kg)
+  double? ratePerUnit;
+  double? totalValue; // Calculated as (quantity ?? 0.0) * (ratePerUnit ?? 0.0)
   DateTime? adjustmentDate;
   String? reason;
   String? notes;

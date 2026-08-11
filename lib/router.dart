@@ -22,6 +22,7 @@ import 'package:business_sahaj_erp/features/transactions/presentation/screens/tr
 import 'package:business_sahaj_erp/features/reports/presentation/screens/receivables_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/payables_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/bulk_item_edit_screen.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
@@ -211,6 +212,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/bulk-item-edit',
             name: 'bulk-item-edit',
             builder: (context, state) => const BulkItemEditScreen(),
+          ),
+          GoRoute(
+            path: '/stock-adjustments',
+            name: 'stock-adjustments',
+            builder: (context, state) => const StockAdjustmentsScreen(),
           ),
         ],
       ),

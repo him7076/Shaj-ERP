@@ -1737,6 +1737,8 @@ class SyncService {
           'adjustmentType': e.adjustmentType,
           'quantity': e.quantity,
           'unit': e.unit,
+          'ratePerUnit': e.ratePerUnit,
+          'totalValue': e.totalValue,
           'adjustmentDate': e.adjustmentDate?.toIso8601String(),
           'reason': e.reason,
           'notes': e.notes,
@@ -2112,6 +2114,8 @@ class SyncService {
           ..adjustmentType = data['adjustmentType']
           ..quantity = (data['quantity'] as num?)?.toDouble()
           ..unit = data['unit']
+          ..ratePerUnit = (data['ratePerUnit'] as num?)?.toDouble()
+          ..totalValue = (data['totalValue'] as num?)?.toDouble()
           ..adjustmentDate = data['adjustmentDate'] != null ? DateTime.parse(data['adjustmentDate']) : null
           ..reason = data['reason']
           ..notes = data['notes'];

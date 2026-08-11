@@ -288,6 +288,14 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/items',
                     currentPath: location,
                   ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
+                    icon: Icons.tune_rounded,
+                    label: 'Stock Adjustments',
+                    routePath: '/stock-adjustments',
+                    currentPath: location,
+                  ),
                   _buildDrawerHeader('MANAGEMENT & BULK EDIT'),
                   _buildDrawerItem(
                     context: context,
@@ -448,6 +456,7 @@ class CustomDrawer extends ConsumerWidget {
       case '/categories': return const Color(0xFFEC4899);
       case '/parties': return const Color(0xFFD946EF);
       case '/items': return const Color(0xFFF97316);
+      case '/stock-adjustments': return const Color(0xFF8B5CF6);
       case '/bulk-item-edit': return const Color(0xFFF59E0B);
       case '/reports': return const Color(0xFF06B6D4);
       case '/sync-center': return const Color(0xFF10B981);
