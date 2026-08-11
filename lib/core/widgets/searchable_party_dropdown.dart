@@ -53,17 +53,34 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
       focusNode: _focusNode,
       displayStringForOption: (party) => party.partyName ?? '',
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (query.isEmpty) {
           return widget.parties;
         }
-        final query = textEditingValue.text.toLowerCase();
-        return widget.parties.where((p) {
+        final filtered = widget.parties.where((p) {
           final name = p.partyName?.toLowerCase() ?? '';
           final phone = p.mobileNumber?.toLowerCase() ?? '';
           return name.contains(query) || phone.contains(query);
-        });
+        }).toList();
+
+        if (filtered.isEmpty) {
+          return [
+            Party()
+              ..uuid = 'NEW_ACTION'
+              ..partyName = '+ Create New "${textEditingValue.text.trim()}"'
+          ];
+        }
+        return filtered;
       },
       onSelected: (party) {
+        if (party.uuid == 'NEW_ACTION') {
+          FocusScope.of(context).unfocus();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddEditPartyScreen(initialName: _controller.text.trim())),
+          );
+          return;
+        }
         widget.onChanged(party);
         FocusScope.of(context).unfocus();
       },
@@ -108,7 +125,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
                           FocusScope.of(context).unfocus();
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
+                            MaterialPageRoute(builder: (context) => AddEditPartyScreen(initialName: _controller.text.trim())),
                           );
                         },
                       ),
@@ -116,6 +133,17 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
                   }
 
                   final party = options.elementAt(index);
+                  if (party.uuid == 'NEW_ACTION') {
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(Icons.add_circle_outline_rounded, color: theme.colorScheme.primary, size: 18),
+                      title: Text(
+                        party.partyName ?? '+ Create New Party',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13),
+                      ),
+                      onTap: () => onSelected(party),
+                    );
+                  }
                   final double bal = party.outstandingBalance ?? 0.0;
                   final Color balColor = bal > 0 ? Colors.green : (bal < 0 ? Colors.red : Colors.grey);
                   final String balText = bal > 0 

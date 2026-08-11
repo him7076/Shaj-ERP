@@ -114,6 +114,16 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
           _selectedParty = widget.transaction!.party.value;
         }
       } catch (_) {}
+      if (_selectedParty == null) {
+        try {
+          final isar = ref.read(databaseServiceProvider).isar;
+          final pUuid = widget.transaction!.partyUuid;
+          if (pUuid != null && pUuid.isNotEmpty) {
+            _selectedParty = isar.partys.filter().uuidEqualTo(pUuid).findFirstSync();
+          }
+          _selectedParty ??= isar.partys.filter().partyNameEqualTo(widget.transaction!.partyName ?? '').findFirstSync();
+        } catch (_) {}
+      }
     } else if (widget.initialParty != null) {
       _selectedParty = widget.initialParty;
     }

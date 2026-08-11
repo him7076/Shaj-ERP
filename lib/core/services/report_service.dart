@@ -151,8 +151,6 @@ class ReportService {
     final allInvoices = await isar.invoices
         .filter()
         .isDeletedEqualTo(false)
-        .and()
-        .invoiceStatusEqualTo('Active')
         .findAll();
 
     final invoices = allInvoices.where((inv) {
@@ -501,6 +499,23 @@ class ReportService {
   Future<StockReportSummary> getStockReport({String? status}) async {
     final isar = _dbService.isar;
     final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
+    final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+
+    // Map item ID/UUID -> (totalAmt, totalQty) for Weighted Average Purchase Rate calculation
+    final Map<String, double> itemPurTotalAmt = {};
+    final Map<String, double> itemPurTotalQty = {};
+
+    for (var pi in allPurItems) {
+      final key = pi.itemId?.toString() ?? pi.item.value?.uuid;
+      if (key != null && key.isNotEmpty) {
+        final qty = pi.quantity ?? 0.0;
+        final rate = pi.rate ?? 0.0;
+        if (qty > 0) {
+          itemPurTotalAmt[key] = (itemPurTotalAmt[key] ?? 0.0) + (qty * rate);
+          itemPurTotalQty[key] = (itemPurTotalQty[key] ?? 0.0) + qty;
+        }
+      }
+    }
 
     double totalValue = 0.0;
     int available = 0;
@@ -511,8 +526,14 @@ class ReportService {
 
     for (var item in items) {
       final stock = item.currentStock ?? 0.0;
-      final buy = item.buyRate ?? 0.0;
-      final value = stock * buy;
+      final key1 = item.id.toString();
+      final key2 = item.uuid ?? '';
+
+      final totalPurAmt = (itemPurTotalAmt[key1] ?? 0.0) + (itemPurTotalAmt[key2] ?? 0.0);
+      final totalPurQty = (itemPurTotalQty[key1] ?? 0.0) + (itemPurTotalQty[key2] ?? 0.0);
+
+      final double effectiveRate = (totalPurQty > 0) ? (totalPurAmt / totalPurQty) : (item.buyRate ?? 0.0);
+      final value = stock * effectiveRate;
       final reorder = item.reorderLevel ?? 0.0;
 
       totalValue += value;

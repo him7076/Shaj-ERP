@@ -891,39 +891,43 @@ class SyncService {
             case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
           }
 
-          if (localRecord != null) {
-            // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
-            if (localRecord.isSynced == false) {
-              logger.info('Conflict: Local Wins (Unsynced Local Draft Lock) for $entityType UUID: $uuid. Keeping local draft.');
-              await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, localRecord.version, 'Local Wins (Unsynced Draft Lock)');
-              continue;
-            }
-
-            final localVersion = localRecord.version;
-            final remoteVersion = data['version'] as int? ?? 1;
-            final localUpdated = localRecord.updatedAt as DateTime;
-            final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
-
-            bool remoteWins = false;
-            if (remoteVersion > localVersion) {
-              remoteWins = true;
-            } else if (remoteVersion == localVersion) {
-              if (remoteUpdated.isAfter(localUpdated)) {
-                remoteWins = true;
+          try {
+            if (localRecord != null) {
+              // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
+              if (localRecord.isSynced == false) {
+                logger.info('Conflict: Local Wins (Unsynced Local Draft Lock) for $entityType UUID: $uuid. Keeping local draft.');
+                await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, localRecord.version, 'Local Wins (Unsynced Draft Lock)');
+                continue;
               }
-            }
 
-            if (remoteWins) {
-              logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
-              await _overwriteLocalRecord(entityType, localRecord.id, data);
-              await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
+              final localVersion = localRecord.version;
+              final remoteVersion = data['version'] as int? ?? 1;
+              final localUpdated = localRecord.updatedAt as DateTime;
+              final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
+
+              bool remoteWins = false;
+              if (remoteVersion > localVersion) {
+                remoteWins = true;
+              } else if (remoteVersion == localVersion) {
+                if (remoteUpdated.isAfter(localUpdated)) {
+                  remoteWins = true;
+                }
+              }
+
+              if (remoteWins) {
+                logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
+                await _overwriteLocalRecord(entityType, localRecord.id, data);
+                await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
+              } else {
+                logger.info('Conflict: Local wins for $entityType UUID: $uuid.');
+                await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
+              }
             } else {
-              logger.info('Conflict: Local wins for $entityType UUID: $uuid.');
-              await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
+              if (data['isDeleted'] == true) continue;
+              await _insertLocalRecord(entityType, data);
             }
-          } else {
-            if (data['isDeleted'] == true) continue;
-            await _insertLocalRecord(entityType, data);
+          } catch (docErr) {
+            logger.warning('Skipped bad $entityType doc (UUID: $uuid): $docErr');
           }
         }
       } catch (e) {
@@ -2117,11 +2121,11 @@ class SyncService {
           ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..adjustmentType = data['adjustmentType']
-          ..quantity = (data['quantity'] as num?)?.toDouble()
+          ..quantity = double.tryParse(data['quantity']?.toString() ?? '0') ?? (data['quantity'] as num?)?.toDouble()
           ..unit = data['unit']
-          ..ratePerUnit = (data['ratePerUnit'] as num?)?.toDouble()
-          ..totalValue = (data['totalValue'] as num?)?.toDouble()
-          ..adjustmentDate = data['adjustmentDate'] != null ? DateTime.parse(data['adjustmentDate']) : null
+          ..ratePerUnit = double.tryParse(data['ratePerUnit']?.toString() ?? '0') ?? (data['ratePerUnit'] as num?)?.toDouble()
+          ..totalValue = double.tryParse(data['totalValue']?.toString() ?? '0') ?? (data['totalValue'] as num?)?.toDouble()
+          ..adjustmentDate = data['adjustmentDate'] != null ? DateTime.tryParse(data['adjustmentDate'].toString()) : null
           ..reason = data['reason']
           ..notes = data['notes'];
         break;
