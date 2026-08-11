@@ -106,15 +106,27 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       }
     }
 
+    // Synchronously initialize linked party before first render
+    if (widget.transaction != null) {
+      try {
+        widget.transaction!.party.loadSync();
+        if (widget.transaction!.party.value != null) {
+          _selectedParty = widget.transaction!.party.value;
+        }
+      } catch (_) {}
+    } else if (widget.initialParty != null) {
+      _selectedParty = widget.initialParty;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final parties = await ref.read(partiesListProvider.future);
-      if (widget.transaction != null) {
+      if (widget.transaction != null && _selectedParty == null) {
         await widget.transaction!.party.load();
         _selectedParty = parties.firstWhere(
           (p) => p.uuid == widget.transaction!.partyUuid,
           orElse: () => parties.first,
         );
-      } else if (widget.initialParty != null) {
+      } else if (_selectedParty == null && widget.initialParty != null) {
         _selectedParty = parties.firstWhere(
           (p) => p.uuid == widget.initialParty!.uuid,
           orElse: () => widget.initialParty!,

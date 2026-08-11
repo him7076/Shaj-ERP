@@ -870,9 +870,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                               badgeIcon = Icons.shopping_bag_outlined;
                             } else if (tx.type == 'Adjustment') {
                               final isAdd = tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In';
-                              badgeColor = isAdd ? Colors.purple : Colors.deepOrange;
-                              badgeIcon = isAdd ? Icons.add_circle_outline : Icons.remove_circle_outline;
+                              badgeColor = isAdd ? Colors.green : Colors.red;
+                              badgeIcon = isAdd ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded;
                             }
+
+                            final isAdj = tx.type == 'Adjustment';
+                            final isAddAdj = isAdj && (tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In');
 
                             return Card(
                               elevation: 0,
@@ -898,10 +901,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                       ),
                                     ),
                                     Text(
-                                      tx.type == 'Adjustment'
-                                          ? '${tx.quantity} ${tx.unit}'
+                                      isAdj
+                                          ? '${isAddAdj ? "+" : "-"}${tx.quantity} ${tx.unit} (${_currencyFormat.format(tx.totalAmount)})'
                                           : _currencyFormat.format(tx.totalAmount),
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor, fontSize: 14),
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor, fontSize: 13),
                                     ),
                                   ],
                                 ),

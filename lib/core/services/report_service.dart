@@ -145,14 +145,21 @@ class ReportService {
   }) async {
     final isar = _dbService.isar;
 
-    final invoices = await isar.invoices
+    final startBoundary = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
+    final endBoundary = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+
+    final allInvoices = await isar.invoices
         .filter()
         .isDeletedEqualTo(false)
         .and()
         .invoiceStatusEqualTo('Active')
-        .and()
-        .invoiceDateBetween(start, end)
         .findAll();
+
+    final invoices = allInvoices.where((inv) {
+      final date = inv.invoiceDate ?? inv.createdAt;
+      return (date.isAfter(startBoundary) || date.isAtSameMomentAs(startBoundary)) &&
+             (date.isBefore(endBoundary) || date.isAtSameMomentAs(endBoundary));
+    }).toList();
 
     double taxableAmount = 0.0;
     double cgstAmount = 0.0;

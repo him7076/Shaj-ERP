@@ -817,34 +817,32 @@ class SyncService {
       logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
 
       try {
-        final localCount = await _getLocalRecordCount(entityType);
-
-        DateTime effectiveLastSync = lastSync;
-        if (effectiveLastSync.millisecondsSinceEpoch == 0 && localCount > 0) {
-          final maxLocalUpdated = await _getMaxLocalUpdatedAt(entityType);
-          if (maxLocalUpdated != null) {
-            effectiveLastSync = maxLocalUpdated;
-          }
-        }
-
-        // Apply exact 2-minute safety window for clock skews
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        final String? lastCloudSyncStr = prefs.getString('last_cloud_sync_timestamp_$entityType');
         DateTime? filterCutoff;
-        if (effectiveLastSync.millisecondsSinceEpoch > 0) {
-          filterCutoff = effectiveLastSync.subtract(const Duration(minutes: 2));
+
+        if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
+          final parsed = DateTime.tryParse(lastCloudSyncStr);
+          if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
+            filterCutoff = parsed.subtract(const Duration(minutes: 2));
+          }
         }
 
         var query = _firebaseService.firestore
             .collection(collectionName)
             .where('companyId', isEqualTo: _firebaseService.companyId);
 
-        // Incremental Delta Sync filter by updatedAt
-        if (localCount > 0 && filterCutoff != null) {
+        // Incremental Delta Sync filter by updatedAt only if cloud sync history exists
+        if (filterCutoff != null) {
           query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
         }
 
         // Enforce strict 8-second timeout per query
         var querySnapshot = await query.get().timeout(const Duration(seconds: 8));
         await Future.delayed(Duration.zero);
+
+        // Update dedicated cloud sync timestamp in SharedPreferences
+        await prefs.setString('last_cloud_sync_timestamp_$entityType', DateTime.now().toUtc().toIso8601String());
 
         // Fallback: If query returned 0 documents and localCount is 0, fetch all for company
         if (querySnapshot.docs.isEmpty && localCount == 0) {
@@ -1087,8 +1085,8 @@ class SyncService {
           final conv = item.conversionFactor;
           final lineUnitLower = lineUnit?.trim().toLowerCase();
 
-          if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 1.0) {
-            return rawQty / conv;
+          if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 0) {
+            return conv >= 1.0 ? rawQty / conv : rawQty * conv;
           }
           return rawQty;
         }

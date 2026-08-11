@@ -24,8 +24,19 @@ class InvoiceNumberService {
   /// Generates the next sequential unique Invoice Number (e.g. INV-01, INV-02)
   Future<String> generateNextInvoiceNumber() async {
     try {
-      final count = await isar.invoices.filter().isDeletedEqualTo(false).count();
-      final numStr = (count + 1).toString().padLeft(2, '0');
+      final allInvoices = await isar.invoices.where().findAll();
+      int maxNum = 0;
+      for (var inv in allInvoices) {
+        if (inv.invoiceNumber != null) {
+          final match = RegExp(r'\d+').firstMatch(inv.invoiceNumber!);
+          if (match != null) {
+            final parsed = int.tryParse(match.group(0)!) ?? 0;
+            if (parsed > maxNum) maxNum = parsed;
+          }
+        }
+      }
+      final nextNum = maxNum + 1;
+      final numStr = nextNum.toString().padLeft(2, '0');
       final nextCode = 'INV-$numStr';
       logger.debug('Generated next invoice number: $nextCode');
       return nextCode;

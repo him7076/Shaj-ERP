@@ -42,8 +42,19 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
   @override
   Future<String> generateNextPurchaseNumber() async {
     try {
-      final count = await collection.filter().isDeletedEqualTo(false).count();
-      final suffix = (count + 1).toString().padLeft(2, '0');
+      final allPurchases = await collection.where().findAll();
+      int maxNum = 0;
+      for (var pur in allPurchases) {
+        if (pur.purchaseNumber != null) {
+          final match = RegExp(r'\d+').firstMatch(pur.purchaseNumber!);
+          if (match != null) {
+            final parsed = int.tryParse(match.group(0)!) ?? 0;
+            if (parsed > maxNum) maxNum = parsed;
+          }
+        }
+      }
+      final nextNum = maxNum + 1;
+      final suffix = nextNum.toString().padLeft(2, '0');
       return 'PUR-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate purchase number: $e');

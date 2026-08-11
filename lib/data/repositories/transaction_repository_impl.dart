@@ -41,8 +41,19 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
   @override
   Future<String> generateNextTransactionNumber(String type) async {
     try {
-      final count = await collection.filter().isDeletedEqualTo(false).and().transactionTypeEqualTo(type).count();
-      final suffix = (count + 1).toString().padLeft(2, '0');
+      final allTxns = await collection.where().findAll();
+      int maxNum = 0;
+      for (var t in allTxns) {
+        if (t.transactionType == type && t.transactionNumber != null) {
+          final match = RegExp(r'\d+').firstMatch(t.transactionNumber!);
+          if (match != null) {
+            final parsed = int.tryParse(match.group(0)!) ?? 0;
+            if (parsed > maxNum) maxNum = parsed;
+          }
+        }
+      }
+      final nextNum = maxNum + 1;
+      final suffix = nextNum.toString().padLeft(2, '0');
       String prefix = 'PAYMENT';
       if (type == 'Receipt' || type == 'Payment In') prefix = 'RECEIPT';
       if (type == 'Expense') prefix = 'EXP';
