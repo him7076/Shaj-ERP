@@ -182,7 +182,7 @@ class ReportService {
       totalGST += invGst;
 
       try { await inv.party.load(); } catch (_) {}
-      final gstin = inv.party.value?.gstin?.trim() ?? '';
+      final gstin = inv.party.value?.gstNumber?.trim() ?? '';
       if (gstin.length >= 15) {
         b2bTaxable += invTaxable;
         b2bGst += invGst;

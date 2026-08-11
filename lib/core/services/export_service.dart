@@ -229,10 +229,8 @@ class ExportService {
       // Add data rows
       for (var rowData in rows) {
         final cellsList = rowData.map((val) {
-          if (val is double) {
-            return DoubleCellValue(val);
-          } else if (val is int) {
-            return IntCellValue(val);
+          if (val is num) {
+            return DoubleCellValue(val.toDouble());
           } else if (val is bool) {
             return BoolCellValue(val);
           } else {
