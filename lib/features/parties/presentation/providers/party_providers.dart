@@ -124,9 +124,7 @@ class NearbyParty {
   NearbyParty({required this.party, required this.distanceInMeters});
 }
 
-// State notifier managing GPS position and distance matrix mapping
-class NearbyPartyNotifier extends StateNotifier<AsyncValue<List<NearbyParty>>> {
-  final PartyRepository _repo;
+// State notifier managing nearby party queries
 class NearbyPartyNotifier extends StateNotifier<AsyncValue<List<NearbyParty>>> {
   final PartyRepository _repo;
 

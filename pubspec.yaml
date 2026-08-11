@@ -50,8 +50,9 @@ dependencies:
   # Network Status Monitoring
   connectivity_plus: ^6.0.3
 
-  # Utility logging
+  # Utility logging & Identifiers
   logger: ^2.3.0
+  uuid: ^4.5.3
 
   # Backup & Restore dependencies
   archive: ^3.6.1
