@@ -651,9 +651,10 @@ class SyncService {
     }
   }
 
-  /// Uploads all dirty local records marked isSynced == false
+  /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 500 docs per batch)
   Future<void> _uploadLocalChanges() async {
     logger.info('Uploading local dirty changes to Firestore...');
+    final uploadStartTime = DateTime.now();
     final queueItems = await _queueService.getPendingQueue();
 
     if (queueItems.isEmpty) {
@@ -665,11 +666,17 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    for (var queueItem in queueItems) {
+    WriteBatch currentBatch = _firebaseService.firestore.batch();
+    int batchOpsCount = 0;
+
+    for (int i = 0; i < queueItems.length; i++) {
+      final queueItem = queueItems[i];
       if (queueItem.retryCount >= 5) continue;
 
-      // Yield 10ms to Chrome main event loop between items for 60 FPS UI responsiveness
-      await Future.delayed(const Duration(milliseconds: 10));
+      // Yield event loop every 10 items for 60 FPS UI responsiveness & to prevent Vercel 95% hang
+      if (i % 10 == 0) {
+        await Future.delayed(Duration.zero);
+      }
 
       try {
         final entityType = queueItem.entityType!;
@@ -683,20 +690,15 @@ class SyncService {
           case 'Unit': entity = await isar.units.get(entityId); break;
           case 'Brand': entity = await isar.brands.get(entityId); break;
           case 'Order': entity = await isar.orders.get(entityId); break;
-          case 'OrderItem': entity = await isar.orderItems.get(entityId); break;
           case 'Invoice': entity = await isar.invoices.get(entityId); break;
-          case 'InvoiceItem': entity = await isar.invoiceItems.get(entityId); break;
           case 'Settings': entity = await isar.settings.get(entityId); break;
           case 'User': entity = await isar.users.get(entityId); break;
           case 'Purchase': entity = await isar.purchases.get(entityId); break;
-          case 'PurchaseItem': entity = await isar.purchaseItems.get(entityId); break;
           case 'Expense': entity = await isar.expenses.get(entityId); break;
           case 'Transaction': entity = await isar.transactions.get(entityId); break;
           case 'BankAccount': entity = await isar.bankAccounts.get(entityId); break;
           case 'CreditNote': entity = await isar.creditNotes.get(entityId); break;
-          case 'CreditNoteItem': entity = await isar.creditNoteItems.get(entityId); break;
           case 'DebitNote': entity = await isar.debitNotes.get(entityId); break;
-          case 'DebitNoteItem': entity = await isar.debitNoteItems.get(entityId); break;
           case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
         }
 
@@ -710,24 +712,41 @@ class SyncService {
         final docRef = _firebaseService.firestore.collection(firestoreCollection).doc(queueItem.entityUuid);
 
         if (queueItem.operation == 'Delete') {
-          await docRef.delete();
-          logger.info('Permanently deleted document ${queueItem.entityUuid} from Firestore collection $firestoreCollection');
+          currentBatch.delete(docRef);
         } else {
           final map = await _mapEntityToMap(entityType, entity);
-          await docRef.set(map, SetOptions(merge: true));
+          currentBatch.set(docRef, map, SetOptions(merge: true));
         }
 
+        batchOpsCount++;
         if (entity != null) {
           syncedItems.add({'entityType': entityType, 'entity': entity});
         }
         completedQueueIds.add(queueItem.id);
+
+        // Commit WriteBatch if 450 items reached (safely under 500 limit)
+        if (batchOpsCount >= 450) {
+          await currentBatch.commit().timeout(const Duration(seconds: 8));
+          currentBatch = _firebaseService.firestore.batch();
+          batchOpsCount = 0;
+          await Future.delayed(Duration.zero);
+        }
       } catch (e) {
         logger.error('Failed to sync queue item ID ${queueItem.id}', e);
         await _queueService.updateAttempt(queueItem, e.toString());
       }
     }
 
-    // Execute a SINGLE batched Isar write transaction for all uploaded items & queue cleanup
+    // Commit any remaining queued ops in batch with 8s timeout
+    if (batchOpsCount > 0) {
+      try {
+        await currentBatch.commit().timeout(const Duration(seconds: 8));
+      } catch (e) {
+        logger.error('Failed committing write batch to Firestore', e);
+      }
+    }
+
+    // Single batched Isar write transaction to mark synced items & atomic queue clearing
     if (syncedItems.isNotEmpty || completedQueueIds.isNotEmpty) {
       await isar.writeTxn(() async {
         for (var itemMap in syncedItems) {
@@ -741,38 +760,36 @@ class SyncService {
             case 'Unit': await isar.units.put(entity as Unit); break;
             case 'Brand': await isar.brands.put(entity as Brand); break;
             case 'Order': await isar.orders.put(entity as Order); break;
-            case 'OrderItem': await isar.orderItems.put(entity as OrderItem); break;
             case 'Invoice': await isar.invoices.put(entity as Invoice); break;
-            case 'InvoiceItem': await isar.invoiceItems.put(entity as InvoiceItem); break;
             case 'Settings': await isar.settings.put(entity as Settings); break;
             case 'User': await isar.users.put(entity as User); break;
             case 'Purchase': await isar.purchases.put(entity as Purchase); break;
-            case 'PurchaseItem': await isar.purchaseItems.put(entity as PurchaseItem); break;
             case 'Expense': await isar.expenses.put(entity as Expense); break;
             case 'Transaction': await isar.transactions.put(entity as Transaction); break;
             case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
             case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
-            case 'CreditNoteItem': await isar.creditNoteItems.put(entity as CreditNoteItem); break;
             case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
-            case 'DebitNoteItem': await isar.debitNoteItems.put(entity as DebitNoteItem); break;
           }
         }
         await isar.syncQueues.deleteAll(completedQueueIds);
       });
-      logger.info('Batched sync complete: Updated ${syncedItems.length} entities and cleared ${completedQueueIds.length} queue items.');
+
+      // Atomic Queue Clearing before upload start time to prevent clearing edits made during upload
+      await _queueService.removeQueueItemsBefore(uploadStartTime);
+
+      logger.info('Batched sync complete: Updated ${syncedItems.length} entities and cleared queue items.');
     }
   }
 
-  /// Downloads and reconciles remote updates since lastSync
+  /// Downloads and reconciles remote updates since lastSync (Pull Cloud -> Local)
   Future<void> _downloadRemoteUpdates(DateTime lastSync) async {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
-      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'StockAdjustment'
+      'Order', 'Invoice', 'Settings', 'User',
+      'Purchase', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'DebitNote', 'StockAdjustment'
     ];
     final activeFirmId = _dbService.activeFirmId;
-
     final totalSteps = entityTypes.length + 2;
 
     for (int i = 0; i < entityTypes.length; i++) {
@@ -804,7 +821,7 @@ class SyncService {
           }
         }
 
-        // Apply 2-minute safety window to prevent missing records from clock skews
+        // Apply exact 2-minute safety window for clock skews
         DateTime? filterCutoff;
         if (effectiveLastSync.millisecondsSinceEpoch > 0) {
           filterCutoff = effectiveLastSync.subtract(const Duration(minutes: 2));
@@ -814,36 +831,37 @@ class SyncService {
             .collection(collectionName)
             .where('companyId', isEqualTo: _firebaseService.companyId);
 
-        // Filter by updatedAt ONLY IF local records exist for this entity
+        // Incremental Delta Sync filter by updatedAt
         if (localCount > 0 && filterCutoff != null) {
           query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
         }
 
-        var querySnapshot = await query.get().timeout(const Duration(seconds: 5));
-        await Future.delayed(const Duration(milliseconds: 5));
+        // Enforce strict 8-second timeout per query
+        var querySnapshot = await query.get().timeout(const Duration(seconds: 8));
+        await Future.delayed(Duration.zero);
 
-        // Fallback: If query returned 0 documents and localCount is 0, query all documents for company
+        // Fallback: If query returned 0 documents and localCount is 0, fetch all for company
         if (querySnapshot.docs.isEmpty && localCount == 0) {
           final fallbackQuery = _firebaseService.firestore
               .collection(collectionName)
               .where('companyId', isEqualTo: _firebaseService.companyId);
-          querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 5));
+          querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 8));
         }
 
         if (querySnapshot.docs.isEmpty) continue;
 
-        for (var doc in querySnapshot.docs) {
-          await Future.delayed(const Duration(milliseconds: 2));
+        for (int d = 0; d < querySnapshot.docs.length; d++) {
+          if (d % 10 == 0) await Future.delayed(Duration.zero);
+
+          final doc = querySnapshot.docs[d];
           final data = doc.data();
           final uuid = data['uuid'] as String?;
           if (uuid == null) continue;
 
           // Firm-wise filtering
           final docFirmId = data['firmId'] as String?;
-          if (docFirmId != null && docFirmId.isNotEmpty) {
-            if (docFirmId != activeFirmId) {
-              continue; // Skip documents belonging to another firm
-            }
+          if (docFirmId != null && docFirmId.isNotEmpty && docFirmId != activeFirmId) {
+            continue;
           }
 
           final isar = _dbService.isar;
@@ -856,23 +874,26 @@ class SyncService {
             case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'OrderItem': localRecord = await isar.orderItems.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'InvoiceItem': localRecord = await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'PurchaseItem': localRecord = await isar.purchaseItems.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'CreditNoteItem': localRecord = await isar.creditNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
             case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
-            case 'DebitNoteItem': localRecord = await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
+            case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
           }
 
           if (localRecord != null) {
+            // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
+            if (localRecord.isSynced == false) {
+              logger.info('Conflict: Local Wins (Unsynced Local Draft Lock) for $entityType UUID: $uuid. Keeping local draft.');
+              await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, localRecord.version, 'Local Wins (Unsynced Draft Lock)');
+              continue;
+            }
+
             final localVersion = localRecord.version;
             final remoteVersion = data['version'] as int? ?? 1;
             final localUpdated = localRecord.updatedAt as DateTime;
@@ -892,15 +913,11 @@ class SyncService {
               await _overwriteLocalRecord(entityType, localRecord.id, data);
               await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
             } else {
-              logger.info('Conflict: Local wins for $entityType UUID: $uuid. Keeping local modifications.');
+              logger.info('Conflict: Local wins for $entityType UUID: $uuid.');
               await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
             }
           } else {
-            if (data['isDeleted'] == true) {
-              logger.info('Skipping insert for remote record marked isDeleted for $entityType UUID: $uuid');
-              continue;
-            }
-            logger.info('Inserting new remote record for $entityType UUID: $uuid');
+            if (data['isDeleted'] == true) continue;
             await _insertLocalRecord(entityType, data);
           }
         }
@@ -909,7 +926,7 @@ class SyncService {
       }
     }
 
-    // Post-download pass: Ensure all line items are connected to parents in local Isar DB
+    // Post-download pass: Re-link relations and recalculate item stocks with yielding
     await _relinkAllRelations();
     await recalculateAllItemStocksFromTransactions();
   }
@@ -925,7 +942,9 @@ class SyncService {
       final Map<String, Invoice> invoiceByUuid = {};
       final Map<int, Invoice> invoiceById = {};
 
-      for (var inv in allInvoices) {
+      for (int i = 0; i < allInvoices.length; i++) {
+        if (i % 10 == 0) await Future.delayed(Duration.zero);
+        final inv = allInvoices[i];
         if (inv.uuid != null && inv.uuid!.isNotEmpty) {
           invoiceByUuid[inv.uuid!] = inv;
         }
@@ -933,36 +952,44 @@ class SyncService {
       }
 
       final allInvoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      final List<InvoiceItem> modifiedInvItems = [];
 
-      await isar.writeTxn(() async {
-        for (var item in allInvoiceItems) {
-          Invoice? parent;
-          try { await item.invoice.load(); parent = item.invoice.value; } catch (_) {}
+      for (int i = 0; i < allInvoiceItems.length; i++) {
+        if (i % 10 == 0) await Future.delayed(Duration.zero);
+        final item = allInvoiceItems[i];
+        Invoice? parent;
+        try { await item.invoice.load(); parent = item.invoice.value; } catch (_) {}
 
-          if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) {
-            parent = invoiceByUuid[item.parentInvoiceUuid!];
-          }
-
-          if (parent == null && item.parentInvoiceId != null) {
-            parent = invoiceById[item.parentInvoiceId!];
-          }
-
-          if (parent != null) {
-            item.invoice.value = parent;
-            item.parentInvoiceId = parent.id;
-            item.parentInvoiceUuid = parent.uuid;
-            await isar.invoiceItems.put(item);
-            try { await item.invoice.save(); } catch (_) {}
-          }
+        if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) {
+          parent = invoiceByUuid[item.parentInvoiceUuid!];
         }
-      });
+
+        if (parent == null && item.parentInvoiceId != null) {
+          parent = invoiceById[item.parentInvoiceId!];
+        }
+
+        if (parent != null) {
+          item.invoice.value = parent;
+          item.parentInvoiceId = parent.id;
+          item.parentInvoiceUuid = parent.uuid;
+          modifiedInvItems.add(item);
+        }
+      }
+
+      if (modifiedInvItems.isNotEmpty) {
+        await isar.writeTxn(() async {
+          await isar.invoiceItems.putAll(modifiedInvItems);
+        });
+      }
 
       // Relink PurchaseItems
       final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
       final Map<String, Purchase> purchaseByUuid = {};
       final Map<int, Purchase> purchaseById = {};
 
-      for (var pur in allPurchases) {
+      for (int i = 0; i < allPurchases.length; i++) {
+        if (i % 10 == 0) await Future.delayed(Duration.zero);
+        final pur = allPurchases[i];
         if (pur.uuid != null && pur.uuid!.isNotEmpty) {
           purchaseByUuid[pur.uuid!] = pur;
         }
@@ -970,29 +997,35 @@ class SyncService {
       }
 
       final allPurchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+      final List<PurchaseItem> modifiedPurItems = [];
 
-      await isar.writeTxn(() async {
-        for (var item in allPurchaseItems) {
-          Purchase? parent;
-          try { await item.purchase.load(); parent = item.purchase.value; } catch (_) {}
+      for (int i = 0; i < allPurchaseItems.length; i++) {
+        if (i % 10 == 0) await Future.delayed(Duration.zero);
+        final item = allPurchaseItems[i];
+        Purchase? parent;
+        try { await item.purchase.load(); parent = item.purchase.value; } catch (_) {}
 
-          if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) {
-            parent = purchaseByUuid[item.purchaseUuid!];
-          }
-
-          if (parent == null && item.purchaseId != null) {
-            parent = purchaseById[item.purchaseId!];
-          }
-
-          if (parent != null) {
-            item.purchase.value = parent;
-            item.purchaseId = parent.id;
-            item.purchaseUuid = parent.uuid;
-            await isar.purchaseItems.put(item);
-            try { await item.purchase.save(); } catch (_) {}
-          }
+        if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) {
+          parent = purchaseByUuid[item.purchaseUuid!];
         }
-      });
+
+        if (parent == null && item.purchaseId != null) {
+          parent = purchaseById[item.purchaseId!];
+        }
+
+        if (parent != null) {
+          item.purchase.value = parent;
+          item.purchaseId = parent.id;
+          item.purchaseUuid = parent.uuid;
+          modifiedPurItems.add(item);
+        }
+      }
+
+      if (modifiedPurItems.isNotEmpty) {
+        await isar.writeTxn(() async {
+          await isar.purchaseItems.putAll(modifiedPurItems);
+        });
+      }
     } catch (e) {
       logger.error('Error during post-sync relation re-linking pass', e);
     }
@@ -1013,11 +1046,11 @@ class SyncService {
       final allCreditNoteItems = await isar.creditNoteItems.filter().isDeletedEqualTo(false).findAll();
       final allDebitNoteItems = await isar.debitNoteItems.filter().isDeletedEqualTo(false).findAll();
 
-      // Load item links for accuracy
-      for (var ii in allInvItems) { try { await ii.item.load(); } catch (_) {} }
-      for (var pi in allPurItems) { try { await pi.item.load(); } catch (_) {} }
-      for (var cni in allCreditNoteItems) { try { await cni.item.load(); } catch (_) {} }
-      for (var dni in allDebitNoteItems) { try { await dni.item.load(); } catch (_) {} }
+      // Load item links for accuracy with non-blocking async yielding
+      for (int i = 0; i < allInvItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allInvItems[i].item.load(); } catch (_) {} }
+      for (int i = 0; i < allPurItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allPurItems[i].item.load(); } catch (_) {} }
+      for (int i = 0; i < allCreditNoteItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allCreditNoteItems[i].item.load(); } catch (_) {} }
+      for (int i = 0; i < allDebitNoteItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allDebitNoteItems[i].item.load(); } catch (_) {} }
 
       // Filter out deleted parent invoices/purchases
       final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
@@ -1031,7 +1064,7 @@ class SyncService {
       final List<Item> itemsToUpdate = [];
 
       for (int k = 0; k < allItems.length; k++) {
-        if (k % 5 == 0) await Future.delayed(const Duration(milliseconds: 1));
+        if (k % 10 == 0) await Future.delayed(Duration.zero);
         final item = allItems[k];
         final itemUuid = item.uuid;
         final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
@@ -2199,6 +2232,41 @@ class SyncService {
             await e.party.save();
           });
         }
+
+        // Restore embedded items if present in document
+        if (data.containsKey('items') && data['items'] is List) {
+          final itemsList = data['items'] as List;
+          for (var itemMap in itemsList) {
+            if (itemMap is Map<String, dynamic>) {
+              final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
+              final OrderItem ordItem = (await isar.orderItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? OrderItem();
+              ordItem
+                ..uuid = itemUuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..freeQuantity = (itemMap['freeQuantity'] as num?)?.toDouble()
+                ..unit = itemMap['unit'] as String?
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discountPercent = (itemMap['discountPercent'] as num?)?.toDouble()
+                ..discountAmount = (itemMap['discountAmount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstPercent = (itemMap['gstPercent'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..isDeleted = false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              ordItem.order.value = e;
+              await isar.writeTxn(() async {
+                await isar.orderItems.put(ordItem);
+                try { await ordItem.order.save(); } catch (_) {}
+              });
+            }
+          }
+        }
       } else if (entityType == 'OrderItem') {
         final e = entity as OrderItem;
         final orderUuid = data['orderUuid'] as String?;
@@ -2365,6 +2433,39 @@ class SyncService {
             await e.party.save();
           });
         }
+
+        // Restore embedded items if present in document
+        if (data.containsKey('items') && data['items'] is List) {
+          final itemsList = data['items'] as List;
+          for (var itemMap in itemsList) {
+            if (itemMap is Map<String, dynamic>) {
+              final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
+              final CreditNoteItem cnItem = (await isar.creditNoteItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? CreditNoteItem();
+              cnItem
+                ..uuid = itemUuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..freeQuantity = (itemMap['freeQuantity'] as num?)?.toDouble()
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discount = (itemMap['discount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstRate = (itemMap['gstRate'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..isDeleted = false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              cnItem.creditNote.value = e;
+              await isar.writeTxn(() async {
+                await isar.creditNoteItems.put(cnItem);
+                try { await cnItem.creditNote.save(); } catch (_) {}
+              });
+            }
+          }
+        }
       } else if (entityType == 'CreditNoteItem') {
         final e = entity as CreditNoteItem;
         final creditNoteUuid = data['creditNoteUuid'] as String?;
@@ -2387,6 +2488,39 @@ class SyncService {
           await isar.writeTxn(() async {
             await e.party.save();
           });
+        }
+
+        // Restore embedded items if present in document
+        if (data.containsKey('items') && data['items'] is List) {
+          final itemsList = data['items'] as List;
+          for (var itemMap in itemsList) {
+            if (itemMap is Map<String, dynamic>) {
+              final itemUuid = itemMap['uuid'] as String? ?? '${e.uuid}-${itemMap['itemId']}';
+              final DebitNoteItem dnItem = (await isar.debitNoteItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? DebitNoteItem();
+              dnItem
+                ..uuid = itemUuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..freeQuantity = (itemMap['freeQuantity'] as num?)?.toDouble()
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discount = (itemMap['discount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstRate = (itemMap['gstRate'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..isDeleted = false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              dnItem.debitNote.value = e;
+              await isar.writeTxn(() async {
+                await isar.debitNoteItems.put(dnItem);
+                try { await dnItem.debitNote.save(); } catch (_) {}
+              });
+            }
+          }
         }
       } else if (entityType == 'DebitNoteItem') {
         final e = entity as DebitNoteItem;

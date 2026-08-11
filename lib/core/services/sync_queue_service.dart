@@ -47,6 +47,32 @@ class SyncQueueService {
     }
   }
 
+  /// Remove multiple sync queue items by IDs atomically
+  Future<void> removeQueueItemsByIds(List<int> ids) async {
+    if (ids.isEmpty) return;
+    try {
+      await _dbService.isar.writeTxn(() async {
+        await _queueCollection.deleteAll(ids);
+      });
+      logger.debug('Removed ${ids.length} SyncQueue items from queue.');
+    } catch (e) {
+      logger.error('Failed to remove batch SyncQueue items', e);
+    }
+  }
+
+  /// Atomically remove sync queue items created at or before cutoff timestamp
+  Future<void> removeQueueItemsBefore(DateTime cutoff) async {
+    try {
+      final itemsToDelete = await _queueCollection.filter().createdAtLessOrEqual(cutoff).findAll();
+      if (itemsToDelete.isEmpty) return;
+      final ids = itemsToDelete.map((e) => e.id).toList();
+      await removeQueueItemsByIds(ids);
+      logger.info('Atomic Queue Clearing: Removed ${ids.length} queue items created before $cutoff');
+    } catch (e) {
+      logger.error('Failed atomic queue clearing before cutoff', e);
+    }
+  }
+
   /// Resets retries on all unsynced queue items to trigger sync retry phase
   Future<void> resetAllRetries() async {
     try {
