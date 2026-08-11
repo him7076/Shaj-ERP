@@ -21,6 +21,7 @@ import 'package:business_sahaj_erp/features/expenses/presentation/screens/expens
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/receivables_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/payables_screen.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/screens/day_book_report_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/bulk_item_edit_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 
@@ -207,6 +208,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/reports/payables',
             name: 'payables',
             builder: (context, state) => const PayablesScreen(),
+          ),
+          GoRoute(
+            path: '/reports/day-book',
+            name: 'day-book',
+            builder: (context, state) => const DayBookReportScreen(),
           ),
           GoRoute(
             path: '/bulk-item-edit',

@@ -115,6 +115,12 @@ class GSTReportSummary {
   final double igstAmount;
   final double totalGST;
   final int invoiceCount;
+  final double b2bTaxableAmount;
+  final double b2bTotalGST;
+  final int b2bInvoiceCount;
+  final double b2cTaxableAmount;
+  final double b2cTotalGST;
+  final int b2cInvoiceCount;
   final List<HsnSummaryEntry> hsnSummaries;
 
   GSTReportSummary({
@@ -124,6 +130,12 @@ class GSTReportSummary {
     required this.igstAmount,
     required this.totalGST,
     required this.invoiceCount,
+    this.b2bTaxableAmount = 0.0,
+    this.b2bTotalGST = 0.0,
+    this.b2bInvoiceCount = 0,
+    this.b2cTaxableAmount = 0.0,
+    this.b2cTotalGST = 0.0,
+    this.b2cInvoiceCount = 0,
     required this.hsnSummaries,
   });
 }

@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -6,6 +7,7 @@ import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'dart:io' if (dart.library.html) 'dart:html';
 
 class ExportService {
   /// Generates a professional multi-page PDF report and initiates the native share dialog.
@@ -160,14 +162,26 @@ class ExportService {
         ),
       );
 
+      final pdfBytes = await pdf.save();
+      final filename = 'Report_${title.replaceAll(' ', '_')}.pdf';
+
+      if (kIsWeb) {
+        await Printing.sharePdf(
+          bytes: pdfBytes,
+          filename: filename,
+        );
+        logger.info('PDF generated and shared on Web successfully');
+        return filename;
+      }
+
       final tempDir = await getTemporaryDirectory();
       final pdfFile = File('${tempDir.path}/Report_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await pdfFile.writeAsBytes(await pdf.save());
+      await pdfFile.writeAsBytes(pdfBytes);
 
       // Open print/share dialog using printing package
       await Printing.sharePdf(
-        bytes: await pdfFile.readAsBytes(),
-        filename: 'Report_${title.replaceAll(' ', '_')}.pdf',
+        bytes: pdfBytes,
+        filename: filename,
       );
 
       logger.info('PDF generated and shared successfully at: ${pdfFile.path}');
@@ -228,10 +242,21 @@ class ExportService {
         sheet.appendRow(cellsList);
       }
 
-      // Save XLSX document in documents directory
+      // Save XLSX document
       final fileBytes = excel.encode();
       if (fileBytes == null) {
         throw const ExportException('Failed to encode Excel file.');
+      }
+
+      final fileName = 'Report_${title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+
+      if (kIsWeb) {
+        await Printing.sharePdf(
+          bytes: Uint8List.fromList(fileBytes),
+          filename: fileName,
+        );
+        logger.info('Excel sheet exported on Web successfully');
+        return fileName;
       }
 
       final directory = await getApplicationDocumentsDirectory();
@@ -240,7 +265,6 @@ class ExportService {
         await reportsDir.create(recursive: true);
       }
 
-      final fileName = 'Report_${title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.xlsx';
       final file = File('${reportsDir.path}/$fileName');
       await file.writeAsBytes(fileBytes, flush: true);
 

@@ -124,6 +124,75 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
               data: (summary) {
                 return Column(
                   children: [
+                    // B2B vs B2C Breakdown Row
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('B2B Registered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue)),
+                                      Chip(
+                                        visualDensity: VisualDensity.compact,
+                                        labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                        label: Text('${summary.b2bInvoiceCount} Invoices'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text('Taxable: ${currencyFormat.format(summary.b2bTaxableAmount)}', style: const TextStyle(fontSize: 11)),
+                                  Text('GST: ${currencyFormat.format(summary.b2bTotalGST)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.purple.withOpacity(0.2)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('B2C Consumer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.purple)),
+                                      Chip(
+                                        visualDensity: VisualDensity.compact,
+                                        labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                        label: Text('${summary.b2cInvoiceCount} Invoices'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text('Taxable: ${currencyFormat.format(summary.b2cTaxableAmount)}', style: const TextStyle(fontSize: 11)),
+                                  Text('GST: ${currencyFormat.format(summary.b2cTotalGST)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.purple)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
                     // GST Tax splits grid
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),

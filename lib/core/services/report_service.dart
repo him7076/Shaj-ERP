@@ -160,15 +160,37 @@ class ReportService {
     double igstAmount = 0.0;
     double totalGST = 0.0;
 
+    double b2bTaxable = 0.0;
+    double b2bGst = 0.0;
+    int b2bCount = 0;
+
+    double b2cTaxable = 0.0;
+    double b2cGst = 0.0;
+    int b2cCount = 0;
+
     // HSN aggregation map
     final Map<String, _HsnAggregate> hsnMap = {};
 
     for (var inv in invoices) {
-      taxableAmount += inv.taxableAmount ?? 0.0;
+      final invTaxable = inv.taxableAmount ?? 0.0;
+      final invGst = inv.totalGST ?? 0.0;
+
+      taxableAmount += invTaxable;
       cgstAmount += inv.cgstAmount ?? 0.0;
       sgstAmount += inv.sgstAmount ?? 0.0;
       igstAmount += inv.igstAmount ?? 0.0;
-      totalGST += inv.totalGST ?? 0.0;
+      totalGST += invGst;
+
+      final gstin = inv.partyGstin?.trim() ?? '';
+      if (gstin.length >= 15) {
+        b2bTaxable += invTaxable;
+        b2bGst += invGst;
+        b2bCount++;
+      } else {
+        b2cTaxable += invTaxable;
+        b2cGst += invGst;
+        b2cCount++;
+      }
 
       // Aggregating HSN details from invoice items
       final items = kIsWeb
@@ -221,6 +243,12 @@ class ReportService {
       igstAmount: igstAmount,
       totalGST: totalGST,
       invoiceCount: invoices.length,
+      b2bTaxableAmount: b2bTaxable,
+      b2bTotalGST: b2bGst,
+      b2bInvoiceCount: b2bCount,
+      b2cTaxableAmount: b2cTaxable,
+      b2cTotalGST: b2cGst,
+      b2cInvoiceCount: b2cCount,
       hsnSummaries: hsnLines,
     );
   }
