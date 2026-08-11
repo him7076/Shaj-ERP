@@ -3,11 +3,11 @@ import 'package:business_sahaj_erp/core/constants/color_constants.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme => getLightTheme(AppGradientPreset.executiveIndigo);
-  static ThemeData get darkTheme => getDarkTheme(AppGradientPreset.executiveIndigo);
+  static ThemeData get lightTheme => getLightTheme(AppThemePreset.executiveIndigo);
+  static ThemeData get darkTheme => getDarkTheme(AppThemePreset.executiveIndigo);
 
   // Light Theme Builder
-  static ThemeData getLightTheme(AppGradientPreset preset) {
+  static ThemeData getLightTheme(AppThemePreset preset) {
     final primary = ColorConstants.getPrimary(preset, Brightness.light);
     final secondary = ColorConstants.getSecondary(preset, Brightness.light);
 
@@ -115,7 +115,7 @@ class AppTheme {
   }
 
   // Dark Theme Builder
-  static ThemeData getDarkTheme(AppGradientPreset preset) {
+  static ThemeData getDarkTheme(AppThemePreset preset) {
     final primary = ColorConstants.getPrimary(preset, Brightness.dark);
     final secondary = ColorConstants.getSecondary(preset, Brightness.dark);
 

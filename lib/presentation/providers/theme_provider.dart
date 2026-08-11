@@ -3,35 +3,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/constants/app_constants.dart';
 
-enum AppGradientPreset {
+enum AppThemePreset {
+  // 8 Dual-Tone Gradients
   executiveIndigo, // #4F46E5 -> #818CF8
   emeraldTeal,     // #059669 -> #14B8A6
   sunsetRose,      // #E11D48 -> #C084FC
   amberGold,       // #D97706 -> #F97316
   obsidianCyan,    // #0284C7 -> #06B6D4
+  midnightPurple,  // #6D28D9 -> #A855F7
+  oceanBlue,       // #2563EB -> #38BDF8
+  crimsonFlame,    // #991B1B -> #EF4444
+
+  // 8 Solid Accent Colors
+  classicNavy,     // #1E3A8A
+  pureEmerald,     // #047857
+  darkCharcoal,    // #1F2937
+  royalViolet,     // #5B21B6
+  deepCrimson,     // #991B1B
+  burntOrange,     // #C2410C
+  deepCyan,        // #0E7490
+  forestGreen,     // #14532D
 }
 
 class ThemeState {
   final ThemeMode themeMode;
-  final AppGradientPreset gradientPreset;
+  final AppThemePreset themePreset;
 
   const ThemeState({
     this.themeMode = ThemeMode.system,
-    this.gradientPreset = AppGradientPreset.executiveIndigo,
+    this.themePreset = AppThemePreset.executiveIndigo,
   });
 
   ThemeState copyWith({
     ThemeMode? themeMode,
-    AppGradientPreset? gradientPreset,
+    AppThemePreset? themePreset,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
-      gradientPreset: gradientPreset ?? this.gradientPreset,
+      themePreset: themePreset ?? this.themePreset,
     );
   }
 }
 
-// Provider for SharedPreferences to support synchronous reads in providers.
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences has not been initialized');
 });
@@ -50,7 +63,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
   void _loadTheme() {
     final themeString = _prefs.getString(AppConstants.keyThemeMode);
-    final gradientString = _prefs.getString('key_gradient_preset');
+    final presetString = _prefs.getString('key_theme_preset');
 
     ThemeMode mode = ThemeMode.system;
     if (themeString != null) {
@@ -62,19 +75,17 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       }
     }
 
-    AppGradientPreset preset = AppGradientPreset.executiveIndigo;
-    if (gradientString != null) {
-      switch (gradientString) {
-        case 'emeraldTeal': preset = AppGradientPreset.emeraldTeal; break;
-        case 'sunsetRose': preset = AppGradientPreset.sunsetRose; break;
-        case 'amberGold': preset = AppGradientPreset.amberGold; break;
-        case 'obsidianCyan': preset = AppGradientPreset.obsidianCyan; break;
-        case 'executiveIndigo':
-        default: preset = AppGradientPreset.executiveIndigo; break;
+    AppThemePreset preset = AppThemePreset.executiveIndigo;
+    if (presetString != null) {
+      for (var val in AppThemePreset.values) {
+        if (val.name == presetString) {
+          preset = val;
+          break;
+        }
       }
     }
 
-    state = ThemeState(themeMode: mode, gradientPreset: preset);
+    state = ThemeState(themeMode: mode, themePreset: preset);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -88,9 +99,9 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     await _prefs.setString(AppConstants.keyThemeMode, themeString);
   }
 
-  Future<void> setGradientPreset(AppGradientPreset preset) async {
-    state = state.copyWith(gradientPreset: preset);
-    await _prefs.setString('key_gradient_preset', preset.name);
+  Future<void> setThemePreset(AppThemePreset preset) async {
+    state = state.copyWith(themePreset: preset);
+    await _prefs.setString('key_theme_preset', preset.name);
   }
 
   Future<void> toggleTheme() async {

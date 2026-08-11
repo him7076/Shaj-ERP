@@ -35,25 +35,55 @@ class ColorConstants {
   static const Color errorContainerDark = Color(0xFF881337); // Rose 900
   static const Color onErrorContainerDark = Color(0xFFFFE4E6); // Rose 100
 
-  // Dual-Tone Gradient Presets Color Resolvers
-  static Color getPrimary(AppGradientPreset preset, Brightness brightness) {
+  // 16 Theme Presets Color Resolvers (8 Gradients + 8 Solid Accents)
+  static Color getPrimary(AppThemePreset preset, Brightness brightness) {
     switch (preset) {
-      case AppGradientPreset.emeraldTeal: return const Color(0xFF059669);
-      case AppGradientPreset.sunsetRose: return const Color(0xFFE11D48);
-      case AppGradientPreset.amberGold: return const Color(0xFFD97706);
-      case AppGradientPreset.obsidianCyan: return const Color(0xFF0284C7);
-      case AppGradientPreset.executiveIndigo:
+      // 8 Dual-Tone Gradients
+      case AppThemePreset.emeraldTeal: return const Color(0xFF059669);
+      case AppThemePreset.sunsetRose: return const Color(0xFFE11D48);
+      case AppThemePreset.amberGold: return const Color(0xFFD97706);
+      case AppThemePreset.obsidianCyan: return const Color(0xFF0284C7);
+      case AppThemePreset.midnightPurple: return const Color(0xFF6D28D9);
+      case AppThemePreset.oceanBlue: return const Color(0xFF2563EB);
+      case AppThemePreset.crimsonFlame: return const Color(0xFF991B1B);
+
+      // 8 Solid Accent Colors
+      case AppThemePreset.classicNavy: return const Color(0xFF1E3A8A);
+      case AppThemePreset.pureEmerald: return const Color(0xFF047857);
+      case AppThemePreset.darkCharcoal: return const Color(0xFF1F2937);
+      case AppThemePreset.royalViolet: return const Color(0xFF5B21B6);
+      case AppThemePreset.deepCrimson: return const Color(0xFF991B1B);
+      case AppThemePreset.burntOrange: return const Color(0xFFC2410C);
+      case AppThemePreset.deepCyan: return const Color(0xFF0E7490);
+      case AppThemePreset.forestGreen: return const Color(0xFF14532D);
+
+      case AppThemePreset.executiveIndigo:
       default: return const Color(0xFF4F46E5);
     }
   }
 
-  static Color getSecondary(AppGradientPreset preset, Brightness brightness) {
+  static Color getSecondary(AppThemePreset preset, Brightness brightness) {
     switch (preset) {
-      case AppGradientPreset.emeraldTeal: return const Color(0xFF14B8A6);
-      case AppGradientPreset.sunsetRose: return const Color(0xFFC084FC);
-      case AppGradientPreset.amberGold: return const Color(0xFFF97316);
-      case AppGradientPreset.obsidianCyan: return const Color(0xFF06B6D4);
-      case AppGradientPreset.executiveIndigo:
+      // 8 Dual-Tone Gradients
+      case AppThemePreset.emeraldTeal: return const Color(0xFF14B8A6);
+      case AppThemePreset.sunsetRose: return const Color(0xFFC084FC);
+      case AppThemePreset.amberGold: return const Color(0xFFF97316);
+      case AppThemePreset.obsidianCyan: return const Color(0xFF06B6D4);
+      case AppThemePreset.midnightPurple: return const Color(0xFFA855F7);
+      case AppThemePreset.oceanBlue: return const Color(0xFF38BDF8);
+      case AppThemePreset.crimsonFlame: return const Color(0xFFEF4444);
+
+      // 8 Solid Accent Colors (Secondary matches Primary for solid fill)
+      case AppThemePreset.classicNavy: return const Color(0xFF1E3A8A);
+      case AppThemePreset.pureEmerald: return const Color(0xFF047857);
+      case AppThemePreset.darkCharcoal: return const Color(0xFF1F2937);
+      case AppThemePreset.royalViolet: return const Color(0xFF5B21B6);
+      case AppThemePreset.deepCrimson: return const Color(0xFF991B1B);
+      case AppThemePreset.burntOrange: return const Color(0xFFC2410C);
+      case AppThemePreset.deepCyan: return const Color(0xFF0E7490);
+      case AppThemePreset.forestGreen: return const Color(0xFF14532D);
+
+      case AppThemePreset.executiveIndigo:
       default: return const Color(0xFF818CF8);
     }
   }

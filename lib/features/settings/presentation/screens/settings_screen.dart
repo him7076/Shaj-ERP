@@ -161,38 +161,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 20),
 
+                    const SizedBox(height: 20),
+
                     const Text(
-                      'Dual-Tone Gradient Theme Preset:',
+                      'Dual-Tone Gradient Presets (8):',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
 
                     Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: AppGradientPreset.values.map((preset) {
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: AppThemePreset.values.take(8).map((preset) {
                         final primaryColor = ColorConstants.getPrimary(preset, theme.brightness);
                         final secondaryColor = ColorConstants.getSecondary(preset, theme.brightness);
-                        final isSelected = currentThemeState.gradientPreset == preset;
+                        final isSelected = currentThemeState.themePreset == preset;
 
                         String label;
                         switch (preset) {
-                          case AppGradientPreset.emeraldTeal: label = 'Emerald Teal'; break;
-                          case AppGradientPreset.sunsetRose: label = 'Sunset Rose'; break;
-                          case AppGradientPreset.amberGold: label = 'Amber Gold'; break;
-                          case AppGradientPreset.obsidianCyan: label = 'Obsidian Cyan'; break;
-                          case AppGradientPreset.executiveIndigo:
+                          case AppThemePreset.emeraldTeal: label = 'Emerald Teal'; break;
+                          case AppThemePreset.sunsetRose: label = 'Sunset Rose'; break;
+                          case AppThemePreset.amberGold: label = 'Amber Gold'; break;
+                          case AppThemePreset.obsidianCyan: label = 'Obsidian Cyan'; break;
+                          case AppThemePreset.midnightPurple: label = 'Midnight Purple'; break;
+                          case AppThemePreset.oceanBlue: label = 'Ocean Blue'; break;
+                          case AppThemePreset.crimsonFlame: label = 'Crimson Flame'; break;
+                          case AppThemePreset.executiveIndigo:
                           default: label = 'Executive Indigo'; break;
                         }
 
                         return InkWell(
                           onTap: () {
-                            ref.read(themeProvider.notifier).setGradientPreset(preset);
+                            ref.read(themeProvider.notifier).setThemePreset(preset);
                           },
                           borderRadius: BorderRadius.circular(20),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                             decoration: BoxDecoration(
                               color: isSelected ? primaryColor.withOpacity(0.15) : theme.colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
@@ -205,8 +210,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  width: 18,
-                                  height: 18,
+                                  width: 16,
+                                  height: 16,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     gradient: LinearGradient(
@@ -218,7 +223,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 Text(
                                   label,
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    color: isSelected ? primaryColor : theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    const Text(
+                      'Solid Accent Colors (8):',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: AppThemePreset.values.skip(8).map((preset) {
+                        final primaryColor = ColorConstants.getPrimary(preset, theme.brightness);
+                        final isSelected = currentThemeState.themePreset == preset;
+
+                        String label;
+                        switch (preset) {
+                          case AppThemePreset.classicNavy: label = 'Classic Navy'; break;
+                          case AppThemePreset.pureEmerald: label = 'Pure Emerald'; break;
+                          case AppThemePreset.darkCharcoal: label = 'Dark Charcoal'; break;
+                          case AppThemePreset.royalViolet: label = 'Royal Violet'; break;
+                          case AppThemePreset.deepCrimson: label = 'Deep Crimson'; break;
+                          case AppThemePreset.burntOrange: label = 'Burnt Orange'; break;
+                          case AppThemePreset.deepCyan: label = 'Deep Cyan'; break;
+                          case AppThemePreset.forestGreen:
+                          default: label = 'Forest Green'; break;
+                        }
+
+                        return InkWell(
+                          onTap: () {
+                            ref.read(themeProvider.notifier).setThemePreset(preset);
+                          },
+                          borderRadius: BorderRadius.circular(20),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: isSelected ? primaryColor.withOpacity(0.15) : theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? primaryColor : theme.colorScheme.outlineVariant,
+                                width: isSelected ? 2.0 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                CircleAvatar(
+                                  radius: 8,
+                                  backgroundColor: primaryColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  label,
+                                  style: TextStyle(
+                                    fontSize: 12,
                                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                     color: isSelected ? primaryColor : theme.colorScheme.onSurface,
                                   ),
