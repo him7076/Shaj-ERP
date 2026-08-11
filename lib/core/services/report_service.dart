@@ -8,6 +8,8 @@ import 'package:business_sahaj_erp/data/local/collections/order_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 
 class ReportService {
   final DatabaseService _dbService;
