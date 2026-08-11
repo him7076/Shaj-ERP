@@ -927,8 +927,12 @@ class SyncService {
     }
 
     // Post-download pass: Re-link relations and recalculate item stocks with yielding
-    await _relinkAllRelations();
-    await recalculateAllItemStocksFromTransactions();
+    try {
+      await _relinkAllRelations();
+      await recalculateAllItemStocksFromTransactions();
+    } catch (e, stackTrace) {
+      logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
+    }
   }
 
   /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
@@ -2302,7 +2306,8 @@ class SyncService {
         });
 
         // Restore embedded items if present in document
-        if (data.containsKey('items') && data['items'] is List) {
+        final bool hasEmbeddedInvItems = data.containsKey('items') && data['items'] is List && (data['items'] as List).isNotEmpty;
+        if (hasEmbeddedInvItems) {
           final itemsList = data['items'] as List;
           for (var itemMap in itemsList) {
             if (itemMap is Map<String, dynamic>) {
@@ -2335,6 +2340,50 @@ class SyncService {
                 await isar.invoiceItems.put(invItem);
               });
             }
+          }
+        } else if (e.uuid != null && e.uuid!.isNotEmpty) {
+          // Legacy Cloud Fallback: Fetch from legacy 'invoice_items' collection in Firestore
+          try {
+            final legacySnapshot = await _firebaseService.firestore
+                .collection('invoice_items')
+                .where('companyId', isEqualTo: _firebaseService.companyId)
+                .where('parentInvoiceUuid', isEqualTo: e.uuid)
+                .get()
+                .timeout(const Duration(seconds: 5));
+
+            for (var legacyDoc in legacySnapshot.docs) {
+              final itemMap = legacyDoc.data();
+              final itemUuid = itemMap['uuid'] as String? ?? legacyDoc.id;
+              final InvoiceItem invItem = (await isar.invoiceItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? InvoiceItem();
+              invItem
+                ..uuid = itemUuid
+                ..parentInvoiceId = e.id
+                ..parentInvoiceUuid = e.uuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..freeQuantity = (itemMap['freeQuantity'] as num?)?.toDouble()
+                ..unit = itemMap['unit'] as String?
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discount = (itemMap['discount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstRate = (itemMap['gstRate'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..batchNumber = itemMap['batchNumber'] as String?
+                ..expiryDate = itemMap['expiryDate'] as String?
+                ..mfgDate = itemMap['mfgDate'] as String?
+                ..isDeleted = itemMap['isDeleted'] as bool? ?? false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              await isar.writeTxn(() async {
+                await isar.invoiceItems.put(invItem);
+              });
+            }
+          } catch (legacyErr) {
+            logger.warning('Legacy invoice_items query fallback non-fatal warning: $legacyErr');
           }
         }
       } else if (entityType == 'InvoiceItem') {
@@ -2370,7 +2419,8 @@ class SyncService {
         }
 
         // Restore embedded items if present in document
-        if (data.containsKey('items') && data['items'] is List) {
+        final bool hasEmbeddedPItems = data.containsKey('items') && data['items'] is List && (data['items'] as List).isNotEmpty;
+        if (hasEmbeddedPItems) {
           final itemsList = data['items'] as List;
           for (var itemMap in itemsList) {
             if (itemMap is Map<String, dynamic>) {
@@ -2402,6 +2452,49 @@ class SyncService {
                 await isar.purchaseItems.put(purItem);
               });
             }
+          }
+        } else if (e.uuid != null && e.uuid!.isNotEmpty) {
+          // Legacy Cloud Fallback: Fetch from legacy 'purchase_items' collection in Firestore
+          try {
+            final legacySnapshot = await _firebaseService.firestore
+                .collection('purchase_items')
+                .where('companyId', isEqualTo: _firebaseService.companyId)
+                .where('purchaseUuid', isEqualTo: e.uuid)
+                .get()
+                .timeout(const Duration(seconds: 5));
+
+            for (var legacyDoc in legacySnapshot.docs) {
+              final itemMap = legacyDoc.data();
+              final itemUuid = itemMap['uuid'] as String? ?? legacyDoc.id;
+              final PurchaseItem purItem = (await isar.purchaseItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? PurchaseItem();
+              purItem
+                ..uuid = itemUuid
+                ..purchaseId = e.id
+                ..purchaseUuid = e.uuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discount = (itemMap['discount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstRate = (itemMap['gstRate'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..unit = itemMap['unit'] as String?
+                ..batchNumber = itemMap['batchNumber'] as String?
+                ..expiryDate = itemMap['expiryDate'] as String?
+                ..mfgDate = itemMap['mfgDate'] as String?
+                ..isDeleted = itemMap['isDeleted'] as bool? ?? false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              await isar.writeTxn(() async {
+                await isar.purchaseItems.put(purItem);
+              });
+            }
+          } catch (legacyErr) {
+            logger.warning('Legacy purchase_items query fallback non-fatal warning: $legacyErr');
           }
         }
       } else if (entityType == 'PurchaseItem') {

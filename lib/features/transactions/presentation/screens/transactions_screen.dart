@@ -169,7 +169,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   leading: const Icon(Icons.person_outline),
                   title: const Text('Party Name'),
                   subtitle: Text(
-                    txn.partyName ?? 'General Party',
+                    (txn.partyName != null && txn.partyName!.trim().isNotEmpty
+                        ? txn.partyName!
+                        : (() {
+                            try {
+                              txn.party.loadSync();
+                            } catch (_) {}
+                            return txn.party.value?.partyName;
+                          })() ??
+                          'General Party'),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),

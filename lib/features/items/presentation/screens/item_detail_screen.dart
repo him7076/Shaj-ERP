@@ -199,15 +199,17 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
         for (var adj in adjustments) {
           final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+          final adjRate = fetchedItem.buyRate ?? 0.0;
+          final adjQty = adj.quantity ?? 0.0;
           txs.add(_ItemTransaction(
             type: 'Adjustment',
             date: adj.adjustmentDate ?? adj.createdAt,
-            title: 'Stock Adjustment (${isAdd ? "Add +" : "Reduce -"})',
+            title: 'Stock Adjustment (${isAdd ? "Stock In +" : "Stock Out -"})',
             partyName: adj.reason ?? (isAdd ? 'Stock Added' : 'Stock Reduced'),
-            quantity: adj.quantity ?? 0.0,
+            quantity: adjQty,
             unit: adj.unit ?? (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
-            rate: 0.0,
-            totalAmount: 0.0,
+            rate: adjRate,
+            totalAmount: adjQty * adjRate,
             targetUuid: adj.uuid ?? adj.id.toString(),
             rawAdjustment: adj,
           ));
@@ -558,8 +560,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 _DetailRow('Product Name', adj.itemName ?? 'N/A'),
                 _DetailRow('Adjustment Type', isAdd ? 'Stock In (+)' : 'Stock Out (-)'),
                 _DetailRow('Quantity & Unit', '${adj.quantity ?? 0.0} ${adj.unit ?? ''}'),
+                _DetailRow('Rate per Unit', _currencyFormat.format(_item?.buyRate ?? 0.0)),
+                _DetailRow('Total Value', _currencyFormat.format((adj.quantity ?? 0.0) * (_item?.buyRate ?? 0.0)), isBold: true),
                 _DetailRow('Adjustment Date', dateStr),
-                _DetailRow('Reason', adj.reason ?? 'N/A', isBold: true),
+                _DetailRow('Reason', adj.reason ?? 'N/A'),
                 if (adj.notes != null && adj.notes!.isNotEmpty)
                   _DetailRow('Notes', adj.notes!),
               ], theme),

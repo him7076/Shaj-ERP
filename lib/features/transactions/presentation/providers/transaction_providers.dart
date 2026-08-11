@@ -148,7 +148,18 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       final pName = t.partyName?.toLowerCase() ?? '';
       final tType = t.transactionType?.toLowerCase() ?? '';
       final rem = t.remarks?.toLowerCase() ?? '';
-      return tNo.contains(q) || pName.contains(q) || tType.contains(q) || rem.contains(q);
+      final pMode = t.paymentMode?.toLowerCase() ?? '';
+      final refNo = t.referenceNumber?.toLowerCase() ?? '';
+      final billNo = t.linkedBillNumber?.toLowerCase() ?? '';
+      final targetPName = t.targetPartyName?.toLowerCase() ?? '';
+      return tNo.contains(q) ||
+          pName.contains(q) ||
+          tType.contains(q) ||
+          rem.contains(q) ||
+          pMode.contains(q) ||
+          refNo.contains(q) ||
+          billNo.contains(q) ||
+          targetPName.contains(q);
     }).toList();
   }
 

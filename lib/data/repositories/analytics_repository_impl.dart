@@ -97,41 +97,13 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     double totalOutstanding = 0.0;
     double totalPayable = 0.0;
     for (var p in parties) {
-      final pUuid = p.uuid;
-      final pName = p.partyName?.trim().toLowerCase();
-      final pId = p.id;
-
-      double salesPending = 0.0;
-      final partyInvoices = allInvoices.where((inv) {
-        final match = (pUuid != null && inv.party.value?.uuid == pUuid) ||
-                      (pName != null && inv.partyName?.trim().toLowerCase() == pName) ||
-                      inv.partyId == pId;
-        return match && inv.paymentStatus != 'Cancelled';
-      }).toList();
-      for (var inv in partyInvoices) {
-        salesPending += (inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0)));
-      }
-
-      double purchasePending = 0.0;
-      final partyPurchases = allPurchases.where((pur) {
-        final match = (pUuid != null && pur.party.value?.uuid == pUuid) ||
-                      (pName != null && pur.partyName?.trim().toLowerCase() == pName) ||
-                      pur.partyId == pId;
-        return match && pur.paymentStatus != 'Cancelled';
-      }).toList();
-      for (var pur in partyPurchases) {
-        purchasePending += (pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0)));
-      }
-
-      final opening = p.openingBalance ?? 0.0;
-      final storedBal = p.outstandingBalance ?? 0.0;
-
-      if (p.partyType == 'Supplier') {
-        final due = purchasePending > 0 ? purchasePending : (storedBal != 0 ? storedBal : opening);
-        if (due > 0) totalPayable += due;
-      } else {
-        final due = salesPending > 0 ? salesPending : (storedBal != 0 ? storedBal : opening);
-        if (due > 0) totalOutstanding += due;
+      final bal = p.outstandingBalance ?? 0.0;
+      if (bal > 0) {
+        if (p.partyType == 'Customer' || p.balanceType == 'Debit') {
+          totalOutstanding += bal;
+        } else if (p.partyType == 'Supplier' || p.balanceType == 'Credit') {
+          totalPayable += bal;
+        }
       }
     }
 
