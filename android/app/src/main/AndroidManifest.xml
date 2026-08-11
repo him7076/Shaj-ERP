@@ -45,6 +45,13 @@
         <meta-data
             android:name="com.baseflow.geolocator.LOCATION_SERVICE_NOTIFICATIONS_ENABLED"
             android:value="false" />
+
+        <!-- Explicit declaration of Geolocator location service to prevent Android 14+ ANR service timeout -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         
         <activity
             android:name=".MainActivity"
