@@ -23,24 +23,35 @@ enum AppThemePreset {
   burntOrange,     // #C2410C
   deepCyan,        // #0E7490
   forestGreen,     // #14532D
+
+  // Custom Spectrum User Color
+  custom,
 }
 
 class ThemeState {
   final ThemeMode themeMode;
   final AppThemePreset themePreset;
+  final Color? customPrimaryColor;
+  final Color? customSecondaryColor;
 
   const ThemeState({
     this.themeMode = ThemeMode.system,
     this.themePreset = AppThemePreset.executiveIndigo,
+    this.customPrimaryColor,
+    this.customSecondaryColor,
   });
 
   ThemeState copyWith({
     ThemeMode? themeMode,
     AppThemePreset? themePreset,
+    Color? customPrimaryColor,
+    Color? customSecondaryColor,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
       themePreset: themePreset ?? this.themePreset,
+      customPrimaryColor: customPrimaryColor ?? this.customPrimaryColor,
+      customSecondaryColor: customSecondaryColor ?? this.customSecondaryColor,
     );
   }
 }
@@ -64,6 +75,8 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   void _loadTheme() {
     final themeString = _prefs.getString(AppConstants.keyThemeMode);
     final presetString = _prefs.getString('key_theme_preset');
+    final primaryValue = _prefs.getInt('key_custom_primary_color');
+    final secondaryValue = _prefs.getInt('key_custom_secondary_color');
 
     ThemeMode mode = ThemeMode.system;
     if (themeString != null) {
@@ -85,7 +98,15 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
       }
     }
 
-    state = ThemeState(themeMode: mode, themePreset: preset);
+    final customPrimary = primaryValue != null ? Color(primaryValue) : null;
+    final customSecondary = secondaryValue != null ? Color(secondaryValue) : null;
+
+    state = ThemeState(
+      themeMode: mode,
+      themePreset: preset,
+      customPrimaryColor: customPrimary,
+      customSecondaryColor: customSecondary,
+    );
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -102,6 +123,17 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
   Future<void> setThemePreset(AppThemePreset preset) async {
     state = state.copyWith(themePreset: preset);
     await _prefs.setString('key_theme_preset', preset.name);
+  }
+
+  Future<void> setCustomColors(Color primary, Color secondary) async {
+    state = state.copyWith(
+      themePreset: AppThemePreset.custom,
+      customPrimaryColor: primary,
+      customSecondaryColor: secondary,
+    );
+    await _prefs.setString('key_theme_preset', AppThemePreset.custom.name);
+    await _prefs.setInt('key_custom_primary_color', primary.value);
+    await _prefs.setInt('key_custom_secondary_color', secondary.value);
   }
 
   Future<void> toggleTheme() async {

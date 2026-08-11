@@ -318,6 +318,74 @@ class DatabaseService {
     }
   }
 
+  /// Cascading rename Party Name across all transactions, invoices, and purchases
+  Future<void> cascadeRenameParty(String partyUuid, String newPartyName) async {
+    if (partyUuid.isEmpty || newPartyName.trim().isEmpty) return;
+    try {
+      final name = newPartyName.trim();
+      await isar.writeTxn(() async {
+        final invoices = await isar.invoices.filter().party((q) => q.uuidEqualTo(partyUuid)).findAll();
+        for (var inv in invoices) {
+          inv.partyName = name;
+          inv.isSynced = false;
+          inv.updatedAt = DateTime.now();
+          await isar.invoices.put(inv);
+        }
+
+        final purchases = await isar.purchases.filter().party((q) => q.uuidEqualTo(partyUuid)).findAll();
+        for (var pur in purchases) {
+          pur.partyName = name;
+          pur.isSynced = false;
+          pur.updatedAt = DateTime.now();
+          await isar.purchases.put(pur);
+        }
+
+        final txns = await isar.transactions.filter().partyUuidEqualTo(partyUuid).findAll();
+        for (var t in txns) {
+          t.partyName = name;
+          t.isSynced = false;
+          t.updatedAt = DateTime.now();
+          await isar.transactions.put(t);
+        }
+      });
+    } catch (e) {
+      logger.error('Failed to cascade rename party', e);
+    }
+  }
+
+  /// Cascading rename Item Name across all line item collections
+  Future<void> cascadeRenameItem(String itemUuid, String newItemName) async {
+    if (itemUuid.isEmpty || newItemName.trim().isEmpty) return;
+    try {
+      final name = newItemName.trim();
+      await isar.writeTxn(() async {
+        final invItems = await isar.invoiceItems.filter().item((q) => q.uuidEqualTo(itemUuid)).findAll();
+        for (var ii in invItems) {
+          ii.itemName = name;
+          ii.isSynced = false;
+          await isar.invoiceItems.put(ii);
+        }
+
+        final purItems = await isar.purchaseItems.filter().item((q) => q.uuidEqualTo(itemUuid)).findAll();
+        for (var pi in purItems) {
+          pi.itemName = name;
+          pi.isSynced = false;
+          await isar.purchaseItems.put(pi);
+        }
+
+        final adjs = await isar.collection<StockAdjustment>().filter().itemUuidEqualTo(itemUuid).findAll();
+        for (var adj in adjs) {
+          adj.itemName = name;
+          adj.isSynced = false;
+          adj.updatedAt = DateTime.now();
+          await isar.collection<StockAdjustment>().put(adj);
+        }
+      });
+    } catch (e) {
+      logger.error('Failed to cascade rename item', e);
+    }
+  }
+
   /// Internal schema migration runner (migration hook)
   Future<void> _checkAndRunMigrations() async {
     // Read the version from local storage settings if any, or run custom migration logic

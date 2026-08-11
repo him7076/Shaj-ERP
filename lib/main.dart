@@ -153,8 +153,16 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Business Sahaj ERP',
-      theme: AppTheme.getLightTheme(themeState.themePreset),
-      darkTheme: AppTheme.getDarkTheme(themeState.themePreset),
+      theme: AppTheme.getLightTheme(
+        themeState.themePreset,
+        customPrimary: themeState.customPrimaryColor,
+        customSecondary: themeState.customSecondaryColor,
+      ),
+      darkTheme: AppTheme.getDarkTheme(
+        themeState.themePreset,
+        customPrimary: themeState.customPrimaryColor,
+        customSecondary: themeState.customSecondaryColor,
+      ),
       themeMode: themeState.themeMode,
       routerConfig: router,
       debugShowCheckedModeBanner: false,

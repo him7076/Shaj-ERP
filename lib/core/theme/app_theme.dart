@@ -7,9 +7,9 @@ class AppTheme {
   static ThemeData get darkTheme => getDarkTheme(AppThemePreset.executiveIndigo);
 
   // Light Theme Builder
-  static ThemeData getLightTheme(AppThemePreset preset) {
-    final primary = ColorConstants.getPrimary(preset, Brightness.light);
-    final secondary = ColorConstants.getSecondary(preset, Brightness.light);
+  static ThemeData getLightTheme(AppThemePreset preset, {Color? customPrimary, Color? customSecondary}) {
+    final primary = customPrimary ?? ColorConstants.getPrimary(preset, Brightness.light);
+    final secondary = customSecondary ?? ColorConstants.getSecondary(preset, Brightness.light);
 
     return ThemeData(
       useMaterial3: true,
@@ -115,9 +115,9 @@ class AppTheme {
   }
 
   // Dark Theme Builder
-  static ThemeData getDarkTheme(AppThemePreset preset) {
-    final primary = ColorConstants.getPrimary(preset, Brightness.dark);
-    final secondary = ColorConstants.getSecondary(preset, Brightness.dark);
+  static ThemeData getDarkTheme(AppThemePreset preset, {Color? customPrimary, Color? customSecondary}) {
+    final primary = customPrimary ?? ColorConstants.getPrimary(preset, Brightness.dark);
+    final secondary = customSecondary ?? ColorConstants.getSecondary(preset, Brightness.dark);
 
     return ThemeData(
       useMaterial3: true,

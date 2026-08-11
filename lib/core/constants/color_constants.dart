@@ -57,6 +57,9 @@ class ColorConstants {
       case AppThemePreset.deepCyan: return const Color(0xFF0E7490);
       case AppThemePreset.forestGreen: return const Color(0xFF14532D);
 
+      case AppThemePreset.custom:
+        return const Color(0xFF4F46E5);
+
       case AppThemePreset.executiveIndigo:
       default: return const Color(0xFF4F46E5);
     }
@@ -82,6 +85,9 @@ class ColorConstants {
       case AppThemePreset.burntOrange: return const Color(0xFFC2410C);
       case AppThemePreset.deepCyan: return const Color(0xFF0E7490);
       case AppThemePreset.forestGreen: return const Color(0xFF14532D);
+
+      case AppThemePreset.custom:
+        return const Color(0xFF818CF8);
 
       case AppThemePreset.executiveIndigo:
       default: return const Color(0xFF818CF8);
