@@ -836,6 +836,89 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     );
   }
 
+  Future<double> _calculateTransactionStockValuation(Item item) async {
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+
+      // 1. Total Inflow from Purchases
+      final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
+      double totalInflowValue = 0.0;
+      double totalInflowQty = 0.0;
+
+      for (var pi in purchaseItems) {
+        try { await pi.item.load(); } catch (_) {}
+        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && pi.item.value?.uuid == item.uuid;
+        final matchName = pi.itemName != null && item.itemName != null && pi.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
+        final matchId = pi.itemId != null && pi.itemId! > 0 && pi.itemId == item.id;
+
+        if (matchUuid || matchName || matchId) {
+          final q = pi.quantity ?? 0.0;
+          final r = pi.rate ?? 0.0;
+          if (q > 0) {
+            totalInflowValue += (q * r);
+            totalInflowQty += q;
+          }
+        }
+      }
+
+      // 2. Adjustments: Stock In (Inflow) vs Stock Out (Reduce)
+      final adjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+      double stockOutValue = 0.0;
+
+      for (var sa in adjustments) {
+        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && sa.itemUuid == item.uuid;
+        final matchName = sa.itemName != null && item.itemName != null && sa.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
+        final matchId = sa.itemId != null && sa.itemId! > 0 && sa.itemId == item.id;
+
+        if (matchUuid || matchName || matchId) {
+          final q = sa.quantity ?? 0.0;
+          final r = sa.ratePerUnit ?? 0.0;
+          final isAdd = sa.adjustmentType == 'Add' || sa.adjustmentType == 'Stock In';
+          if (isAdd) {
+            if (q > 0 && r > 0) {
+              totalInflowValue += (q * r);
+              totalInflowQty += q;
+            }
+          } else {
+            final val = sa.totalValue ?? (q * (r > 0 ? r : ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0))));
+            stockOutValue += val;
+          }
+        }
+      }
+
+      final avgBuyRate = totalInflowQty > 0 
+          ? (totalInflowValue / totalInflowQty) 
+          : ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
+
+      // 3. Outflow COGS from Sales Invoices
+      final invoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      double salesCogsValue = 0.0;
+
+      for (var ii in invoiceItems) {
+        try { await ii.item.load(); } catch (_) {}
+        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && ii.item.value?.uuid == item.uuid;
+        final matchName = ii.itemName != null && item.itemName != null && ii.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
+        final matchId = ii.itemId != null && ii.itemId! > 0 && ii.itemId == item.id;
+
+        if (matchUuid || matchName || matchId) {
+          final q = ii.quantity ?? 0.0;
+          if (q > 0) {
+            salesCogsValue += (q * avgBuyRate);
+          }
+        }
+      }
+
+      // Net Stock Valuation = Inflow Purchases - Sales COGS - Stock Reduce
+      if (totalInflowQty > 0 || totalInflowValue > 0) {
+        final calculatedVal = totalInflowValue - salesCogsValue - stockOutValue;
+        return calculatedVal < 0 ? 0.0 : calculatedVal;
+      }
+    } catch (_) {}
+
+    final unitRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
+    return (item.currentStock ?? 0.0) * unitRate;
+  }
+
   Future<double> _getEffectiveBuyRate(Item item) async {
     try {
       final isar = ref.read(databaseServiceProvider).isar;

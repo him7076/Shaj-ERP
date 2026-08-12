@@ -908,31 +908,31 @@ class SyncService {
           }
         }
 
-        var query = _firebaseService.firestore
-            .collection(collectionName)
-            .where('companyId', isEqualTo: _firebaseService.companyId);
+        dynamic querySnapshot;
+        try {
+          var query = _firebaseService.firestore
+              .collection(collectionName)
+              .where('companyId', isEqualTo: _firebaseService.companyId);
 
-        // Incremental Delta Sync filter by updatedAt only if cloud sync history exists
-        if (filterCutoff != null) {
-          query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+          if (filterCutoff != null) {
+            query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+          }
+
+          querySnapshot = await query.get().timeout(const Duration(seconds: 3));
+        } catch (queryErr) {
+          logger.warning('Delta query failed for $entityType, trying simple query: $queryErr');
+          try {
+            final fallbackQuery = _firebaseService.firestore
+                .collection(collectionName)
+                .where('companyId', isEqualTo: _firebaseService.companyId);
+            querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 3));
+          } catch (_) {}
         }
-
-        // Enforce fast 3-second timeout per query
-        var querySnapshot = await query.get().timeout(const Duration(seconds: 3));
-        await Future.delayed(Duration.zero);
 
         // Update dedicated cloud sync timestamp in SharedPreferences
         await prefs.setString('last_cloud_sync_timestamp_$entityType', DateTime.now().toUtc().toIso8601String());
 
-        // Fallback: If query returned 0 documents and localCount is 0, fetch all for company
-        if (querySnapshot.docs.isEmpty && localCount == 0) {
-          final fallbackQuery = _firebaseService.firestore
-              .collection(collectionName)
-              .where('companyId', isEqualTo: _firebaseService.companyId);
-          querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 3));
-        }
-
-        if (querySnapshot.docs.isEmpty) continue;
+        if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
           if (d % 10 == 0) await Future.delayed(Duration.zero);

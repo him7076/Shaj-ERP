@@ -72,29 +72,31 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         if (item.partyType == 'Supplier') {
           final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
           for (var pur in purchases) {
-            final match = (partyUuid != null && pur.party.value?.uuid == partyUuid) ||
-                          (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
-                          pur.partyId == partyId;
-            if (match && pur.paymentStatus != 'Cancelled') {
+            try { await pur.party.load(); } catch (_) {}
+            final purUuid = pur.party.value?.uuid;
+            final matchUuid = partyUuid != null && partyUuid.isNotEmpty && purUuid == partyUuid;
+            final matchName = partyNameLower != null && partyNameLower.isNotEmpty && pur.partyName?.trim().toLowerCase() == partyNameLower;
+
+            if ((matchUuid || matchName) && pur.paymentStatus != 'Cancelled') {
               totalPending += (pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0)));
             }
           }
         } else {
           final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
           for (var inv in invoices) {
-            final match = (partyUuid != null && inv.party.value?.uuid == partyUuid) ||
-                          (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
-                          inv.partyId == partyId;
-            if (match && inv.paymentStatus != 'Cancelled') {
+            try { await inv.party.load(); } catch (_) {}
+            final invUuid = inv.party.value?.uuid;
+            final matchUuid = partyUuid != null && partyUuid.isNotEmpty && invUuid == partyUuid;
+            final matchName = partyNameLower != null && partyNameLower.isNotEmpty && inv.partyName?.trim().toLowerCase() == partyNameLower;
+
+            if ((matchUuid || matchName) && inv.paymentStatus != 'Cancelled') {
               totalPending += (inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0)));
             }
           }
         }
 
-        if (totalPending > 0 || (item.outstandingBalance ?? 0.0) == 0.0) {
-          final opening = item.openingBalance ?? 0.0;
-          item.outstandingBalance = totalPending > 0 ? totalPending : opening;
-        }
+        final opening = item.openingBalance ?? 0.0;
+        item.outstandingBalance = totalPending > 0 ? totalPending : opening;
       }
 
       setState(() {
