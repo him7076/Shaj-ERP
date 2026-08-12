@@ -205,16 +205,12 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     // 7. Top Products (last 30 days)
     final Map<String, _ProductAggregate> productMap = {};
     for (var inv in recentInvoices) {
-      final invoiceItems = kIsWeb
-          ? (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
-              .where((item) => item.parentInvoiceId == inv.id)
-              .toList()
-          : await isar.invoiceItems
-              .filter()
-              .invoice((q) => q.idEqualTo(inv.id))
-              .and()
-              .isDeletedEqualTo(false)
-              .findAll();
+      final invoiceItems = await isar.invoiceItems
+          .filter()
+          .parentInvoiceIdEqualTo(inv.id)
+          .and()
+          .isDeletedEqualTo(false)
+          .findAll();
 
       for (var item in invoiceItems) {
         final name = item.itemName ?? 'Unknown Product';
@@ -239,21 +235,23 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     }).toList();
     topProducts.sort((a, b) => b.revenue.compareTo(a.revenue));
 
-    // 8. Daily Sales Points (last 30 days)
+    // 8. Daily Sales Points (last 30 days) - In-memory calculation for instant response
     final List<DailySalesPoint> dailySalesPoints = [];
+    final date30DaysStart = now.subtract(const Duration(days: 30));
+    final invoices30Days = allInvoices.where((i) {
+      final dt = i.invoiceDate ?? i.createdAt;
+      return dt != null && dt.isAfter(date30DaysStart) && i.paymentStatus != 'Cancelled';
+    }).toList();
+
     for (int i = 29; i >= 0; i--) {
       final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: i));
       final dateStart = DateTime(date.year, date.month, date.day);
       final dateEnd = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
-      final dayInvoices = (await isar.invoices
-          .filter()
-          .isDeletedEqualTo(false)
-          .and()
-          .invoiceDateBetween(dateStart, dateEnd)
-          .findAll()).where((i) => i.paymentStatus != 'Cancelled').toList();
+      final daySum = invoices30Days
+          .where((i) => isWithin(i.invoiceDate ?? i.createdAt, dateStart, dateEnd))
+          .fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
 
-      final daySum = dayInvoices.fold(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
       dailySalesPoints.add(DailySalesPoint(date: date, salesAmount: daySum));
     }
 
@@ -272,7 +270,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     } catch (e, stackTrace) {
       print('DASHBOARD METRICS ERROR: $e');
       print(stackTrace);
-      rethrow;
+      return DashboardAnalyticsSummary.empty();
     }
   }
 }

@@ -374,6 +374,19 @@ class DashboardAnalyticsSummary {
     required this.topProducts,
     required this.dailySalesPoints,
   });
+
+  factory DashboardAnalyticsSummary.empty() => DashboardAnalyticsSummary(
+        todaySales: 0.0,
+        monthlySales: 0.0,
+        monthlyPurchases: 0.0,
+        pendingOrdersCount: 0,
+        totalOutstanding: 0.0,
+        totalPayable: 0.0,
+        lowStockCount: 0,
+        topCustomers: [],
+        topProducts: [],
+        dailySalesPoints: [],
+      );
 }
 
 class TopCustomerEntry {

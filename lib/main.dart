@@ -142,19 +142,29 @@ void main() {
   });
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Initialize background Sync Manager
-    try {
-      ref.read(syncManagerProvider).initialize();
-    } catch (e, stack) {
-      debugPrint('[BOOT ERROR] Failed to initialize sync manager on boot: $e');
-      logger.error('Failed to initialize sync manager on boot', e, stack);
-    }
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        ref.read(syncManagerProvider).initialize();
+      } catch (e, stack) {
+        debugPrint('[BOOT ERROR] Failed to initialize sync manager on boot: $e');
+        logger.error('Failed to initialize sync manager on boot', e, stack);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeState = ref.watch(themeProvider);
     final router = ref.watch(routerProvider);
 
