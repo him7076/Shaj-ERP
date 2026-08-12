@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/excel_csv_helper.dart';
@@ -565,7 +567,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       final partyNameKey = party.partyName?.trim().toLowerCase();
 
       if (party.partyType == 'Supplier') {
-        final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+        final purchases = await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll();
         for (var pur in purchases) {
           if (pur.paymentStatus == 'Cancelled') continue;
           try { pur.party.loadSync(); } catch (_) {}
@@ -577,7 +579,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
           }
         }
       } else {
-        final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+        final invoices = await isar.collection<Invoice>().filter().isDeletedEqualTo(false).findAll();
         for (var inv in invoices) {
           if (inv.paymentStatus == 'Cancelled') continue;
           try { inv.party.loadSync(); } catch (_) {}
