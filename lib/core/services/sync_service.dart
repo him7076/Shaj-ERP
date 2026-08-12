@@ -1024,7 +1024,11 @@ class SyncService {
         currentStep: totalSteps - 1,
         totalSteps: totalSteps,
       ));
-      await _relinkAllRelations();
+      try {
+        await _relinkAllRelations();
+      } catch (relErr) {
+        logger.warning('Relink relations warning: $relErr');
+      }
 
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1034,8 +1038,12 @@ class SyncService {
         currentStep: totalSteps,
         totalSteps: totalSteps,
       ));
-      await recalculateAllItemStocksFromTransactions();
-      await recalculateAllPartyBalancesFromTransactions();
+      try {
+        await recalculateAllItemStocksFromTransactions();
+        await recalculateAllPartyBalancesFromTransactions();
+      } catch (recalcErr) {
+        logger.warning('Recalculate balances warning: $recalcErr');
+      }
 
       _updateState(SyncState(
         status: SyncStatus.success,
@@ -2358,12 +2366,16 @@ class SyncService {
     }
 
     if (entity != null) {
-      entity.uuid = data['uuid'];
-      entity.createdAt = data['createdAt'] != null ? DateTime.parse(data['createdAt']) : DateTime.now();
-      entity.updatedAt = data['updatedAt'] != null ? DateTime.parse(data['updatedAt']) : DateTime.now();
-      entity.isDeleted = data['isDeleted'] ?? false;
+      entity.uuid = data['uuid']?.toString();
+      entity.createdAt = data['createdAt'] != null 
+          ? (DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()) 
+          : DateTime.now();
+      entity.updatedAt = data['updatedAt'] != null 
+          ? (DateTime.tryParse(data['updatedAt'].toString()) ?? DateTime.now()) 
+          : DateTime.now();
+      entity.isDeleted = data['isDeleted'] == true;
       entity.isSynced = true;
-      entity.version = data['version'] ?? 1;
+      entity.version = (data['version'] as num?)?.toInt() ?? 1;
     }
 
     return entity;

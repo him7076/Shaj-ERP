@@ -158,6 +158,50 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     return _customRoundOff ?? (_grandTotal - _rawGrandTotal);
   }
 
+  Future<void> _autoSaveExpenseItemMaster(String itemName, double defaultRate) async {
+    final name = itemName.trim();
+    if (name.isEmpty || name == _createNewItemTag) return;
+
+    try {
+      final dbService = ref.read(databaseServiceProvider);
+      final isar = dbService.isar;
+
+      final existing = await isar.collection<ExpenseItem>().filter().itemNameEqualTo(name, caseSensitive: false).findFirst();
+      if (existing == null) {
+        final expItem = ExpenseItem()
+          ..uuid = DateTime.now().microsecondsSinceEpoch.toString()
+          ..itemName = name
+          ..defaultRate = defaultRate
+          ..updatedAt = DateTime.now();
+
+        await isar.writeTxn(() async {
+          final id = await isar.collection<ExpenseItem>().put(expItem);
+          final queueItem = SyncQueue()
+            ..uuid = DateTime.now().microsecondsSinceEpoch.toString()
+            ..entityType = 'ExpenseItem'
+            ..entityId = id
+            ..entityUuid = expItem.uuid
+            ..operation = 'Insert';
+          await isar.syncQueues.put(queueItem);
+        });
+
+        if (!_expenseTemplates.any((t) => t['name'].toString().toLowerCase() == name.toLowerCase())) {
+          if (mounted) {
+            setState(() {
+              _expenseTemplates.add({'name': name, 'defaultRate': defaultRate});
+            });
+          } else {
+            _expenseTemplates.add({'name': name, 'defaultRate': defaultRate});
+          }
+        }
+
+        try {
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
   void _addLineItem() {
     final name = _itemNameController.text.trim();
     if (name.isEmpty || name == _createNewItemTag) {
@@ -169,6 +213,8 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
     final qty = double.tryParse(_itemQtyController.text) ?? 1.0;
     final rate = double.tryParse(_itemRateController.text) ?? 0.0;
+
+    _autoSaveExpenseItemMaster(name, rate);
 
     setState(() {
       _lineItems.add(ExpenseLineItem(name: name, quantity: qty, rate: rate));
@@ -377,6 +423,24 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         }
       }
 
+      final lineItemsToSave = _lineItems.isNotEmpty
+          ? _lineItems
+          : [
+              ExpenseLineItem(
+                name: _itemNameController.text.trim().isNotEmpty
+                    ? _itemNameController.text.trim()
+                    : (_selectedCategory.isNotEmpty ? _selectedCategory : 'General Expense'),
+                quantity: 1.0,
+                rate: totalAmt,
+              )
+            ];
+
+      for (var li in lineItemsToSave) {
+        if (li.name.isNotEmpty && li.name != _createNewItemTag) {
+          await _autoSaveExpenseItemMaster(li.name, li.rate);
+        }
+      }
+
       final expense = _existingExpense ?? Expense();
       expense
         ..voucherNo = voucherNo
@@ -388,9 +452,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         ..expenseDate = _expenseDate
         ..paymentMode = _selectedPaymentMode
         ..remarks = _remarksController.text.trim()
-        ..itemsJson = _lineItems.isNotEmpty
-            ? jsonEncode(_lineItems.map((e) => e.toJson()).toList())
-            : null;
+        ..itemsJson = jsonEncode(lineItemsToSave.map((e) => e.toJson()).toList());
 
       if (_existingExpense == null) {
         expense.uuid = '${DateTime.now().millisecondsSinceEpoch}';
@@ -729,39 +791,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             ),
             const Divider(height: 24),
 
-            // Quick Preset Template Chips
-            const Text('Quick Repeatable Templates:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ..._expenseTemplates.map((t) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: ActionChip(
-                        avatar: const Icon(Icons.bolt_rounded, size: 14, color: Color(0xFF6366F1)),
-                        label: Text(t['name'], style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                        onPressed: () {
-                          setState(() {
-                            _itemNameController.text = t['name'];
-                            _itemRateController.text = (t['defaultRate'] as double).toStringAsFixed(0);
-                          });
-                        },
-                      ),
-                    );
-                  }).toList(),
-                  ActionChip(
-                    avatar: const Icon(Icons.add_circle_outline_rounded, size: 14, color: Color(0xFF10B981)),
-                    label: const Text('+ Create Item', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
-                    backgroundColor: const Color(0xFF10B981).withOpacity(0.1),
-                    onPressed: _showAddExpenseItemDialog,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
 
             // Add Item Input Form Row
             if (isMobile) ...[

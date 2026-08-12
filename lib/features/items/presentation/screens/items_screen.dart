@@ -844,7 +844,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       // 1. Total Inflow from Purchases
       final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
       double totalInflowValue = 0.0;
-      double totalInflowQty = 0.0;
+      bool hasPurchases = false;
 
       for (var pi in purchaseItems) {
         try { await pi.item.load(); } catch (_) {}
@@ -856,9 +856,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           final q = pi.quantity ?? 0.0;
           final r = pi.rate ?? 0.0;
           final lineAmt = (pi.totalAmount != null && pi.totalAmount! > 0) ? pi.totalAmount! : (q * r);
-          if (lineAmt > 0) {
+          if (lineAmt > 0 || q > 0) {
             totalInflowValue += lineAmt;
-            totalInflowQty += (q > 0 ? q : 1.0);
+            hasPurchases = true;
           }
         }
       }
@@ -877,24 +877,18 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           final r = sa.ratePerUnit ?? 0.0;
           final isAdd = sa.adjustmentType == 'Add' || sa.adjustmentType == 'Stock In';
           if (isAdd) {
-            if (q > 0 && r > 0) {
-              totalInflowValue += (q * r);
-              totalInflowQty += q;
-            }
+            final val = (sa.totalValue != null && sa.totalValue! > 0) ? sa.totalValue! : (q * (r > 0 ? r : (item.buyRate ?? 0.0)));
+            totalInflowValue += val;
           } else {
-            final val = sa.totalValue ?? (q * (r > 0 ? r : ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0))));
+            final val = (sa.totalValue != null && sa.totalValue! > 0) ? sa.totalValue! : (q * (r > 0 ? r : ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0))));
             stockOutValue += val;
           }
         }
       }
 
-      final avgBuyRate = totalInflowQty > 0 
-          ? (totalInflowValue / totalInflowQty) 
-          : ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
-
-      // 3. Outflow COGS from Sales Invoices
+      // 3. Outflow from Sales Invoices
       final invoiceItems = await isar.collection<InvoiceItem>().filter().isDeletedEqualTo(false).findAll();
-      double salesCogsValue = 0.0;
+      double salesValue = 0.0;
 
       for (var ii in invoiceItems) {
         try { await ii.item.load(); } catch (_) {}
@@ -904,21 +898,22 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
         if (matchUuid || matchName || matchId) {
           final q = ii.quantity ?? 0.0;
-          if (q > 0) {
-            salesCogsValue += (q * avgBuyRate);
-          }
+          final r = ii.rate ?? 0.0;
+          final lineAmt = (ii.totalAmount != null && ii.totalAmount! > 0) ? ii.totalAmount! : (q * r);
+          salesValue += lineAmt;
         }
       }
 
-      // Net Stock Valuation = Inflow Purchases - Sales COGS - Stock Reduce
-      if (totalInflowQty > 0 || totalInflowValue > 0) {
-        final calculatedVal = totalInflowValue - salesCogsValue - stockOutValue;
+      // Net Stock Valuation = Inflow Purchases + Stock In - Sale Out Value - Stock Reduce
+      if (hasPurchases || totalInflowValue > 0) {
+        final calculatedVal = totalInflowValue - salesValue - stockOutValue;
         return calculatedVal < 0 ? 0.0 : calculatedVal;
       }
     } catch (_) {}
 
     final unitRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
-    return (item.currentStock ?? 0.0) * unitRate;
+    final fallbackVal = (item.currentStock ?? 0.0) * unitRate;
+    return fallbackVal < 0 ? 0.0 : fallbackVal;
   }
 
   Future<double> _getEffectiveBuyRate(Item item) async {
