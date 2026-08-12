@@ -34,9 +34,9 @@ class ExpenseLineItem {
       };
 
   factory ExpenseLineItem.fromJson(Map<String, dynamic> json) => ExpenseLineItem(
-        name: json['name'] ?? '',
-        quantity: (json['quantity'] as num?)?.toDouble() ?? 1.0,
-        rate: (json['rate'] as num?)?.toDouble() ?? 0.0,
+        name: json['name'] ?? json['itemName'] ?? json['item_name'] ?? json['description'] ?? json['title'] ?? 'Expense Item',
+        quantity: (json['quantity'] as num?)?.toDouble() ?? (json['qty'] as num?)?.toDouble() ?? 1.0,
+        rate: (json['rate'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? (json['amount'] as num?)?.toDouble() ?? 0.0,
       );
 }
 

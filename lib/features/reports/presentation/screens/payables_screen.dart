@@ -24,7 +24,6 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final partiesAsync = ref.watch(partiesListProvider);
-    final purchasesAsync = ref.watch(purchaseListProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,7 +32,8 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
       ),
       body: partiesAsync.when(
         data: (allParties) {
-          final purchases = purchasesAsync.asData?.value ?? [];
+          final isar = ref.read(databaseServiceProvider).isar;
+          final purchases = isar.purchases.filter().isDeletedEqualTo(false).findAllSync();
           final Map<String, double> partyUuidDues = {};
           final Map<int, double> partyIdDues = {};
 

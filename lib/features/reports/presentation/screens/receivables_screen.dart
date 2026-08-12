@@ -24,7 +24,6 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final partiesAsync = ref.watch(partiesListProvider);
-    final invoicesAsync = ref.watch(filteredInvoicesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,7 +32,8 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
       ),
       body: partiesAsync.when(
         data: (allParties) {
-          final invoices = invoicesAsync.asData?.value ?? [];
+          final isar = ref.read(databaseServiceProvider).isar;
+          final invoices = isar.invoices.filter().isDeletedEqualTo(false).findAllSync();
           final Map<String, double> partyUuidDues = {};
           final Map<int, double> partyIdDues = {};
 

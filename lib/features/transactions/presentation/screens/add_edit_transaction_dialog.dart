@@ -173,6 +173,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       final partyUuid = _selectedParty!.uuid;
       final partyId = _selectedParty!.id;
 
+      final pNameLower = _selectedParty!.partyName?.trim().toLowerCase();
+
       if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
         final allInvoices = await db.invoices
             .filter()
@@ -180,11 +182,16 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allInvoices.where((inv) {
-          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
-                             (partyId > 0 && inv.partyId == partyId);
+          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && (inv.party.value?.uuid == partyUuid || inv.partyUuid == partyUuid)) ||
+                             (partyId > 0 && inv.partyId == partyId) ||
+                             (pNameLower != null && pNameLower.isNotEmpty && inv.partyName?.trim().toLowerCase() == pNameLower);
           if (!matchParty) return false;
           final isUnpaidOrPartial = inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid' || (inv.pendingAmount != null && inv.pendingAmount! > 0);
-          final isLinked = _linkedAllocations.containsKey(inv.uuid);
+          final isLinked = _linkedAllocations.containsKey(inv.uuid) ||
+                           (inv.invoiceNumber != null && _linkedAllocations.containsKey(inv.invoiceNumber)) ||
+                           _linkedAllocations.containsKey(inv.id.toString()) ||
+                           (widget.transaction?.linkedBillUuid != null && inv.uuid != null && widget.transaction!.linkedBillUuid!.contains(inv.uuid!)) ||
+                           (widget.transaction?.linkedBillNumber != null && inv.invoiceNumber != null && widget.transaction!.linkedBillNumber!.contains(inv.invoiceNumber!));
           return isUnpaidOrPartial || isLinked;
         }).toList();
 
@@ -195,11 +202,16 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allPurchases.where((pur) {
-          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && pur.party.value?.uuid == partyUuid) ||
-                             (partyId > 0 && pur.partyId == partyId);
+          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && (pur.party.value?.uuid == partyUuid || pur.partyUuid == partyUuid)) ||
+                             (partyId > 0 && pur.partyId == partyId) ||
+                             (pNameLower != null && pNameLower.isNotEmpty && pur.partyName?.trim().toLowerCase() == pNameLower);
           if (!matchParty) return false;
           final isUnpaidOrPartial = pur.paymentStatus == 'Unpaid' || pur.paymentStatus == 'Partially Paid' || (pur.pendingAmount != null && pur.pendingAmount! > 0);
-          final isLinked = _linkedAllocations.containsKey(pur.uuid);
+          final isLinked = _linkedAllocations.containsKey(pur.uuid) ||
+                           (pur.purchaseNumber != null && _linkedAllocations.containsKey(pur.purchaseNumber)) ||
+                           _linkedAllocations.containsKey(pur.id.toString()) ||
+                           (widget.transaction?.linkedBillUuid != null && pur.uuid != null && widget.transaction!.linkedBillUuid!.contains(pur.uuid!)) ||
+                           (widget.transaction?.linkedBillNumber != null && pur.purchaseNumber != null && widget.transaction!.linkedBillNumber!.contains(pur.purchaseNumber!));
           return isUnpaidOrPartial || isLinked;
         }).toList();
       } else {

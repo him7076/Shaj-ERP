@@ -956,11 +956,13 @@ class SyncService {
         totalSteps: totalSteps,
       ));
       await recalculateAllItemStocksFromTransactions();
+      await recalculateAllPartyBalancesFromTransactions();
     } catch (e, stackTrace) {
       logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
     }
   }
 
+  /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
   /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
   /// with their respective parent documents by UUID/ID in local DB.
   Future<void> _relinkAllRelations() async {
@@ -973,7 +975,6 @@ class SyncService {
       final Map<int, Invoice> invoiceById = {};
 
       for (int i = 0; i < allInvoices.length; i++) {
-        if (i % 10 == 0) await Future.delayed(Duration.zero);
         final inv = allInvoices[i];
         if (inv.uuid != null && inv.uuid!.isNotEmpty) {
           invoiceByUuid[inv.uuid!] = inv;
@@ -985,10 +986,8 @@ class SyncService {
       final List<InvoiceItem> modifiedInvItems = [];
 
       for (int i = 0; i < allInvoiceItems.length; i++) {
-        if (i % 10 == 0) await Future.delayed(Duration.zero);
         final item = allInvoiceItems[i];
-        Invoice? parent;
-        try { await item.invoice.load(); parent = item.invoice.value; } catch (_) {}
+        Invoice? parent = item.invoice.value;
 
         if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) {
           parent = invoiceByUuid[item.parentInvoiceUuid!];
@@ -1018,7 +1017,6 @@ class SyncService {
       final Map<int, Purchase> purchaseById = {};
 
       for (int i = 0; i < allPurchases.length; i++) {
-        if (i % 10 == 0) await Future.delayed(Duration.zero);
         final pur = allPurchases[i];
         if (pur.uuid != null && pur.uuid!.isNotEmpty) {
           purchaseByUuid[pur.uuid!] = pur;
@@ -1030,10 +1028,8 @@ class SyncService {
       final List<PurchaseItem> modifiedPurItems = [];
 
       for (int i = 0; i < allPurchaseItems.length; i++) {
-        if (i % 10 == 0) await Future.delayed(Duration.zero);
         final item = allPurchaseItems[i];
-        Purchase? parent;
-        try { await item.purchase.load(); parent = item.purchase.value; } catch (_) {}
+        Purchase? parent = item.purchase.value;
 
         if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) {
           parent = purchaseByUuid[item.purchaseUuid!];
@@ -1058,6 +1054,65 @@ class SyncService {
       }
     } catch (e) {
       logger.error('Error during post-sync relation re-linking pass', e);
+    }
+  }
+
+  /// Recalculates party outstanding balances dynamically from transactions & invoices
+  Future<void> recalculateAllPartyBalancesFromTransactions() async {
+    final isar = _dbService.isar;
+    logger.info('Recalculating party outstanding balances dynamically from transactions...');
+
+    try {
+      final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+      if (parties.isEmpty) return;
+
+      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+
+      final Map<String, double> uuidPending = {};
+      final Map<int, double> idPending = {};
+
+      for (var inv in invoices) {
+        if (inv.paymentStatus == 'Cancelled') continue;
+        final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
+        if (pending > 0) {
+          final pUuid = inv.party.value?.uuid ?? inv.partyUuid;
+          if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
+          if (inv.partyId != null && inv.partyId! > 0) idPending[inv.partyId!] = (idPending[inv.partyId!] ?? 0.0) + pending;
+        }
+      }
+
+      for (var pur in purchases) {
+        if (pur.paymentStatus == 'Cancelled') continue;
+        final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+        if (pending > 0) {
+          final pUuid = pur.party.value?.uuid ?? pur.partyUuid;
+          if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
+          if (pur.partyId != null && pur.partyId! > 0) idPending[pur.partyId!] = (idPending[pur.partyId!] ?? 0.0) + pending;
+        }
+      }
+
+      final List<Party> partiesToUpdate = [];
+      for (var p in parties) {
+        final uPending = p.uuid != null ? (uuidPending[p.uuid] ?? 0.0) : 0.0;
+        final iPending = p.id > 0 ? (idPending[p.id] ?? 0.0) : 0.0;
+        final invPending = uPending > 0 ? uPending : iPending;
+
+        final newBal = invPending > 0 ? invPending : (p.openingBalance ?? 0.0);
+        if ((p.outstandingBalance ?? 0.0) != newBal) {
+          p.outstandingBalance = newBal;
+          p.updatedAt = DateTime.now();
+          partiesToUpdate.add(p);
+        }
+      }
+
+      if (partiesToUpdate.isNotEmpty) {
+        await isar.writeTxn(() async {
+          await isar.partys.putAll(partiesToUpdate);
+        });
+      }
+    } catch (e) {
+      logger.warning('Party balance recalculation error: $e');
     }
   }
 

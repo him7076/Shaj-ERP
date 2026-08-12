@@ -484,7 +484,10 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     );
   }
 
-  Future<List<_PartyActivityItem>> _loadAllPartyActivities() async {
+import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
+
+    Future<List<_PartyActivityItem>> _loadAllPartyActivities() async {
     if (_party == null) return [];
     final isar = ref.read(databaseServiceProvider).isar;
     final partyUuid = _party!.uuid;
@@ -493,15 +496,28 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
     final List<_PartyActivityItem> list = [];
 
+    // Helper matchers with strict non-null guard
+    bool matchParty(String? docPartyUuid, int? docPartyId, String? docPartyName, String? linkPartyUuid, int? linkPartyId) {
+      if (partyUuid != null && partyUuid.isNotEmpty) {
+        if (docPartyUuid == partyUuid || linkPartyUuid == partyUuid) return true;
+      }
+      if (partyId > 0) {
+        if (docPartyId == partyId || linkPartyId == partyId) return true;
+      }
+      if (partyNameLower != null && partyNameLower.isNotEmpty) {
+        if (docPartyName?.trim().toLowerCase() == partyNameLower) return true;
+      }
+      return false;
+    }
+
     // 1. Invoices
     final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
     for (var inv in invoices) {
-      final match = (partyUuid != null && inv.party.value?.uuid == partyUuid) ||
-                    (partyNameLower != null && inv.partyName?.trim().toLowerCase() == partyNameLower) ||
-                    inv.partyId == partyId;
-      if (match && inv.paymentStatus != 'Cancelled') {
+      final isMatch = matchParty(inv.partyUuid, inv.partyId, inv.partyName, inv.party.value?.uuid, inv.party.value?.id);
+      if (isMatch && inv.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
           id: inv.id,
+          uuid: inv.uuid,
           number: inv.invoiceNumber ?? 'INV-${inv.id}',
           type: 'Sales Invoice',
           amount: inv.grandTotal ?? 0.0,
@@ -516,12 +532,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 2. Purchases
     final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
     for (var pur in purchases) {
-      final match = (partyUuid != null && pur.party.value?.uuid == partyUuid) ||
-                    (partyNameLower != null && pur.partyName?.trim().toLowerCase() == partyNameLower) ||
-                    pur.partyId == partyId;
-      if (match && pur.paymentStatus != 'Cancelled') {
+      final isMatch = matchParty(pur.partyUuid, pur.partyId, pur.partyName, pur.party.value?.uuid, pur.party.value?.id);
+      if (isMatch && pur.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
           id: pur.id,
+          uuid: pur.uuid,
           number: pur.purchaseNumber ?? 'PUR-${pur.id}',
           type: 'Purchase Bill',
           amount: pur.grandTotal ?? 0.0,
@@ -536,12 +551,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 3. Transactions (Receipts, Payments, etc.)
     final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
     for (var t in txns) {
-      final match = (partyUuid != null && t.partyUuid == partyUuid) ||
-                    (partyNameLower != null && t.partyName?.trim().toLowerCase() == partyNameLower) ||
-                    (t.party.value?.id != null && t.party.value?.id == partyId);
-      if (match) {
+      final isMatch = matchParty(t.partyUuid, null, t.partyName, t.party.value?.uuid, t.party.value?.id);
+      if (isMatch) {
         list.add(_PartyActivityItem(
           id: t.id,
+          uuid: t.uuid,
           number: t.transactionNumber ?? 'TXN-${t.id}',
           type: t.transactionType ?? 'Transaction',
           amount: t.amount ?? 0.0,
@@ -549,6 +563,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
           status: t.paymentStatus ?? (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED'),
           mode: t.paymentMode ?? 'Cash',
           date: t.transactionDate ?? t.createdAt,
+          rawTxn: t,
         ));
       }
     }
@@ -629,6 +644,21 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                 side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
               ),
               child: ListTile(
+                onTap: () {
+                  if (txn.type == 'Sales Invoice') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: txn.uuid ?? txn.id.toString())),
+                    ).then((_) => _loadPartyDetails());
+                  } else if (txn.type == 'Purchase Bill') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: txn.uuid)),
+                    ).then((_) => _loadPartyDetails());
+                  } else if (txn.rawTxn != null) {
+                    AddEditTransactionDialog.show(context, transaction: txn.rawTxn);
+                  }
+                },
                 leading: CircleAvatar(
                   backgroundColor: color.withOpacity(0.1),
                   child: Icon(isIncoming ? Icons.arrow_downward : Icons.arrow_upward, color: color, size: 18),
@@ -829,6 +859,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
 class _PartyActivityItem {
   final int id;
+  final String? uuid;
   final String number;
   final String type;
   final double amount;
@@ -836,9 +867,11 @@ class _PartyActivityItem {
   final String status;
   final String mode;
   final DateTime date;
+  final Transaction? rawTxn;
 
   _PartyActivityItem({
     required this.id,
+    this.uuid,
     required this.number,
     required this.type,
     required this.amount,
@@ -846,5 +879,6 @@ class _PartyActivityItem {
     required this.status,
     required this.mode,
     required this.date,
+    this.rawTxn,
   });
 }
