@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
@@ -789,7 +790,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         ),
                       ),
                       FutureBuilder<double>(
-                        future: _getWeightedAvgPurchaseRate(item),
+                        future: _getEffectiveBuyRate(item),
                         builder: (context, snapshot) {
                           final unitRate = snapshot.data ?? ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
                           return Text(
