@@ -27,7 +27,26 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adj
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 // Router Provider
 final routerProvider = Provider<GoRouter>((ref) {
@@ -35,7 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     initialLocation: '/splash',
-    refreshListenable: authNotifier,
+    refreshListenable: GoRouterRefreshStream(authNotifier.stream),
     debugLogDiagnostics: true,
     routes: [
       GoRoute(
