@@ -60,9 +60,10 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
               }
 
               double getPartyDue(Party p) {
-                final uuidDue = p.uuid != null ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
-                final idDue = p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0;
-                final purchaseDue = uuidDue > 0 ? uuidDue : idDue;
+                final hasUuid = p.uuid != null && p.uuid!.isNotEmpty;
+                final purchaseDue = hasUuid 
+                    ? (partyUuidDues[p.uuid] ?? 0.0)
+                    : (p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0);
                 if (purchaseDue > 0) return purchaseDue;
                 if (p.outstandingBalance != null && p.outstandingBalance! > 0) return p.outstandingBalance!;
                 return p.openingBalance ?? 0.0;

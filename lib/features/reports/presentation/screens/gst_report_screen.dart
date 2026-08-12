@@ -110,249 +110,250 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Filter Date preset
-          Card(
-            margin: const EdgeInsets.all(16.0),
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<ReportDatePreset>(
-                      value: _datePreset,
-                      decoration: const InputDecoration(
-                        labelText: 'Filing Period Preset',
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        border: OutlineInputBorder(),
-                      ),
-                      items: ReportDatePreset.values.map((preset) {
-                        final filter = ReportDateFilter.fromPreset(preset);
-                        return DropdownMenuItem(
-                          value: preset,
-                          child: Text(filter.displayName),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) _setDatePreset(val);
-                      },
+      body: reportAsync.when(
+        data: (summary) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Filter Date preset
+                Card(
+                  margin: const EdgeInsets.all(16.0),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<ReportDatePreset>(
+                            value: _datePreset,
+                            decoration: const InputDecoration(
+                              labelText: 'Filing Period Preset',
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              border: OutlineInputBorder(),
+                            ),
+                            items: ReportDatePreset.values.map((preset) {
+                              final filter = ReportDateFilter.fromPreset(preset);
+                              return DropdownMenuItem(
+                                value: preset,
+                                child: Text(filter.displayName),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) _setDatePreset(val);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                ),
 
-          // Aggregates grid and HSN list
-          Expanded(
-            child: reportAsync.when(
-              data: (summary) {
-                return Column(
-                  children: [
-                    // B2B vs B2C Breakdown Row
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                // B2B vs B2C Breakdown Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('B2B Registered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue)),
-                                      Chip(
-                                        visualDensity: VisualDensity.compact,
-                                        labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                        label: Text('${summary.b2bInvoiceCount} Invoices'),
-                                      ),
-                                    ],
+                                  const Text('B2B Registered', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blue)),
+                                  Chip(
+                                    visualDensity: VisualDensity.compact,
+                                    labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                    label: Text('${summary.b2bInvoiceCount} Invoices'),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text('Taxable: ${currencyFormat.format(summary.b2bTaxableAmount)}', style: const TextStyle(fontSize: 11)),
-                                  Text('GST: ${currencyFormat.format(summary.b2bTotalGST)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 4),
+                              Text('Taxable: ${currencyFormat.format(summary.b2bTaxableAmount)}', style: const TextStyle(fontSize: 11)),
+                              Text('GST: ${currencyFormat.format(summary.b2bTotalGST)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue)),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.purple.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.purple.withOpacity(0.2)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text('B2C Consumer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.purple)),
-                                      Chip(
-                                        visualDensity: VisualDensity.compact,
-                                        labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                        label: Text('${summary.b2cInvoiceCount} Invoices'),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text('Taxable: ${currencyFormat.format(summary.b2cTaxableAmount)}', style: const TextStyle(fontSize: 11)),
-                                  Text('GST: ${currencyFormat.format(summary.b2cTotalGST)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.purple)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.purple.withOpacity(0.2)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('B2C Consumer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.purple)),
+                                  Chip(
+                                    visualDensity: VisualDensity.compact,
+                                    labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                    label: Text('${summary.b2cInvoiceCount} Invoices'),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text('Taxable: ${currencyFormat.format(summary.b2cTaxableAmount)}', style: const TextStyle(fontSize: 11)),
+                              Text('GST: ${currencyFormat.format(summary.b2cTotalGST)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.purple)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
 
-                    // GST Tax splits grid
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: GridView.count(
+                // GST Tax splits grid
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1.8,
+                    children: [
+                      _buildTaxCard('CGST (Central)', summary.cgstAmount, Colors.indigo, theme),
+                      _buildTaxCard('SGST (State)', summary.sgstAmount, Colors.teal, theme),
+                      _buildTaxCard('IGST (Integrated)', summary.igstAmount, Colors.orange, theme),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Totals bar
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Total Taxable: ${currencyFormat.format(summary.taxableAmount)}',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      Text(
+                        'Total Tax: ${currencyFormat.format(summary.totalGST)}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // HSN List Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'HSN Summary Breakdown',
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${summary.hsnSummaries.length} Codes',
+                        style: TextStyle(color: theme.colorScheme.outline, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(indent: 16, endIndent: 16),
+
+                // HSN List
+                summary.hsnSummaries.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Center(child: Text('No itemized tax details logged in this period.')),
+                      )
+                    : ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 1.8,
-                        children: [
-                          _buildTaxCard('CGST (Central)', summary.cgstAmount, Colors.indigo, theme),
-                          _buildTaxCard('SGST (State)', summary.sgstAmount, Colors.teal, theme),
-                          _buildTaxCard('IGST (Integrated)', summary.igstAmount, Colors.orange, theme),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Totals bar
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Total Taxable: ${currencyFormat.format(summary.taxableAmount)}',
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                          Text(
-                            'Total Tax: ${currencyFormat.format(summary.totalGST)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: theme.colorScheme.primary,
+                        itemCount: summary.hsnSummaries.length,
+                        itemBuilder: (context, index) {
+                          final hsn = summary.hsnSummaries[index];
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // HSN List Header
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'HSN Summary Breakdown',
-                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            '${summary.hsnSummaries.length} Codes',
-                            style: TextStyle(color: theme.colorScheme.outline, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(indent: 16, endIndent: 16),
-
-                    // HSN List
-                    Expanded(
-                      child: summary.hsnSummaries.isEmpty
-                          ? const Center(child: Text('No itemized tax details logged in this period.'))
-                          : ListView.builder(
-                              itemCount: summary.hsnSummaries.length,
-                              itemBuilder: (context, index) {
-                                final hsn = summary.hsnSummaries[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: theme.colorScheme.secondaryContainer,
+                                child: Text(
+                                  '${hsn.gstRate.toStringAsFixed(0)}%',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onSecondaryContainer,
                                   ),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: theme.colorScheme.secondaryContainer,
-                                      child: Text(
-                                        '${hsn.gstRate.toStringAsFixed(0)}%',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: theme.colorScheme.onSecondaryContainer,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'HSN: ${hsn.hsnCode}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        Text(
-                                          currencyFormat.format(hsn.gstAmount),
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                    subtitle: Padding(
-                                      padding: const EdgeInsets.only(top: 4.0),
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text('Qty: ${hsn.quantity.toStringAsFixed(0)} units'),
-                                          Text('Taxable: ${currencyFormat.format(hsn.taxableAmount)}'),
-                                        ],
-                                      ),
-                                    ),
+                                ),
+                              ),
+                              title: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'HSN: ${hsn.hsnCode}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                );
-                              },
+                                  Text(
+                                    currencyFormat.format(hsn.gstAmount),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('Qty: ${hsn.quantity.toStringAsFixed(0)} units'),
+                                    Text('Taxable: ${currencyFormat.format(hsn.taxableAmount)}'),
+                                  ],
+                                ),
+                              ),
                             ),
-                    ),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Error loading GST report: $err')),
+                          );
+                        },
+                      ),
+              ],
             ),
-          ),
-        ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text('Error loading GST report: $err')),
       ),
     );
   }

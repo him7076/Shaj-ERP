@@ -60,9 +60,10 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
               }
 
               double getPartyDue(Party p) {
-                final uuidDue = p.uuid != null ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
-                final idDue = p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0;
-                final invoiceDue = uuidDue > 0 ? uuidDue : idDue;
+                final hasUuid = p.uuid != null && p.uuid!.isNotEmpty;
+                final invoiceDue = hasUuid 
+                    ? (partyUuidDues[p.uuid] ?? 0.0)
+                    : (p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0);
                 if (invoiceDue > 0) return invoiceDue;
                 if (p.outstandingBalance != null && p.outstandingBalance! > 0) return p.outstandingBalance!;
                 return p.openingBalance ?? 0.0;

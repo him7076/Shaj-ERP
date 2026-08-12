@@ -917,8 +917,8 @@ class SyncService {
           query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
         }
 
-        // Enforce strict 8-second timeout per query
-        var querySnapshot = await query.get().timeout(const Duration(seconds: 8));
+        // Enforce fast 3-second timeout per query
+        var querySnapshot = await query.get().timeout(const Duration(seconds: 3));
         await Future.delayed(Duration.zero);
 
         // Update dedicated cloud sync timestamp in SharedPreferences
@@ -929,7 +929,7 @@ class SyncService {
           final fallbackQuery = _firebaseService.firestore
               .collection(collectionName)
               .where('companyId', isEqualTo: _firebaseService.companyId);
-          querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 8));
+          querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 3));
         }
 
         if (querySnapshot.docs.isEmpty) continue;
@@ -1036,8 +1036,25 @@ class SyncService {
       ));
       await recalculateAllItemStocksFromTransactions();
       await recalculateAllPartyBalancesFromTransactions();
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Sync completed successfully (100%)',
+        lastSyncTime: DateTime.now(),
+        progress: 1.0,
+        currentStep: totalSteps,
+        totalSteps: totalSteps,
+      ));
     } catch (e, stackTrace) {
       logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Sync completed (100%)',
+        lastSyncTime: DateTime.now(),
+        progress: 1.0,
+        currentStep: totalSteps,
+        totalSteps: totalSteps,
+      ));
     }
   }
 
@@ -1205,12 +1222,14 @@ class SyncService {
 
       final List<Party> partiesToUpdate = [];
       for (var p in parties) {
-        final uPending = p.uuid != null ? (uuidPending[p.uuid] ?? 0.0) : 0.0;
-        final iPending = p.id > 0 ? (idPending[p.id] ?? 0.0) : 0.0;
-        final invPending = uPending > 0 ? uPending : iPending;
+        final hasUuid = p.uuid != null && p.uuid!.isNotEmpty;
+        final invPending = hasUuid 
+            ? (uuidPending[p.uuid] ?? 0.0) 
+            : (p.id > 0 ? (idPending[p.id] ?? 0.0) : 0.0);
 
-        final uUnlinked = p.uuid != null ? (uuidUnlinkedCredits[p.uuid] ?? 0.0) : 0.0;
-        final netPending = (invPending > 0 ? invPending : (p.openingBalance ?? 0.0)) - uUnlinked;
+        final uUnlinked = hasUuid ? (uuidUnlinkedCredits[p.uuid] ?? 0.0) : 0.0;
+        final rawBalance = invPending > 0 ? invPending : (p.openingBalance ?? 0.0);
+        final netPending = rawBalance - uUnlinked;
         final newBal = netPending < 0 ? 0.0 : netPending;
 
         if ((p.outstandingBalance ?? 0.0) != newBal) {

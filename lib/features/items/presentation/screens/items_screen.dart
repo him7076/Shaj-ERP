@@ -835,21 +835,21 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     );
   }
 
-  Future<double> _getWeightedAvgPurchaseRate(Item item) async {
+  Future<double> _getEffectiveBuyRate(Item item) async {
     try {
       final isar = ref.read(databaseServiceProvider).isar;
       final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
-      final itemPurchases = purchaseItems.where((p) {
-        final matchUuid = p.item.value?.uuid != null && p.item.value?.uuid == item.uuid;
-        final matchName = p.itemName != null && p.itemName!.trim().toLowerCase() == item.itemName?.trim().toLowerCase();
-        final matchId = p.itemId != null && p.itemId == item.id;
-        return matchUuid || matchName || matchId;
-      }).toList();
+      
+      double totalAmt = 0.0;
+      double totalQty = 0.0;
 
-      if (itemPurchases.isNotEmpty) {
-        double totalAmt = 0.0;
-        double totalQty = 0.0;
-        for (var pi in itemPurchases) {
+      for (var pi in purchaseItems) {
+        try { await pi.item.load(); } catch (_) {}
+        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && pi.item.value?.uuid == item.uuid;
+        final matchName = pi.itemName != null && item.itemName != null && pi.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
+        final matchId = pi.itemId != null && pi.itemId! > 0 && pi.itemId == item.id;
+
+        if (matchUuid || matchName || matchId) {
           final q = pi.quantity ?? 0.0;
           final r = pi.rate ?? 0.0;
           if (q > 0) {
@@ -857,9 +857,29 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             totalQty += q;
           }
         }
-        if (totalQty > 0) {
-          return totalAmt / totalQty; // Dynamic Weighted Average Unit Purchase Rate
+      }
+
+      final adjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+      for (var sa in adjustments) {
+        final isAdd = sa.adjustmentType == 'Add' || sa.adjustmentType == 'Stock In';
+        if (!isAdd) continue;
+
+        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && sa.itemUuid == item.uuid;
+        final matchName = sa.itemName != null && item.itemName != null && sa.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
+        final matchId = sa.itemId != null && sa.itemId! > 0 && sa.itemId == item.id;
+
+        if (matchUuid || matchName || matchId) {
+          final q = sa.quantity ?? 0.0;
+          final r = sa.ratePerUnit ?? 0.0;
+          if (q > 0 && r > 0) {
+            totalAmt += (q * r);
+            totalQty += q;
+          }
         }
+      }
+
+      if (totalQty > 0) {
+        return totalAmt / totalQty; // Dynamic Weighted Average Purchase Rate
       }
     } catch (_) {}
 
