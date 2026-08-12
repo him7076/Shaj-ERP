@@ -31,11 +31,11 @@ import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_pro
 
 // Router Provider
 final routerProvider = Provider<GoRouter>((ref) {
-  // Listen to Auth State changes to trigger re-routing evaluation
-  final authState = ref.watch(authProvider);
+  final authNotifier = ref.watch(authProvider.notifier);
 
   return GoRouter(
     initialLocation: '/splash',
+    refreshListenable: authNotifier,
     debugLogDiagnostics: true,
     routes: [
       GoRoute(
@@ -228,6 +228,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
     redirect: (context, state) {
+      final authState = ref.read(authProvider);
       final status = authState.status;
 
       final isLoggingIn = state.matchedLocation == '/login';
