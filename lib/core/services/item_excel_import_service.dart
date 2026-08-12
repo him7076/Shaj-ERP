@@ -391,11 +391,12 @@ class ItemExcelImportService {
             if (brandObj != null) existingItem.brand.value = brandObj;
             if (unitObj != null) existingItem.unit.value = unitObj;
 
+            final itemToSave = existingItem;
             await isar.writeTxn(() async {
-              await isar.items.put(existingItem!);
-              try { await existingItem.category.save(); } catch (_) {}
-              try { await existingItem.brand.save(); } catch (_) {}
-              try { await existingItem.unit.save(); } catch (_) {}
+              await isar.items.put(itemToSave);
+              try { await itemToSave.category.save(); } catch (_) {}
+              try { await itemToSave.brand.save(); } catch (_) {}
+              try { await itemToSave.unit.save(); } catch (_) {}
             });
 
             // Enqueue for Sync
