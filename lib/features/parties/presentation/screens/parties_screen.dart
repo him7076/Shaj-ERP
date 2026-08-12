@@ -567,9 +567,9 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       final partyNameKey = party.partyName?.trim().toLowerCase();
 
       if (party.partyType == 'Supplier') {
-        final purchases = await isar.collection<Purchase>().where().findAll();
+        final purchases = await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll();
         for (var pur in purchases) {
-          if (pur.isDeleted == true || pur.paymentStatus == 'Cancelled') continue;
+          if (pur.paymentStatus == 'Cancelled') continue;
           try { pur.party.loadSync(); } catch (_) {}
           final matchUuid = party.uuid != null && party.uuid!.isNotEmpty && pur.party.value?.uuid == party.uuid;
           final matchName = partyNameKey != null && partyNameKey.isNotEmpty && pur.partyName?.trim().toLowerCase() == partyNameKey;
@@ -579,9 +579,9 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
           }
         }
       } else {
-        final invoices = await isar.collection<Invoice>().where().findAll();
+        final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
         for (var inv in invoices) {
-          if (inv.isDeleted == true || inv.paymentStatus == 'Cancelled') continue;
+          if (inv.paymentStatus == 'Cancelled') continue;
           try { inv.party.loadSync(); } catch (_) {}
           final matchUuid = party.uuid != null && party.uuid!.isNotEmpty && inv.party.value?.uuid == party.uuid;
           final matchName = partyNameKey != null && partyNameKey.isNotEmpty && inv.partyName?.trim().toLowerCase() == partyNameKey;
