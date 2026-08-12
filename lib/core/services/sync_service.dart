@@ -1076,7 +1076,7 @@ class SyncService {
         if (inv.paymentStatus == 'Cancelled') continue;
         final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
         if (pending > 0) {
-          final pUuid = inv.party.value?.uuid ?? inv.partyUuid;
+          final pUuid = inv.party.value?.uuid;
           if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
           if (inv.partyId != null && inv.partyId! > 0) idPending[inv.partyId!] = (idPending[inv.partyId!] ?? 0.0) + pending;
         }
@@ -1086,7 +1086,7 @@ class SyncService {
         if (pur.paymentStatus == 'Cancelled') continue;
         final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
         if (pending > 0) {
-          final pUuid = pur.party.value?.uuid ?? pur.partyUuid;
+          final pUuid = pur.party.value?.uuid;
           if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
           if (pur.partyId != null && pur.partyId! > 0) idPending[pur.partyId!] = (idPending[pur.partyId!] ?? 0.0) + pending;
         }

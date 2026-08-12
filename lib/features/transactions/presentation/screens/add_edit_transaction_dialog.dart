@@ -182,7 +182,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allInvoices.where((inv) {
-          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && (inv.party.value?.uuid == partyUuid || inv.partyUuid == partyUuid)) ||
+          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
                              (partyId > 0 && inv.partyId == partyId) ||
                              (pNameLower != null && pNameLower.isNotEmpty && inv.partyName?.trim().toLowerCase() == pNameLower);
           if (!matchParty) return false;
@@ -202,7 +202,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             .findAll();
 
         _pendingBills = allPurchases.where((pur) {
-          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && (pur.party.value?.uuid == partyUuid || pur.partyUuid == partyUuid)) ||
+          final matchParty = (partyUuid != null && partyUuid.isNotEmpty && pur.party.value?.uuid == partyUuid) ||
                              (partyId > 0 && pur.partyId == partyId) ||
                              (pNameLower != null && pNameLower.isNotEmpty && pur.partyName?.trim().toLowerCase() == pNameLower);
           if (!matchParty) return false;

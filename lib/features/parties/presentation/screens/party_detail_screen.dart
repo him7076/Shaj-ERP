@@ -11,10 +11,8 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
-import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
-import 'package:business_sahaj_erp/core/services/logger_service.dart';
-import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
-import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'add_edit_party_screen.dart';
 
 class PartyDetailScreen extends ConsumerStatefulWidget {
@@ -484,10 +482,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     );
   }
 
-import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
-import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
-
-    Future<List<_PartyActivityItem>> _loadAllPartyActivities() async {
+  Future<List<_PartyActivityItem>> _loadAllPartyActivities() async {
     if (_party == null) return [];
     final isar = ref.read(databaseServiceProvider).isar;
     final partyUuid = _party!.uuid;
@@ -513,7 +508,7 @@ import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_e
     // 1. Invoices
     final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
     for (var inv in invoices) {
-      final isMatch = matchParty(inv.partyUuid, inv.partyId, inv.partyName, inv.party.value?.uuid, inv.party.value?.id);
+      final isMatch = matchParty(inv.party.value?.uuid, inv.partyId, inv.partyName, inv.party.value?.uuid, inv.party.value?.id);
       if (isMatch && inv.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
           id: inv.id,
@@ -532,7 +527,7 @@ import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_e
     // 2. Purchases
     final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
     for (var pur in purchases) {
-      final isMatch = matchParty(pur.partyUuid, pur.partyId, pur.partyName, pur.party.value?.uuid, pur.party.value?.id);
+      final isMatch = matchParty(pur.party.value?.uuid, pur.partyId, pur.partyName, pur.party.value?.uuid, pur.party.value?.id);
       if (isMatch && pur.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
           id: pur.id,
