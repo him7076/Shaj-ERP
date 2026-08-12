@@ -247,8 +247,10 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                           );
                         },
                       ),
-              );
-            },
+              ),
+            ],
+          );
+        },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

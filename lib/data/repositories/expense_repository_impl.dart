@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/expense_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
@@ -50,7 +51,7 @@ class ExpenseRepositoryImpl extends BaseIsarRepository<Expense> implements Expen
   Future<String> generateNextVoucherNumber() async {
     try {
       final expenses = await collection.filter().isDeletedEqualTo(false).findAll();
-      final txns = await isar.transactions.filter().isDeletedEqualTo(false).and().transactionTypeEqualTo('Expense').findAll();
+      final txns = await isar.collection<Transaction>().filter().isDeletedEqualTo(false).and().transactionTypeEqualTo('Expense').findAll();
 
       int maxNum = 0;
       final regExp = RegExp(r'\d+');

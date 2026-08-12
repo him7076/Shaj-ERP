@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import 'package:isar/isar.dart' hide Query;
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order, Settings, Transaction;
@@ -549,7 +550,8 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final expItems = forceAll ? await isar.expenseItems.filter().idGreaterThan(-1).findAll() : await isar.expenseItems.filter().isSyncedEqualTo(false).findAll();
+      final allExpItems = await isar.expenseItems.where().findAll();
+      final expItems = allExpItems.where((ei) => forceAll || !ei.isSynced).toList();
       for (var ei in expItems) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -561,7 +563,8 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final stockAdjs = forceAll ? await isar.stockAdjustments.filter().idGreaterThan(-1).findAll() : await isar.stockAdjustments.filter().isSyncedEqualTo(false).findAll();
+      final allStockAdjs = await isar.collection<StockAdjustment>().where().findAll();
+      final stockAdjs = allStockAdjs.where((sa) => forceAll || !sa.isSynced).toList();
       for (var sa in stockAdjs) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -573,7 +576,8 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final creditNotes = forceAll ? await isar.creditNotes.filter().idGreaterThan(-1).findAll() : await isar.creditNotes.filter().isSyncedEqualTo(false).findAll();
+      final allCreditNotes = await isar.creditNotes.where().findAll();
+      final creditNotes = allCreditNotes.where((cn) => forceAll || !cn.isSynced).toList();
       for (var cn in creditNotes) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -585,7 +589,8 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final creditNoteItems = forceAll ? await isar.creditNoteItems.filter().idGreaterThan(-1).findAll() : await isar.creditNoteItems.filter().isSyncedEqualTo(false).findAll();
+      final allCreditNoteItems = await isar.creditNoteItems.where().findAll();
+      final creditNoteItems = allCreditNoteItems.where((cni) => forceAll || !cni.isSynced).toList();
       for (var cni in creditNoteItems) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -597,7 +602,8 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final debitNotes = forceAll ? await isar.debitNotes.filter().idGreaterThan(-1).findAll() : await isar.debitNotes.filter().isSyncedEqualTo(false).findAll();
+      final allDebitNotes = await isar.debitNotes.where().findAll();
+      final debitNotes = allDebitNotes.where((dn) => forceAll || !dn.isSynced).toList();
       for (var dn in debitNotes) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()
@@ -609,7 +615,8 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
-      final debitNoteItems = forceAll ? await isar.debitNoteItems.filter().idGreaterThan(-1).findAll() : await isar.debitNoteItems.filter().isSyncedEqualTo(false).findAll();
+      final allDebitNoteItems = await isar.debitNoteItems.where().findAll();
+      final debitNoteItems = allDebitNoteItems.where((dni) => forceAll || !dni.isSynced).toList();
       for (var dni in debitNoteItems) {
         final q = SyncQueue()
           ..uuid = uuidGen.v4()

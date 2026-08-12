@@ -247,8 +247,10 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
                           );
                         },
                       ),
-              );
-            },
+              ),
+            ],
+          );
+        },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
