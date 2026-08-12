@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
@@ -891,7 +892,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           : ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
 
       // 3. Outflow COGS from Sales Invoices
-      final invoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      final invoiceItems = await isar.collection<InvoiceItem>().filter().isDeletedEqualTo(false).findAll();
       double salesCogsValue = 0.0;
 
       for (var ii in invoiceItems) {
