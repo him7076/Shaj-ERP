@@ -116,13 +116,17 @@ void main() {
       debugPrint('[BOOT WARNING] Firebase initialization bypassed: $e');
     }
 
-    // 3. Initialize Isar database storage (non-blocking in background)
+    // 3. Initialize Isar database storage properly before UI render
     final dbService = DatabaseService();
-    dbService.init(sharedPrefs).catchError((e) {
-      debugPrint('[BOOT WARNING] Non-fatal DatabaseService init error: $e');
-    });
+    try {
+      await dbService.init(sharedPrefs);
+      debugPrint('[BOOT] Isar DatabaseService initialized.');
+    } catch (e, stack) {
+      debugPrint('[BOOT WARNING] DatabaseService init error: $e');
+      logger.error('DatabaseService init error on boot', e, stack);
+    }
 
-    // Run application IMMEDIATELY - 0ms delay!
+    // Run application safely with initialized services
     runApp(
       ProviderScope(
         overrides: [
