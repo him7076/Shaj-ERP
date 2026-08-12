@@ -666,40 +666,24 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
             children: [
               Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: partiesAsync.when(
-                    data: (parties) {
-                      final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
-                      return SearchablePartyDropdown(
-                        parties: supplierParties,
-                        selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
-                            ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
-                            : _selectedParty,
-                        labelText: 'Select Supplier Account',
-                        onChanged: (party) {
-                          setState(() {
-                            _selectedParty = party;
-                          });
-                        },
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading suppliers: $e'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.person_add),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
-                    ).then((_) => ref.invalidate(partiesListProvider));
+            partiesAsync.when(
+              data: (parties) {
+                final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                return SearchablePartyDropdown(
+                  parties: supplierParties,
+                  selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                      ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                      : _selectedParty,
+                  labelText: 'Select Supplier Account',
+                  onChanged: (party) {
+                    setState(() {
+                      _selectedParty = party;
+                    });
                   },
-                ),
-              ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Error loading suppliers: $e'),
             ),
             if (_selectedParty != null) ...[
               const SizedBox(height: 12),

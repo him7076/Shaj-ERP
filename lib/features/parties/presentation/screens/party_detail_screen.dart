@@ -495,16 +495,17 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
     final List<_PartyActivityItem> list = [];
 
-    // Helper matchers with strict non-null guard
+    // Helper matchers with strict UUID priority guard
     bool matchParty(String? docPartyUuid, int? docPartyId, String? docPartyName, String? linkPartyUuid, int? linkPartyId) {
-      if (partyUuid != null && partyUuid.isNotEmpty) {
-        if (docPartyUuid == partyUuid || linkPartyUuid == partyUuid) return true;
+      final docUuid = (docPartyUuid != null && docPartyUuid.isNotEmpty) ? docPartyUuid : linkPartyUuid;
+      if (partyUuid != null && partyUuid.isNotEmpty && docUuid != null && docUuid.isNotEmpty) {
+        return docUuid == partyUuid;
       }
-      if (partyId > 0) {
-        if (docPartyId == partyId || linkPartyId == partyId) return true;
+      if (partyNameLower != null && partyNameLower.isNotEmpty && docPartyName != null && docPartyName.trim().isNotEmpty) {
+        return docPartyName.trim().toLowerCase() == partyNameLower;
       }
-      if (partyNameLower != null && partyNameLower.isNotEmpty) {
-        if (docPartyName?.trim().toLowerCase() == partyNameLower) return true;
+      if (partyId > 0 && docPartyId != null && docPartyId > 0) {
+        return docPartyId == partyId || linkPartyId == partyId;
       }
       return false;
     }
@@ -512,6 +513,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 1. Invoices
     final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
     for (var inv in invoices) {
+      try { await inv.party.load(); } catch (_) {}
       final isMatch = matchParty(inv.party.value?.uuid, inv.partyId, inv.partyName, inv.party.value?.uuid, inv.party.value?.id);
       if (isMatch && inv.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
@@ -531,6 +533,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 2. Purchases
     final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
     for (var pur in purchases) {
+      try { await pur.party.load(); } catch (_) {}
       final isMatch = matchParty(pur.party.value?.uuid, pur.partyId, pur.partyName, pur.party.value?.uuid, pur.party.value?.id);
       if (isMatch && pur.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
@@ -550,6 +553,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     // 3. Transactions (Receipts, Payments, etc.)
     final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
     for (var t in txns) {
+      try { await t.party.load(); } catch (_) {}
       final isMatch = matchParty(t.partyUuid, null, t.partyName, t.party.value?.uuid, t.party.value?.id);
       if (isMatch) {
         list.add(_PartyActivityItem(
@@ -644,15 +648,16 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
               ),
               child: ListTile(
                 onTap: () {
+                  final targetUuid = (txn.uuid != null && txn.uuid!.isNotEmpty) ? txn.uuid! : txn.id.toString();
                   if (txn.type == 'Sales Invoice') {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: txn.uuid ?? txn.id.toString())),
+                      MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: targetUuid)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.type == 'Purchase Bill') {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: txn.uuid)),
+                      MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: targetUuid)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.rawTxn != null) {
                     AddEditTransactionDialog.show(context, transaction: txn.rawTxn);

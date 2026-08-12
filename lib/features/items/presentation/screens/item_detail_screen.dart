@@ -18,7 +18,7 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
-import 'package:business_sahaj_erp/features/items/presentation/widgets/stock_adjustment_dialog.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
@@ -317,10 +317,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   }
 
   Future<void> _adjustStockDialog({StockAdjustment? existingAdjustment}) async {
-    final success = await StockAdjustmentDialog.show(
-      context,
-      initialItem: _item,
-      existingAdjustment: existingAdjustment,
+    final success = await showDialog<bool>(
+      context: context,
+      builder: (context) => AddEditStockAdjustmentDialog(existingAdjustment: existingAdjustment),
     );
 
     if (success == true) {

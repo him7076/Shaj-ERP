@@ -52,8 +52,22 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   }
 
   @override
+  void deactivate() {
+    _searchController.clear();
+    try {
+      ref.read(invoiceSearchFilterProvider.notifier).state = const InvoiceSearchFilter();
+    } catch (_) {}
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    Future.microtask(() {
+      try {
+        ref.read(invoiceSearchFilterProvider.notifier).state = const InvoiceSearchFilter();
+      } catch (_) {}
+    });
     super.dispose();
   }
 

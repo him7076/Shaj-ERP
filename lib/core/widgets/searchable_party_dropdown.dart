@@ -51,7 +51,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
     return RawAutocomplete<Party>(
       textEditingController: _controller,
       focusNode: _focusNode,
-      displayStringForOption: (party) => party.partyName ?? '',
+      displayStringForOption: (party) => party.uuid == 'NEW_ACTION' ? '' : (party.partyName ?? ''),
       optionsBuilder: (TextEditingValue textEditingValue) {
         final query = textEditingValue.text.trim().toLowerCase();
         List<Party> filtered = [];

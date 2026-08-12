@@ -97,11 +97,21 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     final Map<String, double> customerUuidDues = {};
     final Map<int, double> customerIdDues = {};
 
+    final Map<int, String> partyIdToUuid = {};
+    for (var p in parties) {
+      if (p.uuid != null && p.uuid!.isNotEmpty) {
+        partyIdToUuid[p.id] = p.uuid!;
+      }
+    }
+
     for (var inv in allInvoices) {
       if (inv.paymentStatus == 'Cancelled') continue;
       final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
       if (pending > 0) {
-        final pUuid = inv.party.value?.uuid;
+        String? pUuid = inv.party.value?.uuid;
+        if ((pUuid == null || pUuid.isEmpty) && inv.partyId != null) {
+          pUuid = partyIdToUuid[inv.partyId!];
+        }
         if (pUuid != null && pUuid.isNotEmpty) customerUuidDues[pUuid] = (customerUuidDues[pUuid] ?? 0.0) + pending;
         if (inv.partyId != null && inv.partyId! > 0) customerIdDues[inv.partyId!] = (customerIdDues[inv.partyId!] ?? 0.0) + pending;
       }
@@ -114,7 +124,10 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       if (pur.paymentStatus == 'Cancelled') continue;
       final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
       if (pending > 0) {
-        final pUuid = pur.party.value?.uuid;
+        String? pUuid = pur.party.value?.uuid;
+        if ((pUuid == null || pUuid.isEmpty) && pur.partyId != null) {
+          pUuid = partyIdToUuid[pur.partyId!];
+        }
         if (pUuid != null && pUuid.isNotEmpty) supplierUuidDues[pUuid] = (supplierUuidDues[pUuid] ?? 0.0) + pending;
         if (pur.partyId != null && pur.partyId! > 0) supplierIdDues[pur.partyId!] = (supplierIdDues[pur.partyId!] ?? 0.0) + pending;
       }

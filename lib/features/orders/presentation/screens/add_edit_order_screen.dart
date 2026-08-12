@@ -580,38 +580,22 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             children: [
               Text('Billing Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: partiesAsync.when(
-                    data: (parties) {
-                      final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
-                      return SearchablePartyDropdown(
-                        parties: customerParties,
-                        selectedParty: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
-                            ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
-                            : null,
-                        labelText: 'Select Customer Account',
-                        onChanged: (party) {
-                          ref.read(cartProvider.notifier).setParty(party);
-                        },
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading customers: $e'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.person_add),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
-                    ).then((_) => ref.invalidate(partiesListProvider));
+            partiesAsync.when(
+              data: (parties) {
+                final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
+                return SearchablePartyDropdown(
+                  parties: customerParties,
+                  selectedParty: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
+                      ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
+                      : null,
+                  labelText: 'Select Customer Account',
+                  onChanged: (party) {
+                    ref.read(cartProvider.notifier).setParty(party);
                   },
-                ),
-              ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Error loading customers: $e'),
             ),
             if (cart.selectedParty != null) ...[
               const SizedBox(height: 12),

@@ -179,6 +179,8 @@ class ReportService {
     final Map<String, _HsnAggregate> hsnMap = {};
 
     for (var inv in invoices) {
+      if (inv.paymentStatus == 'Cancelled') continue;
+
       // Aggregating HSN details and item totals from invoice items
       final items = (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
           .where((item) => item.parentInvoiceId == inv.id || (inv.uuid != null && inv.uuid!.isNotEmpty && item.parentInvoiceUuid == inv.uuid))
@@ -215,7 +217,7 @@ class ReportService {
         }
       }
 
-      double invTaxable = inv.taxableAmount ?? 0.0;
+      double invTaxable = inv.taxableAmount ?? (inv.subtotal ?? 0.0);
       double invGst = inv.totalGST ?? 0.0;
 
       if (invTaxable == 0 && calculatedItemTaxable > 0) invTaxable = calculatedItemTaxable;
@@ -546,6 +548,24 @@ class ReportService {
       final qty = pi.quantity ?? 0.0;
       final rate = pi.rate ?? 0.0;
       if (qty > 0) {
+        for (var k in keys) {
+          itemPurTotalAmt[k] = (itemPurTotalAmt[k] ?? 0.0) + (qty * rate);
+          itemPurTotalQty[k] = (itemPurTotalQty[k] ?? 0.0) + qty;
+        }
+      }
+    }
+
+    // Also include StockAdjustment rates in transaction valuation
+    final allAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+    for (var sa in allAdjustments) {
+      final qty = sa.quantity ?? 0.0;
+      final rate = sa.ratePerUnit ?? 0.0;
+      if (qty > 0 && rate > 0) {
+        final keys = <String>{};
+        if (sa.itemUuid != null && sa.itemUuid!.isNotEmpty) keys.add(sa.itemUuid!);
+        if (sa.itemId != null && sa.itemId! > 0) keys.add(sa.itemId!.toString());
+        if (sa.itemName != null && sa.itemName!.trim().isNotEmpty) keys.add('name_${sa.itemName!.trim().toLowerCase()}');
+
         for (var k in keys) {
           itemPurTotalAmt[k] = (itemPurTotalAmt[k] ?? 0.0) + (qty * rate);
           itemPurTotalQty[k] = (itemPurTotalQty[k] ?? 0.0) + qty;

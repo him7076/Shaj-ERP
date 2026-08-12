@@ -125,9 +125,10 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
               final allocAmt = entry.value;
 
               if (oldType == 'Receipt' || oldType == 'Credit Note') {
-                final invoice = await isar.invoices.filter().uuidEqualTo(billUuid).findFirst();
+                final invoice = await _findInvoice(billUuid);
                 if (invoice != null) {
                   invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
+                  if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
                   invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
                   if (invoice.pendingAmount! <= 0) {
                     invoice.paymentStatus = 'Paid';
@@ -149,9 +150,10 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                     ..updatedAt = DateTime.now());
                 }
               } else if (oldType == 'Payment' || oldType == 'Debit Note') {
-                final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
+                final purchase = await _findPurchase(billUuid);
                 if (purchase != null) {
                   purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
+                  if (purchase.paidAmount! < 0) purchase.paidAmount = 0.0;
                   purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
                   if (purchase.pendingAmount! <= 0) {
                     purchase.paymentStatus = 'Paid';
@@ -242,7 +244,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final allocAmt = entry.value;
 
             if (type == 'Receipt' || type == 'Credit Note') {
-              final invoice = await isar.invoices.filter().uuidEqualTo(billUuid).findFirst();
+              final invoice = await _findInvoice(billUuid);
               if (invoice != null) {
                 invoice.paidAmount = (invoice.paidAmount ?? 0.0) + allocAmt;
                 invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
@@ -266,7 +268,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                   ..updatedAt = DateTime.now());
               }
             } else if (type == 'Payment' || type == 'Debit Note') {
-              final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
+              final purchase = await _findPurchase(billUuid);
               if (purchase != null) {
                 purchase.paidAmount = (purchase.paidAmount ?? 0.0) + allocAmt;
                 purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
@@ -357,9 +359,10 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final allocAmt = entry.value;
 
             if (type == 'Receipt' || type == 'Credit Note') {
-              final invoice = await isar.invoices.filter().uuidEqualTo(billUuid).findFirst();
+              final invoice = await _findInvoice(billUuid);
               if (invoice != null) {
                 invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
+                if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
                 invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
                 if (invoice.pendingAmount! <= 0) {
                   invoice.paymentStatus = 'Paid';
@@ -372,9 +375,10 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                 await isar.invoices.put(invoice);
               }
             } else if (type == 'Payment' || type == 'Debit Note') {
-              final purchase = await isar.purchases.filter().uuidEqualTo(billUuid).findFirst();
+              final purchase = await _findPurchase(billUuid);
               if (purchase != null) {
                 purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
+                if (purchase.paidAmount! < 0) purchase.paidAmount = 0.0;
                 purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
                 if (purchase.pendingAmount! <= 0) {
                   purchase.paymentStatus = 'Paid';
@@ -437,6 +441,30 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
     } else {
       return {clean: txnAmount};
     }
+  }
+
+  Future<Invoice?> _findInvoice(String key) async {
+    final clean = key.trim();
+    if (clean.isEmpty) return null;
+    var inv = await isar.invoices.filter().uuidEqualTo(clean).findFirst();
+    inv ??= await isar.invoices.filter().invoiceNumberEqualTo(clean).findFirst();
+    final intKey = int.tryParse(clean);
+    if (inv == null && intKey != null) {
+      inv = await isar.invoices.get(intKey);
+    }
+    return inv;
+  }
+
+  Future<Purchase?> _findPurchase(String key) async {
+    final clean = key.trim();
+    if (clean.isEmpty) return null;
+    var pur = await isar.purchases.filter().uuidEqualTo(clean).findFirst();
+    pur ??= await isar.purchases.filter().purchaseNumberEqualTo(clean).findFirst();
+    final intKey = int.tryParse(clean);
+    if (pur == null && intKey != null) {
+      pur = await isar.purchases.get(intKey);
+    }
+    return pur;
   }
 
   String _generateUuid() {

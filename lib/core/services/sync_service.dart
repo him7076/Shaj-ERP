@@ -549,6 +549,78 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
+      final expItems = forceAll ? await isar.expenseItems.filter().idGreaterThan(-1).findAll() : await isar.expenseItems.filter().isSyncedEqualTo(false).findAll();
+      for (var ei in expItems) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'ExpenseItem'
+          ..entityId = ei.id
+          ..entityUuid = ei.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final stockAdjs = forceAll ? await isar.stockAdjustments.filter().idGreaterThan(-1).findAll() : await isar.stockAdjustments.filter().isSyncedEqualTo(false).findAll();
+      for (var sa in stockAdjs) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'StockAdjustment'
+          ..entityId = sa.id
+          ..entityUuid = sa.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final creditNotes = forceAll ? await isar.creditNotes.filter().idGreaterThan(-1).findAll() : await isar.creditNotes.filter().isSyncedEqualTo(false).findAll();
+      for (var cn in creditNotes) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'CreditNote'
+          ..entityId = cn.id
+          ..entityUuid = cn.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final creditNoteItems = forceAll ? await isar.creditNoteItems.filter().idGreaterThan(-1).findAll() : await isar.creditNoteItems.filter().isSyncedEqualTo(false).findAll();
+      for (var cni in creditNoteItems) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'CreditNoteItem'
+          ..entityId = cni.id
+          ..entityUuid = cni.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final debitNotes = forceAll ? await isar.debitNotes.filter().idGreaterThan(-1).findAll() : await isar.debitNotes.filter().isSyncedEqualTo(false).findAll();
+      for (var dn in debitNotes) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'DebitNote'
+          ..entityId = dn.id
+          ..entityUuid = dn.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final debitNoteItems = forceAll ? await isar.debitNoteItems.filter().idGreaterThan(-1).findAll() : await isar.debitNoteItems.filter().isSyncedEqualTo(false).findAll();
+      for (var dni in debitNoteItems) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'DebitNoteItem'
+          ..entityId = dni.id
+          ..entityUuid = dni.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
       final txns = forceAll ? await isar.transactions.filter().idGreaterThan(-1).findAll() : await isar.transactions.filter().isSyncedEqualTo(false).findAll();
       for (var t in txns) {
         final q = SyncQueue()
@@ -792,7 +864,7 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'Invoice', 'Settings', 'User',
-      'Purchase', 'Expense', 'Transaction', 'BankAccount',
+      'Purchase', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
       'CreditNote', 'DebitNote', 'StockAdjustment'
     ];
     final activeFirmId = _dbService.activeFirmId;
@@ -1069,6 +1141,13 @@ class SyncService {
       final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
       final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
 
+      final Map<int, String> partyIdToUuid = {};
+      for (var p in parties) {
+        if (p.uuid != null && p.uuid!.isNotEmpty) {
+          partyIdToUuid[p.id] = p.uuid!;
+        }
+      }
+
       final Map<String, double> uuidPending = {};
       final Map<int, double> idPending = {};
 
@@ -1076,7 +1155,10 @@ class SyncService {
         if (inv.paymentStatus == 'Cancelled') continue;
         final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
         if (pending > 0) {
-          final pUuid = inv.party.value?.uuid;
+          String? pUuid = inv.party.value?.uuid;
+          if ((pUuid == null || pUuid.isEmpty) && inv.partyId != null) {
+            pUuid = partyIdToUuid[inv.partyId!];
+          }
           if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
           if (inv.partyId != null && inv.partyId! > 0) idPending[inv.partyId!] = (idPending[inv.partyId!] ?? 0.0) + pending;
         }
@@ -1086,9 +1168,31 @@ class SyncService {
         if (pur.paymentStatus == 'Cancelled') continue;
         final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
         if (pending > 0) {
-          final pUuid = pur.party.value?.uuid;
+          String? pUuid = pur.party.value?.uuid;
+          if ((pUuid == null || pUuid.isEmpty) && pur.partyId != null) {
+            pUuid = partyIdToUuid[pur.partyId!];
+          }
           if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
           if (pur.partyId != null && pur.partyId! > 0) idPending[pur.partyId!] = (idPending[pur.partyId!] ?? 0.0) + pending;
+        }
+      }
+
+      final transactions = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+      final Map<String, double> uuidUnlinkedCredits = {};
+      final Map<int, double> idUnlinkedCredits = {};
+
+      for (var tx in transactions) {
+        if (tx.isDeleted == true) continue;
+        final amt = tx.amount ?? 0.0;
+        if (amt <= 0) continue;
+        final type = tx.transactionType;
+        final isUnlinked = tx.linkedBillUuid == null || tx.linkedBillUuid!.isEmpty || tx.linkedBillUuid == '{}';
+
+        if (isUnlinked && (type == 'Receipt' || type == 'Payment In' || type == 'Payment' || type == 'Payment Out')) {
+          String? pUuid = tx.partyUuid;
+          if (pUuid != null && pUuid.isNotEmpty) {
+            uuidUnlinkedCredits[pUuid] = (uuidUnlinkedCredits[pUuid] ?? 0.0) + amt;
+          }
         }
       }
 
@@ -1098,7 +1202,10 @@ class SyncService {
         final iPending = p.id > 0 ? (idPending[p.id] ?? 0.0) : 0.0;
         final invPending = uPending > 0 ? uPending : iPending;
 
-        final newBal = invPending > 0 ? invPending : (p.openingBalance ?? 0.0);
+        final uUnlinked = p.uuid != null ? (uuidUnlinkedCredits[p.uuid] ?? 0.0) : 0.0;
+        final netPending = (invPending > 0 ? invPending : (p.openingBalance ?? 0.0)) - uUnlinked;
+        final newBal = netPending < 0 ? 0.0 : netPending;
+
         if ((p.outstandingBalance ?? 0.0) != newBal) {
           p.outstandingBalance = newBal;
           p.updatedAt = DateTime.now();
@@ -1681,6 +1788,12 @@ class SyncService {
         });
       case 'Expense':
         final e = entity as Expense;
+        dynamic parsedItems;
+        if (e.itemsJson != null && e.itemsJson!.isNotEmpty) {
+          try {
+            parsedItems = jsonDecode(e.itemsJson!);
+          } catch (_) {}
+        }
         return baseMap..addAll({
           'voucherNo': e.voucherNo,
           'partyName': e.partyName,
@@ -1692,6 +1805,7 @@ class SyncService {
           'paymentMode': e.paymentMode,
           'remarks': e.remarks,
           'itemsJson': e.itemsJson,
+          'items': parsedItems ?? [],
         });
       case 'ExpenseItem':
         final e = entity as ExpenseItem;
@@ -2030,6 +2144,20 @@ class SyncService {
           ..role = data['role'];
         break;
       case 'Expense':
+        String? resolvedItemsJson;
+        final rawItemsJson = data['itemsJson'];
+        final rawItems = data['items'];
+
+        if (rawItemsJson is String && rawItemsJson.isNotEmpty) {
+          resolvedItemsJson = rawItemsJson;
+        } else if (rawItemsJson is List) {
+          resolvedItemsJson = jsonEncode(rawItemsJson);
+        } else if (rawItems is List) {
+          resolvedItemsJson = jsonEncode(rawItems);
+        } else if (rawItems is Map) {
+          resolvedItemsJson = jsonEncode([rawItems]);
+        }
+
         entity = Expense()
           ..voucherNo = data['voucherNo']
           ..partyName = data['partyName']
@@ -2040,7 +2168,7 @@ class SyncService {
           ..expenseDate = data['expenseDate'] != null ? DateTime.parse(data['expenseDate']) : null
           ..paymentMode = data['paymentMode']
           ..remarks = data['remarks']
-          ..itemsJson = data['itemsJson'];
+          ..itemsJson = resolvedItemsJson;
         break;
       case 'ExpenseItem':
         entity = ExpenseItem()
