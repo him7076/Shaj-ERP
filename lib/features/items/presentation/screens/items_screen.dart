@@ -855,9 +855,10 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         if (matchUuid || matchName || matchId) {
           final q = pi.quantity ?? 0.0;
           final r = pi.rate ?? 0.0;
-          if (q > 0) {
-            totalInflowValue += (q * r);
-            totalInflowQty += q;
+          final lineAmt = (pi.totalAmount != null && pi.totalAmount! > 0) ? pi.totalAmount! : (q * r);
+          if (lineAmt > 0) {
+            totalInflowValue += lineAmt;
+            totalInflowQty += (q > 0 ? q : 1.0);
           }
         }
       }

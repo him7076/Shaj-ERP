@@ -558,13 +558,51 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     );
   }
 
+  Future<double> _getRealPartyBalance(Party party) async {
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      double totalPending = 0.0;
+      final partyNameKey = party.partyName?.trim().toLowerCase();
+
+      if (party.partyType == 'Supplier') {
+        final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+        for (var pur in purchases) {
+          if (pur.paymentStatus == 'Cancelled') continue;
+          try { pur.party.loadSync(); } catch (_) {}
+          final matchUuid = party.uuid != null && party.uuid!.isNotEmpty && pur.party.value?.uuid == party.uuid;
+          final matchName = partyNameKey != null && partyNameKey.isNotEmpty && pur.partyName?.trim().toLowerCase() == partyNameKey;
+
+          if (matchUuid || matchName) {
+            totalPending += (pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0)));
+          }
+        }
+      } else {
+        final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+        for (var inv in invoices) {
+          if (inv.paymentStatus == 'Cancelled') continue;
+          try { inv.party.loadSync(); } catch (_) {}
+          final matchUuid = party.uuid != null && party.uuid!.isNotEmpty && inv.party.value?.uuid == party.uuid;
+          final matchName = partyNameKey != null && partyNameKey.isNotEmpty && inv.partyName?.trim().toLowerCase() == partyNameKey;
+
+          if (matchUuid || matchName) {
+            totalPending += (inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0)));
+          }
+        }
+      }
+
+      if (totalPending > 0) return totalPending;
+    } catch (_) {}
+
+    return party.openingBalance ?? 0.0;
+  }
+
   Widget _buildPartyCard(Party party, {String? distanceBadge}) {
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
     final rawOut = party.outstandingBalance ?? 0.0;
     final rawOpen = party.openingBalance ?? 0.0;
-    final balance = (rawOut != 0.0) ? rawOut : rawOpen;
-    final isReceivable = party.partyType != 'Supplier' && (party.balanceType == 'Dr' || balance >= 0);
+    final fallbackBal = (rawOut != 0.0) ? rawOut : rawOpen;
+    final isReceivable = party.partyType != 'Supplier' && (party.balanceType == 'Dr' || fallbackBal >= 0);
     final glowColor = isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981);
     
     final VoidCallback handleTap = () {
@@ -666,30 +704,36 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
             ),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '₹${balance.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: isMobile ? 13.5 : 15,
-                  color: isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: glowColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  isReceivable ? 'Receivable' : 'Payable',
-                  style: TextStyle(fontSize: 9.5, color: glowColor, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
+          FutureBuilder<double>(
+            future: _getRealPartyBalance(party),
+            builder: (context, snapshot) {
+              final balance = snapshot.data ?? fallbackBal;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${balance.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: isMobile ? 13.5 : 15,
+                      color: isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: glowColor.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isReceivable ? 'Receivable' : 'Payable',
+                      style: TextStyle(fontSize: 9.5, color: glowColor, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

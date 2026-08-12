@@ -979,9 +979,9 @@ class SyncService {
                 continue;
               }
 
-              final localVersion = localRecord.version;
+              final localVersion = (localRecord.version as int?) ?? 1;
               final remoteVersion = data['version'] as int? ?? 1;
-              final localUpdated = localRecord.updatedAt as DateTime;
+              final localUpdated = (localRecord.updatedAt as DateTime?) ?? DateTime.fromMillisecondsSinceEpoch(0);
               final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
 
               bool remoteWins = false;

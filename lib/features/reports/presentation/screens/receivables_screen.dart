@@ -42,30 +42,33 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
               }
               final invoices = snapshot.data ?? [];
               final Map<String, double> partyUuidDues = {};
-              final Map<int, double> partyIdDues = {};
+              final Map<String, double> partyNameDues = {};
 
               for (var inv in invoices) {
                 if (inv.paymentStatus == 'Cancelled') continue;
                 final pending = inv.pendingAmount ?? 
                     ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
                 if (pending > 0) {
+                  try { inv.party.loadSync(); } catch (_) {}
                   final pUuid = inv.party.value?.uuid;
                   if (pUuid != null && pUuid.isNotEmpty) {
                     partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
                   }
-                  if (inv.partyId != null && inv.partyId! > 0) {
-                    partyIdDues[inv.partyId!] = (partyIdDues[inv.partyId!] ?? 0.0) + pending;
+                  if (inv.partyName != null && inv.partyName!.trim().isNotEmpty) {
+                    final nameKey = inv.partyName!.trim().toLowerCase();
+                    partyNameDues[nameKey] = (partyNameDues[nameKey] ?? 0.0) + pending;
                   }
                 }
               }
 
               double getPartyDue(Party p) {
                 final hasUuid = p.uuid != null && p.uuid!.isNotEmpty;
-                final invoiceDue = hasUuid 
-                    ? (partyUuidDues[p.uuid] ?? 0.0)
-                    : (p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0);
+                final uDue = hasUuid ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
+                final nameKey = p.partyName?.trim().toLowerCase() ?? '';
+                final nDue = nameKey.isNotEmpty ? (partyNameDues[nameKey] ?? 0.0) : 0.0;
+                final invoiceDue = uDue > 0 ? uDue : nDue;
+
                 if (invoiceDue > 0) return invoiceDue;
-                if (p.outstandingBalance != null && p.outstandingBalance! > 0) return p.outstandingBalance!;
                 return p.openingBalance ?? 0.0;
               }
 
