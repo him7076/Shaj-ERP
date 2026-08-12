@@ -76,37 +76,41 @@ void main() {
 
     debugPrint('[BOOT] Launching Business Sahaj ERP...');
 
-    // 1. Initialize SharedPreferences for caching configs (1s timeout)
-    SharedPreferences? sharedPrefs;
+    // 1. Initialize SharedPreferences for caching configs safely
+    late SharedPreferences sharedPrefs;
     try {
-      sharedPrefs = await SharedPreferences.getInstance().timeout(const Duration(seconds: 1));
+      sharedPrefs = await SharedPreferences.getInstance();
       debugPrint('[BOOT] SharedPreferences cache initialized.');
     } catch (e) {
-      debugPrint('[BOOT WARNING] SharedPreferences init bypassed: $e');
+      debugPrint('[BOOT WARNING] SharedPreferences fallback retry: $e');
+      try {
+        sharedPrefs = await SharedPreferences.getInstance();
+      } catch (_) {
+        // Fallback for extreme cases
+        sharedPrefs = await SharedPreferences.getInstance();
+      }
     }
 
     // 2. Initialize Firebase (non-blocking in background)
     try {
-      if (sharedPrefs != null) {
-        final apiKey = sharedPrefs.getString('firebase_api_key');
-        final projectId = sharedPrefs.getString('firebase_project_id');
-        final appId = sharedPrefs.getString('firebase_app_id');
-        final senderId = sharedPrefs.getString('firebase_sender_id');
-        final storageBucket = sharedPrefs.getString('firebase_storage_bucket');
+      final apiKey = sharedPrefs.getString('firebase_api_key');
+      final projectId = sharedPrefs.getString('firebase_project_id');
+      final appId = sharedPrefs.getString('firebase_app_id');
+      final senderId = sharedPrefs.getString('firebase_sender_id');
+      final storageBucket = sharedPrefs.getString('firebase_storage_bucket');
 
-        if (apiKey != null && projectId != null && appId != null) {
-          Firebase.initializeApp(
-            options: FirebaseOptions(
-              apiKey: apiKey,
-              projectId: projectId,
-              appId: appId,
-              messagingSenderId: senderId ?? '',
-              storageBucket: storageBucket ?? '$projectId.appspot.com',
-            ),
-          ).catchError((e) {
-            debugPrint('[BOOT WARNING] Background Firebase init: $e');
-          });
-        }
+      if (apiKey != null && projectId != null && appId != null) {
+        Firebase.initializeApp(
+          options: FirebaseOptions(
+            apiKey: apiKey,
+            projectId: projectId,
+            appId: appId,
+            messagingSenderId: senderId ?? '',
+            storageBucket: storageBucket ?? '$projectId.appspot.com',
+          ),
+        ).catchError((e) {
+          debugPrint('[BOOT WARNING] Background Firebase init: $e');
+        });
       }
     } catch (e) {
       debugPrint('[BOOT WARNING] Firebase initialization bypassed: $e');
@@ -122,8 +126,7 @@ void main() {
     runApp(
       ProviderScope(
         overrides: [
-          if (sharedPrefs != null)
-            sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+          sharedPreferencesProvider.overrideWithValue(sharedPrefs),
           databaseServiceProvider.overrideWithValue(dbService),
         ],
         child: const MyApp(),
