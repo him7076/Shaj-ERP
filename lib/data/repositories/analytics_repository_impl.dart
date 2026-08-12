@@ -94,16 +94,50 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
     // 4. Receivables and Payables outstanding
     final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+    final Map<String, double> customerUuidDues = {};
+    final Map<int, double> customerIdDues = {};
+
+    for (var inv in allInvoices) {
+      if (inv.paymentStatus == 'Cancelled') continue;
+      final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
+      if (pending > 0) {
+        final pUuid = inv.party.value?.uuid;
+        if (pUuid != null && pUuid.isNotEmpty) customerUuidDues[pUuid] = (customerUuidDues[pUuid] ?? 0.0) + pending;
+        if (inv.partyId != null && inv.partyId! > 0) customerIdDues[inv.partyId!] = (customerIdDues[inv.partyId!] ?? 0.0) + pending;
+      }
+    }
+
+    final Map<String, double> supplierUuidDues = {};
+    final Map<int, double> supplierIdDues = {};
+
+    for (var pur in allPurchases) {
+      if (pur.paymentStatus == 'Cancelled') continue;
+      final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+      if (pending > 0) {
+        final pUuid = pur.party.value?.uuid;
+        if (pUuid != null && pUuid.isNotEmpty) supplierUuidDues[pUuid] = (supplierUuidDues[pUuid] ?? 0.0) + pending;
+        if (pur.partyId != null && pur.partyId! > 0) supplierIdDues[pur.partyId!] = (supplierIdDues[pur.partyId!] ?? 0.0) + pending;
+      }
+    }
+
     double totalOutstanding = 0.0;
     double totalPayable = 0.0;
+
     for (var p in parties) {
-      final bal = p.outstandingBalance ?? 0.0;
-      if (bal > 0) {
-        if (p.partyType == 'Customer' || p.balanceType == 'Debit') {
-          totalOutstanding += bal;
-        } else if (p.partyType == 'Supplier' || p.balanceType == 'Credit') {
-          totalPayable += bal;
-        }
+      final uCustDue = p.uuid != null ? (customerUuidDues[p.uuid] ?? 0.0) : 0.0;
+      final iCustDue = p.id > 0 ? (customerIdDues[p.id] ?? 0.0) : 0.0;
+      final custDue = uCustDue > 0 ? uCustDue : iCustDue;
+
+      final uSuppDue = p.uuid != null ? (supplierUuidDues[p.uuid] ?? 0.0) : 0.0;
+      final iSuppDue = p.id > 0 ? (supplierIdDues[p.id] ?? 0.0) : 0.0;
+      final suppDue = uSuppDue > 0 ? uSuppDue : iSuppDue;
+
+      if (p.partyType == 'Supplier') {
+        final due = suppDue > 0 ? suppDue : ((p.outstandingBalance != null && p.outstandingBalance! > 0) ? p.outstandingBalance! : (p.openingBalance ?? 0.0));
+        if (due > 0) totalPayable += due;
+      } else {
+        final due = custDue > 0 ? custDue : ((p.outstandingBalance != null && p.outstandingBalance! > 0) ? p.outstandingBalance! : (p.openingBalance ?? 0.0));
+        if (due > 0) totalOutstanding += due;
       }
     }
 

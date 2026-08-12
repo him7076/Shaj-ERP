@@ -50,47 +50,36 @@ class ExpenseRepositoryImpl extends BaseIsarRepository<Expense> implements Expen
   Future<String> generateNextVoucherNumber() async {
     try {
       final expenses = await collection.filter().isDeletedEqualTo(false).findAll();
-
-      // Migration: Convert old EXP-100x format to clean EXP-x format
-      bool migrated = false;
-      for (var exp in expenses) {
-        final vNo = exp.voucherNo;
-        if (vNo != null && vNo.startsWith('EXP-100')) {
-          final suffix = vNo.replaceFirst('EXP-100', '');
-          final numVal = int.tryParse(suffix);
-          if (numVal != null && numVal > 0) {
-            exp.voucherNo = 'EXP-$numVal';
-            migrated = true;
-          }
-        }
-      }
-
-      if (migrated) {
-        await isar.writeTxn(() async {
-          await collection.putAll(expenses);
-        });
-      }
+      final txns = await isar.transactions.filter().isDeletedEqualTo(false).and().transactionTypeEqualTo('Expense').findAll();
 
       int maxNum = 0;
       final regExp = RegExp(r'\d+');
 
-      for (var exp in expenses) {
-        final vNo = exp.voucherNo;
-        if (vNo != null && vNo.isNotEmpty) {
-          final matches = regExp.allMatches(vNo);
-          if (matches.isNotEmpty) {
-            final numStr = matches.last.group(0);
-            if (numStr != null) {
-              final parsed = int.tryParse(numStr);
-              if (parsed != null && parsed > maxNum) {
-                maxNum = parsed;
-              }
+      void checkNum(String? str) {
+        if (str == null || str.trim().isEmpty) return;
+        final matches = regExp.allMatches(str);
+        if (matches.isNotEmpty) {
+          final numStr = matches.last.group(0);
+          if (numStr != null) {
+            final parsed = int.tryParse(numStr);
+            if (parsed != null && parsed > maxNum) {
+              maxNum = parsed;
             }
           }
         }
       }
 
-      final nextNum = maxNum + 1;
+      for (var exp in expenses) {
+        checkNum(exp.voucherNo);
+      }
+
+      for (var t in txns) {
+        checkNum(t.referenceNumber);
+        checkNum(t.transactionNumber);
+      }
+
+      final totalCount = expenses.length + txns.length;
+      final nextNum = maxNum > 0 ? (maxNum + 1) : (totalCount + 1);
       return 'EXP-$nextNum';
     } catch (e) {
       final count = await collection.count();

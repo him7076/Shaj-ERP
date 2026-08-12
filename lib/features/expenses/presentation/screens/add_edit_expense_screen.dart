@@ -574,7 +574,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _voucherNoController.text.isEmpty ? 'EXP-1' : _voucherNoController.text,
+                          _voucherNoController.text.isEmpty ? 'Auto' : _voucherNoController.text,
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 12),
                         ),
                         const SizedBox(width: 4),

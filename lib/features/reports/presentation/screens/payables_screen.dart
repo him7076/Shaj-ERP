@@ -34,32 +34,39 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
       body: partiesAsync.when(
         data: (allParties) {
           final isar = ref.read(databaseServiceProvider).isar;
-          final purchases = isar.purchases.filter().isDeletedEqualTo(false).findAllSync();
-          final Map<String, double> partyUuidDues = {};
-          final Map<int, double> partyIdDues = {};
-
-          for (var pur in purchases) {
-            final pending = pur.pendingAmount ?? 
-                ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
-            if (pending > 0 && (pur.paymentStatus == 'Unpaid' || pur.paymentStatus == 'Partially Paid' || pur.paymentStatus == null)) {
-              final pUuid = pur.party.value?.uuid;
-              if (pUuid != null && pUuid.isNotEmpty) {
-                partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
+          return FutureBuilder<List<Purchase>>(
+            future: isar.purchases.filter().isDeletedEqualTo(false).findAll(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
               }
-              if (pur.partyId != null && pur.partyId! > 0) {
-                partyIdDues[pur.partyId!] = (partyIdDues[pur.partyId!] ?? 0.0) + pending;
-              }
-            }
-          }
+              final purchases = snapshot.data ?? [];
+              final Map<String, double> partyUuidDues = {};
+              final Map<int, double> partyIdDues = {};
 
-          double getPartyDue(Party p) {
-            final uuidDue = p.uuid != null ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
-            final idDue = p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0;
-            final purchaseDue = uuidDue > 0 ? uuidDue : idDue;
-            if (purchaseDue > 0) return purchaseDue;
-            if (p.outstandingBalance != null && p.outstandingBalance! != 0) return p.outstandingBalance!;
-            return p.openingBalance ?? 0.0;
-          }
+              for (var pur in purchases) {
+                if (pur.paymentStatus == 'Cancelled') continue;
+                final pending = pur.pendingAmount ?? 
+                    ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+                if (pending > 0) {
+                  final pUuid = pur.party.value?.uuid;
+                  if (pUuid != null && pUuid.isNotEmpty) {
+                    partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
+                  }
+                  if (pur.partyId != null && pur.partyId! > 0) {
+                    partyIdDues[pur.partyId!] = (partyIdDues[pur.partyId!] ?? 0.0) + pending;
+                  }
+                }
+              }
+
+              double getPartyDue(Party p) {
+                final uuidDue = p.uuid != null ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
+                final idDue = p.id > 0 ? (partyIdDues[p.id] ?? 0.0) : 0.0;
+                final purchaseDue = uuidDue > 0 ? uuidDue : idDue;
+                if (purchaseDue > 0) return purchaseDue;
+                if (p.outstandingBalance != null && p.outstandingBalance! > 0) return p.outstandingBalance!;
+                return p.openingBalance ?? 0.0;
+              }
 
           final supplierParties = allParties
               .where((p) => p.partyType == 'Supplier' && getPartyDue(p) > 0)
@@ -240,8 +247,8 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                           );
                         },
                       ),
-              ),
-            ],
+              );
+            },
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
