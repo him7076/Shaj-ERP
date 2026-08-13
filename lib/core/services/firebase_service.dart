@@ -97,6 +97,9 @@ class FirebaseService {
     return 'company_$userPart';
   }
 
+  /// Check if the user is authenticated
+  bool get isAuthenticated => _isFirebaseReady && auth.currentUser != null;
+
   /// Re-initializes Firebase connection and ensures authentication
   Future<void> initializeFirebase() async {
     await ensureAuthenticated();
