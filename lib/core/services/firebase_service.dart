@@ -37,11 +37,26 @@ class FirebaseService {
     return FirebaseAuth.instance;
   }
 
+  bool _persistenceConfigured = false;
+
   FirebaseFirestore get firestore {
     if (!_isFirebaseReady) {
       throw StateError('Firebase is not initialized.');
     }
-    return FirebaseFirestore.instance;
+    final instance = FirebaseFirestore.instance;
+    if (!_persistenceConfigured) {
+      _persistenceConfigured = true;
+      try {
+        instance.settings = const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        );
+        logger.info('Firestore offline persistence configured (UNLIMITED cache).');
+      } catch (e) {
+        logger.warning('Firestore persistence configuration bypassed: $e');
+      }
+    }
+    return instance;
   }
 
   FirebaseStorage get storage {

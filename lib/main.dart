@@ -173,7 +173,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Business Sahaj ERP',
+      title: 'Sahaj ERP Pro',
       theme: AppTheme.getLightTheme(
         themeState.themePreset,
         customPrimary: themeState.customPrimaryColor,

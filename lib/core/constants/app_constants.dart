@@ -1,6 +1,6 @@
 class AppConstants {
   // App Info
-  static const String appName = 'Business Sahaj ERP';
+  static const String appName = 'Sahaj ERP Pro';
   static const String appVersion = '1.0.0';
 
   // Network Configuration

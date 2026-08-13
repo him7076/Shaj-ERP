@@ -111,7 +111,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   const SizedBox(height: 32),
                   // App Name
                   const Text(
-                    'Sahaj ERP',
+                    'Sahaj ERP Pro',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 38,

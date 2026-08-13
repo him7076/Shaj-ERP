@@ -29,7 +29,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
-        android:label="Sahaj ERP"
+        android:label="Sahaj ERP Pro"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
