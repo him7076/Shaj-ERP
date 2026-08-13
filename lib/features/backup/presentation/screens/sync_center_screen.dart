@@ -400,7 +400,6 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                                         message: 'Upload blocked. Max retries exceeded.',
                                         child: Icon(Icons.warning_amber_rounded, color: Colors.red[600]),
                                       )
-),
                                     : null,
                               ),
                             );

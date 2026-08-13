@@ -398,7 +398,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                               Switch.adaptive(
                                                 value: isFirmSyncEnabled,
                                                 activeColor: Colors.blue,
-                                                visualDensity: VisualDensity.compact,
                                                 onChanged: (val) async {
                                                   await prefs.setBool('enable_firm_sync_$firmId', val);
                                                   setFirmState(() {});
