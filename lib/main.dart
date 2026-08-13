@@ -116,17 +116,10 @@ void main() {
       debugPrint('[BOOT WARNING] Firebase initialization bypassed: $e');
     }
 
-    // 3. Initialize Isar database storage properly before UI render
+    // 3. Create DatabaseService instance
     final dbService = DatabaseService();
-    try {
-      await dbService.init(sharedPrefs).timeout(const Duration(seconds: 4));
-      debugPrint('[BOOT] Isar DatabaseService initialized.');
-    } catch (e, stack) {
-      debugPrint('[BOOT WARNING] DatabaseService init timeout/error: $e');
-      logger.error('DatabaseService init error on boot', e, stack);
-    }
 
-    // Run application safely with initialized services
+    // 4. Run application IMMEDIATELY so UI & MaterialApp render frame 1 without waiting
     runApp(
       ProviderScope(
         overrides: [
@@ -136,6 +129,17 @@ void main() {
         child: const MyApp(),
       ),
     );
+
+    // 5. Initialize Isar database storage asynchronously in background post-render
+    Future.microtask(() async {
+      try {
+        await dbService.init(sharedPrefs).timeout(const Duration(seconds: 3));
+        debugPrint('[BOOT] Isar DatabaseService initialized in background.');
+      } catch (e, stack) {
+        debugPrint('[BOOT WARNING] DatabaseService init background error: $e');
+        logger.error('DatabaseService init error on boot', e, stack);
+      }
+    });
   }, (error, stack) {
     debugPrint('[RUN ZONED GUARDED UNCAUGHT ERROR] $error\n$stack');
     logger.error('Uncaught Zoned Error', error, stack);
