@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show Uint8List, kIsWeb;
 import 'package:archive/archive.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
@@ -360,6 +361,7 @@ class RestoreService {
             await destFile.parent.create(recursive: true);
             await file.copy(destPath);
           }
+        }
       }
 
       // Restore Multi-Firm SharedPreferences if present
