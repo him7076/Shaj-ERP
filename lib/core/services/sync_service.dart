@@ -183,6 +183,10 @@ class SyncService {
         if (existingRemoteIds.contains(firmId) || remoteDeletedFirms.contains(firmId)) {
           continue; // Do NOT overwrite existing remote firms or resurrect deleted firms!
         }
+        final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$firmId') ?? false;
+        if (!isFirmSyncEnabled) {
+          continue; // Do NOT auto-upload local firm definition to cloud if firm sync toggle is OFF!
+        }
 
         final firmName = _prefs.getString('firm_name_$firmId') ??
             (firmId == 'firm_default' ? 'Default Company' : 'New Company');
@@ -248,6 +252,9 @@ class SyncService {
       if (_isUploadingQuietly) return;
       final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
       if (!cloudSyncEnabled) return;
+      final activeFirmId = _dbService.activeFirmId;
+      final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? false;
+      if (!isFirmSyncEnabled) return;
       if (_currentState.status == SyncStatus.syncing) return;
 
       _isUploadingQuietly = true;
@@ -272,6 +279,17 @@ class SyncService {
       _updateState(const SyncState(
         status: SyncStatus.idle,
         message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? false;
+    if (!isFirmSyncEnabled) {
+      logger.info('Cloud sync is OFF for active firm ($activeFirmId). Bypassing cloud sync.');
+      _updateState(SyncState(
+        status: SyncStatus.idle,
+        message: 'Firm Cloud Sync OFF for firm ($activeFirmId)',
       ));
       return;
     }

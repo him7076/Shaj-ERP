@@ -169,139 +169,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: AppThemePreset.values.take(8).map((preset) {
-                        final primaryColor = ColorConstants.getPrimary(preset, theme.brightness);
-                        final secondaryColor = ColorConstants.getSecondary(preset, theme.brightness);
-                        final isSelected = currentThemeState.themePreset == preset;
-
-                        String label;
-                        switch (preset) {
-                          case AppThemePreset.emeraldTeal: label = 'Emerald Teal'; break;
-                          case AppThemePreset.sunsetRose: label = 'Sunset Rose'; break;
-                          case AppThemePreset.amberGold: label = 'Amber Gold'; break;
-                          case AppThemePreset.obsidianCyan: label = 'Obsidian Cyan'; break;
-                          case AppThemePreset.midnightPurple: label = 'Midnight Purple'; break;
-                          case AppThemePreset.oceanBlue: label = 'Ocean Blue'; break;
-                          case AppThemePreset.crimsonFlame: label = 'Crimson Flame'; break;
-                          case AppThemePreset.executiveIndigo:
-                          default: label = 'Executive Indigo'; break;
-                        }
-
-                        return InkWell(
-                          onTap: () {
-                            ref.read(themeProvider.notifier).setThemePreset(preset);
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: isSelected ? primaryColor.withOpacity(0.15) : theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected ? primaryColor : theme.colorScheme.outlineVariant,
-                                width: isSelected ? 2.0 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(
-                                      colors: [primaryColor, secondaryColor],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  label,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                    color: isSelected ? primaryColor : theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    const Text(
-                      'Solid Accent Colors (8):',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: AppThemePreset.values.skip(8).map((preset) {
-                        final primaryColor = ColorConstants.getPrimary(preset, theme.brightness);
-                        final isSelected = currentThemeState.themePreset == preset;
-
-                        String label;
-                        switch (preset) {
-                          case AppThemePreset.classicNavy: label = 'Classic Navy'; break;
-                          case AppThemePreset.pureEmerald: label = 'Pure Emerald'; break;
-                          case AppThemePreset.darkCharcoal: label = 'Dark Charcoal'; break;
-                          case AppThemePreset.royalViolet: label = 'Royal Violet'; break;
-                          case AppThemePreset.deepCrimson: label = 'Deep Crimson'; break;
-                          case AppThemePreset.burntOrange: label = 'Burnt Orange'; break;
-                          case AppThemePreset.deepCyan: label = 'Deep Cyan'; break;
-                          case AppThemePreset.forestGreen:
-                          default: label = 'Forest Green'; break;
-                        }
-
-                        return InkWell(
-                          onTap: () {
-                            ref.read(themeProvider.notifier).setThemePreset(preset);
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                            decoration: BoxDecoration(
-                              color: isSelected ? primaryColor.withOpacity(0.15) : theme.colorScheme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected ? primaryColor : theme.colorScheme.outlineVariant,
-                                width: isSelected ? 2.0 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(
-                                  radius: 8,
-                                  backgroundColor: primaryColor,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  label,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                    color: isSelected ? primaryColor : theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 8),
 
                     const Text(
                       'Custom Full Spectrum & Dual-Color Gradient Engine:',
@@ -509,15 +377,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_outlined, size: 18),
-                                    onPressed: () => _showEditFirmDialog(firmId, firmName),
-                                    tooltip: 'Edit Name',
-                                    visualDensity: VisualDensity.compact,
-                                  ),
+                                  Row(
+                                    children: [
+                                      StatefulBuilder(
+                                        builder: (context, setFirmState) {
+                                          final bool isFirmSyncEnabled = prefs.getBool('enable_firm_sync_$firmId') ?? false;
+
+                                          return Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                isFirmSyncEnabled ? 'Cloud Sync ON' : 'Cloud Sync OFF',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: isFirmSyncEnabled ? Colors.green : Colors.grey,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Switch.adaptive(
+                                                value: isFirmSyncEnabled,
+                                                activeColor: Colors.blue,
+                                                visualDensity: VisualDensity.compact,
+                                                onChanged: (val) async {
+                                                  await prefs.setBool('enable_firm_sync_$firmId', val);
+                                                  setFirmState(() {});
+                                                  setState(() {});
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(val
+                                                          ? '🌐 Firebase Sync ENABLED for "$firmName"!'
+                                                          : '💾 Firebase Sync DISABLED for "$firmName". Data stays local.'),
+                                                      duration: const Duration(seconds: 2),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(Icons.edit_outlined, size: 18),
+                                        onPressed: () => _showEditFirmDialog(firmId, firmName),
+                                        tooltip: 'Edit Name',
+                                        visualDensity: VisualDensity.compact,
+                                      ),
                                   if (firmsList.length > 1)
                                     IconButton(
                                       icon: Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
@@ -827,151 +733,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Firebase Cloud Sync Configuration Card
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.cloud_sync_outlined, color: theme.colorScheme.primary),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Firebase Cloud Sync Configuration',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Firebase Database Kaise Connect Karein (Guide):',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            '1. Firebase Console (https://console.firebase.google.com/) par naya project banayein.\n'
-                            '2. BUILD -> FIRESTORE DATABASE par click karke database ko "Test Mode" me create karein.\n'
-                            '3. Firestore -> RULES tab me paste karein:\n'
-                            '   allow read, write: if request.time < timestamp.date(2026, 8, 16);\n'
-                            '4. BUILD -> AUTHENTICATION -> SIGN-IN METHOD me ANONYMOUS login ko "Enable" karein.\n'
-                            '5. Project Settings me select karein aur dynamic web app key variables copy karein.\n'
-                            '6. Save karke Application ko restart karein.',
-                            style: TextStyle(fontSize: 12, height: 1.4),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () => _showFirebaseConfigDialog(prefs),
-                          icon: const Icon(Icons.settings_outlined),
-                          label: const Text('Configure Firebase Keys'),
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final confirm = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Reset Firebase Data?'),
-                                content: const Text(
-                                  'Kya aap sachme cloud database se is company ka sara data delete karna chahte hain? '
-                                  'Isse aapka local database safe rahega, but cloud data clean ho jayega.'
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
-                                    child: const Text('Cancel'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(true),
-                                    child: const Text('Reset Now', style: TextStyle(color: Colors.red)),
-                                  ),
-                                ],
-                              ),
-                            );
-
-                            if (confirm == true) {
-                              if (!mounted) return;
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (context) => const Center(
-                                  child: Card(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(20.0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircularProgressIndicator(),
-                                          SizedBox(height: 12),
-                                          Text('Deleting Cloud Data...'),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-
-                              try {
-                                await ref.read(syncServiceProvider).clearCloudData();
-                                if (mounted) {
-                                  Navigator.of(context).pop(); // dismiss loading dialog
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Firebase data cleared successfully!')),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  Navigator.of(context).pop(); // dismiss loading dialog
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error clearing data: $e')),
-                                  );
-                                }
-                              }
-                            }
-                          },
-                          icon: const Icon(Icons.delete_forever, color: Colors.white),
-                          label: const Text('Reset Firebase Data'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red[800],
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
             // App Version Info Card
             Card(
               elevation: 0,
@@ -1894,34 +1655,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     Color color1 = themeState.customPrimaryColor ?? Theme.of(context).colorScheme.primary;
     Color color2 = themeState.customSecondaryColor ?? Theme.of(context).colorScheme.secondary;
 
-    final List<Color> spectrumPalette = [
-      const Color(0xFF4F46E5), const Color(0xFF6366F1), const Color(0xFF818CF8),
-      const Color(0xFF059669), const Color(0xFF10B981), const Color(0xFF34D399),
-      const Color(0xFF0284C7), const Color(0xFF06B6D4), const Color(0xFF38BDF8),
-      const Color(0xFFE11D48), const Color(0xFFF43F5E), const Color(0xFFFB7185),
-      const Color(0xFFD97706), const Color(0xFFF59E0B), const Color(0xFFFBBF24),
-      const Color(0xFF6D28D9), const Color(0xFF7C3AED), const Color(0xFFA855F7),
-      const Color(0xFF991B1B), const Color(0xFFDC2626), const Color(0xFFEF4444),
-      const Color(0xFF1E3A8A), const Color(0xFF0F172A), const Color(0xFF1F2937),
-    ];
-
     showDialog(
       context: context,
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
+            final hsv1 = HSVColor.fromColor(color1);
+            final hsv2 = HSVColor.fromColor(color2);
+
             return AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               title: Row(
                 children: const [
                   Icon(Icons.palette_rounded, color: Colors.indigo, size: 26),
                   SizedBox(width: 10),
-                  Text('Full Spectrum & Dual-Color Engine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                  Text('Full Spectrum Color Chart Engine', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
                 ],
               ),
               content: SingleChildScrollView(
                 child: SizedBox(
-                  width: 440,
+                  width: 460,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1944,53 +1697,126 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Text('LIVE GRADIENT PREVIEW', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-                            SizedBox(height: 4),
-                            Text('Business Sahaj ERP Theme', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                          children: [
+                            const Text('LIVE GRADIENT PREVIEW', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Color 1: #${color1.value.toRadixString(16).substring(2).toUpperCase()} • Color 2: #${color2.value.toRadixString(16).substring(2).toUpperCase()}',
+                              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 20),
 
-                      const Text('Color 1 (Primary Accent):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: spectrumPalette.map((c) {
-                          final isSelected = color1.value == c.value;
-                          return InkWell(
-                            onTap: () => setDialogState(() => color1 = c),
-                            borderRadius: BorderRadius.circular(20),
-                            child: CircleAvatar(
-                              radius: 15,
-                              backgroundColor: c,
-                              child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
-                            ),
-                          );
-                        }).toList(),
+                      // Color 1 Hue Spectrum Slider
+                      Row(
+                        children: [
+                          Container(width: 14, height: 14, decoration: BoxDecoration(color: color1, shape: BoxShape.circle)),
+                          const SizedBox(width: 8),
+                          Text('Color 1 Hue Spectrum (0° - 360°):', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 12,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFF0000), Color(0xFFFFFF00), Color(0xFF00FF00),
+                              Color(0xFF00FFFF), Color(0xFF0000FF), Color(0xFFFF00FF), Color(0xFFFF0000)
+                            ],
+                          ),
+                        ),
+                      ),
+                      Slider(
+                        value: hsv1.hue,
+                        min: 0.0,
+                        max: 360.0,
+                        activeColor: color1,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            color1 = hsv1.withHue(val).toColor();
+                          });
+                        },
                       ),
 
-                      const SizedBox(height: 20),
+                      // Color 1 Saturation & Shade Slider
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Color 1 Shade / Brightness:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('${(hsv1.value * 100).toInt()}%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color1)),
+                        ],
+                      ),
+                      Slider(
+                        value: hsv1.value,
+                        min: 0.2,
+                        max: 1.0,
+                        activeColor: color1,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            color1 = hsv1.withValue(val).toColor();
+                          });
+                        },
+                      ),
 
-                      const Text('Color 2 (Gradient Secondary):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: spectrumPalette.map((c) {
-                          final isSelected = color2.value == c.value;
-                          return InkWell(
-                            onTap: () => setDialogState(() => color2 = c),
-                            borderRadius: BorderRadius.circular(20),
-                            child: CircleAvatar(
-                              radius: 15,
-                              backgroundColor: c,
-                              child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
-                            ),
-                          );
-                        }).toList(),
+                      const Divider(height: 28),
+
+                      // Color 2 Hue Spectrum Slider
+                      Row(
+                        children: [
+                          Container(width: 14, height: 14, decoration: BoxDecoration(color: color2, shape: BoxShape.circle)),
+                          const SizedBox(width: 8),
+                          Text('Color 2 Gradient Hue (0° - 360°):', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 12,
+                        margin: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFF0000), Color(0xFFFFFF00), Color(0xFF00FF00),
+                              Color(0xFF00FFFF), Color(0xFF0000FF), Color(0xFFFF00FF), Color(0xFFFF0000)
+                            ],
+                          ),
+                        ),
+                      ),
+                      Slider(
+                        value: hsv2.hue,
+                        min: 0.0,
+                        max: 360.0,
+                        activeColor: color2,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            color2 = hsv2.withHue(val).toColor();
+                          });
+                        },
+                      ),
+
+                      // Color 2 Saturation & Shade Slider
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Color 2 Shade / Brightness:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text('${(hsv2.value * 100).toInt()}%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color2)),
+                        ],
+                      ),
+                      Slider(
+                        value: hsv2.value,
+                        min: 0.2,
+                        max: 1.0,
+                        activeColor: color2,
+                        onChanged: (val) {
+                          setDialogState(() {
+                            color2 = hsv2.withValue(val).toColor();
+                          });
+                        },
                       ),
                     ],
                   ),
@@ -2011,7 +1837,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Navigator.pop(dialogCtx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('⚡ Custom Full Spectrum & Dual-Color Theme applied!'),
+                          content: Text('⚡ Custom Full Spectrum Theme applied!'),
                           backgroundColor: Colors.green,
                         ),
                       );

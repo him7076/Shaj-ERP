@@ -623,26 +623,21 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                InkWell(
-                  onTap: _showEditVoucherDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.amber.withOpacity(0.4)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _voucherNoController.text.isEmpty ? 'Auto' : _voucherNoController.text,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amber, fontSize: 12),
-                        ),
-                        const SizedBox(width: 4),
-                        const Icon(Icons.edit_outlined, size: 12, color: Colors.amber),
-                      ],
-                    ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.withOpacity(0.4)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _voucherNoController.text.isEmpty ? 'Auto' : 'Voucher: ${_voucherNoController.text}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 12),
+                      ),
+                    ],
                   ),
                 ),
               ],

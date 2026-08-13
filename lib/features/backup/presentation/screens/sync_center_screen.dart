@@ -400,14 +400,199 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                                         message: 'Upload blocked. Max retries exceeded.',
                                         child: Icon(Icons.warning_amber_rounded, color: Colors.red[600]),
                                       )
+),
                                     : null,
                               ),
                             );
                           },
                         ),
+              const SizedBox(height: 24),
+
+              // Firebase Configuration Setup Card
+              Consumer(
+                builder: (context, ref, _) {
+                  final prefs = ref.watch(sharedPreferencesProvider);
+
+                  return Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.cloud_sync_rounded, color: theme.colorScheme.primary),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Configure Firebase Cloud Connection',
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Input your own Firebase connection parameters to link this app instance with your custom cloud database environment.',
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () => _showFirebaseConfigDialog(prefs),
+                                icon: const Icon(Icons.settings_outlined),
+                                label: const Text('Configure Firebase Keys'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Reset Firebase Data?'),
+                                      content: const Text(
+                                        'Kya aap sachme cloud database se is company ka sara data delete karna chahte hain? '
+                                        'Isse aapka local database safe rahega, but cloud data clean ho jayega.'
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(false),
+                                          child: const Text('Cancel'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () => Navigator.of(context).pop(true),
+                                          child: const Text('Reset Now', style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+
+                                  if (confirm == true) {
+                                    if (!mounted) return;
+                                    try {
+                                      await ref.read(syncServiceProvider).clearCloudData();
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Firebase data cleared successfully!')),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Error clearing data: $e')),
+                                        );
+                                      }
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.delete_forever, color: Colors.red),
+                                label: const Text('Reset Firebase Data', style: TextStyle(color: Colors.red)),
+                                style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 100),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showFirebaseConfigDialog(dynamic prefs) {
+    final apiKeyController = TextEditingController(text: prefs.getString('firebase_api_key') ?? '');
+    final projectIdController = TextEditingController(text: prefs.getString('firebase_project_id') ?? '');
+    final appIdController = TextEditingController(text: prefs.getString('firebase_app_id') ?? '');
+    final senderIdController = TextEditingController(text: prefs.getString('firebase_sender_id') ?? '');
+    final storageBucketController = TextEditingController(text: prefs.getString('firebase_storage_bucket') ?? '');
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Configure Firebase Sync'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: apiKeyController,
+                decoration: const InputDecoration(
+                  labelText: 'API Key *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: projectIdController,
+                decoration: const InputDecoration(
+                  labelText: 'Project ID *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: appIdController,
+                decoration: const InputDecoration(
+                  labelText: 'App ID *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: senderIdController,
+                decoration: const InputDecoration(
+                  labelText: 'Messaging Sender ID (Optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: storageBucketController,
+                decoration: const InputDecoration(
+                  labelText: 'Storage Bucket (Optional)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await prefs.setString('firebase_api_key', apiKeyController.text.trim());
+              await prefs.setString('firebase_project_id', projectIdController.text.trim());
+              await prefs.setString('firebase_app_id', appIdController.text.trim());
+              await prefs.setString('firebase_sender_id', senderIdController.text.trim());
+              await prefs.setString('firebase_storage_bucket', storageBucketController.text.trim());
+              if (mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('⚡ Firebase parameters saved successfully! Reload to apply.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text('Save Keys'),
+          ),
+        ],
       ),
     );
   }

@@ -18,7 +18,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const CustomAppBar({Key? key}) : super(key: key);
 
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => const Size.fromHeight(72);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,7 +38,6 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final isDashboard = location == '/' || location == '/dashboard' || location.isEmpty;
 
     return Container(
-      height: preferredSize.height,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF131B2E).withOpacity(0.95) : Colors.white.withOpacity(0.95),
         border: Border(
@@ -57,7 +56,10 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: SafeArea(
-        child: Row(
+        bottom: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(
           children: [
             // Drawer button for mobile
             if (Scaffold.of(context).hasDrawer)
@@ -543,6 +545,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

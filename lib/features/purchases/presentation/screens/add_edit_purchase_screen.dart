@@ -421,11 +421,6 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
             Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _billNumberController,
-              decoration: const InputDecoration(labelText: 'Purchase Bill Number', border: OutlineInputBorder()),
-            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -733,7 +728,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                 Expanded(
                   child: TextFormField(
                     controller: _billNumberController,
-                    decoration: const InputDecoration(labelText: 'Internal Bill #', border: OutlineInputBorder(), isDense: true),
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Internal Bill # (Auto)', border: OutlineInputBorder(), isDense: true),
                   ),
                 ),
                 const SizedBox(width: 8),

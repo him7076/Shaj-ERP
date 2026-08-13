@@ -145,6 +145,11 @@ class WebMockIsar implements Isar {
   }
 
   @override
+  Future<bool> close({bool deleteFromDisk = false}) async {
+    return true;
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) {
     final name = invocation.memberName.toString().replaceAll('Symbol("', '').replaceAll('")', '');
     
@@ -155,6 +160,10 @@ class WebMockIsar implements Isar {
     if (invocation.isMethod && name == 'writeTxn') {
       final callback = invocation.positionalArguments[0] as Function;
       return Future.sync(() => callback());
+    }
+
+    if (invocation.isMethod) {
+      return Future.value(true);
     }
 
     return null;

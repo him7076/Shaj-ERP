@@ -667,28 +667,24 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             title: 'Basic Information',
                             icon: Icons.person_outline,
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: DropdownButtonFormField<String>(
-                                      value: _partyTypes.contains(_partyType) ? _partyType : _partyTypes.first,
-                                      decoration: const InputDecoration(labelText: 'Party Type *', border: OutlineInputBorder()),
-                                      items: _partyTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          setState(() => _partyType = val);
-                                          if (!_isEditMode) _autoGenerateCode();
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton.filledTonal(
-                                    icon: const Icon(Icons.add),
-                                    tooltip: 'Create New Party Type',
-                                    onPressed: _showAddPartyTypeDialog,
+                              DropdownButtonFormField<String>(
+                                value: _partyTypes.contains(_partyType) ? _partyType : _partyTypes.first,
+                                decoration: const InputDecoration(labelText: 'Party Type *', border: OutlineInputBorder()),
+                                items: [
+                                  ..._partyTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))),
+                                  const DropdownMenuItem(
+                                    value: '+ Create New Party Type',
+                                    child: Text('+ Create New Party Type', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
+                                onChanged: (val) {
+                                  if (val == '+ Create New Party Type') {
+                                    _showAddPartyTypeDialog();
+                                  } else if (val != null) {
+                                    setState(() => _partyType = val);
+                                    if (!_isEditMode) _autoGenerateCode();
+                                  }
+                                },
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
