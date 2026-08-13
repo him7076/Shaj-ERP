@@ -31,30 +31,21 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 
-class GoRouterRefreshStream extends ChangeNotifier {
-  late final StreamSubscription<dynamic> _subscription;
-
-  GoRouterRefreshStream(Stream<dynamic> stream) {
-    notifyListeners();
-    _subscription = stream.asBroadcastStream().listen(
-      (dynamic _) => notifyListeners(),
-    );
-  }
-
-  @override
-  void dispose() {
-    _subscription.cancel();
-    super.dispose();
+class RiverpodRefreshListenable extends ChangeNotifier {
+  RiverpodRefreshListenable(Ref ref, List<ProviderListenable<dynamic>> listenables) {
+    for (final listenable in listenables) {
+      ref.listen(listenable, (_, __) => notifyListeners());
+    }
   }
 }
 
 // Router Provider
 final routerProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ref.watch(authProvider.notifier);
+  final refreshListenable = RiverpodRefreshListenable(ref, [authProvider]);
 
   return GoRouter(
     initialLocation: '/splash',
-    refreshListenable: GoRouterRefreshStream(authNotifier.stream),
+    refreshListenable: refreshListenable,
     debugLogDiagnostics: true,
     routes: [
       GoRoute(
@@ -253,21 +244,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isSplashing = state.matchedLocation == '/splash';
 
-      // Keep showing splash if auth notifier isn't initialized yet
-      if (status == AuthStatus.initial) {
-        return isSplashing ? null : '/splash';
-      }
-
       // If user is unauthenticated, force them to login
       if (status == AuthStatus.unauthenticated) {
         return isLoggingIn ? null : '/login';
       }
 
-      // If user is authenticated, redirect them out of splash/login to dashboard
+      // If user is authenticated, redirect out of splash/login to dashboard
       if (status == AuthStatus.authenticated) {
         if (isLoggingIn || isSplashing) {
           return '/dashboard';
         }
+      }
+
+      // If status is initial, allow splash screen to stay on splash
+      if (status == AuthStatus.initial && !isSplashing) {
+        return '/splash';
       }
 
       // No redirect necessary

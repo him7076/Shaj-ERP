@@ -20,15 +20,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
     
     try {
       final authState = ref.read(authProvider);
-      if (authState.status == AuthStatus.authenticated) {
-        context.go('/dashboard');
-      } else {
+      if (authState.status == AuthStatus.unauthenticated) {
         context.go('/login');
+      } else {
+        context.go('/dashboard');
       }
     } catch (e) {
       debugPrint('[SPLASH ERROR] Fallback navigation due to error: $e');

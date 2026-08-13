@@ -53,6 +53,8 @@ class SyncManager {
           logger.info('Initial online connectivity detected. Uploading pending local changes...');
           _syncService.syncPendingChangesQuietly();
         }
+      }).catchError((e) {
+        logger.warning('Connectivity check failed on startup: $e');
       });
     });
   }

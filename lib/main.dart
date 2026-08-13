@@ -119,10 +119,10 @@ void main() {
     // 3. Initialize Isar database storage properly before UI render
     final dbService = DatabaseService();
     try {
-      await dbService.init(sharedPrefs);
+      await dbService.init(sharedPrefs).timeout(const Duration(seconds: 4));
       debugPrint('[BOOT] Isar DatabaseService initialized.');
     } catch (e, stack) {
-      debugPrint('[BOOT WARNING] DatabaseService init error: $e');
+      debugPrint('[BOOT WARNING] DatabaseService init timeout/error: $e');
       logger.error('DatabaseService init error on boot', e, stack);
     }
 

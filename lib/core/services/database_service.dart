@@ -125,7 +125,7 @@ class DatabaseService {
           name: activeFirmId,
           directory: dirPath ?? '',
           inspector: !kIsWeb && !kReleaseMode,
-        ).timeout(const Duration(seconds: 12));
+        ).timeout(const Duration(seconds: 3));
       } catch (openError) {
         logger.warning('Failed to open Isar database directly: $openError. Attempting to clear database file to resolve schema mismatch.');
         
@@ -192,7 +192,7 @@ class DatabaseService {
             name: activeFirmId,
             directory: dirPath ?? '',
             inspector: !kIsWeb && !kReleaseMode,
-          );
+          ).timeout(const Duration(seconds: 3));
         } catch (retryError) {
           logger.error('Failed to open native Isar database on retry: $retryError. Initializing fallback database connection to prevent app crash.', retryError);
           _isar = WebMockIsar(firmId: activeFirmId, prefs: prefs);
