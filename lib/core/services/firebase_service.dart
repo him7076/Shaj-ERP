@@ -1,10 +1,14 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+
+// Conditional import: dart:io only available on native platforms, not on web
+import 'firebase_platform_helper.dart';
 
 class FirebaseService {
   final SharedPreferences _prefs;
@@ -73,7 +77,7 @@ class FirebaseService {
     _deviceId = _prefs.getString('device_id');
     if (_deviceId == null) {
       final rand = Random().nextInt(1000000).toString().padLeft(6, '0');
-      _deviceId = 'device_${Platform.operatingSystem}_$rand';
+      _deviceId = 'device_${AppPlatformHelper.operatingSystem}_$rand';
       _prefs.setString('device_id', _deviceId!);
       logger.info('Generated new unique Device ID: $_deviceId');
     } else {
@@ -126,24 +130,4 @@ class FirebaseService {
       }
     }
   }
-}
-
-// Simple Platform checking helper
-class Platform {
-  static String get operatingSystem {
-    try {
-      if (identical(0, 0.0)) return 'web';
-      if (Platform.isAndroid) return 'android';
-      if (Platform.isWindows) return 'windows';
-      if (Platform.isIOS) return 'ios';
-      if (Platform.isMacOS) return 'macos';
-      if (Platform.isLinux) return 'linux';
-    } catch (_) {}
-    return 'unknown';
-  }
-  static bool get isAndroid => operatingSystem == 'android';
-  static bool get isWindows => operatingSystem == 'windows';
-  static bool get isIOS => operatingSystem == 'ios';
-  static bool get isMacOS => operatingSystem == 'macos';
-  static bool get isLinux => operatingSystem == 'linux';
 }

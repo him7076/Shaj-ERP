@@ -159,7 +159,12 @@ class _MyAppState extends ConsumerState<MyApp> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
-        ref.read(syncManagerProvider).initialize();
+        // Initialize sync manager with timeout guard to prevent boot hang
+        Future(() {
+          ref.read(syncManagerProvider).initialize();
+        }).timeout(const Duration(seconds: 5)).catchError((e) {
+          debugPrint('[BOOT WARNING] SyncManager initialization timed out or failed: $e');
+        });
       } catch (e, stack) {
         debugPrint('[BOOT ERROR] Failed to initialize sync manager on boot: $e');
         logger.error('Failed to initialize sync manager on boot', e, stack);

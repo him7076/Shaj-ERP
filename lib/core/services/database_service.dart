@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, debugPrint;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -195,6 +195,7 @@ class DatabaseService {
           ).timeout(const Duration(seconds: 3));
         } catch (retryError) {
           logger.error('Failed to open native Isar database on retry: $retryError. Initializing fallback database connection to prevent app crash.', retryError);
+          debugPrint('[CRITICAL] Isar native DB failed on Android. Using WebMockIsar fallback. Data may be empty until restart.');
           _isar = WebMockIsar(firmId: activeFirmId, prefs: prefs);
         }
       }
