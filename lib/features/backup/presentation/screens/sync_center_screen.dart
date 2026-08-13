@@ -574,22 +574,60 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              await prefs.setString('firebase_api_key', apiKeyController.text.trim());
-              await prefs.setString('firebase_project_id', projectIdController.text.trim());
-              await prefs.setString('firebase_app_id', appIdController.text.trim());
-              await prefs.setString('firebase_sender_id', senderIdController.text.trim());
-              await prefs.setString('firebase_storage_bucket', storageBucketController.text.trim());
+              final apiKey = apiKeyController.text.trim();
+              final projectId = projectIdController.text.trim();
+              final appId = appIdController.text.trim();
+              final senderId = senderIdController.text.trim();
+              final storageBucket = storageBucketController.text.trim();
+
+              await prefs.setString('firebase_api_key', apiKey);
+              await prefs.setString('firebase_project_id', projectId);
+              await prefs.setString('firebase_app_id', appId);
+              if (senderId.isNotEmpty) {
+                await prefs.setString('firebase_sender_id', senderId);
+              }
+              if (storageBucket.isNotEmpty) {
+                await prefs.setString('firebase_storage_bucket', storageBucket);
+              }
+
               if (mounted) {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('⚡ Firebase parameters saved successfully! Reload to apply.'),
-                    backgroundColor: Colors.green,
+                    content: Text('⚡ Connecting to Firebase Cloud Database...'),
+                    backgroundColor: Colors.blue,
                   ),
                 );
               }
+
+              // Trigger immediate live re-initialization & firm sync
+              try {
+                final firebaseService = ref.read(firebaseServiceProvider);
+                await firebaseService.initializeFirebase();
+                final syncService = ref.read(syncServiceProvider);
+                await syncService.syncFirms();
+                await syncService.syncAll();
+                await _refreshQueue();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Firebase connected & remote firms synced successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Firebase connection error: $e'),
+                      backgroundColor: Colors.orange.shade800,
+                    ),
+                  );
+                }
+              }
             },
-            child: const Text('Save Keys'),
+            child: const Text('Save & Connect'),
           ),
         ],
       ),

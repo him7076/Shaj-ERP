@@ -46,7 +46,8 @@ final restoreServiceProvider = Provider<RestoreService>((ref) {
   final dbService = ref.watch(databaseServiceProvider);
   final compService = ref.watch(compressionServiceProvider);
   final encService = ref.watch(encryptionServiceProvider);
-  return RestoreService(dbService, compService, encService);
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return RestoreService(dbService, compService, encService, prefs);
 });
 
 final backupRepositoryProvider = Provider<BackupRepository>((ref) {

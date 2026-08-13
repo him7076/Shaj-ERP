@@ -164,6 +164,17 @@ class BackupService {
       await metaFile.writeAsString(jsonEncode(metadata.toJson()));
       tempJsonFiles.add(metaFile);
 
+      // Export multi-firm SharedPreferences
+      final Map<String, dynamic> prefMap = {};
+      for (var key in _prefs.getKeys()) {
+        if (key.startsWith('firm_') || key.startsWith('firms_') || key.startsWith('enable_firm_') || key == 'active_firm_id') {
+          prefMap[key] = _prefs.get(key);
+        }
+      }
+      final prefFile = File('${tempBackupFolder.path}/preferences.json');
+      await prefFile.writeAsString(jsonEncode(prefMap));
+      tempJsonFiles.add(prefFile);
+
       Directory? imagesDir;
       if (includeImages) {
         final appDocsDir = await getApplicationDocumentsDirectory();
@@ -201,8 +212,23 @@ class BackupService {
       final backupFile = File(localDestPath);
       final sizeInBytes = await backupFile.length();
 
-      // 7. Cloud sync if requested
+      // Copy to Public Downloads directory on Android platform
       String finalLocation = localDestPath;
+      if (Platform.isAndroid) {
+        try {
+          final publicDownloadsDir = Directory('/storage/emulated/0/Download/Sahaj ERP Backup');
+          if (!await publicDownloadsDir.exists()) {
+            await publicDownloadsDir.create(recursive: true);
+          }
+          final publicPath = '${publicDownloadsDir.path}/$bserpFilename';
+          await backupFile.copy(publicPath);
+          finalLocation = publicPath;
+          logger.info('Backup exported to public Downloads: $publicPath');
+        } catch (e) {
+          logger.warning('Failed to copy backup to public Downloads folder: $e');
+        }
+      }
+
       bool isCloudSaved = false;
 
       if (uploadToCloud) {

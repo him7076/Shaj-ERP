@@ -55,14 +55,16 @@ class GoogleDriveService {
   }
 
   Future<void> signIn() async {
-    if (_useSimulation) {
-      logger.info('Simulating Google Sign-In...');
+    // Only use simulation on unsupported desktop platforms (Windows/Linux)
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      logger.info('Desktop platform detected. Running simulated Google Drive session.');
+      _useSimulation = true;
       _simulatedSignedIn = true;
       return;
     }
 
     try {
-      logger.info('Initiating Google Sign-In...');
+      logger.info('Initiating real Google Sign-In...');
       final scopes = [
         drive.DriveApi.driveAppdataScope,
         drive.DriveApi.driveFileScope,
@@ -74,11 +76,12 @@ class GoogleDriveService {
       final authz = await _currentUser!.authorizationClient.authorizeScopes(scopes);
       final client = authz.authClient(scopes: scopes);
       _driveApi = drive.DriveApi(client);
+      _useSimulation = false;
+      _simulatedSignedIn = false;
       logger.info('Google Sign-In successful for user: ${_currentUser?.email}');
     } catch (e) {
-      logger.warning('Google Sign-In failed, falling back to simulated session: $e');
-      _useSimulation = true;
-      _simulatedSignedIn = true;
+      logger.error('Real Google Sign-In failed', e);
+      throw DriveException('Google Sign-In failed: $e');
     }
   }
 

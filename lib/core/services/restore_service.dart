@@ -39,12 +39,14 @@ class RestoreService {
   final DatabaseService _dbService;
   final CompressionService _compressionService;
   final EncryptionService _encryptionService;
+  final SharedPreferences? _prefs;
 
   RestoreService(
     this._dbService,
     this._compressionService,
-    this._encryptionService,
-  );
+    this._encryptionService, [
+    this._prefs,
+  ]);
 
   /// Validates a backup archive directly from Uint8List bytes (Web & Native compatible)
   Future<BackupMetadata> validateBackupBytes(Uint8List bytes, {String? password}) async {
@@ -357,6 +359,27 @@ class RestoreService {
             final destFile = File(destPath);
             await destFile.parent.create(recursive: true);
             await file.copy(destPath);
+          }
+      }
+
+      // Restore Multi-Firm SharedPreferences if present
+      if (_prefs != null) {
+        final prefFile = File('${extractDir.path}/preferences.json');
+        if (await prefFile.exists()) {
+          try {
+            final Map<String, dynamic> map = jsonDecode(await prefFile.readAsString());
+            for (var entry in map.entries) {
+              if (entry.value is String) {
+                await _prefs!.setString(entry.key, entry.value as String);
+              } else if (entry.value is bool) {
+                await _prefs!.setBool(entry.key, entry.value as bool);
+              } else if (entry.value is List) {
+                await _prefs!.setStringList(entry.key, (entry.value as List).cast<String>());
+              }
+            }
+            logger.info('Restored multi-firm preferences from backup payload.');
+          } catch (e) {
+            logger.warning('Non-fatal: failed to restore preferences.json: $e');
           }
         }
       }
