@@ -381,7 +381,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                     children: [
                                       StatefulBuilder(
                                         builder: (context, setFirmState) {
-                                          final bool isFirmSyncEnabled = prefs.getBool('enable_firm_sync_$firmId') ?? false;
+                                          final bool isFirmSyncEnabled = prefs.getBool('enable_firm_sync_$firmId') ?? true;
 
                                           return Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -1165,6 +1165,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               await db.switchFirm(id, prefs);
                               ref.read(activeFirmIdProvider.notifier).state = id;
                               
+                              // Pull cloud data for the new firm from Firebase
+                              try {
+                                await ref.read(syncServiceProvider).syncDataFromCloud();
+                              } catch (_) {}
+
                               // Invalidate all local data providers to guarantee clean multi-firm isolation
                               ref.invalidate(sharedPreferencesProvider);
                               ref.invalidate(dashboardAnalyticsProvider);

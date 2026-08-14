@@ -253,7 +253,7 @@ class SyncService {
       final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
       if (!cloudSyncEnabled) return;
       final activeFirmId = _dbService.activeFirmId;
-      final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? false;
+      final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
       if (!isFirmSyncEnabled) return;
       if (_currentState.status == SyncStatus.syncing) return;
 
@@ -284,7 +284,7 @@ class SyncService {
     }
 
     final activeFirmId = _dbService.activeFirmId;
-    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? false;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
     if (!isFirmSyncEnabled) {
       logger.info('Cloud sync is OFF for active firm ($activeFirmId). Bypassing cloud sync.');
       _updateState(SyncState(
@@ -658,6 +658,92 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
+
+      // === Missing entity types that were never enqueued before ===
+      final categories = forceAll ? await isar.categorys.filter().idGreaterThan(-1).findAll() : await isar.categorys.filter().isSyncedEqualTo(false).findAll();
+      for (var c in categories) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'Category'
+          ..entityId = c.id
+          ..entityUuid = c.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final units = forceAll ? await isar.units.filter().idGreaterThan(-1).findAll() : await isar.units.filter().isSyncedEqualTo(false).findAll();
+      for (var u in units) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'Unit'
+          ..entityId = u.id
+          ..entityUuid = u.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final brands = forceAll ? await isar.brands.filter().idGreaterThan(-1).findAll() : await isar.brands.filter().isSyncedEqualTo(false).findAll();
+      for (var b in brands) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'Brand'
+          ..entityId = b.id
+          ..entityUuid = b.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final settingsList = forceAll ? await isar.settings.filter().idGreaterThan(-1).findAll() : await isar.settings.filter().isSyncedEqualTo(false).findAll();
+      for (var s in settingsList) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'Settings'
+          ..entityId = s.id
+          ..entityUuid = s.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final users = forceAll ? await isar.users.filter().idGreaterThan(-1).findAll() : await isar.users.filter().isSyncedEqualTo(false).findAll();
+      for (var u in users) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'User'
+          ..entityId = u.id
+          ..entityUuid = u.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final bankAccounts = forceAll ? await isar.bankAccounts.filter().idGreaterThan(-1).findAll() : await isar.bankAccounts.filter().isSyncedEqualTo(false).findAll();
+      for (var ba in bankAccounts) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'BankAccount'
+          ..entityId = ba.id
+          ..entityUuid = ba.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
+      final orderItems = forceAll ? await isar.orderItems.filter().idGreaterThan(-1).findAll() : await isar.orderItems.filter().isSyncedEqualTo(false).findAll();
+      for (var oi in orderItems) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'OrderItem'
+          ..entityId = oi.id
+          ..entityUuid = oi.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
     });
   }
 
@@ -930,20 +1016,22 @@ class SyncService {
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
-              .where('companyId', isEqualTo: _firebaseService.companyId);
+              .where('companyId', isEqualTo: _firebaseService.companyId)
+              .where('firmId', isEqualTo: activeFirmId);
 
           if (filterCutoff != null) {
             query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
           }
 
-          querySnapshot = await query.get().timeout(const Duration(seconds: 3));
+          querySnapshot = await query.get().timeout(const Duration(seconds: 10));
         } catch (queryErr) {
           logger.warning('Delta query failed for $entityType, trying simple query: $queryErr');
           try {
             final fallbackQuery = _firebaseService.firestore
                 .collection(collectionName)
-                .where('companyId', isEqualTo: _firebaseService.companyId);
-            querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 3));
+                .where('companyId', isEqualTo: _firebaseService.companyId)
+                .where('firmId', isEqualTo: activeFirmId);
+            querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 10));
           } catch (_) {}
         }
 
@@ -2436,7 +2524,58 @@ class SyncService {
   }
 
   /// Inserts a new remote record downloaded into local database
+  /// Includes duplicate voucher number detection across devices
   Future<void> _insertLocalRecord(String entityType, Map<String, dynamic> data) async {
+    final isar = _dbService.isar;
+    final uuid = data['uuid'] as String?;
+
+    // === Duplicate Voucher Number Conflict Detection ===
+    try {
+      if (entityType == 'Invoice' && data['invoiceNumber'] != null) {
+        final existing = await isar.invoices.filter().invoiceNumberEqualTo(data['invoiceNumber'] as String).findFirst();
+        if (existing != null && existing.uuid != uuid) {
+          final originalNum = data['invoiceNumber'] as String;
+          data['invoiceNumber'] = '$originalNum-CLOUD';
+          logger.warning('CONFLICT: Duplicate invoice number "$originalNum" from different device. Renamed to "${data['invoiceNumber']}".');
+          await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed to "${data['invoiceNumber']}"');
+        }
+      } else if (entityType == 'Purchase' && data['purchaseNumber'] != null) {
+        final existing = await isar.purchases.filter().purchaseNumberEqualTo(data['purchaseNumber'] as String).findFirst();
+        if (existing != null && existing.uuid != uuid) {
+          final originalNum = data['purchaseNumber'] as String;
+          data['purchaseNumber'] = '$originalNum-CLOUD';
+          logger.warning('CONFLICT: Duplicate purchase number "$originalNum" from different device. Renamed.');
+          await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
+        }
+      } else if (entityType == 'Order' && data['orderNumber'] != null) {
+        final existing = await isar.orders.filter().orderNumberEqualTo(data['orderNumber'] as String).findFirst();
+        if (existing != null && existing.uuid != uuid) {
+          final originalNum = data['orderNumber'] as String;
+          data['orderNumber'] = '$originalNum-CLOUD';
+          logger.warning('CONFLICT: Duplicate order number "$originalNum" from different device. Renamed.');
+          await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
+        }
+      } else if (entityType == 'Expense' && data['voucherNo'] != null) {
+        final existing = await isar.expenses.filter().voucherNoEqualTo(data['voucherNo'] as String).findFirst();
+        if (existing != null && existing.uuid != uuid) {
+          final originalNum = data['voucherNo'] as String;
+          data['voucherNo'] = '$originalNum-CLOUD';
+          logger.warning('CONFLICT: Duplicate expense voucher "$originalNum" from different device. Renamed.');
+          await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
+        }
+      } else if (entityType == 'Transaction' && data['transactionNumber'] != null) {
+        final existing = await isar.transactions.filter().transactionNumberEqualTo(data['transactionNumber'] as String).findFirst();
+        if (existing != null && existing.uuid != uuid) {
+          final originalNum = data['transactionNumber'] as String;
+          data['transactionNumber'] = '$originalNum-CLOUD';
+          logger.warning('CONFLICT: Duplicate transaction number "$originalNum" from different device. Renamed.');
+          await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
+        }
+      }
+    } catch (conflictCheckErr) {
+      logger.warning('Non-fatal conflict check error for $entityType: $conflictCheckErr');
+    }
+
     final entity = _mapMapToEntity(entityType, data);
     if (entity == null) return;
 
@@ -2905,8 +3044,17 @@ class SyncService {
     }
   }
 
-  /// Appends log items to Firestore sync_logs collection
+  /// Appends log items — Success logs to local SharedPreferences only, Failures to Firestore
   Future<void> _logSyncEvent(String result, String message) async {
+    // Success logs: local-only to minimize Firebase writes
+    if (result == 'Success') {
+      try {
+        await _prefs.setString('last_sync_log', '[$result] ${DateTime.now().toIso8601String()}: $message');
+      } catch (_) {}
+      return;
+    }
+
+    // Failure/Error logs: write to Firestore for remote debugging
     try {
       await _firebaseService.firestore.collection('sync_logs').add({
         'time': DateTime.now().toIso8601String(),

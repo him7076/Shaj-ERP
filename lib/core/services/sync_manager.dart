@@ -11,6 +11,7 @@ class SyncManager {
   Timer? _autoSyncTimer;
   Timer? _retryTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _wasOffline = false;
 
   SyncManager(this._syncService, this._queueService);
 
@@ -21,13 +22,22 @@ class SyncManager {
     // 1. Trigger pending upload on app startup if offline changes exist
     _triggerStartupSync();
 
-    // 2. Monitor Internet connectivity changes to trigger upload on reconnect
+    // 2. Monitor Internet connectivity changes to trigger FULL bidirectional sync on reconnect
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       final isOnline = results.any((result) => result != ConnectivityResult.none);
       logger.info('Connectivity changed. Device is ${isOnline ? "Online" : "Offline"}');
       
-      if (isOnline) {
-        logger.info('Connectivity recovered. Uploading pending local changes...');
+      if (!isOnline) {
+        _wasOffline = true;
+      }
+      
+      if (isOnline && _wasOffline) {
+        _wasOffline = false;
+        logger.info('Connectivity recovered after offline. Running full bidirectional sync...');
+        // Full sync: uploads local changes AND downloads remote changes
+        _syncService.syncAll();
+      } else if (isOnline) {
+        // Quick upload of pending changes if we were already online
         _syncService.syncPendingChangesQuietly();
       }
     });
@@ -57,6 +67,12 @@ class SyncManager {
         logger.warning('Connectivity check failed on startup: $e');
       });
     });
+  }
+
+  /// Called by repository save/update/delete methods to trigger real-time cloud upload.
+  /// Debounced internally by SyncService to batch rapid saves.
+  void onLocalSave() {
+    _syncService.syncPendingChangesQuietly(delay: const Duration(seconds: 1));
   }
 
   /// Iterates through failed queue items, checking backoff schedules

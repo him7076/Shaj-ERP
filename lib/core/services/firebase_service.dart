@@ -100,9 +100,55 @@ class FirebaseService {
   /// Check if the user is authenticated
   bool get isAuthenticated => _isFirebaseReady && auth.currentUser != null;
 
-  /// Re-initializes Firebase connection and ensures authentication
+  /// Re-initializes Firebase with user-provided config keys from SharedPreferences.
+  /// Reads firebase_api_key, firebase_project_id, firebase_app_id, etc. and calls
+  /// Firebase.initializeApp() to establish a live connection.
   Future<void> initializeFirebase() async {
-    await ensureAuthenticated();
+    final apiKey = _prefs.getString('firebase_api_key') ?? '';
+    final projectId = _prefs.getString('firebase_project_id') ?? '';
+    final appId = _prefs.getString('firebase_app_id') ?? '';
+    final senderId = _prefs.getString('firebase_sender_id') ?? '';
+    final storageBucket = _prefs.getString('firebase_storage_bucket') ?? '';
+
+    if (apiKey.isEmpty || projectId.isEmpty || appId.isEmpty) {
+      logger.warning('Firebase keys not configured. Skipping initialization.');
+      // Still try to authenticate if Firebase was already initialized at build time
+      if (_isFirebaseReady) {
+        await ensureAuthenticated();
+      }
+      return;
+    }
+
+    try {
+      // Delete all existing Firebase apps to reinitialize cleanly
+      for (var app in Firebase.apps) {
+        try {
+          await app.delete();
+        } catch (_) {}
+      }
+
+      await Firebase.initializeApp(
+        options: FirebaseOptions(
+          apiKey: apiKey,
+          projectId: projectId,
+          appId: appId,
+          messagingSenderId: senderId.isNotEmpty ? senderId : '000000000000',
+          storageBucket: storageBucket.isNotEmpty ? storageBucket : '$projectId.appspot.com',
+        ),
+      );
+
+      // Reset persistence flag so Firestore settings are reconfigured for new app
+      _persistenceConfigured = false;
+
+      logger.info('Firebase re-initialized with user-provided config keys (project: $projectId).');
+      await ensureAuthenticated();
+    } catch (e) {
+      logger.error('Firebase initialization with user keys failed', e);
+      // Fallback: if already initialized at build time, still try auth
+      if (_isFirebaseReady) {
+        await ensureAuthenticated();
+      }
+    }
   }
 
   /// Ensures that the client is authenticated with Firebase (anonymously or fallback user)
