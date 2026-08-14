@@ -173,7 +173,7 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
                             height: 38,
                             child: DropdownButtonFormField<String>(
                               value: cities.contains(_selectedCity) ? _selectedCity : 'All',
-                              style: const TextStyle(fontSize: 12, color: Colors.black80),
+                              style: const TextStyle(fontSize: 12, color: Colors.black87),
                               decoration: const InputDecoration(
                                 labelText: 'Filter City',
                                 border: OutlineInputBorder(),
@@ -193,7 +193,7 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
                             height: 38,
                             child: DropdownButtonFormField<DuesSortOption>(
                               value: _sortOption,
-                              style: const TextStyle(fontSize: 12, color: Colors.black80),
+                              style: const TextStyle(fontSize: 12, color: Colors.black87),
                               decoration: const InputDecoration(
                                 labelText: 'Sort By',
                                 border: OutlineInputBorder(),

@@ -25,6 +25,7 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_item_collectio
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
