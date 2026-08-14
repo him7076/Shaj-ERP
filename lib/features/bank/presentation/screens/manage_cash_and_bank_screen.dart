@@ -989,7 +989,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
         await isar.transactions.put(cheque);
       });
 
-      ref.read(syncManagerProvider).triggerUploadQuiet();
+      ref.read(syncManagerProvider).onLocalSave();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Cheque deposited to $targetAccount successfully! Status: CLOSED.')),
       );
@@ -1029,7 +1029,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
           await isar.transactions.put(cheque);
         });
 
-        ref.read(syncManagerProvider).triggerUploadQuiet();
+        ref.read(syncManagerProvider).onLocalSave();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cheque status changed to OPEN.')),
         );
