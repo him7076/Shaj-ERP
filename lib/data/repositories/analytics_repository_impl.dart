@@ -145,11 +145,14 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       final nSuppDue = pNameKey.isNotEmpty ? (partyNameToDue['supp_$pNameKey'] ?? 0.0) : 0.0;
       final suppDue = uSuppDue > 0 ? uSuppDue : nSuppDue;
 
-      if (p.partyType == 'Supplier') {
-        final due = suppDue > 0 ? suppDue : (p.openingBalance ?? 0.0);
+      final pType = (p.partyType ?? '').trim().toLowerCase();
+      final isSupp = pType == 'supplier' || pType == 'vendor' || pType == 'both' || p.balanceType == 'credit' || suppDue > 0;
+
+      if (isSupp) {
+        final due = suppDue > 0 ? suppDue : (p.outstandingBalance ?? p.openingBalance ?? 0.0);
         if (due > 0) totalPayable += due;
       } else {
-        final due = custDue > 0 ? custDue : (p.openingBalance ?? 0.0);
+        final due = custDue > 0 ? custDue : (p.outstandingBalance ?? p.openingBalance ?? 0.0);
         if (due > 0) totalOutstanding += due;
       }
     }

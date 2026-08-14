@@ -27,46 +27,41 @@ class ReportService {
     int limit = 100,
   }) async {
     final isar = _dbService.isar;
-    List<Invoice> allMatches;
+    final startBoundary = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
+    final endBoundary = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
 
-    if (kIsWeb) {
-      var list = await isar.invoices
-          .filter()
-          .isDeletedEqualTo(false)
-          .and()
-          .invoiceDateBetween(start, end)
-          .findAll();
+    final rawInvoices = await isar.invoices
+        .filter()
+        .isDeletedEqualTo(false)
+        .findAll();
 
-      if (partyUuid != null && partyUuid.isNotEmpty) {
-        final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
-        if (party != null) {
-          list = list.where((inv) => inv.partyId == party.id).toList();
-        } else {
-          list = [];
-        }
+    var list = rawInvoices.where((inv) {
+      if (inv.paymentStatus == 'Cancelled') return false;
+      final date = inv.invoiceDate ?? inv.createdAt;
+      return (date.isAfter(startBoundary) || date.isAtSameMomentAs(startBoundary)) &&
+             (date.isBefore(endBoundary) || date.isAtSameMomentAs(endBoundary));
+    }).toList();
+
+    if (partyUuid != null && partyUuid.isNotEmpty) {
+      final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+      if (party != null) {
+        final pNameKey = party.partyName?.trim().toLowerCase();
+        list = list.where((inv) {
+          final matchId = inv.partyId == party.id;
+          final matchUuid = inv.party.value?.uuid == partyUuid;
+          final matchName = pNameKey != null && pNameKey.isNotEmpty && (inv.partyName?.trim().toLowerCase() == pNameKey);
+          return matchId || matchUuid || matchName;
+        }).toList();
+      } else {
+        list = [];
       }
-
-      if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
-        list = list.where((inv) => inv.paymentStatus == paymentStatus).toList();
-      }
-      allMatches = list;
-    } else {
-      var query = isar.invoices
-          .filter()
-          .isDeletedEqualTo(false)
-          .and()
-          .invoiceDateBetween(start, end);
-
-      if (partyUuid != null && partyUuid.isNotEmpty) {
-        query = query.and().party((q) => q.uuidEqualTo(partyUuid));
-      }
-
-      if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
-        query = query.and().paymentStatusEqualTo(paymentStatus);
-      }
-
-      allMatches = await query.findAll();
     }
+
+    if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
+      list = list.where((inv) => inv.paymentStatus == paymentStatus).toList();
+    }
+
+    final allMatches = list;
 
     double totalSales = 0.0;
     double totalGST = 0.0;

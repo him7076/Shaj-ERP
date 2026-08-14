@@ -141,7 +141,15 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           await isar.collection<PurchaseItem>().deleteAll(oldItems.map((e) => e.id).toList());
         }
 
-        // 4. Save new purchase items & adjust stocks
+        // 4. Save new purchase items & adjust stocks in batch
+        final newItems = <PurchaseItem>[];
+        final itemIds = items.map((i) => i.itemId ?? 0).where((id) => id > 0).toSet();
+        final fetchedItems = await isar.items.getAll(itemIds.toList());
+        final Map<int, Item> targetItemMap = {
+          for (var item in fetchedItems)
+            if (item != null) item.id: item
+        };
+
         for (var item in items) {
           final newItem = PurchaseItem()
             ..uuid = _generateUuid()
@@ -169,14 +177,9 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             newItem.purchase.value = purchase;
           }
 
-          final itemId = await isar.collection<PurchaseItem>().put(newItem);
-          newItem.id = itemId;
-          try {
-            purchase.purchaseItems.add(newItem);
-          } catch (_) {}
+          newItems.add(newItem);
 
-          // Update product stock balance (Stock IN) (converting secondary unit if applicable)
-          final targetItem = await isar.items.get(item.itemId ?? 0);
+          final targetItem = targetItemMap[item.itemId ?? 0];
           if (targetItem != null) {
             final double current = targetItem.currentStock ?? 0.0;
             double qtyInPrimary = item.quantity ?? 0.0;
@@ -191,15 +194,17 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             }
 
             targetItem.currentStock = current + qtyInPrimary;
-            
-            // Add a history line inside item.notes
+
             final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
             final logEntry = '[$timestamp] STOCK_IN (Purchase): +$qtyInPrimary | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
             final currentNotes = targetItem.notes ?? '';
             targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
-
-            await isar.items.put(targetItem);
           }
+        }
+
+        await isar.purchaseItems.putAll(newItems);
+        if (targetItemMap.isNotEmpty) {
+          await isar.items.putAll(targetItemMap.values.toList());
         }
 
         // 5. Create Sync Queue record
@@ -215,7 +220,9 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       });
       
       logger.info('Purchase bill ${purchase.purchaseNumber} saved successfully.');
-      SyncManager.triggerUpload(); // Instant Firebase upload
+      Future.microtask(() {
+        try { SyncManager.triggerUpload(); } catch (_) {}
+      });
     } catch (e) {
       throw DatabaseException('Failed to save purchase bill: $e');
     }

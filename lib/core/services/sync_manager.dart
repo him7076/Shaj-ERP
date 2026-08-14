@@ -19,7 +19,11 @@ class SyncManager {
   /// Triggers a debounced background upload. Call this after any local save.
   /// Safe to call even if SyncManager is not yet initialized (no-op).
   static void triggerUpload() {
-    _instance?.onLocalSave();
+    Future.microtask(() {
+      try {
+        _instance?.onLocalSave();
+      } catch (_) {}
+    });
   }
 
   SyncManager(this._syncService, this._queueService);

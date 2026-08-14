@@ -219,6 +219,22 @@ class RestoreService {
           }
         }
 
+        if (collectionsMap.containsKey('expenses')) {
+          final list = collectionsMap['expenses'] as List;
+          for (var itemMap in list) {
+            final exp = _mapMapToExpense(itemMap as Map<String, dynamic>);
+            await isar.expenses.put(exp);
+          }
+        }
+
+        if (collectionsMap.containsKey('expense_items')) {
+          final list = collectionsMap['expense_items'] as List;
+          for (var itemMap in list) {
+            final expItem = _mapMapToExpenseItem(itemMap as Map<String, dynamic>);
+            await isar.collection<ExpenseItem>().put(expItem);
+          }
+        }
+
         if (restoreSettings && collectionsMap.containsKey('settings')) {
           final list = collectionsMap['settings'] as List;
           for (var itemMap in list) {
@@ -695,6 +711,21 @@ class RestoreService {
           return filter;
         }).deleteAll(),
         findByUuid: (uuid) async => await isar.expenses.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
+      await _restoreCollection<ExpenseItem>(
+        jsonFile: File('${extractDir.path}/expense_items.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToExpenseItem(map),
+        putAll: (items) async => await isar.collection<ExpenseItem>().putAll(items),
+        deleteByUuids: (uuids) async => await isar.collection<ExpenseItem>().filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.collection<ExpenseItem>().filter().uuidEqualTo(uuid).findFirst(),
       );
 
       // 12. Transactions
@@ -1200,16 +1231,33 @@ class RestoreService {
   Expense _mapMapToExpense(Map<String, dynamic> map) {
     return Expense()
       ..uuid = map['uuid']
-      ..category = map['category']
+      ..voucherNo = map['voucherNo'] as String?
+      ..partyName = map['partyName'] as String?
+      ..category = map['category'] as String?
+      ..subtotal = (map['subtotal'] as num?)?.toDouble()
+      ..roundOff = (map['roundOff'] as num?)?.toDouble()
       ..amount = (map['amount'] as num?)?.toDouble()
       ..expenseDate = map['expenseDate'] != null ? DateTime.parse(map['expenseDate']) : null
-      ..paymentMode = map['paymentMode']
-      ..remarks = map['remarks']
-      ..createdAt = DateTime.parse(map['createdAt'])
-      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..paymentMode = map['paymentMode'] as String?
+      ..remarks = map['remarks'] as String?
+      ..itemsJson = map['itemsJson'] as String?
+      ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now()
+      ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now()
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
-      ..version = map['version'] as int? ?? 1;
+      ..version = (map['version'] as num?)?.toInt() ?? 1;
+  }
+
+  ExpenseItem _mapMapToExpenseItem(Map<String, dynamic> map) {
+    return ExpenseItem()
+      ..uuid = map['uuid'] as String? ?? '${DateTime.now().microsecondsSinceEpoch}'
+      ..itemName = map['itemName'] as String?
+      ..defaultRate = (map['defaultRate'] as num?)?.toDouble()
+      ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now()
+      ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now()
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = (map['version'] as num?)?.toInt() ?? 1;
   }
 
   Transaction _mapMapToTransaction(Map<String, dynamic> map) {

@@ -152,7 +152,14 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           }
         }
 
-        // 4. Put new InvoiceItems & Deduct Stock
+        // 4. Put new InvoiceItems & Deduct Stock in batch
+        final itemIds = items.map((i) => i.itemId ?? 0).where((id) => id > 0).toSet();
+        final fetchedItems = await isar.items.getAll(itemIds.toList());
+        final Map<int, Item> targetItemMap = {
+          for (var item in fetchedItems)
+            if (item != null) item.id: item
+        };
+
         for (var item in items) {
           item.uuid ??= _generateUuid();
           item.createdAt = isNew ? DateTime.now() : item.createdAt;
@@ -165,12 +172,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           if (!kIsWeb) {
             item.invoice.value = invoice;
           }
-          await isar.invoiceItems.put(item);
 
-          // Deduct stock levels directly
-          final dbItem = kIsWeb
-              ? (item.itemId != null ? await isar.items.get(item.itemId!) : null)
-              : item.item.value;
+          final dbItem = targetItemMap[item.itemId ?? 0] ?? (kIsWeb ? null : item.item.value);
           if (dbItem != null) {
             final double available = dbItem.currentStock ?? 0.0;
             double requestedInPrimaryUnit = item.quantity ?? 0.0;
@@ -195,9 +198,12 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             // Log stock movement
             final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
             dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
-            
-            await isar.items.put(dbItem);
           }
+        }
+
+        await isar.invoiceItems.putAll(items);
+        if (targetItemMap.isNotEmpty) {
+          await isar.items.putAll(targetItemMap.values.toList());
         }
 
         // 5. Add Sync Queue logs for Invoice

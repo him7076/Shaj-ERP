@@ -362,10 +362,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
     String voucherNo = _voucherNoController.text.trim();
     if (voucherNo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a Voucher Number.')),
-      );
-      return;
+      final repo = ref.read(expenseRepositoryProvider);
+      final nextVoucher = await repo.generateNextVoucherNumber();
+      voucherNo = nextVoucher;
+      _voucherNoController.text = nextVoucher;
     }
 
     final totalAmt = _grandTotal;
@@ -623,21 +623,27 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.blue.withOpacity(0.4)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _voucherNoController.text.isEmpty ? 'Auto' : 'Voucher: ${_voucherNoController.text}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 12),
-                      ),
-                    ],
+                InkWell(
+                  onTap: _showEditVoucherDialog,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.withOpacity(0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _voucherNoController.text.isEmpty ? 'Voucher: Auto' : 'Voucher: ${_voucherNoController.text}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 12),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.edit_rounded, size: 14, color: Colors.blue),
+                      ],
+                    ),
                   ),
                 ),
               ],

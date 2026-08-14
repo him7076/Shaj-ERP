@@ -35,8 +35,21 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
   bool _showSearch = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(partySearchProvider.notifier).setQuery('');
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    Future.microtask(() {
+      try {
+        ref.read(partySearchProvider.notifier).setQuery('');
+      } catch (_) {}
+    });
     super.dispose();
   }
 

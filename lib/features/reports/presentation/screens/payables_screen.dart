@@ -69,12 +69,17 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                 final purchaseDue = uDue > 0 ? uDue : nDue;
 
                 if (purchaseDue > 0) return purchaseDue;
+                final rawOut = p.outstandingBalance ?? 0.0;
+                if (rawOut > 0) return rawOut;
                 return p.openingBalance ?? 0.0;
               }
 
-          final supplierParties = allParties
-              .where((p) => p.partyType == 'Supplier' && getPartyDue(p) > 0)
-              .toList();
+          final supplierParties = allParties.where((p) {
+            final due = getPartyDue(p);
+            if (due <= 0) return false;
+            final type = (p.partyType ?? '').trim().toLowerCase();
+            return type == 'supplier' || type == 'vendor' || type == 'both' || p.balanceType == 'credit' || (due > 0 && type != 'customer');
+          }).toList();
 
           final cities = {'All', ...supplierParties.map((p) => p.city ?? 'Unassigned').where((l) => l.isNotEmpty)};
 
@@ -103,31 +108,35 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
 
           return Column(
             children: [
-              // Summary Banner
+              // Compact Sleek Summary Strip
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.red.shade700, Colors.red.shade900],
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'TOTAL PENDING PAYABLES',
-                      style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'TOTAL PENDING PAYABLES',
+                          style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${supplierParties.length} Suppliers to be paid',
+                          style: const TextStyle(color: Colors.white70, fontSize: 11),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 6),
                     Text(
                       '₹${totalPayables.toStringAsFixed(2)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${supplierParties.length} Suppliers to be paid',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -135,57 +144,73 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
 
               // Search & Filter Toolbar
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                 child: Column(
                   children: [
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search supplier name, phone, city...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () => setState(() => _searchQuery = ''),
-                              )
-                            : null,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    SizedBox(
+                      height: 40,
+                      child: TextField(
+                        style: const TextStyle(fontSize: 13),
+                        decoration: InputDecoration(
+                          hintText: 'Search supplier name, phone, city...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () => setState(() => _searchQuery = ''),
+                                )
+                              : null,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onChanged: (val) => setState(() => _searchQuery = val),
                       ),
-                      onChanged: (val) => setState(() => _searchQuery = val),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: cities.contains(_selectedCity) ? _selectedCity : 'All',
-                            decoration: const InputDecoration(
-                              labelText: 'Filter City / Region',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: SizedBox(
+                            height: 38,
+                            child: DropdownButtonFormField<String>(
+                              value: cities.contains(_selectedCity) ? _selectedCity : 'All',
+                              style: const TextStyle(fontSize: 12, color: Colors.black80),
+                              decoration: const InputDecoration(
+                                labelText: 'Filter City',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                              items: cities.map((l) => DropdownMenuItem<String>(value: l, child: Text(l, style: const TextStyle(fontSize: 12)))).toList(),
+                              onChanged: (val) {
+                                if (val != null) setState(() => _selectedCity = val);
+                              },
                             ),
-                            items: cities.map((l) => DropdownMenuItem<String>(value: l, child: Text(l))).toList(),
-                            onChanged: (val) {
-                              if (val != null) setState(() => _selectedCity = val);
-                            },
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: DropdownButtonFormField<DuesSortOption>(
-                            value: _sortOption,
-                            decoration: const InputDecoration(
-                              labelText: 'Sort By',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: SizedBox(
+                            height: 38,
+                            child: DropdownButtonFormField<DuesSortOption>(
+                              value: _sortOption,
+                              style: const TextStyle(fontSize: 12, color: Colors.black80),
+                              decoration: const InputDecoration(
+                                labelText: 'Sort By',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                              items: const [
+                                DropdownMenuItem(value: DuesSortOption.highestDues, child: Text('Highest Due Amount', style: TextStyle(fontSize: 12))),
+                                DropdownMenuItem(value: DuesSortOption.lowestDues, child: Text('Lowest Due Amount', style: TextStyle(fontSize: 12))),
+                                DropdownMenuItem(value: DuesSortOption.partyName, child: Text('Party Name (A-Z)', style: TextStyle(fontSize: 12))),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) setState(() => _sortOption = val);
+                              },
                             ),
-                            items: const [
-                              DropdownMenuItem(value: DuesSortOption.highestDues, child: Text('Highest Due Amount')),
-                              DropdownMenuItem(value: DuesSortOption.lowestDues, child: Text('Lowest Due Amount')),
-                              DropdownMenuItem(value: DuesSortOption.partyName, child: Text('Party Name (A-Z)')),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) setState(() => _sortOption = val);
-                            },
                           ),
                         ),
                       ],
