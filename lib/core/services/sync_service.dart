@@ -2556,9 +2556,11 @@ class SyncService {
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
         }
       } else if (entityType == 'Expense' && data['voucherNo'] != null) {
-        final existing = await isar.expenses.filter().voucherNoEqualTo(data['voucherNo'] as String).findFirst();
+        final voucherNoStr = data['voucherNo'] as String;
+        final allExpenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+        final existing = allExpenses.where((e) => e.voucherNo == voucherNoStr).firstOrNull;
         if (existing != null && existing.uuid != uuid) {
-          final originalNum = data['voucherNo'] as String;
+          final originalNum = voucherNoStr;
           data['voucherNo'] = '$originalNum-CLOUD';
           logger.warning('CONFLICT: Duplicate expense voucher "$originalNum" from different device. Renamed.');
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
