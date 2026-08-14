@@ -719,14 +719,15 @@ class RestoreService {
         strategy: duplicateStrategy,
         fromMap: (map) => _mapMapToExpenseItem(map),
         putAll: (items) async => await isar.collection<ExpenseItem>().putAll(items),
-        deleteByUuids: (uuids) async => await isar.collection<ExpenseItem>().filter().group((q) {
-          var filter = q.uuidEqualTo(uuids.first);
-          for (var i = 1; i < uuids.length; i++) {
-            filter = filter.or().uuidEqualTo(uuids[i]);
+        deleteByUuids: (uuids) async {
+          for (var u in uuids) {
+            final existing = await isar.collection<ExpenseItem>().getByUuid(u);
+            if (existing != null) {
+              await isar.collection<ExpenseItem>().delete(existing.id);
+            }
           }
-          return filter;
-        }).deleteAll(),
-        findByUuid: (uuid) async => await isar.collection<ExpenseItem>().filter().uuidEqualTo(uuid).findFirst(),
+        },
+        findByUuid: (uuid) async => await isar.collection<ExpenseItem>().getByUuid(uuid),
       );
 
       // 12. Transactions
