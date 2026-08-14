@@ -3,6 +3,7 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 class PartyLocalDataSource {
   final DatabaseService _dbService;
@@ -128,6 +129,7 @@ class PartyLocalDataSource {
         await _partyCollection.put(party);
       });
       logger.info('GPS Location updated locally for Party ${party.partyName}.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to update Party GPS location: $e');
     }

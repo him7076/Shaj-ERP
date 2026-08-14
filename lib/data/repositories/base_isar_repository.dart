@@ -6,6 +6,7 @@ import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collec
 import 'package:business_sahaj_erp/domain/repositories/base_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 abstract class BaseIsarRepository<T extends IsarModel> implements BaseRepository<T> {
   final Isar isar;
@@ -87,6 +88,8 @@ abstract class BaseIsarRepository<T extends IsarModel> implements BaseRepository
       });
       
       logger.debug('$entityType created. isSyncDownload: $isSyncDownload, UUID: ${entity.uuid}');
+      // Trigger instant background upload after local save
+      if (!isSyncDownload) SyncManager.triggerUpload();
     } catch (e) {
       throw DatabaseException('Failed to create $entityType: $e');
     }
@@ -127,6 +130,8 @@ abstract class BaseIsarRepository<T extends IsarModel> implements BaseRepository
       });
       
       logger.debug('$entityType updated. isSyncDownload: $isSyncDownload, UUID: ${entity.uuid}');
+      // Trigger instant background upload after local save
+      if (!isSyncDownload) SyncManager.triggerUpload();
     } on RecordNotFoundException {
       rethrow;
     } catch (e) {
@@ -228,6 +233,8 @@ abstract class BaseIsarRepository<T extends IsarModel> implements BaseRepository
 
       
       logger.debug('$entityType soft-deleted. isSyncDownload: $isSyncDownload, UUID: $uuid');
+      // Trigger instant background upload after local save
+      if (!isSyncDownload) SyncManager.triggerUpload();
     } on RecordNotFoundException {
       rethrow;
     } catch (e) {

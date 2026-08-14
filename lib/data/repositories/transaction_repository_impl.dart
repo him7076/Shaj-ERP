@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/domain/repositories/transaction_repository.da
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implements TransactionRepository {
   TransactionRepositoryImpl(Isar isar) : super(isar, 'Transaction');
@@ -308,6 +309,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       });
 
       logger.info('Transaction ${transaction.transactionNumber} saved successfully.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to save transaction: $e');
     }
@@ -421,6 +423,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       });
 
       logger.info('Transaction ${transaction.transactionNumber} deleted.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to delete transaction: $e');
     }

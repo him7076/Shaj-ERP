@@ -11,6 +11,7 @@ import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/services/order_number_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepository {
   final OrderNumberService _numberService;
@@ -161,6 +162,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
       });
 
       logger.info('Order #${order.orderNumber} saved successfully. Reserve stock: $reserveStock');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to transaction-save order: $e');
     }
@@ -218,6 +220,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
       });
 
       logger.info('Order #${order.orderNumber} cancelled by $user.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to cancel order: $e');
     }

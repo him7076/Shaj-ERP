@@ -13,11 +13,22 @@ class SyncManager {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _wasOffline = false;
 
+  // Static singleton so repositories can trigger upload from anywhere without DI
+  static SyncManager? _instance;
+
+  /// Triggers a debounced background upload. Call this after any local save.
+  /// Safe to call even if SyncManager is not yet initialized (no-op).
+  static void triggerUpload() {
+    _instance?.onLocalSave();
+  }
+
   SyncManager(this._syncService, this._queueService);
 
   /// Initializes all background sync listeners and timers
   void initialize() {
     logger.info('Initializing SyncManager background loops...');
+    // Register static instance so repositories can trigger uploads
+    _instance = this;
 
     // 1. Trigger pending upload on app startup if offline changes exist
     _triggerStartupSync();
@@ -118,8 +129,19 @@ class SyncManager {
     _syncService.syncAll();
   }
 
+  /// Call this when user switches to a different firm.
+  /// Clears stale timestamps for the new firm so a full fresh download happens.
+  Future<void> handleFirmSwitch(String newFirmId) async {
+    logger.info('Firm switched to: $newFirmId. Clearing stale timestamps and triggering full cloud download...');
+    await _syncService.clearAllFirmTimestamps(newFirmId);
+    // Give DB time to switch
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _syncService.syncDataFromCloud();
+  }
+
   /// Cancels all background schedules on disposal
   void dispose() {
+    _instance = null;
     _autoSyncTimer?.cancel();
     _retryTimer?.cancel();
     _connectivitySubscription?.cancel();

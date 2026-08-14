@@ -460,10 +460,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                            await db.switchFirm(firmId, prefs);
                                            ref.read(activeFirmIdProvider.notifier).state = firmId;
 
-                                           // 1. Pull cloud data for the new firm from Firebase
                                            try {
-                                             await ref.read(syncServiceProvider).syncDataFromCloud();
-                                           } catch (_) {}
+                                             // handleFirmSwitch clears stale timestamps first, then does full cloud download
+                                             await ref.read(syncManagerProvider).handleFirmSwitch(firmId);
+                                          } catch (_) {}
 
                                            // 2. Invalidate all local data providers
                                            ref.invalidate(sharedPreferencesProvider);
@@ -1165,9 +1165,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               await db.switchFirm(id, prefs);
                               ref.read(activeFirmIdProvider.notifier).state = id;
                               
-                              // Pull cloud data for the new firm from Firebase
                               try {
-                                await ref.read(syncServiceProvider).syncDataFromCloud();
+                                // handleFirmSwitch clears stale timestamps first, then does full cloud download
+                                await ref.read(syncManagerProvider).handleFirmSwitch(id);
                               } catch (_) {}
 
                               // Invalidate all local data providers to guarantee clean multi-firm isolation
@@ -1641,10 +1641,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Firebase config saved! Restart the app to initialize Firebase connection.'),
-                    backgroundColor: Colors.green,
+                    content: Text('⚡ Connecting to Firebase Cloud...'),
+                    backgroundColor: Colors.blue,
                   ),
                 );
+              }
+
+              // Auto-initialize Firebase immediately — no restart needed!
+              try {
+                final firebaseService = ref.read(firebaseServiceProvider);
+                await firebaseService.initializeFirebase();
+                await ref.read(syncServiceProvider).syncFirms();
+                // Refresh providers so firms list updates in settings
+                ref.invalidate(sharedPreferencesProvider);
+                await ref.read(syncServiceProvider).syncAll();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Firebase connected & companies synced!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  setState(() {});
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Firebase error: $e'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Save'),

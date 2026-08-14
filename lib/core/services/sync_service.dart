@@ -126,6 +126,25 @@ class SyncService {
     _currentState = _currentState.copyWith(lastSyncTime: time);
   }
 
+  /// Clears ALL per-entity cloud sync timestamps for a given firm.
+  /// Call this on firm switch or before force-full-download so incremental filters are reset.
+  Future<void> clearAllFirmTimestamps(String firmId) async {
+    final allEntityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
+      'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+      'StockAdjustment',
+    ];
+    for (final et in allEntityTypes) {
+      await _prefs.remove('last_cloud_sync_timestamp_${firmId}_$et');
+      // Also clear legacy non-firm-specific keys
+      await _prefs.remove('last_cloud_sync_timestamp_$et');
+    }
+    await _prefs.remove('${AppConstants.keyLastSyncTime}_$firmId');
+    logger.info('Cleared all sync timestamps for firm: $firmId');
+  }
+
   /// Synchronizes company/firm definitions with Firestore `firms` collection
   Future<List<String>> syncFirms() async {
     await _firebaseService.ensureAuthenticated();
@@ -385,10 +404,26 @@ class SyncService {
       // 1. Purge local DB for active firm completely so old corrupted data is wiped
       await _dbService.clearDatabase();
 
-      // 2. Clear firm-specific last sync timestamp so incremental filter is disabled
+      // 2. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
+      //    This is critical — stale entity timestamps cause filterCutoff to block full download!
       final activeFirmId = _dbService.activeFirmId;
       await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
       await _prefs.remove(AppConstants.keyLastSyncTime);
+
+      // Clear all firm-specific per-entity timestamps to force full fresh download
+      final allEntityTypes = [
+        'Category', 'Unit', 'Brand', 'Party', 'Item',
+        'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+        'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
+        'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+        'StockAdjustment',
+      ];
+      for (final et in allEntityTypes) {
+        // Clear both old non-firm-specific keys AND new firm-specific keys
+        await _prefs.remove('last_cloud_sync_timestamp_$et');
+        await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
+      }
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
 
       // 3. Re-seed standard commercial units in local DB
       await DemoDataSeeder.seedStandardUnits(_dbService);
@@ -397,7 +432,7 @@ class SyncService {
       await syncFirms();
       final epochStart = DateTime.fromMillisecondsSinceEpoch(0);
       final newSyncTime = DateTime.now();
-      await _downloadRemoteUpdates(epochStart);
+      await _downloadRemoteUpdates(epochStart, forceFullDownload: true);
       await _saveLastSyncTime(newSyncTime);
 
       _updateState(SyncState(
@@ -967,11 +1002,12 @@ class SyncService {
   /// INSTANT LOW-QUOTA DELTA SYNC ENGINE
   /// Downloads and reconciles remote updates modified after lastSync (where updatedAt > lastSyncTimestamp)
   Future<void> _downloadDeltaRemoteUpdates(DateTime lastSync) async {
-    await _downloadRemoteUpdates(lastSync);
+    await _downloadRemoteUpdates(lastSync, forceFullDownload: false);
   }
 
   /// Downloads and reconciles remote updates since lastSync (Pull Cloud -> Local)
-  Future<void> _downloadRemoteUpdates(DateTime lastSync) async {
+  /// [forceFullDownload] = true: ignores all per-entity timestamps, downloads everything.
+  Future<void> _downloadRemoteUpdates(DateTime lastSync, {bool forceFullDownload = false}) async {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'Invoice', 'Settings', 'User',
@@ -979,7 +1015,10 @@ class SyncService {
       'CreditNote', 'DebitNote', 'StockAdjustment'
     ];
     final activeFirmId = _dbService.activeFirmId;
+    final companyId = _firebaseService.companyId;
     final totalSteps = entityTypes.length + 2;
+
+    logger.info('Starting _downloadRemoteUpdates: firm=$activeFirmId, companyId=$companyId, forceFullDownload=$forceFullDownload');
 
     for (int i = 0; i < entityTypes.length; i++) {
       final entityType = entityTypes[i];
@@ -997,18 +1036,23 @@ class SyncService {
       ));
 
       final collectionName = _getFirestoreCollection(entityType);
-      logger.info('Downloading updates for $collectionName (firm: $activeFirmId)...');
+      // Use firm-specific timestamp key to prevent cross-firm pollution
+      final timestampKey = 'last_cloud_sync_timestamp_${activeFirmId}_$entityType';
+      logger.info('Downloading $collectionName (firm: $activeFirmId, companyId: $companyId)...');
 
       try {
-        final localCount = await _getLocalRecordCount(entityType);
         final SharedPreferences prefs = await SharedPreferences.getInstance();
-        final String? lastCloudSyncStr = prefs.getString('last_cloud_sync_timestamp_$entityType');
-        DateTime? filterCutoff;
 
-        if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
-          final parsed = DateTime.tryParse(lastCloudSyncStr);
-          if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
-            filterCutoff = parsed.subtract(const Duration(minutes: 2));
+        // Determine filterCutoff — ONLY for incremental sync, NEVER for forceFullDownload
+        DateTime? filterCutoff;
+        if (!forceFullDownload) {
+          final String? lastCloudSyncStr = prefs.getString(timestampKey);
+          if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
+            final parsed = DateTime.tryParse(lastCloudSyncStr);
+            if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
+              // Subtract 30 seconds (not 2 minutes) as safety overlap — less wasteful reads
+              filterCutoff = parsed.subtract(const Duration(seconds: 30));
+            }
           }
         }
 
@@ -1016,29 +1060,38 @@ class SyncService {
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
-              .where('companyId', isEqualTo: _firebaseService.companyId)
+              .where('companyId', isEqualTo: companyId)
               .where('firmId', isEqualTo: activeFirmId);
 
           if (filterCutoff != null) {
             query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+            logger.info('  Delta filter active for $entityType: updatedAt > ${filterCutoff.toIso8601String()}');
+          } else {
+            logger.info('  Full download (no date filter) for $entityType');
           }
 
           querySnapshot = await query.get().timeout(const Duration(seconds: 10));
         } catch (queryErr) {
-          logger.warning('Delta query failed for $entityType, trying simple query: $queryErr');
+          logger.warning('Primary query failed for $entityType, trying fallback without filter: $queryErr');
           try {
             final fallbackQuery = _firebaseService.firestore
                 .collection(collectionName)
-                .where('companyId', isEqualTo: _firebaseService.companyId)
+                .where('companyId', isEqualTo: companyId)
                 .where('firmId', isEqualTo: activeFirmId);
             querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 10));
           } catch (_) {}
         }
 
-        // Update dedicated cloud sync timestamp in SharedPreferences
-        await prefs.setString('last_cloud_sync_timestamp_$entityType', DateTime.now().toUtc().toIso8601String());
+        // Only update timestamp AFTER we've confirmed we got results
+        // Never update timestamp on 0-result queries — prevents future syncs from being blocked!
+        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
+          logger.info('  No documents found for $entityType (companyId=$companyId, firmId=$activeFirmId).');
+          continue;
+        }
 
-        if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
+        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType — processing...');
+        // Now safe to update timestamp (we confirmed data exists)
+        await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
           if (d % 10 == 0) await Future.delayed(Duration.zero);

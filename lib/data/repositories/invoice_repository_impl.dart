@@ -15,6 +15,7 @@ import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/services/invoice_number_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements InvoiceRepository {
   final InvoiceNumberService _numberService;
@@ -229,6 +230,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       });
 
       logger.info('Invoice #${invoice.invoiceNumber} saved successfully.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to transaction-save invoice: $e');
     }
@@ -292,6 +294,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       });
 
       logger.info('Invoice #${invoice.invoiceNumber} cancelled by $user.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to cancel invoice: $e');
     }
@@ -529,6 +532,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       });
 
       logger.info('Converted Order #${order.orderNumber} to Invoice #${invoice.invoiceNumber}.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
       return invoice;
     } catch (e) {
       throw DatabaseException('Failed to convert order to invoice: $e');

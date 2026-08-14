@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/domain/repositories/purchase_repository.dart'
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements PurchaseRepository {
   PurchaseRepositoryImpl(Isar isar) : super(isar, 'Purchase');
@@ -222,6 +223,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       });
       
       logger.info('Purchase bill ${purchase.purchaseNumber} saved successfully.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to save purchase bill: $e');
     }
