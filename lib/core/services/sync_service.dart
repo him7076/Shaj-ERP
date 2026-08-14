@@ -1055,6 +1055,8 @@ class SyncService {
         }
 
         dynamic querySnapshot;
+
+        // Step 1: Compound query (companyId + firmId + filterCutoff)
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
@@ -1063,32 +1065,55 @@ class SyncService {
 
           if (filterCutoff != null) {
             query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
-            logger.info('  Delta filter active for $entityType: updatedAt > ${filterCutoff.toIso8601String()}');
-          } else {
-            logger.info('  Full download (no date filter) for $entityType');
           }
+          querySnapshot = await query.get().timeout(const Duration(seconds: 8));
+        } catch (e1) {
+          logger.warning('Primary query failed for $entityType: $e1. Trying firmId-only query...');
+        }
 
-          querySnapshot = await query.get().timeout(const Duration(seconds: 10));
-        } catch (queryErr) {
-          logger.warning('Primary query failed for $entityType, trying fallback without filter: $queryErr');
+        // Step 2: Fallback to firmId query only (bypasses missing companyId/indexes)
+        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
           try {
-            final fallbackQuery = _firebaseService.firestore
+            final firmQuery = _firebaseService.firestore
                 .collection(collectionName)
-                .where('companyId', isEqualTo: companyId)
                 .where('firmId', isEqualTo: activeFirmId);
-            querySnapshot = await fallbackQuery.get().timeout(const Duration(seconds: 10));
-          } catch (_) {}
+            querySnapshot = await firmQuery.get().timeout(const Duration(seconds: 8));
+          } catch (e2) {
+            logger.warning('Firm-only query failed for $entityType: $e2. Trying companyId-only query...');
+          }
+        }
+
+        // Step 3: Fallback to companyId query only
+        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
+          try {
+            final companyQuery = _firebaseService.firestore
+                .collection(collectionName)
+                .where('companyId', isEqualTo: companyId);
+            querySnapshot = await companyQuery.get().timeout(const Duration(seconds: 8));
+          } catch (e3) {
+            logger.warning('Company-only query failed for $entityType: $e3. Trying full collection query...');
+          }
+        }
+
+        // Step 4: Robust Fallback — full collection query (up to 500 docs, filtered in Dart!)
+        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
+          try {
+            final fullQuery = _firebaseService.firestore
+                .collection(collectionName)
+                .limit(500);
+            querySnapshot = await fullQuery.get().timeout(const Duration(seconds: 8));
+          } catch (e4) {
+            logger.error('All Firestore query levels failed for $entityType: $e4');
+          }
         }
 
         // Only update timestamp AFTER we've confirmed we got results
-        // Never update timestamp on 0-result queries — prevents future syncs from being blocked!
         if (querySnapshot == null || querySnapshot.docs.isEmpty) {
           logger.info('  No documents found for $entityType (companyId=$companyId, firmId=$activeFirmId).');
           continue;
         }
 
         logger.info('  Found ${querySnapshot.docs.length} documents for $entityType — processing...');
-        // Now safe to update timestamp (we confirmed data exists)
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
@@ -1096,13 +1121,18 @@ class SyncService {
 
           try {
             final doc = querySnapshot.docs[d];
-            final data = doc.data();
+            final data = doc.data() as Map<String, dynamic>?;
+            if (data == null) continue;
             final uuid = data['uuid'] as String?;
-            if (uuid == null) continue;
+            if (uuid == null || uuid.isEmpty) continue;
 
-            // Firm-wise filtering
+            // Robust firm-wise & company-wise filtering in Dart code:
+            // Match if doc's firmId equals activeFirmId, OR doc has no firmId, OR activeFirmId is firm_default
             final docFirmId = data['firmId'] as String?;
-            if (docFirmId != null && docFirmId.isNotEmpty && docFirmId != activeFirmId) {
+            if (docFirmId != null &&
+                docFirmId.isNotEmpty &&
+                docFirmId != activeFirmId &&
+                activeFirmId != 'firm_default') {
               continue;
             }
 

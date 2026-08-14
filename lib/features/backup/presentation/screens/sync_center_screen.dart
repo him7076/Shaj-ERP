@@ -7,8 +7,15 @@ import 'package:business_sahaj_erp/presentation/providers/sync_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/connectivity_provider.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 
-// Import local DB models for type-casting if needed, but we check sync_queue
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 
 class SyncCenterScreen extends ConsumerStatefulWidget {
   const SyncCenterScreen({Key? key}) : super(key: key);
@@ -241,13 +248,26 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                     onPressed: isSyncing || !isOnline
                         ? null
                         : () async {
-                            await ref.read(syncServiceProvider).syncDataFromCloud();
-                            await _refreshQueue();
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('⚡ Remote cloud data downloaded successfully!')),
-                              );
-                            }
+                             await ref.read(syncServiceProvider).syncDataFromCloud();
+                             await _refreshQueue();
+                             ref.invalidate(sharedPreferencesProvider);
+                             ref.invalidate(dashboardAnalyticsProvider);
+                             ref.invalidate(filteredPartiesProvider);
+                             ref.invalidate(filteredItemsProvider);
+                             ref.invalidate(categoriesListProvider);
+                             ref.invalidate(brandsListProvider);
+                             ref.invalidate(unitsListProvider);
+                             ref.invalidate(purchaseListProvider);
+                             ref.invalidate(filteredInvoicesProvider);
+                             ref.invalidate(filteredOrdersProvider);
+                             ref.invalidate(expenseListProvider);
+                             ref.invalidate(bankAccountsListProvider);
+                             ref.invalidate(filteredTransactionsProvider);
+                             if (mounted) {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(content: Text('⚡ Remote cloud data downloaded successfully!')),
+                               );
+                             }
                           },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
