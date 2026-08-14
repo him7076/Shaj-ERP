@@ -171,10 +171,6 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
           final itemId = await isar.collection<PurchaseItem>().put(newItem);
           newItem.id = itemId;
-          if (!kIsWeb) {
-            try { await newItem.purchase.save(); } catch (_) {}
-            try { await newItem.item.save(); } catch (_) {}
-          }
           try {
             purchase.purchaseItems.add(newItem);
           } catch (_) {}
@@ -205,10 +201,6 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             await isar.items.put(targetItem);
           }
         }
-
-        try {
-          await purchase.purchaseItems.save();
-        } catch (_) {}
 
         // 5. Create Sync Queue record
         final queueItem = SyncQueue()

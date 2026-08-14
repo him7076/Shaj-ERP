@@ -162,11 +162,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           item.version = isNew ? 1 : item.version + 1;
 
           item.parentInvoiceId = invoice.id;
-          await isar.invoiceItems.put(item);
           if (!kIsWeb) {
             item.invoice.value = invoice;
-            await item.invoice.save();
           }
+          await isar.invoiceItems.put(item);
 
           // Deduct stock levels directly
           final dbItem = kIsWeb
@@ -200,9 +199,6 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             await isar.items.put(dbItem);
           }
         }
-
-        // Save backlink items
-        await invoice.invoiceItems.save();
 
         // 5. Add Sync Queue logs for Invoice
         final invoiceQueue = SyncQueue()
@@ -401,7 +397,6 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         // Link party
         if (order.party.value != null) {
           invoice.party.value = order.party.value;
-          await invoice.party.save();
 
           // 2. Add Outstanding Balance to Party
           final party = order.party.value!;
@@ -412,7 +407,6 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
         // 3. Link Order
         invoice.order.value = order;
-        await invoice.order.save();
 
         // 4. Update source Order status
         await isar.orders.put(order);
@@ -482,19 +476,6 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               }
             }
           }
-          if (!kIsWeb) {
-            await invItem.item.save();
-            await invItem.invoice.save();
-          }
-          invoiceItems.add(invItem);
-        }
-
-        // Link items
-        if (!kIsWeb) {
-          invoice.invoiceItems.addAll(invoiceItems);
-        }
-        await invoice.invoiceItems.save();
-
         // 6. Sync logs for Invoice
         final invoiceQueue = SyncQueue()
           ..uuid = _generateUuid()

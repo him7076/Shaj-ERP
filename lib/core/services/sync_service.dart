@@ -202,7 +202,7 @@ class SyncService {
         if (existingRemoteIds.contains(firmId) || remoteDeletedFirms.contains(firmId)) {
           continue; // Do NOT overwrite existing remote firms or resurrect deleted firms!
         }
-        final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$firmId') ?? false;
+        final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$firmId') ?? true;
         if (!isFirmSyncEnabled) {
           continue; // Do NOT auto-upload local firm definition to cloud if firm sync toggle is OFF!
         }
@@ -401,11 +401,9 @@ class SyncService {
     ));
 
     try {
-      // 1. Purge local DB for active firm completely so old corrupted data is wiped
-      await _dbService.clearDatabase();
-
-      // 2. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
+      // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
       //    This is critical — stale entity timestamps cause filterCutoff to block full download!
+      //    NOTE: We NEVER purge local DB here — existing local offline data must be preserved!
       final activeFirmId = _dbService.activeFirmId;
       await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
       await _prefs.remove(AppConstants.keyLastSyncTime);

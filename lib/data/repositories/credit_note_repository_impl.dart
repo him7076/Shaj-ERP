@@ -65,11 +65,10 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
           item.version = isNew ? 1 : item.version + 1;
           item.parentCreditNoteId = note.id;
 
-          await isar.creditNoteItems.put(item);
           if (!kIsWeb) {
             item.creditNote.value = note;
-            await item.creditNote.save();
           }
+          await isar.creditNoteItems.put(item);
 
           // Restore stock (Sales Return = items come back in stock)
           final dbItem = kIsWeb
@@ -85,10 +84,6 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
             dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
             await isar.items.put(dbItem);
           }
-        }
-
-        if (!kIsWeb) {
-          await note.creditNoteItems.save();
         }
 
         // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
@@ -113,9 +108,6 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
             txn.party.value = party;
           }
           await isar.transactions.put(txn);
-          if (party != null && !kIsWeb) {
-            await txn.party.save();
-          }
 
           // Sync log for Transaction
           final txnQueue = SyncQueue()

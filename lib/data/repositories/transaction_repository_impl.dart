@@ -201,7 +201,6 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             await isar.partys.put(party);
             if (!kIsWeb) {
               transaction.party.value = party;
-              await transaction.party.save();
             }
             await isar.syncQueues.put(SyncQueue()
               ..uuid = _generateUuid()

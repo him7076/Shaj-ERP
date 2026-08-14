@@ -65,11 +65,10 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
           item.version = isNew ? 1 : item.version + 1;
           item.parentDebitNoteId = note.id;
 
-          await isar.debitNoteItems.put(item);
           if (!kIsWeb) {
             item.debitNote.value = note;
-            await item.debitNote.save();
           }
+          await isar.debitNoteItems.put(item);
 
           // Deduct stock (Purchase Return = items are shipped out)
           final dbItem = kIsWeb
@@ -85,10 +84,6 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
             dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
             await isar.items.put(dbItem);
           }
-        }
-
-        if (!kIsWeb) {
-          await note.debitNoteItems.save();
         }
 
         // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
@@ -113,9 +108,6 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
             txn.party.value = party;
           }
           await isar.transactions.put(txn);
-          if (party != null && !kIsWeb) {
-            await txn.party.save();
-          }
 
           // Sync log for Transaction
           final txnQueue = SyncQueue()

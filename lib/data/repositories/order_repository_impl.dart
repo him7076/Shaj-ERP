@@ -103,11 +103,10 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
           item.isSynced = false;
           item.version = isNew ? 1 : item.version + 1;
 
-          await isar.orderItems.put(item);
           if (!kIsWeb) {
             item.order.value = order;
-            await item.order.save();
           }
+          await isar.orderItems.put(item);
 
           // Deduct stock if reservation setting is enabled
           final dbItem = kIsWeb
@@ -129,11 +128,6 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
             
             await isar.items.put(dbItem);
           }
-        }
-
-        // 4. Save links association
-        if (!kIsWeb) {
-          await order.orderItems.save();
         }
 
         // 5. Add Sync Queue logs for Order
