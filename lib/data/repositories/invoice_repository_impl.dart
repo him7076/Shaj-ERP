@@ -476,6 +476,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               }
             }
           }
+          invoiceItems.add(invItem);
+        }
         // 6. Sync logs for Invoice
         final invoiceQueue = SyncQueue()
           ..uuid = _generateUuid()
