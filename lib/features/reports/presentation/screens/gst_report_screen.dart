@@ -79,6 +79,66 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
     );
   }
 
+  void _exportGstr2Excel() async {
+    final reportService = ref.read(reportServiceProvider);
+    final exportService = ref.read(exportServiceProvider);
+
+    final gstr2 = await reportService.getGstr2Report(start: _startDate, end: _endDate);
+
+    final headers = ['Purchase Bill No', 'Supplier Name', 'Date', 'Taxable Amount (₹)', 'Input CGST (₹)', 'Input SGST (₹)', 'Input IGST (₹)', 'Total ITC (₹)'];
+    final rows = gstr2.purchases.map((p) {
+      final gst = (p.totalGST ?? 0.0) as double;
+      final cgst = (p.cgstAmount ?? (gst / 2)) as double;
+      final sgst = (p.sgstAmount ?? (gst / 2)) as double;
+      final igst = (p.igstAmount ?? 0.0) as double;
+      final date = p.purchaseDate ?? p.createdAt;
+      return [
+        p.purchaseNumber ?? 'N/A',
+        p.supplierName ?? 'Supplier',
+        DateFormat('dd-MM-yyyy').format(date),
+        p.taxableAmount ?? (p.subtotal ?? 0.0),
+        cgst,
+        sgst,
+        igst,
+        gst,
+      ];
+    }).toList();
+
+    await exportService.exportToExcel(
+      title: 'GSTR2_Inward_Purchases_ITC_${DateFormat('yyyy_MM').format(_startDate)}',
+      headers: headers,
+      rows: rows,
+    );
+  }
+
+  void _exportGstr3bPDF() async {
+    final reportService = ref.read(reportServiceProvider);
+    final exportService = ref.read(exportServiceProvider);
+
+    final gstr3b = await reportService.getGstr3bReport(start: _startDate, end: _endDate);
+
+    final headers = ['GSTR-3B Tax Head', 'Outward Liability (Sales)', 'Eligible ITC (Purchases)', 'Net Payable (₹)'];
+    final rows = [
+      ['Central Tax (CGST)', currencyFormat.format(gstr3b.outwardTaxLiability / 2), currencyFormat.format(gstr3b.inwardITCCredit / 2), currencyFormat.format(gstr3b.netCGSTPayable)],
+      ['State Tax (SGST)', currencyFormat.format(gstr3b.outwardTaxLiability / 2), currencyFormat.format(gstr3b.inwardITCCredit / 2), currencyFormat.format(gstr3b.netSGSTPayable)],
+      ['Integrated Tax (IGST)', currencyFormat.format(0), currencyFormat.format(0), currencyFormat.format(gstr3b.netIGSTPayable)],
+      ['Total Tax Net Summary', currencyFormat.format(gstr3b.outwardTaxLiability), currencyFormat.format(gstr3b.inwardITCCredit), currencyFormat.format(gstr3b.netGSTPayable)],
+    ];
+
+    final totals = [
+      'Net Tax Liability Payable: ${currencyFormat.format(gstr3b.netGSTPayable)}',
+      'Excess ITC Credit Carry-Forward: ${currencyFormat.format(gstr3b.excessITCCarryForward)}',
+    ];
+
+    await exportService.exportToPDF(
+      title: 'GSTR-3B Monthly Return Summary Statement',
+      subtitle: 'Period: ${DateFormat('dd-MM-yyyy').format(_startDate)} to ${DateFormat('dd-MM-yyyy').format(_endDate)} | Outward Taxable: ${currencyFormat.format(gstr3b.outwardTaxable)} | Inward Taxable: ${currencyFormat.format(gstr3b.inwardTaxable)}',
+      headers: headers,
+      rows: rows,
+      totals: totals,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -90,19 +150,66 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
         title: const Text('GST Filings & HSN Summary'),
         actions: [
           reportAsync.when(
-            data: (summary) => Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.picture_as_pdf_rounded),
-                  tooltip: 'Export GSTR-1 PDF Report',
-                  onPressed: () => _exportPDF(summary),
+            data: (summary) => PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: 'CA Tax Filing Reports Menu',
+              onSelected: (val) {
+                switch (val) {
+                  case 'gstr1_excel':
+                    _exportExcel(summary);
+                    break;
+                  case 'gstr1_pdf':
+                    _exportPDF(summary);
+                    break;
+                  case 'gstr2_excel':
+                    _exportGstr2Excel();
+                    break;
+                  case 'gstr3b_pdf':
+                    _exportGstr3bPDF();
+                    break;
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'gstr1_excel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.table_chart_rounded, color: Colors.green, size: 20),
+                      SizedBox(width: 10),
+                      Text('GSTR-1 Sales Report (Excel)'),
+                    ],
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.table_chart_rounded),
-                  tooltip: 'Export GSTR-1 Excel Report',
-                  onPressed: () => _exportExcel(summary),
+                PopupMenuItem(
+                  value: 'gstr1_pdf',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 20),
+                      SizedBox(width: 10),
+                      Text('GSTR-1 Sales Summary (PDF)'),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
+                PopupMenuItem(
+                  value: 'gstr2_excel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.description_rounded, color: Colors.blue, size: 20),
+                      SizedBox(width: 10),
+                      Text('GSTR-2 Purchase ITC Report (Excel)'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'gstr3b_pdf',
+                  child: Row(
+                    children: [
+                      Icon(Icons.assignment_turned_in_rounded, color: Colors.purple, size: 20),
+                      SizedBox(width: 10),
+                      Text('GSTR-3B Monthly Return (PDF)'),
+                    ],
+                  ),
+                ),
               ],
             ),
             loading: () => const SizedBox(),

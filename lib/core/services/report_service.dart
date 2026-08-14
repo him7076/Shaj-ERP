@@ -274,6 +274,81 @@ class ReportService {
     );
   }
 
+  Future<GSTR2ReportSummary> getGstr2Report({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final isar = _dbService.isar;
+    final startBoundary = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
+    final endBoundary = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
+
+    final rawPurchases = await isar.purchases
+        .filter()
+        .isDeletedEqualTo(false)
+        .findAll();
+
+    final purchases = rawPurchases.where((pur) {
+      if (pur.paymentStatus == 'Cancelled') return false;
+      final date = pur.purchaseDate ?? pur.createdAt;
+      return (date.isAfter(startBoundary) || date.isAtSameMomentAs(startBoundary)) &&
+             (date.isBefore(endBoundary) || date.isAtSameMomentAs(endBoundary));
+    }).toList();
+
+    double totalTaxable = 0.0;
+    double totalCGST = 0.0;
+    double totalSGST = 0.0;
+    double totalIGST = 0.0;
+    double totalITC = 0.0;
+
+    for (var pur in purchases) {
+      totalTaxable += (pur.taxableAmount ?? (pur.subtotal ?? 0.0) - (pur.discountAmount ?? 0.0));
+      final gst = pur.totalGST ?? 0.0;
+      final cgst = pur.cgstAmount ?? (gst / 2);
+      final sgst = pur.sgstAmount ?? (gst / 2);
+      final igst = pur.igstAmount ?? 0.0;
+
+      totalCGST += cgst;
+      totalSGST += sgst;
+      totalIGST += igst;
+      totalITC += (cgst + sgst + igst);
+    }
+
+    return GSTR2ReportSummary(
+      purchasesCount: purchases.length,
+      totalTaxableAmount: totalTaxable,
+      inputCGST: totalCGST,
+      inputSGST: totalSGST,
+      inputIGST: totalIGST,
+      totalITCCredit: totalITC,
+      purchases: purchases,
+    );
+  }
+
+  Future<GSTR3BReportSummary> getGstr3bReport({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    final gstr1 = await getGSTReport(start: start, end: end);
+    final gstr2 = await getGstr2Report(start: start, end: end);
+
+    final netCgst = gstr1.cgstAmount - gstr2.inputCGST;
+    final netSgst = gstr1.sgstAmount - gstr2.inputSGST;
+    final netIgst = gstr1.igstAmount - gstr2.inputIGST;
+    final netPayable = gstr1.totalGST - gstr2.totalITCCredit;
+
+    return GSTR3BReportSummary(
+      outwardTaxable: gstr1.taxableAmount,
+      outwardTaxLiability: gstr1.totalGST,
+      inwardTaxable: gstr2.totalTaxableAmount,
+      inwardITCCredit: gstr2.totalITCCredit,
+      netCGSTPayable: netCgst,
+      netSGSTPayable: netSgst,
+      netIGSTPayable: netIgst,
+      netGSTPayable: netPayable > 0 ? netPayable : 0.0,
+      excessITCCarryForward: netPayable < 0 ? netPayable.abs() : 0.0,
+    );
+  }
+
   /// Accurate Total Receivables (Customer dues & Debit balance)
   Future<double> getTotalReceivables() async {
     final isar = _dbService.isar;

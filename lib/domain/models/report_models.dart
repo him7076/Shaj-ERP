@@ -140,6 +140,50 @@ class GSTReportSummary {
   });
 }
 
+class GSTR2ReportSummary {
+  final int purchasesCount;
+  final double totalTaxableAmount;
+  final double inputCGST;
+  final double inputSGST;
+  final double inputIGST;
+  final double totalITCCredit;
+  final List<dynamic> purchases;
+
+  GSTR2ReportSummary({
+    required this.purchasesCount,
+    required this.totalTaxableAmount,
+    required this.inputCGST,
+    required this.inputSGST,
+    required this.inputIGST,
+    required this.totalITCCredit,
+    required this.purchases,
+  });
+}
+
+class GSTR3BReportSummary {
+  final double outwardTaxable;
+  final double outwardTaxLiability;
+  final double inwardTaxable;
+  final double inwardITCCredit;
+  final double netCGSTPayable;
+  final double netSGSTPayable;
+  final double netIGSTPayable;
+  final double netGSTPayable;
+  final double excessITCCarryForward;
+
+  GSTR3BReportSummary({
+    required this.outwardTaxable,
+    required this.outwardTaxLiability,
+    required this.inwardTaxable,
+    required this.inwardITCCredit,
+    required this.netCGSTPayable,
+    required this.netSGSTPayable,
+    required this.netIGSTPayable,
+    required this.netGSTPayable,
+    required this.excessITCCarryForward,
+  });
+}
+
 class HsnSummaryEntry {
   final String hsnCode;
   final double quantity;
