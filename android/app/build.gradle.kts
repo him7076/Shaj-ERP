@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.sahaj.business_sahaj_erp"
+    namespace = "com.example.business_sahaj_erp"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -25,10 +25,8 @@ android {
     }
 
     defaultConfig {
-        // Unique Application ID for in-place overwrite updates
-        applicationId = "com.sahaj.business_sahaj_erp"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // Application ID matched to previous release for in-place overwrite updates
+        applicationId = "com.example.business_sahaj_erp"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
@@ -37,21 +35,23 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = keystoreProperties["storeFile"]?.let { file(it as String) }
-            storePassword = keystoreProperties["storePassword"] as String?
+            keyAlias = (keystoreProperties["keyAlias"] as String?) ?: "sahajkey"
+            keyPassword = (keystoreProperties["keyPassword"] as String?) ?: "sahajerppassword"
+            val fileProp = keystoreProperties["storeFile"] as String?
+            storeFile = if (fileProp != null && rootProject.file(fileProp).exists()) {
+                rootProject.file(fileProp)
+            } else if (file("release.keystore").exists()) {
+                file("release.keystore")
+            } else {
+                null
+            }
+            storePassword = (keystoreProperties["storePassword"] as String?) ?: "sahajerppassword"
         }
     }
 
     buildTypes {
         release {
-            // Use the permanent release keystore for consistent signing
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
