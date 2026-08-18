@@ -73,6 +73,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: rawShopCtrl,
@@ -83,20 +84,33 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<Party?>(
-                  value: selectedParty,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Mapped ERP Customer Party',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _allParties
-                      .map((p) => DropdownMenuItem<Party?>(
-                            value: p,
-                            child: Text('${p.partyName ?? "Party"} (${p.mobileNumber ?? ""})'),
-                          ))
-                      .toList(),
-                  onChanged: (val) => setModalState(() => selectedParty = val),
+                const Text('Mapped ERP Customer Party:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Autocomplete<Party>(
+                  initialValue: TextEditingValue(text: selectedParty?.partyName ?? ''),
+                  displayStringForOption: (Party p) => '${p.partyName ?? "Party"} (${p.mobileNumber ?? "No Mob"})',
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) return _allParties;
+                    final q = textEditingValue.text.toLowerCase();
+                    return _allParties.where((p) =>
+                        (p.partyName ?? '').toLowerCase().contains(q) ||
+                        (p.mobileNumber ?? '').contains(q));
+                  },
+                  onSelected: (Party selection) {
+                    setModalState(() => selectedParty = selection);
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Search ERP Customer Party',
+                        hintText: 'Type name or mobile to filter...',
+                        suffixIcon: Icon(Icons.search_rounded),
+                        border: OutlineInputBorder(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -145,6 +159,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 TextField(
                   controller: rawItemCtrl,
@@ -154,43 +169,52 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<Item?>(
-                  value: selectedItem,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Mapped ERP Product',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _allItems
-                      .map((i) => DropdownMenuItem<Item?>(
-                            value: i,
-                            child: Text('${i.itemName ?? "Item"} (Default Rate: ₹${i.sellRate ?? 0})'),
-                          ))
-                      .toList(),
-                  onChanged: (val) {
+                const SizedBox(height: 14),
+                const Text('Mapped ERP Product:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Autocomplete<Item>(
+                  initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
+                  displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (Rate: ₹${i.sellRate ?? 0})',
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) return _allItems;
+                    final q = textEditingValue.text.toLowerCase();
+                    return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                  },
+                  onSelected: (Item selection) {
                     setModalState(() {
-                      selectedItem = val;
-                      if (val?.sellRate != null && rateCtrl.text == '0.00') {
-                        rateCtrl.text = val!.sellRate!.toStringAsFixed(2);
+                      selectedItem = selection;
+                      if (selection.sellRate != null && rateCtrl.text == '0.00') {
+                        rateCtrl.text = selection.sellRate!.toStringAsFixed(2);
                       }
-                      if (val?.conversionFactor != null && cartonCtrl.text == '1') {
-                        cartonCtrl.text = val!.conversionFactor!.toStringAsFixed(0);
+                      if (selection.conversionFactor != null && cartonCtrl.text == '1') {
+                        cartonCtrl.text = selection.conversionFactor!.toStringAsFixed(0);
                       }
                     });
                   },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Search ERP Product',
+                        hintText: 'Type product name to filter...',
+                        suffixIcon: Icon(Icons.search_rounded),
+                        border: OutlineInputBorder(),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: bundleCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Pcs / Bundle',
+                        decoration: InputDecoration(
+                          labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
                           hintText: 'e.g. 12',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
@@ -199,16 +223,16 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                       child: TextField(
                         controller: cartonCtrl,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Pcs / Carton',
+                        decoration: InputDecoration(
+                          labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
                           hintText: 'e.g. 144',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 TextField(
                   controller: rateCtrl,
                   keyboardType: TextInputType.number,
@@ -424,6 +448,9 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
         final mapping = list[index];
         final item = _allItems.firstWhereOrNull((i) => i.uuid == mapping.itemUuid);
 
+        final secUnit = item?.secondaryUnit ?? "Bundle";
+        final primUnit = item?.primaryUnitName ?? "Carton";
+
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 4),
           elevation: 0.5,
@@ -454,12 +481,12 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                            child: Text('Bundle: ${mapping.pcsPerBundle.toStringAsFixed(0)} pcs', style: const TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.bold)),
+                            child: Text('$secUnit: ${mapping.pcsPerBundle.toStringAsFixed(0)} pcs', style: const TextStyle(fontSize: 10, color: Colors.purple, fontWeight: FontWeight.bold)),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                            child: Text('Carton: ${mapping.pcsPerCarton.toStringAsFixed(0)} pcs', style: const TextStyle(fontSize: 10, color: Colors.indigo, fontWeight: FontWeight.bold)),
+                            child: Text('$primUnit: ${mapping.pcsPerCarton.toStringAsFixed(0)} pcs', style: const TextStyle(fontSize: 10, color: Colors.indigo, fontWeight: FontWeight.bold)),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

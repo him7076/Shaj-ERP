@@ -33,6 +33,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_item_colle
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -840,6 +841,22 @@ class RestoreService {
         findByUuid: (uuid) async => await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(),
       );
 
+      // 17. WhatsApp Mappings
+      await _restoreCollection<WhatsAppMapping>(
+        jsonFile: File('${extractDir.path}/whatsapp_mappings.json'),
+        strategy: duplicateStrategy,
+        fromMap: (map) => _mapMapToWhatsAppMapping(map),
+        putAll: (items) async => await isar.whatsAppMappings.putAll(items),
+        deleteByUuids: (uuids) async => await isar.whatsAppMappings.filter().group((q) {
+          var filter = q.uuidEqualTo(uuids.first);
+          for (var i = 1; i < uuids.length; i++) {
+            filter = filter.or().uuidEqualTo(uuids[i]);
+          }
+          return filter;
+        }).deleteAll(),
+        findByUuid: (uuid) async => await isar.whatsAppMappings.filter().uuidEqualTo(uuid).findFirst(),
+      );
+
       // 17. Sync Queues
       await _restoreCollection<SyncQueue>(
         jsonFile: File('${extractDir.path}/sync_queues.json'),
@@ -1418,6 +1435,22 @@ class RestoreService {
       ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate']) : null
       ..reason = map['reason']
       ..notes = map['notes']
+      ..createdAt = DateTime.parse(map['createdAt'])
+      ..updatedAt = DateTime.parse(map['updatedAt'])
+      ..isDeleted = map['isDeleted'] as bool? ?? false
+      ..isSynced = map['isSynced'] as bool? ?? false
+      ..version = map['version'] as int? ?? 1;
+  }
+
+  WhatsAppMapping _mapMapToWhatsAppMapping(Map<String, dynamic> map) {
+    return WhatsAppMapping()
+      ..uuid = map['uuid']
+      ..mappingType = map['mappingType'] as String?
+      ..rawKey = map['rawKey'] as String?
+      ..targetUuid = map['targetUuid'] as String?
+      ..pcsPerBundle = (map['pcsPerBundle'] as num?)?.toDouble()
+      ..pcsPerCarton = (map['pcsPerCarton'] as num?)?.toDouble()
+      ..customRate = (map['customRate'] as num?)?.toDouble()
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
       ..isDeleted = map['isDeleted'] as bool? ?? false

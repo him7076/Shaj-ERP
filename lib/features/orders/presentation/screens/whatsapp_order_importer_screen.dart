@@ -182,22 +182,32 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                 child: Text('WhatsApp Line: ${row.rawParsedItem.rawLine}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<Item?>(
-                value: selectedItem,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Mapped ERP Product', border: OutlineInputBorder()),
-                items: _allItems
-                    .map((i) => DropdownMenuItem<Item?>(
-                          value: i,
-                          child: Text('${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})'),
-                        ))
-                    .toList(),
-                onChanged: (val) {
+              Autocomplete<Item>(
+                initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
+                displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})',
+                optionsBuilder: (TextEditingValue textEditingValue) {
+                  if (textEditingValue.text.isEmpty) return _allItems;
+                  final q = textEditingValue.text.toLowerCase();
+                  return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                },
+                onSelected: (Item selection) {
                   setModalState(() {
-                    selectedItem = val;
-                    if (val?.sellRate != null) rateCtrl.text = val!.sellRate!.toStringAsFixed(2);
-                    if (val?.conversionFactor != null) cartonCtrl.text = val!.conversionFactor!.toStringAsFixed(0);
+                    selectedItem = selection;
+                    if (selection.sellRate != null) rateCtrl.text = selection.sellRate!.toStringAsFixed(2);
+                    if (selection.conversionFactor != null) cartonCtrl.text = selection.conversionFactor!.toStringAsFixed(0);
                   });
+                },
+                fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                  return TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    decoration: const InputDecoration(
+                      labelText: 'Search ERP Product',
+                      hintText: 'Type item name to filter...',
+                      suffixIcon: Icon(Icons.search_rounded),
+                      border: OutlineInputBorder(),
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 12),
@@ -207,7 +217,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     child: TextField(
                       controller: bundleCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Pcs / Bundle', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                        labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -215,7 +228,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     child: TextField(
                       controller: cartonCtrl,
                       keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'Pcs / Carton', border: OutlineInputBorder()),
+                      decoration: InputDecoration(
+                        labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
+                        border: const OutlineInputBorder(),
+                      ),
                     ),
                   ),
                 ],
@@ -666,22 +682,31 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                               ],
                             ),
                             const SizedBox(height: 8),
-                            DropdownButtonFormField<Party?>(
-                              value: _selectedParty,
-                              decoration: const InputDecoration(
-                                labelText: 'Select Customer Account',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                              items: [
-                                const DropdownMenuItem<Party?>(value: null, child: Text('-- Select Customer --')),
-                                ..._allParties.map((p) => DropdownMenuItem<Party?>(
-                                      value: p,
-                                      child: Text('${p.partyName ?? "Party"} (${p.mobileNumber ?? "No Mob"})'),
-                                    )),
-                              ],
-                              onChanged: (val) {
-                                setState(() => _selectedParty = val);
+                            Autocomplete<Party>(
+                              initialValue: TextEditingValue(text: _selectedParty?.partyName ?? ''),
+                              displayStringForOption: (Party p) => '${p.partyName ?? "Party"} (${p.mobileNumber ?? "No Mob"})',
+                              optionsBuilder: (TextEditingValue textEditingValue) {
+                                if (textEditingValue.text.isEmpty) return _allParties;
+                                final q = textEditingValue.text.toLowerCase();
+                                return _allParties.where((p) =>
+                                    (p.partyName ?? '').toLowerCase().contains(q) ||
+                                    (p.mobileNumber ?? '').contains(q));
+                              },
+                              onSelected: (Party selection) {
+                                setState(() => _selectedParty = selection);
+                              },
+                              fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                                return TextField(
+                                  controller: controller,
+                                  focusNode: focusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Search Customer Account',
+                                    hintText: 'Type name or mobile to filter...',
+                                    suffixIcon: Icon(Icons.search_rounded),
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                );
                               },
                             ),
                           ],
@@ -811,28 +836,34 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     ),
                                     const SizedBox(height: 8),
 
-                                    // Product Dropdown
-                                    DropdownButtonFormField<Item?>(
-                                      value: row.selectedItem,
-                                      isExpanded: true,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Mapped ERP Product',
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items: [
-                                        const DropdownMenuItem<Item?>(value: null, child: Text('-- Select ERP Product --')),
-                                        ..._allItems.map((i) => DropdownMenuItem<Item?>(
-                                              value: i,
-                                              child: Text('${i.itemName ?? "Item"} (Rate: ₹${i.sellRate ?? 0})'),
-                                            )),
-                                      ],
-                                      onChanged: (val) {
+                                    // Product Autocomplete
+                                    Autocomplete<Item>(
+                                      initialValue: TextEditingValue(text: row.selectedItem?.itemName ?? ''),
+                                      displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (Rate: ₹${i.sellRate ?? 0})',
+                                      optionsBuilder: (TextEditingValue textEditingValue) {
+                                        if (textEditingValue.text.isEmpty) return _allItems;
+                                        final q = textEditingValue.text.toLowerCase();
+                                        return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                                      },
+                                      onSelected: (Item selection) {
                                         setState(() {
-                                          row.selectedItem = val;
-                                          row.rate = val?.sellRate ?? 0.0;
+                                          row.selectedItem = selection;
+                                          row.rate = selection.sellRate ?? 0.0;
                                         });
+                                      },
+                                      fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                                        return TextField(
+                                          controller: controller,
+                                          focusNode: focusNode,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Mapped ERP Product',
+                                            hintText: 'Type item name to search...',
+                                            isDense: true,
+                                            suffixIcon: Icon(Icons.search_rounded, size: 18),
+                                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                            border: OutlineInputBorder(),
+                                          ),
+                                        );
                                       },
                                     ),
                                     const SizedBox(height: 8),

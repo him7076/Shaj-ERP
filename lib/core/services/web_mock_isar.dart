@@ -25,6 +25,7 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 
 class WebMockIsar implements Isar {
   final String firmId;
@@ -141,6 +142,7 @@ class WebMockIsar implements Isar {
     if (T == DebitNoteItem) return 'debitNoteItems';
     if (T == DeletedVoucher) return 'deletedVouchers';
     if (T == StockAdjustment) return 'stockAdjustments';
+    if (T == WhatsAppMapping) return 'whatsAppMappings';
     return 'dynamics';
   }
 
@@ -193,6 +195,7 @@ class WebMockIsar implements Isar {
     if (name == 'debitNoteItems') return WebMockCollection<DebitNoteItem>('debitNoteItems', _db, this);
     if (name == 'deletedVouchers') return WebMockCollection<DeletedVoucher>('deletedVouchers', _db, this);
     if (name == 'stockAdjustments') return WebMockCollection<StockAdjustment>('stockAdjustments', _db, this);
+    if (name == 'whatsAppMappings') return WebMockCollection<WhatsAppMapping>('whatsAppMappings', _db, this);
 
     return WebMockCollection<dynamic>(name, _db, this);
   }
@@ -829,6 +832,24 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+    if (entity is WhatsAppMapping) {
+      return {
+        'type': 'WhatsAppMapping',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'mappingType': entity.mappingType,
+        'rawKey': entity.rawKey,
+        'targetUuid': entity.targetUuid,
+        'pcsPerBundle': entity.pcsPerBundle,
+        'pcsPerCarton': entity.pcsPerCarton,
+        'customRate': entity.customRate,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
     return {};
   }
 
@@ -842,6 +863,21 @@ class WebMockIsar implements Isar {
           ..uuid = map['uuid'] as String?
           ..categoryName = map['categoryName'] as String?
           ..description = map['description'] as String?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'WhatsAppMapping':
+        return WhatsAppMapping()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..mappingType = map['mappingType'] as String?
+          ..rawKey = map['rawKey'] as String?
+          ..targetUuid = map['targetUuid'] as String?
+          ..pcsPerBundle = (map['pcsPerBundle'] as num?)?.toDouble()
+          ..pcsPerCarton = (map['pcsPerCarton'] as num?)?.toDouble()
+          ..customRate = (map['customRate'] as num?)?.toDouble()
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool

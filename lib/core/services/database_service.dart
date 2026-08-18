@@ -32,6 +32,7 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -121,6 +122,7 @@ class DatabaseService {
             DebitNoteItemSchema,
             DeletedVoucherSchema,
             StockAdjustmentSchema,
+            WhatsAppMappingSchema,
           ],
           name: activeFirmId,
           directory: dirPath ?? '',
@@ -188,6 +190,7 @@ class DatabaseService {
               DebitNoteItemSchema,
               DeletedVoucherSchema,
               StockAdjustmentSchema,
+              WhatsAppMappingSchema,
             ],
             name: activeFirmId,
             directory: dirPath ?? '',

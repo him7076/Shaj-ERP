@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:isar/isar.dart';
+import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
@@ -121,6 +124,26 @@ class WhatsappMappingService {
   // --- PARTY MAPPING METHODS ---
 
   List<WhatsAppPartyMapping> getAllPartyMappings() {
+    try {
+      final isarList = _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Party')
+          .and()
+          .isDeletedEqualTo(false)
+          .findAllSync();
+
+      if (isarList.isNotEmpty) {
+        return isarList
+            .where((m) => m.rawKey != null && m.targetUuid != null)
+            .map((m) => WhatsAppPartyMapping(
+                  rawShopName: m.rawKey!,
+                  partyUuid: m.targetUuid!,
+                ))
+            .toList();
+      }
+    } catch (_) {}
+
+    // Fallback to SharedPreferences
     final rawJson = _prefs.getString(_partyKey);
     if (rawJson == null || rawJson.isEmpty) return [];
     try {
@@ -133,16 +156,51 @@ class WhatsappMappingService {
 
   Future<void> savePartyMapping(String rawShop, String partyUuid) async {
     if (rawShop.trim().isEmpty || partyUuid.isEmpty) return;
-    final cleanShop = rawShop.trim().toLowerCase();
+    final cleanShop = rawShop.trim();
+    final uuidGen = const Uuid();
 
-    // Legacy fallback key
-    final legacyKey = 'wa_party_map_$cleanShop';
-    await _prefs.setString(legacyKey, partyUuid);
+    try {
+      final existing = await _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Party')
+          .and()
+          .rawKeyEqualTo(cleanShop, caseSensitive: false)
+          .findFirst();
 
-    // JSON Index List
+      final mapping = existing ??
+          (WhatsAppMapping()
+            ..uuid = uuidGen.v4()
+            ..createdAt = DateTime.now());
+
+      mapping
+        ..mappingType = 'Party'
+        ..rawKey = cleanShop
+        ..targetUuid = partyUuid
+        ..updatedAt = DateTime.now()
+        ..isDeleted = false
+        ..isSynced = false;
+
+      await _isar.writeTxn(() async {
+        await _isar.whatsAppMappings.put(mapping);
+
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'WhatsAppMapping'
+          ..entityId = mapping.id
+          ..entityUuid = mapping.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await _isar.syncQueues.put(q);
+      });
+    } catch (e) {
+      print('Error saving WhatsApp party mapping to Isar: $e');
+    }
+
+    // Backup to SharedPreferences
     final list = getAllPartyMappings();
-    final existingIndex = list.indexWhere((m) => m.rawShopName.trim().toLowerCase() == cleanShop);
-    final newMapping = WhatsAppPartyMapping(rawShopName: rawShop.trim(), partyUuid: partyUuid);
+    final existingIndex = list.indexWhere((m) => m.rawShopName.trim().toLowerCase() == cleanShop.toLowerCase());
+    final newMapping = WhatsAppPartyMapping(rawShopName: cleanShop, partyUuid: partyUuid);
 
     if (existingIndex >= 0) {
       list[existingIndex] = newMapping;
@@ -152,14 +210,46 @@ class WhatsappMappingService {
 
     final encoded = jsonEncode(list.map((e) => e.toJson()).toList());
     await _prefs.setString(_partyKey, encoded);
+    await _prefs.setString('wa_party_map_${cleanShop.toLowerCase()}', partyUuid);
   }
 
   Future<void> deletePartyMapping(String rawShop) async {
-    final cleanShop = rawShop.trim().toLowerCase();
-    await _prefs.remove('wa_party_map_$cleanShop');
+    final cleanShop = rawShop.trim();
+    final uuidGen = const Uuid();
 
+    try {
+      final existing = await _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Party')
+          .and()
+          .rawKeyEqualTo(cleanShop, caseSensitive: false)
+          .findFirst();
+
+      if (existing != null) {
+        await _isar.writeTxn(() async {
+          existing.isDeleted = true;
+          existing.isSynced = false;
+          existing.updatedAt = DateTime.now();
+          await _isar.whatsAppMappings.put(existing);
+
+          final q = SyncQueue()
+            ..uuid = uuidGen.v4()
+            ..entityType = 'WhatsAppMapping'
+            ..entityId = existing.id
+            ..entityUuid = existing.uuid
+            ..operation = 'Delete'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await _isar.syncQueues.put(q);
+        });
+      }
+    } catch (e) {
+      print('Error deleting WhatsApp party mapping in Isar: $e');
+    }
+
+    await _prefs.remove('wa_party_map_${cleanShop.toLowerCase()}');
     final list = getAllPartyMappings();
-    list.removeWhere((m) => m.rawShopName.trim().toLowerCase() == cleanShop);
+    list.removeWhere((m) => m.rawShopName.trim().toLowerCase() == cleanShop.toLowerCase());
     final encoded = jsonEncode(list.map((e) => e.toJson()).toList());
     await _prefs.setString(_partyKey, encoded);
   }
@@ -184,6 +274,24 @@ class WhatsappMappingService {
     // 2. Persistent party mapping
     if (shopName != null && shopName.trim().isNotEmpty) {
       final cleanShop = shopName.trim().toLowerCase();
+
+      // Check Isar DB first
+      try {
+        final isarMapping = await _isar.whatsAppMappings
+            .filter()
+            .mappingTypeEqualTo('Party')
+            .and()
+            .rawKeyEqualTo(shopName.trim(), caseSensitive: false)
+            .and()
+            .isDeletedEqualTo(false)
+            .findFirst();
+
+        if (isarMapping != null && isarMapping.targetUuid != null) {
+          final party = allParties.firstWhereOrNull((p) => p.uuid == isarMapping.targetUuid);
+          if (party != null) return party;
+        }
+      } catch (_) {}
+
       final partyMappings = getAllPartyMappings();
       final mapped = partyMappings.firstWhereOrNull((m) => m.rawShopName.trim().toLowerCase() == cleanShop);
       if (mapped != null) {
@@ -220,6 +328,29 @@ class WhatsappMappingService {
   // --- ITEM MAPPING METHODS ---
 
   List<WhatsAppItemMapping> getAllItemMappings() {
+    try {
+      final isarList = _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Item')
+          .and()
+          .isDeletedEqualTo(false)
+          .findAllSync();
+
+      if (isarList.isNotEmpty) {
+        return isarList
+            .where((m) => m.rawKey != null && m.targetUuid != null)
+            .map((m) => WhatsAppItemMapping(
+                  rawItemLine: m.rawKey!,
+                  itemUuid: m.targetUuid!,
+                  pcsPerBundle: m.pcsPerBundle ?? 1.0,
+                  pcsPerCarton: m.pcsPerCarton ?? 1.0,
+                  customRate: m.customRate ?? 0.0,
+                ))
+            .toList();
+      }
+    } catch (_) {}
+
+    // Fallback to SharedPreferences
     final rawJson = _prefs.getString(_itemKey);
     if (rawJson == null || rawJson.isEmpty) return [];
     try {
@@ -231,12 +362,34 @@ class WhatsappMappingService {
   }
 
   WhatsAppItemMapping? getItemMapping(String rawItemLine) {
-    final cleanLine = rawItemLine.trim().toLowerCase();
+    final cleanLine = rawItemLine.trim();
+
+    try {
+      final isarMatch = _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Item')
+          .and()
+          .rawKeyEqualTo(cleanLine, caseSensitive: false)
+          .and()
+          .isDeletedEqualTo(false)
+          .findFirstSync();
+
+      if (isarMatch != null && isarMatch.targetUuid != null) {
+        return WhatsAppItemMapping(
+          rawItemLine: isarMatch.rawKey ?? rawItemLine,
+          itemUuid: isarMatch.targetUuid!,
+          pcsPerBundle: isarMatch.pcsPerBundle ?? 1.0,
+          pcsPerCarton: isarMatch.pcsPerCarton ?? 1.0,
+          customRate: isarMatch.customRate ?? 0.0,
+        );
+      }
+    } catch (_) {}
+
     final list = getAllItemMappings();
-    final match = list.firstWhereOrNull((m) => m.rawItemLine.trim().toLowerCase() == cleanLine);
+    final match = list.firstWhereOrNull((m) => m.rawItemLine.trim().toLowerCase() == cleanLine.toLowerCase());
     if (match != null) return match;
 
-    final legacyUuid = _prefs.getString('wa_item_map_$cleanLine');
+    final legacyUuid = _prefs.getString('wa_item_map_${cleanLine.toLowerCase()}');
     if (legacyUuid != null && legacyUuid.isNotEmpty) {
       return WhatsAppItemMapping(rawItemLine: rawItemLine, itemUuid: legacyUuid);
     }
@@ -245,14 +398,54 @@ class WhatsappMappingService {
 
   Future<void> saveItemMapping(WhatsAppItemMapping mapping) async {
     if (mapping.rawItemLine.trim().isEmpty || mapping.itemUuid.isEmpty) return;
-    final cleanLine = mapping.rawItemLine.trim().toLowerCase();
+    final cleanLine = mapping.rawItemLine.trim();
+    final uuidGen = const Uuid();
 
-    // Legacy fallback key
-    await _prefs.setString('wa_item_map_$cleanLine', mapping.itemUuid);
+    try {
+      final existing = await _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Item')
+          .and()
+          .rawKeyEqualTo(cleanLine, caseSensitive: false)
+          .findFirst();
 
-    // JSON Index List
+      final entity = existing ??
+          (WhatsAppMapping()
+            ..uuid = uuidGen.v4()
+            ..createdAt = DateTime.now());
+
+      entity
+        ..mappingType = 'Item'
+        ..rawKey = cleanLine
+        ..targetUuid = mapping.itemUuid
+        ..pcsPerBundle = mapping.pcsPerBundle
+        ..pcsPerCarton = mapping.pcsPerCarton
+        ..customRate = mapping.customRate
+        ..updatedAt = DateTime.now()
+        ..isDeleted = false
+        ..isSynced = false;
+
+      await _isar.writeTxn(() async {
+        await _isar.whatsAppMappings.put(entity);
+
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'WhatsAppMapping'
+          ..entityId = entity.id
+          ..entityUuid = entity.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await _isar.syncQueues.put(q);
+      });
+    } catch (e) {
+      print('Error saving WhatsApp item mapping to Isar: $e');
+    }
+
+    // Backup to SharedPreferences
+    await _prefs.setString('wa_item_map_${cleanLine.toLowerCase()}', mapping.itemUuid);
     final list = getAllItemMappings();
-    final existingIndex = list.indexWhere((m) => m.rawItemLine.trim().toLowerCase() == cleanLine);
+    final existingIndex = list.indexWhere((m) => m.rawItemLine.trim().toLowerCase() == cleanLine.toLowerCase());
 
     if (existingIndex >= 0) {
       list[existingIndex] = mapping;
@@ -265,11 +458,42 @@ class WhatsappMappingService {
   }
 
   Future<void> deleteItemMapping(String rawItemLine) async {
-    final cleanLine = rawItemLine.trim().toLowerCase();
-    await _prefs.remove('wa_item_map_$cleanLine');
+    final cleanLine = rawItemLine.trim();
+    final uuidGen = const Uuid();
 
+    try {
+      final existing = await _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Item')
+          .and()
+          .rawKeyEqualTo(cleanLine, caseSensitive: false)
+          .findFirst();
+
+      if (existing != null) {
+        await _isar.writeTxn(() async {
+          existing.isDeleted = true;
+          existing.isSynced = false;
+          existing.updatedAt = DateTime.now();
+          await _isar.whatsAppMappings.put(existing);
+
+          final q = SyncQueue()
+            ..uuid = uuidGen.v4()
+            ..entityType = 'WhatsAppMapping'
+            ..entityId = existing.id
+            ..entityUuid = existing.uuid
+            ..operation = 'Delete'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await _isar.syncQueues.put(q);
+        });
+      }
+    } catch (e) {
+      print('Error deleting WhatsApp item mapping in Isar: $e');
+    }
+
+    await _prefs.remove('wa_item_map_${cleanLine.toLowerCase()}');
     final list = getAllItemMappings();
-    list.removeWhere((m) => m.rawItemLine.trim().toLowerCase() == cleanLine);
+    list.removeWhere((m) => m.rawItemLine.trim().toLowerCase() == cleanLine.toLowerCase());
     final encoded = jsonEncode(list.map((e) => e.toJson()).toList());
     await _prefs.setString(_itemKey, encoded);
   }

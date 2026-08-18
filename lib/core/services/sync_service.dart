@@ -36,6 +36,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_item_colle
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 
 enum SyncStatus { idle, syncing, success, failure }
 
@@ -134,7 +135,7 @@ class SyncService {
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
       'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-      'StockAdjustment',
+      'StockAdjustment', 'WhatsAppMapping',
     ];
     for (final et in allEntityTypes) {
       await _prefs.remove('last_cloud_sync_timestamp_${firmId}_$et');
@@ -414,7 +415,7 @@ class SyncService {
         'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
         'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
         'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-        'StockAdjustment',
+        'StockAdjustment', 'WhatsAppMapping',
       ];
       for (final et in allEntityTypes) {
         // Clear both old non-firm-specific keys AND new firm-specific keys
@@ -653,6 +654,19 @@ class SyncService {
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);
       }
+      final allWaMappings = await isar.whatsAppMappings.where().findAll();
+      final waMappings = allWaMappings.where((wm) => forceAll || !wm.isSynced).toList();
+      for (var wm in waMappings) {
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'WhatsAppMapping'
+          ..entityId = wm.id
+          ..entityUuid = wm.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(q);
+      }
       final allDebitNotes = await isar.debitNotes.where().findAll();
       final debitNotes = allDebitNotes.where((dn) => forceAll || !dn.isSynced).toList();
       for (var dn in debitNotes) {
@@ -792,7 +806,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping'
     ];
 
     for (var entityType in entityTypes) {
@@ -846,7 +860,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping'
     ];
 
     for (var entityType in entityTypes) {
@@ -916,6 +930,7 @@ class SyncService {
           case 'CreditNote': entity = await isar.creditNotes.get(entityId); break;
           case 'DebitNote': entity = await isar.debitNotes.get(entityId); break;
           case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
+          case 'WhatsAppMapping': entity = await isar.whatsAppMappings.get(entityId); break;
         }
 
         if (entity == null && queueItem.operation != 'Delete') {
@@ -985,6 +1000,7 @@ class SyncService {
             case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
             case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
             case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
+            case 'WhatsAppMapping': await isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
           }
         }
         await isar.syncQueues.deleteAll(completedQueueIds);
@@ -1010,7 +1026,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'Invoice', 'Settings', 'User',
       'Purchase', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
-      'CreditNote', 'DebitNote', 'StockAdjustment'
+      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping'
     ];
     final activeFirmId = _dbService.activeFirmId;
     final companyId = _firebaseService.companyId;
@@ -1156,6 +1172,7 @@ class SyncService {
               case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'WhatsAppMapping': localRecord = await isar.whatsAppMappings.filter().uuidEqualTo(uuid).findFirst(); break;
             }
 
             if (localRecord != null) {
@@ -1675,6 +1692,7 @@ class SyncService {
       case 'DebitNote': return 'debit_notes';
       case 'DebitNoteItem': return 'debit_note_items';
       case 'StockAdjustment': return 'stock_adjustments';
+      case 'WhatsAppMapping': return 'whatsapp_mappings';
       default: return entityType.toLowerCase();
     }
   }
@@ -2159,6 +2177,16 @@ class SyncService {
           'reason': e.reason,
           'notes': e.notes,
         });
+      case 'WhatsAppMapping':
+        final e = entity as WhatsAppMapping;
+        return baseMap..addAll({
+          'mappingType': e.mappingType,
+          'rawKey': e.rawKey,
+          'targetUuid': e.targetUuid,
+          'pcsPerBundle': e.pcsPerBundle,
+          'pcsPerCarton': e.pcsPerCarton,
+          'customRate': e.customRate,
+        });
       default:
         return baseMap;
     }
@@ -2550,6 +2578,15 @@ class SyncService {
           ..reason = data['reason'] as String?
           ..notes = data['notes'] as String?;
         break;
+      case 'WhatsAppMapping':
+        entity = WhatsAppMapping()
+          ..mappingType = data['mappingType'] as String?
+          ..rawKey = data['rawKey'] as String?
+          ..targetUuid = data['targetUuid'] as String?
+          ..pcsPerBundle = (data['pcsPerBundle'] as num?)?.toDouble()
+          ..pcsPerCarton = (data['pcsPerCarton'] as num?)?.toDouble()
+          ..customRate = (data['customRate'] as num?)?.toDouble();
+        break;
     }
 
     if (entity != null) {
@@ -2598,6 +2635,7 @@ class SyncService {
         case 'DebitNote': await _dbService.isar.debitNotes.put(entity as DebitNote); break;
         case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
         case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
+        case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
       }
     });
 
@@ -2686,6 +2724,7 @@ class SyncService {
         case 'DebitNote': await _dbService.isar.debitNotes.put(entity as DebitNote); break;
         case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
         case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
+        case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
       }
     });
 

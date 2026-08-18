@@ -35,6 +35,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_item_colle
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -101,6 +102,7 @@ class BackupService {
         'debit_notes': await isar.debitNotes.where().findAll(),
         'debit_note_items': await isar.debitNoteItems.where().findAll(),
         'stock_adjustments': await isar.collection<StockAdjustment>().where().findAll(),
+        'whatsapp_mappings': await isar.whatsAppMappings.where().findAll(),
         'settings': await isar.settings.where().findAll(),
         'users': await isar.users.where().findAll(),
         'sync_queues': await isar.syncQueues.where().findAll(),
@@ -725,6 +727,16 @@ class BackupService {
           'adjustmentDate': e.adjustmentDate?.toIso8601String(),
           'reason': e.reason,
           'notes': e.notes,
+        });
+      case 'whatsapp_mappings':
+        final e = entity as WhatsAppMapping;
+        return baseMap..addAll({
+          'mappingType': e.mappingType,
+          'rawKey': e.rawKey,
+          'targetUuid': e.targetUuid,
+          'pcsPerBundle': e.pcsPerBundle,
+          'pcsPerCarton': e.pcsPerCarton,
+          'customRate': e.customRate,
         });
       case 'settings':
         final e = entity as Settings;
