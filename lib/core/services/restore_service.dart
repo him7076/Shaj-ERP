@@ -402,6 +402,11 @@ class RestoreService {
             logger.warning('Non-fatal: failed to restore preferences.json: $e');
           }
         }
+        final activeFirmId = _prefs!.getString('active_firm_id');
+        final firmsList = _prefs!.getStringList('firms_list') ?? [];
+        if (activeFirmId == null || activeFirmId.isEmpty || (firmsList.isNotEmpty && !firmsList.contains(activeFirmId))) {
+          await _prefs!.setString('active_firm_id', firmsList.isNotEmpty ? firmsList.first : 'firm_default');
+        }
       }
 
       final isar = _dbService.isar;
@@ -933,7 +938,15 @@ class RestoreService {
 
     if (uuidsToDelete.isNotEmpty || toPut.isNotEmpty) {
       await _dbService.isar.writeTxn(() async {
-        if (uuidsToDelete.isNotEmpty) {
+        if (strategy == 'replace') {
+          try {
+            await _dbService.isar.collection<T>().clear();
+          } catch (_) {
+            if (uuidsToDelete.isNotEmpty) {
+              await deleteByUuids(uuidsToDelete);
+            }
+          }
+        } else if (uuidsToDelete.isNotEmpty) {
           await deleteByUuids(uuidsToDelete);
         }
         if (toPut.isNotEmpty) {
@@ -957,7 +970,7 @@ class RestoreService {
   }
 
   Settings _mapMapToSettings(Map<String, dynamic> map) {
-    return Settings()
+    final entity = Settings()
       ..uuid = map['uuid']
       ..companyName = map['companyName']
       ..companyGST = map['companyGST']
@@ -971,10 +984,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   User _mapMapToUser(Map<String, dynamic> map) {
-    return User()
+    final entity = User()
       ..uuid = map['uuid']
       ..name = map['name']
       ..email = map['email']
@@ -984,10 +999,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Category _mapMapToCategory(Map<String, dynamic> map) {
-    return Category()
+    final entity = Category()
       ..uuid = map['uuid']
       ..categoryName = map['categoryName']
       ..description = map['description']
@@ -996,10 +1013,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Unit _mapMapToUnit(Map<String, dynamic> map) {
-    return Unit()
+    final entity = Unit()
       ..uuid = map['uuid']
       ..unitName = map['unitName']
       ..shortName = map['shortName']
@@ -1008,10 +1027,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Brand _mapMapToBrand(Map<String, dynamic> map) {
-    return Brand()
+    final entity = Brand()
       ..uuid = map['uuid']
       ..brandName = map['brandName']
       ..createdAt = DateTime.parse(map['createdAt'])
@@ -1019,10 +1040,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Party _mapMapToParty(Map<String, dynamic> map) {
-    return Party()
+    final entity = Party()
       ..uuid = map['uuid']
       ..partyCode = map['partyCode']
       ..partyName = map['partyName']
@@ -1058,6 +1081,8 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Item _mapMapToItem(Map<String, dynamic> map, [String currentDocsPrefix = '']) {
@@ -1065,7 +1090,7 @@ class RestoreService {
     final rewrittenPaths = imagePathsList.map((p) => _rewriteImagePath(p, currentDocsPrefix)).toList();
     final rewrittenThumb = map['thumbnailImage'] != null ? _rewriteImagePath(map['thumbnailImage'] as String, currentDocsPrefix) : null;
 
-    return Item()
+    final entity = Item()
       ..uuid = map['uuid']
       ..itemCode = map['itemCode']
       ..itemName = map['itemName']
@@ -1101,10 +1126,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Order _mapMapToOrder(Map<String, dynamic> map) {
-    return Order()
+    final entity = Order()
       ..uuid = map['uuid']
       ..orderNumber = map['orderNumber']
       ..orderDate = map['orderDate'] != null ? DateTime.parse(map['orderDate']) : null
@@ -1113,6 +1140,10 @@ class RestoreService {
       ..partyName = map['partyName']
       ..mobileNumber = map['mobileNumber']
       ..gstNumber = map['gstNumber']
+      ..latitude = (map['latitude'] as num?)?.toDouble()
+      ..longitude = (map['longitude'] as num?)?.toDouble()
+      ..locationAddress = map['locationAddress']
+      ..locationUrl = map['locationUrl']
       ..subtotal = (map['subtotal'] as num?)?.toDouble()
       ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
       ..totalGST = (map['totalGST'] as num?)?.toDouble()
@@ -1123,10 +1154,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   OrderItem _mapMapToOrderItem(Map<String, dynamic> map) {
-    return OrderItem()
+    final entity = OrderItem()
       ..uuid = map['uuid']
       ..itemId = map['itemId'] as int?
       ..itemName = map['itemName']
@@ -1140,10 +1173,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Invoice _mapMapToInvoice(Map<String, dynamic> map) {
-    return Invoice()
+    final entity = Invoice()
       ..uuid = map['uuid']
       ..invoiceNumber = map['invoiceNumber']
       ..invoiceDate = map['invoiceDate'] != null ? DateTime.parse(map['invoiceDate']) : null
@@ -1167,10 +1202,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   InvoiceItem _mapMapToInvoiceItem(Map<String, dynamic> map) {
-    return InvoiceItem()
+    final entity = InvoiceItem()
       ..uuid = map['uuid']
       ..parentInvoiceId = map['parentInvoiceId'] as int?
       ..itemId = map['itemId'] as int?
@@ -1193,10 +1230,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Purchase _mapMapToPurchase(Map<String, dynamic> map) {
-    return Purchase()
+    final entity = Purchase()
       ..uuid = map['uuid']
       ..purchaseNumber = map['purchaseNumber']
       ..supplierInvoiceNumber = map['supplierInvoiceNumber']
@@ -1219,10 +1258,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   PurchaseItem _mapMapToPurchaseItem(Map<String, dynamic> map) {
-    return PurchaseItem()
+    final entity = PurchaseItem()
       ..uuid = map['uuid']
       ..purchaseId = map['purchaseId'] as int?
       ..purchaseUuid = map['purchaseUuid']
@@ -1245,10 +1286,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Expense _mapMapToExpense(Map<String, dynamic> map) {
-    return Expense()
+    final entity = Expense()
       ..uuid = map['uuid']
       ..voucherNo = map['voucherNo'] as String?
       ..partyName = map['partyName'] as String?
@@ -1265,10 +1308,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = (map['version'] as num?)?.toInt() ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   ExpenseItem _mapMapToExpenseItem(Map<String, dynamic> map) {
-    return ExpenseItem()
+    final entity = ExpenseItem()
       ..uuid = map['uuid'] as String? ?? '${DateTime.now().microsecondsSinceEpoch}'
       ..itemName = map['itemName'] as String?
       ..defaultRate = (map['defaultRate'] as num?)?.toDouble()
@@ -1277,10 +1322,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = (map['version'] as num?)?.toInt() ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   Transaction _mapMapToTransaction(Map<String, dynamic> map) {
-    return Transaction()
+    final entity = Transaction()
       ..uuid = map['uuid']
       ..transactionNumber = map['transactionNumber']
       ..transactionDate = map['transactionDate'] != null ? DateTime.parse(map['transactionDate']) : null
@@ -1300,10 +1347,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   BankAccount _mapMapToBankAccount(Map<String, dynamic> map) {
-    return BankAccount()
+    final entity = BankAccount()
       ..uuid = map['uuid']
       ..accountName = map['accountName']
       ..bankName = map['bankName']
@@ -1317,10 +1366,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   CreditNote _mapMapToCreditNote(Map<String, dynamic> map) {
-    return CreditNote()
+    final entity = CreditNote()
       ..uuid = map['uuid']
       ..creditNoteNumber = map['creditNoteNumber']
       ..creditNoteDate = map['creditNoteDate'] != null ? DateTime.parse(map['creditNoteDate']) : null
@@ -1342,10 +1393,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   CreditNoteItem _mapMapToCreditNoteItem(Map<String, dynamic> map) {
-    return CreditNoteItem()
+    final entity = CreditNoteItem()
       ..uuid = map['uuid']
       ..itemId = map['itemId'] as int?
       ..itemName = map['itemName']
@@ -1363,10 +1416,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   DebitNote _mapMapToDebitNote(Map<String, dynamic> map) {
-    return DebitNote()
+    final entity = DebitNote()
       ..uuid = map['uuid']
       ..debitNoteNumber = map['debitNoteNumber']
       ..debitNoteDate = map['debitNoteDate'] != null ? DateTime.parse(map['debitNoteDate']) : null
@@ -1388,10 +1443,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   DebitNoteItem _mapMapToDebitNoteItem(Map<String, dynamic> map) {
-    return DebitNoteItem()
+    final entity = DebitNoteItem()
       ..uuid = map['uuid']
       ..itemId = map['itemId'] as int?
       ..itemName = map['itemName']
@@ -1408,10 +1465,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   SyncQueue _mapMapToSyncQueue(Map<String, dynamic> map) {
-    return SyncQueue()
+    final entity = SyncQueue()
       ..uuid = map['uuid']
       ..entityType = map['entityType']
       ..entityId = map['entityId'] as int?
@@ -1421,10 +1480,12 @@ class RestoreService {
       ..lastError = map['lastError']
       ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt']) : DateTime.now()
       ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt']) : DateTime.now();
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   StockAdjustment _mapMapToStockAdjustment(Map<String, dynamic> map) {
-    return StockAdjustment()
+    final entity = StockAdjustment()
       ..uuid = map['uuid']
       ..itemUuid = map['itemUuid']
       ..itemId = map['itemId'] as int?
@@ -1440,10 +1501,12 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 
   WhatsAppMapping _mapMapToWhatsAppMapping(Map<String, dynamic> map) {
-    return WhatsAppMapping()
+    final entity = WhatsAppMapping()
       ..uuid = map['uuid']
       ..mappingType = map['mappingType'] as String?
       ..rawKey = map['rawKey'] as String?
@@ -1456,5 +1519,7 @@ class RestoreService {
       ..isDeleted = map['isDeleted'] as bool? ?? false
       ..isSynced = map['isSynced'] as bool? ?? false
       ..version = map['version'] as int? ?? 1;
+    if (map['id'] != null) entity.id = map['id'] as int;
+    return entity;
   }
 }

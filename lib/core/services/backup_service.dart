@@ -449,6 +449,7 @@ class BackupService {
           'latitude': e.latitude,
           'longitude': e.longitude,
           'locationAddress': e.locationAddress,
+          'locationUrl': e.locationUrl,
           'subtotal': e.subtotal,
           'discountAmount': e.discountAmount,
           'discountPercent': e.discountPercent,

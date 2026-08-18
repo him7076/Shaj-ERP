@@ -97,73 +97,78 @@ const OrderSchema = CollectionSchema(
       name: r'locationAddress',
       type: IsarType.string,
     ),
-    r'longitude': PropertySchema(
+    r'locationUrl': PropertySchema(
       id: 16,
+      name: r'locationUrl',
+      type: IsarType.string,
+    ),
+    r'longitude': PropertySchema(
+      id: 17,
       name: r'longitude',
       type: IsarType.double,
     ),
     r'mobileNumber': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'mobileNumber',
       type: IsarType.string,
     ),
     r'orderDate': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'orderDate',
       type: IsarType.dateTime,
     ),
     r'orderNumber': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'orderNumber',
       type: IsarType.string,
     ),
     r'partyId': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'partyId',
       type: IsarType.long,
     ),
     r'partyName': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'partyName',
       type: IsarType.string,
     ),
     r'remarks': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'remarks',
       type: IsarType.string,
     ),
     r'roundOff': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'roundOff',
       type: IsarType.double,
     ),
     r'status': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'status',
       type: IsarType.string,
     ),
     r'subtotal': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'subtotal',
       type: IsarType.double,
     ),
     r'totalGST': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'totalGST',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 27,
+      id: 28,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 28,
+      id: 29,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 29,
+      id: 30,
       name: r'version',
       type: IsarType.long,
     )
@@ -208,6 +213,19 @@ const OrderSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'status',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'locationUrl': IndexSchema(
+      id: 7985298888265182,
+      name: r'locationUrl',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'locationUrl',
           type: IndexType.hash,
           caseSensitive: true,
         )
@@ -285,6 +303,12 @@ int _orderEstimateSize(
     }
   }
   {
+    final value = object.locationUrl;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.mobileNumber;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -345,20 +369,21 @@ void _orderSerialize(
   writer.writeBool(offsets[13], object.isSynced);
   writer.writeDouble(offsets[14], object.latitude);
   writer.writeString(offsets[15], object.locationAddress);
-  writer.writeDouble(offsets[16], object.longitude);
-  writer.writeString(offsets[17], object.mobileNumber);
-  writer.writeDateTime(offsets[18], object.orderDate);
-  writer.writeString(offsets[19], object.orderNumber);
-  writer.writeLong(offsets[20], object.partyId);
-  writer.writeString(offsets[21], object.partyName);
-  writer.writeString(offsets[22], object.remarks);
-  writer.writeDouble(offsets[23], object.roundOff);
-  writer.writeString(offsets[24], object.status);
-  writer.writeDouble(offsets[25], object.subtotal);
-  writer.writeDouble(offsets[26], object.totalGST);
-  writer.writeDateTime(offsets[27], object.updatedAt);
-  writer.writeString(offsets[28], object.uuid);
-  writer.writeLong(offsets[29], object.version);
+  writer.writeString(offsets[16], object.locationUrl);
+  writer.writeDouble(offsets[17], object.longitude);
+  writer.writeString(offsets[18], object.mobileNumber);
+  writer.writeDateTime(offsets[19], object.orderDate);
+  writer.writeString(offsets[20], object.orderNumber);
+  writer.writeLong(offsets[21], object.partyId);
+  writer.writeString(offsets[22], object.partyName);
+  writer.writeString(offsets[23], object.remarks);
+  writer.writeDouble(offsets[24], object.roundOff);
+  writer.writeString(offsets[25], object.status);
+  writer.writeDouble(offsets[26], object.subtotal);
+  writer.writeDouble(offsets[27], object.totalGST);
+  writer.writeDateTime(offsets[28], object.updatedAt);
+  writer.writeString(offsets[29], object.uuid);
+  writer.writeLong(offsets[30], object.version);
 }
 
 Order _orderDeserialize(
@@ -385,20 +410,21 @@ Order _orderDeserialize(
   object.isSynced = reader.readBool(offsets[13]);
   object.latitude = reader.readDoubleOrNull(offsets[14]);
   object.locationAddress = reader.readStringOrNull(offsets[15]);
-  object.longitude = reader.readDoubleOrNull(offsets[16]);
-  object.mobileNumber = reader.readStringOrNull(offsets[17]);
-  object.orderDate = reader.readDateTimeOrNull(offsets[18]);
-  object.orderNumber = reader.readStringOrNull(offsets[19]);
-  object.partyId = reader.readLongOrNull(offsets[20]);
-  object.partyName = reader.readStringOrNull(offsets[21]);
-  object.remarks = reader.readStringOrNull(offsets[22]);
-  object.roundOff = reader.readDoubleOrNull(offsets[23]);
-  object.status = reader.readStringOrNull(offsets[24]);
-  object.subtotal = reader.readDoubleOrNull(offsets[25]);
-  object.totalGST = reader.readDoubleOrNull(offsets[26]);
-  object.updatedAt = reader.readDateTime(offsets[27]);
-  object.uuid = reader.readStringOrNull(offsets[28]);
-  object.version = reader.readLong(offsets[29]);
+  object.locationUrl = reader.readStringOrNull(offsets[16]);
+  object.longitude = reader.readDoubleOrNull(offsets[17]);
+  object.mobileNumber = reader.readStringOrNull(offsets[18]);
+  object.orderDate = reader.readDateTimeOrNull(offsets[19]);
+  object.orderNumber = reader.readStringOrNull(offsets[20]);
+  object.partyId = reader.readLongOrNull(offsets[21]);
+  object.partyName = reader.readStringOrNull(offsets[22]);
+  object.remarks = reader.readStringOrNull(offsets[23]);
+  object.roundOff = reader.readDoubleOrNull(offsets[24]);
+  object.status = reader.readStringOrNull(offsets[25]);
+  object.subtotal = reader.readDoubleOrNull(offsets[26]);
+  object.totalGST = reader.readDoubleOrNull(offsets[27]);
+  object.updatedAt = reader.readDateTime(offsets[28]);
+  object.uuid = reader.readStringOrNull(offsets[29]);
+  object.version = reader.readLong(offsets[30]);
   return object;
 }
 
@@ -442,32 +468,34 @@ P _orderDeserializeProp<P>(
     case 15:
       return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 18:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 20:
-      return (reader.readLongOrNull(offset)) as P;
-    case 21:
       return (reader.readStringOrNull(offset)) as P;
+    case 21:
+      return (reader.readLongOrNull(offset)) as P;
     case 22:
       return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 24:
       return (reader.readStringOrNull(offset)) as P;
-    case 25:
+    case 24:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 25:
+      return (reader.readStringOrNull(offset)) as P;
     case 26:
       return (reader.readDoubleOrNull(offset)) as P;
     case 27:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 28:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 29:
+      return (reader.readStringOrNull(offset)) as P;
+    case 30:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -856,6 +884,71 @@ extension OrderQueryWhere on QueryBuilder<Order, Order, QWhereClause> {
               indexName: r'status',
               lower: [],
               upper: [status],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterWhereClause> locationUrlIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'locationUrl',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterWhereClause> locationUrlIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'locationUrl',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterWhereClause> locationUrlEqualTo(
+      String? locationUrl) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'locationUrl',
+        value: [locationUrl],
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterWhereClause> locationUrlNotEqualTo(
+      String? locationUrl) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'locationUrl',
+              lower: [],
+              upper: [locationUrl],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'locationUrl',
+              lower: [locationUrl],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'locationUrl',
+              lower: [locationUrl],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'locationUrl',
+              lower: [],
+              upper: [locationUrl],
               includeUpper: false,
             ));
       }
@@ -2462,6 +2555,152 @@ extension OrderQueryFilter on QueryBuilder<Order, Order, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'locationAddress',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'locationUrl',
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'locationUrl',
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'locationUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'locationUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'locationUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'locationUrl',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'locationUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'locationUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'locationUrl',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'locationUrl',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'locationUrl',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterFilterCondition> locationUrlIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'locationUrl',
         value: '',
       ));
     });
@@ -4161,6 +4400,18 @@ extension OrderQuerySortBy on QueryBuilder<Order, Order, QSortBy> {
     });
   }
 
+  QueryBuilder<Order, Order, QAfterSortBy> sortByLocationUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'locationUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterSortBy> sortByLocationUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'locationUrl', Sort.desc);
+    });
+  }
+
   QueryBuilder<Order, Order, QAfterSortBy> sortByLongitude() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'longitude', Sort.asc);
@@ -4535,6 +4786,18 @@ extension OrderQuerySortThenBy on QueryBuilder<Order, Order, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Order, Order, QAfterSortBy> thenByLocationUrl() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'locationUrl', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Order, Order, QAfterSortBy> thenByLocationUrlDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'locationUrl', Sort.desc);
+    });
+  }
+
   QueryBuilder<Order, Order, QAfterSortBy> thenByLongitude() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'longitude', Sort.asc);
@@ -4811,6 +5074,13 @@ extension OrderQueryWhereDistinct on QueryBuilder<Order, Order, QDistinct> {
     });
   }
 
+  QueryBuilder<Order, Order, QDistinct> distinctByLocationUrl(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'locationUrl', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Order, Order, QDistinct> distinctByLongitude() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'longitude');
@@ -5002,6 +5272,12 @@ extension OrderQueryProperty on QueryBuilder<Order, Order, QQueryProperty> {
   QueryBuilder<Order, String?, QQueryOperations> locationAddressProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'locationAddress');
+    });
+  }
+
+  QueryBuilder<Order, String?, QQueryOperations> locationUrlProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'locationUrl');
     });
   }
 

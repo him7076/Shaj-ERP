@@ -33,6 +33,8 @@ class Order implements IsarModel {
   double? latitude;
   double? longitude;
   String? locationAddress;
+  @Index()
+  String? locationUrl;
 
   // Financial Summary Fields
   double? subtotal;

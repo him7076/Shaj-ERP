@@ -445,6 +445,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         ..gstNumber = _selectedParty!.gstNumber
         ..latitude = _parsedOrder?.latitude
         ..longitude = _parsedOrder?.longitude
+        ..locationUrl = _parsedOrder?.locationUrl
         ..remarks = 'WhatsApp Order ID: ${_parsedOrder?.orderId ?? "N/A"} | WhatsApp Rep: ${_parsedOrder?.salesRep ?? "N/A"}'
         ..createdBy = _parsedOrder?.salesRep ?? 'WhatsApp Importer'
         ..subtotal = subtotal

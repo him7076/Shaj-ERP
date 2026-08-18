@@ -17,6 +17,7 @@ import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/models/firm_info.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderUuid;
@@ -427,6 +428,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               // SECTION 1: Party / Customer Details
               _buildPartyDetailsCard(order, theme),
               const SizedBox(height: 16),
+
+              // Google Maps Outlet Location Card (if location available)
+              if (order.locationUrl != null || (order.latitude != null && order.longitude != null)) ...[
+                _buildLocationCard(order, theme),
+                const SizedBox(height: 16),
+              ],
 
               // SECTION 2: PRODUCTS ORDERED (Item Details - Right after Party Details!)
               _buildModernItemsTable(order, theme),
