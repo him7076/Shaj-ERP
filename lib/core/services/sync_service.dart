@@ -2187,6 +2187,8 @@ class SyncService {
           'pcsPerBundle': e.pcsPerBundle,
           'pcsPerCarton': e.pcsPerCarton,
           'customRate': e.customRate,
+          'rateUnit': e.rateUnit,
+          'isTaxInclusive': e.isTaxInclusive,
         });
       default:
         return baseMap;

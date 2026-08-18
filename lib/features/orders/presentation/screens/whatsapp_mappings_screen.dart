@@ -145,6 +145,8 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
     final bundleCtrl = TextEditingController(text: (existing?.pcsPerBundle ?? 1.0).toStringAsFixed(0));
     final cartonCtrl = TextEditingController(text: (existing?.pcsPerCarton ?? 1.0).toStringAsFixed(0));
     final rateCtrl = TextEditingController(text: (existing?.customRate ?? 0.0).toStringAsFixed(2));
+    String selectedRateUnit = existing?.rateUnit ?? 'Carton';
+    bool isTaxInclusive = existing?.isTaxInclusive ?? false;
 
     Item? selectedItem = existing != null
         ? _allItems.firstWhereOrNull((i) => i.uuid == existing.itemUuid)
@@ -153,127 +155,178 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(existing == null ? 'Add Item Mapping Rule' : 'Edit Item Mapping Rule'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: rawItemCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Raw WhatsApp Item String',
-                    hintText: 'e.g. Creamland Strawberry 5/ 144',
-                    border: OutlineInputBorder(),
+        builder: (context, setModalState) {
+          final availableUnits = <String>[
+            selectedItem?.primaryUnitName ?? 'Carton',
+            selectedItem?.secondaryUnit ?? 'Bundle',
+            'PCS',
+          ].where((u) => u.trim().isNotEmpty).toSet().toList();
+
+          if (!availableUnits.contains(selectedRateUnit)) {
+            selectedRateUnit = availableUnits.first;
+          }
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(existing == null ? 'Add Item Mapping Rule' : 'Edit Item Mapping Rule'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: rawItemCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Raw WhatsApp Item String',
+                      hintText: 'e.g. Creamland Strawberry 5/ 144',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                const Text('Mapped ERP Product:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                const SizedBox(height: 6),
-                Autocomplete<Item>(
-                  initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
-                  displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (Rate: ₹${i.sellRate ?? 0})',
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty) return _allItems;
-                    final q = textEditingValue.text.toLowerCase();
-                    return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
-                  },
-                  onSelected: (Item selection) {
-                    setModalState(() {
-                      selectedItem = selection;
-                      if (selection.sellRate != null && rateCtrl.text == '0.00') {
-                        rateCtrl.text = selection.sellRate!.toStringAsFixed(2);
-                      }
-                      if (selection.conversionFactor != null && cartonCtrl.text == '1') {
-                        cartonCtrl.text = selection.conversionFactor!.toStringAsFixed(0);
-                      }
-                    });
-                  },
-                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-                    return TextField(
-                      controller: controller,
-                      focusNode: focusNode,
-                      decoration: const InputDecoration(
-                        labelText: 'Search ERP Product',
-                        hintText: 'Type product name to filter...',
-                        suffixIcon: Icon(Icons.search_rounded),
-                        border: OutlineInputBorder(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: bundleCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
-                          hintText: 'e.g. 12',
-                          border: const OutlineInputBorder(),
+                  const SizedBox(height: 14),
+                  const Text('Mapped ERP Product:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 6),
+                  Autocomplete<Item>(
+                    initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
+                    displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (Rate: ₹${i.sellRate ?? 0})',
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) return _allItems;
+                      final q = textEditingValue.text.toLowerCase();
+                      return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                    },
+                    onSelected: (Item selection) {
+                      setModalState(() {
+                        selectedItem = selection;
+                        if (selection.sellRate != null && rateCtrl.text == '0.00') {
+                          rateCtrl.text = selection.sellRate!.toStringAsFixed(2);
+                        }
+                        if (selection.conversionFactor != null && cartonCtrl.text == '1') {
+                          cartonCtrl.text = selection.conversionFactor!.toStringAsFixed(0);
+                        }
+                      });
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(
+                          labelText: 'Search ERP Product',
+                          hintText: 'Type product name to filter...',
+                          suffixIcon: Icon(Icons.search_rounded),
+                          border: OutlineInputBorder(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: bundleCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
+                            hintText: 'e.g. 12',
+                            border: const OutlineInputBorder(),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: cartonCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
-                          hintText: 'e.g. 144',
-                          border: const OutlineInputBorder(),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: cartonCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
+                            hintText: 'e.g. 144',
+                            border: const OutlineInputBorder(),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: rateCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Custom WhatsApp Sale Rate (₹)',
-                    hintText: 'Override sell rate (0 = use ERP rate)',
-                    border: OutlineInputBorder(),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: rateCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Custom Sale Rate (₹)',
+                            hintText: 'Override sell rate',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: selectedRateUnit,
+                          decoration: const InputDecoration(
+                            labelText: 'Rate Unit',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: availableUnits
+                              .map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 12))))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => selectedRateUnit = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<bool>(
+                    value: isTaxInclusive,
+                    decoration: const InputDecoration(
+                      labelText: 'Tax Mode',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: false, child: Text('Without Tax (Exclusive of GST)')),
+                      DropdownMenuItem(value: true, child: Text('With Tax (Inclusive of GST)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => isTaxInclusive = val);
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
-              onPressed: () async {
-                final raw = rawItemCtrl.text.trim();
-                if (raw.isEmpty || selectedItem == null) return;
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+                onPressed: () async {
+                  final raw = rawItemCtrl.text.trim();
+                  if (raw.isEmpty || selectedItem == null) return;
 
-                final mapping = WhatsAppItemMapping(
-                  rawItemLine: raw,
-                  itemUuid: selectedItem!.uuid!,
-                  pcsPerBundle: double.tryParse(bundleCtrl.text) ?? 1.0,
-                  pcsPerCarton: double.tryParse(cartonCtrl.text) ?? 1.0,
-                  customRate: double.tryParse(rateCtrl.text) ?? 0.0,
-                );
+                  final mapping = WhatsAppItemMapping(
+                    rawItemLine: raw,
+                    itemUuid: selectedItem!.uuid!,
+                    pcsPerBundle: double.tryParse(bundleCtrl.text) ?? 1.0,
+                    pcsPerCarton: double.tryParse(cartonCtrl.text) ?? 1.0,
+                    customRate: double.tryParse(rateCtrl.text) ?? 0.0,
+                    rateUnit: selectedRateUnit,
+                    isTaxInclusive: isTaxInclusive,
+                  );
 
-                final mappingService = ref.read(whatsappMappingServiceProvider);
-                await mappingService.saveItemMapping(mapping);
+                  final mappingService = ref.read(whatsappMappingServiceProvider);
+                  await mappingService.saveItemMapping(mapping);
 
-                Navigator.pop(ctx);
-                _loadMappingsAndMasters();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Item mapping for "$raw" saved!')),
-                );
-              },
-              child: const Text('Save Mapping'),
-            ),
-          ],
-        ),
+                  Navigator.pop(ctx);
+                  _loadMappingsAndMasters();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Item mapping for "$raw" saved!')),
+                  );
+                },
+                child: const Text('Save Mapping'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -491,7 +544,12 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                            child: Text('Rate: ₹${mapping.customRate.toStringAsFixed(2)}', style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
+                            child: Text('Rate: ₹${mapping.customRate.toStringAsFixed(2)} / ${mapping.rateUnit ?? primUnit}', style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold)),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(color: mapping.isTaxInclusive ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                            child: Text(mapping.isTaxInclusive ? 'With Tax (Incl)' : 'Without Tax (Excl)', style: TextStyle(fontSize: 10, color: mapping.isTaxInclusive ? Colors.orange.shade800 : Colors.teal, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),

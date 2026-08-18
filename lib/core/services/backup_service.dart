@@ -738,6 +738,8 @@ class BackupService {
           'pcsPerBundle': e.pcsPerBundle,
           'pcsPerCarton': e.pcsPerCarton,
           'customRate': e.customRate,
+          'rateUnit': e.rateUnit,
+          'isTaxInclusive': e.isTaxInclusive,
         });
       case 'settings':
         final e = entity as Settings;

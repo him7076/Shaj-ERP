@@ -26,6 +26,8 @@ class WhatsAppMapping implements IsarModel {
   double? pcsPerBundle;
   double? pcsPerCarton;
   double? customRate;
+  String? rateUnit;
+  bool? isTaxInclusive;
 
   @override
   DateTime createdAt = DateTime.now();

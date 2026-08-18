@@ -24,6 +24,7 @@ class _MappedRowState {
   String unitName;
   double quantity;
   double rate;
+  bool isTaxInclusive;
 
   _MappedRowState({
     required this.rawParsedItem,
@@ -33,9 +34,33 @@ class _MappedRowState {
     required this.unitName,
     required this.quantity,
     required this.rate,
+    this.isTaxInclusive = false,
   });
 
-  double get subtotal => quantity * rate;
+  double get gstPercent => selectedItem?.gstRate ?? 0.0;
+
+  double get effectiveLineTotal => quantity * rate;
+
+  double get taxableAmount {
+    if (isTaxInclusive && gstPercent > 0) {
+      return effectiveLineTotal / (1 + (gstPercent / 100));
+    }
+    return effectiveLineTotal;
+  }
+
+  double get gstAmount {
+    if (isTaxInclusive && gstPercent > 0) {
+      return effectiveLineTotal - taxableAmount;
+    }
+    return taxableAmount * (gstPercent / 100);
+  }
+
+  double get subtotal {
+    if (isTaxInclusive) {
+      return effectiveLineTotal;
+    }
+    return taxableAmount + gstAmount;
+  }
 }
 
 class WhatsappOrderImporterScreen extends ConsumerStatefulWidget {
@@ -120,9 +145,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
             selectedItem: matchedItem,
             mappingRule: itemRule,
             isSecondaryUnit: convResult.isSecondaryUnit,
-            unitName: convResult.unitName,
+            unitName: itemRule?.rateUnit ?? convResult.unitName,
             quantity: convResult.convertedQuantity,
             rate: convResult.effectiveRate,
+            isTaxInclusive: itemRule?.isTaxInclusive ?? false,
           ));
         } else {
           mappedRows.add(_MappedRowState(
@@ -133,6 +159,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
             unitName: 'PCS',
             quantity: parsedItem.quantity.toDouble(),
             rate: 0.0,
+            isTaxInclusive: false,
           ));
         }
       }
@@ -157,142 +184,192 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
     final rateCtrl = TextEditingController(text: (row.rate > 0 ? row.rate : (row.selectedItem?.sellRate ?? 0.0)).toStringAsFixed(2));
 
     Item? selectedItem = row.selectedItem ?? (_allItems.isNotEmpty ? _allItems.first : null);
+    String selectedRateUnit = row.unitName;
+    bool isTaxInclusive = row.isTaxInclusive;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        builder: (context, setModalState) {
+          final availableUnits = <String>[
+            selectedItem?.primaryUnitName ?? 'Carton',
+            selectedItem?.secondaryUnit ?? 'Bundle',
+            'PCS',
+          ].where((u) => u.trim().isNotEmpty).toSet().toList();
+
+          if (!availableUnits.contains(selectedRateUnit)) {
+            selectedRateUnit = availableUnits.first;
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Map Product & Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Map Product & Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: Text('WhatsApp Line: ${row.rawParsedItem.rawLine}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 12),
+                  Autocomplete<Item>(
+                    initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
+                    displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})',
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) return _allItems;
+                      final q = textEditingValue.text.toLowerCase();
+                      return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                    },
+                    onSelected: (Item selection) {
+                      setModalState(() {
+                        selectedItem = selection;
+                        if (selection.sellRate != null) rateCtrl.text = selection.sellRate!.toStringAsFixed(2);
+                        if (selection.conversionFactor != null) cartonCtrl.text = selection.conversionFactor!.toStringAsFixed(0);
+                      });
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        decoration: const InputDecoration(
+                          labelText: 'Search ERP Product',
+                          hintText: 'Type item name to filter...',
+                          suffixIcon: Icon(Icons.search_rounded),
+                          border: OutlineInputBorder(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: bundleCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: cartonCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: rateCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: 'Custom Sale Rate (₹)', border: OutlineInputBorder()),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: selectedRateUnit,
+                          decoration: const InputDecoration(labelText: 'Rate Unit', border: OutlineInputBorder()),
+                          items: availableUnits
+                              .map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 12))))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) setModalState(() => selectedRateUnit = val);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<bool>(
+                    value: isTaxInclusive,
+                    decoration: const InputDecoration(labelText: 'Tax Mode', border: OutlineInputBorder()),
+                    items: const [
+                      DropdownMenuItem(value: false, child: Text('Without Tax (Exclusive of GST)')),
+                      DropdownMenuItem(value: true, child: Text('With Tax (Inclusive of GST)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setModalState(() => isTaxInclusive = val);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.check_rounded),
+                      label: const Text('Save Mapping & Apply'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () async {
+                        if (selectedItem == null) return;
+
+                        final rule = WhatsAppItemMapping(
+                          rawItemLine: row.rawParsedItem.itemDescription,
+                          itemUuid: selectedItem!.uuid!,
+                          pcsPerBundle: double.tryParse(bundleCtrl.text) ?? 1.0,
+                          pcsPerCarton: double.tryParse(cartonCtrl.text) ?? 1.0,
+                          customRate: double.tryParse(rateCtrl.text) ?? 0.0,
+                          rateUnit: selectedRateUnit,
+                          isTaxInclusive: isTaxInclusive,
+                        );
+
+                        final mappingService = ref.read(whatsappMappingServiceProvider);
+                        await mappingService.saveItemMapping(rule);
+
+                        final convResult = mappingService.convertWhatsAppPcsToErpUnit(
+                          selectedItem!,
+                          row.rawParsedItem.quantity.toDouble(),
+                          rule,
+                        );
+
+                        setState(() {
+                          row.selectedItem = selectedItem;
+                          row.mappingRule = rule;
+                          row.isSecondaryUnit = convResult.isSecondaryUnit;
+                          row.unitName = selectedRateUnit;
+                          row.quantity = convResult.convertedQuantity;
+                          row.rate = double.tryParse(rateCtrl.text) ?? convResult.effectiveRate;
+                          row.isTaxInclusive = isTaxInclusive;
+                        });
+
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Mapping saved & totals updated LIVE for ${selectedItem?.itemName}!')),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text('WhatsApp Line: ${row.rawParsedItem.rawLine}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 12),
-              Autocomplete<Item>(
-                initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
-                displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})',
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return _allItems;
-                  final q = textEditingValue.text.toLowerCase();
-                  return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
-                },
-                onSelected: (Item selection) {
-                  setModalState(() {
-                    selectedItem = selection;
-                    if (selection.sellRate != null) rateCtrl.text = selection.sellRate!.toStringAsFixed(2);
-                    if (selection.conversionFactor != null) cartonCtrl.text = selection.conversionFactor!.toStringAsFixed(0);
-                  });
-                },
-                fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
-                  return TextField(
-                    controller: controller,
-                    focusNode: focusNode,
-                    decoration: const InputDecoration(
-                      labelText: 'Search ERP Product',
-                      hintText: 'Type item name to filter...',
-                      suffixIcon: Icon(Icons.search_rounded),
-                      border: OutlineInputBorder(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: bundleCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: cartonCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
-                        border: const OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: rateCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Custom Sale Rate (₹)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.check_rounded),
-                  label: const Text('Save Mapping & Apply'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF25D366),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () async {
-                    if (selectedItem == null) return;
-
-                    final rule = WhatsAppItemMapping(
-                      rawItemLine: row.rawParsedItem.itemDescription,
-                      itemUuid: selectedItem!.uuid!,
-                      pcsPerBundle: double.tryParse(bundleCtrl.text) ?? 1.0,
-                      pcsPerCarton: double.tryParse(cartonCtrl.text) ?? 1.0,
-                      customRate: double.tryParse(rateCtrl.text) ?? 0.0,
-                    );
-
-                    final mappingService = ref.read(whatsappMappingServiceProvider);
-                    await mappingService.saveItemMapping(rule);
-
-                    final convResult = mappingService.convertWhatsAppPcsToErpUnit(
-                      selectedItem!,
-                      row.rawParsedItem.quantity.toDouble(),
-                      rule,
-                    );
-
-                    setState(() {
-                      row.selectedItem = selectedItem;
-                      row.mappingRule = rule;
-                      row.isSecondaryUnit = convResult.isSecondaryUnit;
-                      row.unitName = convResult.unitName;
-                      row.quantity = convResult.convertedQuantity;
-                      row.rate = convResult.effectiveRate;
-                    });
-
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Mapping saved & totals updated LIVE for ${selectedItem?.itemName}!')),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -409,10 +486,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
           ..rate = row.rate
           ..discountPercent = 0.0
           ..discountAmount = 0.0
-          ..taxableAmount = lineTotal
-          ..gstPercent = item.gstRate ?? 0.0
-          ..gstAmount = 0.0
-          ..totalAmount = lineTotal
+          ..taxableAmount = row.taxableAmount
+          ..gstPercent = row.gstPercent
+          ..gstAmount = row.gstAmount
+          ..totalAmount = row.subtotal
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();
 
@@ -425,6 +502,8 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
             pcsPerBundle: row.mappingRule?.pcsPerBundle ?? 1.0,
             pcsPerCarton: row.mappingRule?.pcsPerCarton ?? item.conversionFactor ?? 1.0,
             customRate: row.rate,
+            rateUnit: row.unitName,
+            isTaxInclusive: row.isTaxInclusive,
           );
           await mappingService.saveItemMapping(mapping);
         }
@@ -458,10 +537,6 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         ..updatedAt = DateTime.now();
 
       order.party.value = _selectedParty;
-
-      for (var oi in orderItems) {
-        oi.order.value = order;
-      }
 
       await orderRepo.saveOrder(order, orderItems);
 
@@ -873,40 +948,60 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     ),
                                     const SizedBox(height: 8),
 
-                                    // Qty, Unit Toggle, Rate, Subtotal Row
+                                    // Unit Dropdown, Qty, Rate, Tax Mode, Subtotal Row
                                     Row(
                                       children: [
-                                        // Unit Toggle Button
-                                        InkWell(
-                                          onTap: item == null
-                                              ? null
-                                              : () {
-                                                  setState(() {
-                                                    row.isSecondaryUnit = !row.isSecondaryUnit;
-                                                    final factor = item.conversionFactor ?? 1.0;
-                                                    if (row.isSecondaryUnit && factor > 1) {
-                                                      row.rate = (item.sellRate ?? 0.0) / factor;
-                                                    } else {
-                                                      row.rate = item.sellRate ?? 0.0;
-                                                    }
-                                                  });
-                                                },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                            decoration: BoxDecoration(
-                                              color: row.isSecondaryUnit ? Colors.purple.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8),
-                                              border: Border.all(color: row.isSecondaryUnit ? Colors.purple : Colors.blue),
-                                            ),
-                                            child: Text(
-                                              row.unitName,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: row.isSecondaryUnit ? Colors.purple : Colors.blue,
+                                        // Unit Dropdown (Shows ALL units for product: Primary, Secondary, PCS)
+                                        Builder(
+                                          builder: (context) {
+                                            final availableUnits = <String>[
+                                              item?.primaryUnitName ?? 'Carton',
+                                              item?.secondaryUnit ?? 'Bundle',
+                                              'PCS',
+                                            ].where((u) => u.trim().isNotEmpty).toSet().toList();
+
+                                            if (!availableUnits.contains(row.unitName)) {
+                                              row.unitName = availableUnits.first;
+                                            }
+
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.withOpacity(0.08),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: Colors.blue.withOpacity(0.3)),
                                               ),
-                                            ),
-                                          ),
+                                              child: DropdownButtonHideUnderline(
+                                                child: DropdownButton<String>(
+                                                  value: row.unitName,
+                                                  isDense: true,
+                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue),
+                                                  items: availableUnits
+                                                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                                      .toList(),
+                                                  onChanged: item == null
+                                                      ? null
+                                                      : (newUnit) {
+                                                          if (newUnit == null) return;
+                                                          setState(() {
+                                                            row.unitName = newUnit;
+                                                            final primary = item.primaryUnitName ?? 'Carton';
+                                                            final secondary = item.secondaryUnit ?? 'Bundle';
+                                                            final factor = item.conversionFactor ?? 1.0;
+
+                                                            if (newUnit == secondary && factor > 1) {
+                                                              row.isSecondaryUnit = true;
+                                                              row.rate = (item.sellRate ?? 0.0) / factor;
+                                                            } else {
+                                                              row.isSecondaryUnit = false;
+                                                              row.rate = item.sellRate ?? 0.0;
+                                                            }
+                                                          });
+                                                        },
+                                                ),
+                                              ),
+                                            );
+                                          },
                                         ),
                                         const SizedBox(width: 8),
 
@@ -958,11 +1053,43 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                         ),
                                         const SizedBox(width: 8),
 
+                                        // Tax Mode Selector (With Tax vs Without Tax)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                                          decoration: BoxDecoration(
+                                            color: row.isTaxInclusive ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: row.isTaxInclusive ? Colors.orange : Colors.teal),
+                                          ),
+                                          child: DropdownButtonHideUnderline(
+                                            child: DropdownButton<bool>(
+                                              value: row.isTaxInclusive,
+                                              isDense: true,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: row.isTaxInclusive ? Colors.orange.shade900 : Colors.teal.shade900,
+                                              ),
+                                              items: const [
+                                                DropdownMenuItem(value: false, child: Text('+Excl Tax')),
+                                                DropdownMenuItem(value: true, child: Text('Incl Tax')),
+                                              ],
+                                              onChanged: (val) {
+                                                if (val != null) setState(() => row.isTaxInclusive = val);
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+
                                         // Subtotal
                                         Column(
                                           crossAxisAlignment: CrossAxisAlignment.end,
                                           children: [
-                                            const Text('Subtotal', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                                            Text(
+                                              row.isTaxInclusive ? 'Incl GST' : 'Excl GST',
+                                              style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                            ),
                                             Text(
                                               currencyFormat.format(row.subtotal),
                                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),

@@ -1522,6 +1522,8 @@ class RestoreService {
       ..pcsPerBundle = (map['pcsPerBundle'] as num?)?.toDouble()
       ..pcsPerCarton = (map['pcsPerCarton'] as num?)?.toDouble()
       ..customRate = (map['customRate'] as num?)?.toDouble()
+      ..rateUnit = map['rateUnit'] as String?
+      ..isTaxInclusive = map['isTaxInclusive'] as bool? ?? false
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
       ..isDeleted = map['isDeleted'] as bool? ?? false

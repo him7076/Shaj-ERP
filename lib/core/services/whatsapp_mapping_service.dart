@@ -27,6 +27,8 @@ class WhatsAppItemMapping {
   final double pcsPerBundle; // e.g. 12 Pcs = 1 Bundle (Secondary Unit)
   final double pcsPerCarton; // e.g. 72 Pcs = 1 Carton (Primary Unit)
   final double customRate;   // Override WhatsApp sale rate
+  final String? rateUnit;    // Unit for custom rate (e.g. 'Carton', 'Bundle', 'PCS')
+  final bool isTaxInclusive; // Whether customRate is inclusive of GST
 
   WhatsAppItemMapping({
     required this.rawItemLine,
@@ -34,6 +36,8 @@ class WhatsAppItemMapping {
     this.pcsPerBundle = 1.0,
     this.pcsPerCarton = 1.0,
     this.customRate = 0.0,
+    this.rateUnit,
+    this.isTaxInclusive = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -42,6 +46,8 @@ class WhatsAppItemMapping {
         'pcsPerBundle': pcsPerBundle,
         'pcsPerCarton': pcsPerCarton,
         'customRate': customRate,
+        'rateUnit': rateUnit,
+        'isTaxInclusive': isTaxInclusive,
       };
 
   factory WhatsAppItemMapping.fromJson(Map<String, dynamic> json) => WhatsAppItemMapping(
@@ -50,6 +56,8 @@ class WhatsAppItemMapping {
         pcsPerBundle: (json['pcsPerBundle'] as num?)?.toDouble() ?? 1.0,
         pcsPerCarton: (json['pcsPerCarton'] as num?)?.toDouble() ?? 1.0,
         customRate: (json['customRate'] as num?)?.toDouble() ?? 0.0,
+        rateUnit: json['rateUnit'] as String?,
+        isTaxInclusive: json['isTaxInclusive'] as bool? ?? false,
       );
 }
 
@@ -347,6 +355,8 @@ class WhatsappMappingService {
                   pcsPerBundle: m.pcsPerBundle ?? 1.0,
                   pcsPerCarton: m.pcsPerCarton ?? 1.0,
                   customRate: m.customRate ?? 0.0,
+                  rateUnit: m.rateUnit,
+                  isTaxInclusive: m.isTaxInclusive ?? false,
                 ))
             .toList();
       }
@@ -383,6 +393,8 @@ class WhatsappMappingService {
           pcsPerBundle: isarMatch.pcsPerBundle ?? 1.0,
           pcsPerCarton: isarMatch.pcsPerCarton ?? 1.0,
           customRate: isarMatch.customRate ?? 0.0,
+          rateUnit: isarMatch.rateUnit,
+          isTaxInclusive: isarMatch.isTaxInclusive ?? false,
         );
       }
     } catch (_) {}
@@ -423,6 +435,8 @@ class WhatsappMappingService {
         ..pcsPerBundle = mapping.pcsPerBundle
         ..pcsPerCarton = mapping.pcsPerCarton
         ..customRate = mapping.customRate
+        ..rateUnit = mapping.rateUnit
+        ..isTaxInclusive = mapping.isTaxInclusive
         ..updatedAt = DateTime.now()
         ..isDeleted = false
         ..isSynced = false;
