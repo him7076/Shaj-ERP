@@ -88,15 +88,41 @@ class WhatsappOrderParser {
       final trimmed = line.trim();
       if (trimmed.isEmpty) continue;
 
-      // Match item line with quantity pattern e.g. "(Quantity: 144)" or "Qty: 144"
-      final qtyMatch = RegExp(r'\(?\s*(?:Quantity|Qty)\s*:\s*(\d+)\s*\)?', caseSensitive: false).firstMatch(trimmed);
+      // Ignore metadata lines
+      final lower = trimmed.toLowerCase();
+      if (lower.startsWith('shop:') ||
+          lower.startsWith('mob') ||
+          lower.startsWith('order id:') ||
+          lower.startsWith('salesrep:') ||
+          lower.startsWith('date:') ||
+          lower.startsWith('amount:') ||
+          lower.startsWith('location:') ||
+          lower.startsWith('items:')) {
+        continue;
+      }
 
-      if (qtyMatch != null) {
-        final qtyVal = int.tryParse(qtyMatch.group(1) ?? '1') ?? 1;
+      // Comprehensive regex for quantity patterns:
+      // e.g. (Quantity: 144), (Qty: 144), (Qty - 144), (144 Pcs), (Quantity 144), Qty: 144, etc.
+      final qtyRegex = RegExp(
+        r'\(?\s*(?:Quantity|Qty|Quant|Qnty|Pcs|Pcs\.|Box|Carton|Cartons)?\s*[:=\-]?\s*(\d+)\s*(?:pcs|pcs\.|box|cartons|ctn|units)?\s*\)?',
+        caseSensitive: false,
+      );
+
+      // Explicit pattern for bracketed or tagged quantity: (Quantity: 144) or (Qty: 144) or (144 Pcs) or Qty: 144
+      final taggedQtyMatch = RegExp(
+        r'(?:\(\s*(?:Quantity|Qty|Quant|Qnty)?\s*[:=\-]?\s*(\d+)\s*(?:pcs|pcs\.|box|cartons|ctn|units)?\s*\)|\b(?:Quantity|Qty|Quant|Qnty)\s*[:=\-]?\s*(\d+))',
+        caseSensitive: false,
+      ).firstMatch(trimmed);
+
+      if (taggedQtyMatch != null) {
+        final qtyStr = taggedQtyMatch.group(1) ?? taggedQtyMatch.group(2) ?? '1';
+        final qtyVal = int.tryParse(qtyStr) ?? 1;
 
         // Clean raw line to extract item description
         String desc = trimmed.replaceFirst(RegExp(r'^\d+[\.\)\-]\s*'), '');
-        desc = desc.replaceAll(RegExp(r'\(?\s*(?:Quantity|Qty)\s*:\s*\d+\s*\)?', caseSensitive: false), '').trim();
+        desc = desc.replaceAll(RegExp(r'(?:\(\s*(?:Quantity|Qty|Quant|Qnty)?\s*[:=\-]?\s*\d+\s*(?:pcs|pcs\.|box|cartons|ctn|units)?\s*\)|\b(?:Quantity|Qty|Quant|Qnty)\s*[:=\-]?\s*\d+)', caseSensitive: false), '').trim();
+        // Remove trailing dash/colon/comma left dangling
+        desc = desc.replaceAll(RegExp(r'[\s:\-,]+$'), '').trim();
 
         if (desc.isNotEmpty) {
           items.add(ParsedWhatsappOrderItem(
@@ -104,21 +130,40 @@ class WhatsappOrderParser {
             itemDescription: desc,
             quantity: qtyVal,
           ));
+          continue;
         }
-      } else {
-        // Fallback for numbered list lines like "1. Item Name - 10" or "1) Item Name 10"
-        final numberedMatch = RegExp(r'^\d+[\.\)\-]\s*(.+?)\s+(\d+)\s*$', caseSensitive: false).firstMatch(trimmed);
-        if (numberedMatch != null) {
-          final desc = numberedMatch.group(1)?.trim() ?? '';
-          final qtyVal = int.tryParse(numberedMatch.group(2) ?? '1') ?? 1;
-          // Avoid matching metadata lines like Date or Mob No
-          if (desc.isNotEmpty && !desc.toLowerCase().startsWith('mob') && !desc.toLowerCase().startsWith('shop') && !desc.toLowerCase().startsWith('date')) {
-            items.add(ParsedWhatsappOrderItem(
-              rawLine: trimmed,
-              itemDescription: desc,
-              quantity: qtyVal,
-            ));
-          }
+      }
+
+      // Fallback 1: Match line ending with bracketed number e.g. "Creamland Strawberry (144)" or "Creamland Strawberry (144 Pcs)"
+      final bracketedQtyMatch = RegExp(r'^(.*?)\s*\(\s*(\d+)\s*(?:pcs|pcs\.|box|units)?\s*\)\s*$', caseSensitive: false).firstMatch(trimmed);
+      if (bracketedQtyMatch != null) {
+        String desc = bracketedQtyMatch.group(1)?.replaceFirst(RegExp(r'^\d+[\.\)\-]\s*'), '').trim() ?? '';
+        final qtyVal = int.tryParse(bracketedQtyMatch.group(2) ?? '1') ?? 1;
+        desc = desc.replaceAll(RegExp(r'[\s:\-,]+$'), '').trim();
+
+        if (desc.isNotEmpty) {
+          items.add(ParsedWhatsappOrderItem(
+            rawLine: trimmed,
+            itemDescription: desc,
+            quantity: qtyVal,
+          ));
+          continue;
+        }
+      }
+
+      // Fallback 2: Match numbered list lines like "1. Item Name - 10" or "1) Item Name 10" or "1. Item Name 10"
+      final numberedMatch = RegExp(r'^\d+[\.\)\-]\s*(.+?)(?:\s*[\-:]\s*|\s+)(\d+)\s*$', caseSensitive: false).firstMatch(trimmed);
+      if (numberedMatch != null) {
+        final desc = numberedMatch.group(1)?.replaceAll(RegExp(r'[\s:\-,]+$'), '').trim() ?? '';
+        final qtyVal = int.tryParse(numberedMatch.group(2) ?? '1') ?? 1;
+
+        if (desc.isNotEmpty && !desc.toLowerCase().startsWith('mob') && !desc.toLowerCase().startsWith('shop') && !desc.toLowerCase().startsWith('date')) {
+          items.add(ParsedWhatsappOrderItem(
+            rawLine: trimmed,
+            itemDescription: desc,
+            quantity: qtyVal,
+          ));
+          continue;
         }
       }
     }

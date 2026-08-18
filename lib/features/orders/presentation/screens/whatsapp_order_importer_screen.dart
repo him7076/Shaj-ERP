@@ -459,6 +459,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
 
       order.party.value = _selectedParty;
 
+      for (var oi in orderItems) {
+        oi.order.value = order;
+      }
+
       await orderRepo.saveOrder(order, orderItems);
 
       try {

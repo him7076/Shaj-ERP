@@ -107,6 +107,9 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
             item.order.value = order;
           }
           await isar.orderItems.put(item);
+          if (!kIsWeb) {
+            await item.order.save();
+          }
 
           // Deduct stock if reservation setting is enabled
           final dbItem = kIsWeb

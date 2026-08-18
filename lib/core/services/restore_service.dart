@@ -237,6 +237,14 @@ class RestoreService {
           }
         }
 
+        if (collectionsMap.containsKey('whatsapp_mappings')) {
+          final list = collectionsMap['whatsapp_mappings'] as List;
+          for (var itemMap in list) {
+            final wam = _mapMapToWhatsAppMapping(itemMap as Map<String, dynamic>);
+            await isar.whatsAppMappings.put(wam);
+          }
+        }
+
         if (restoreSettings && collectionsMap.containsKey('settings')) {
           final list = collectionsMap['settings'] as List;
           for (var itemMap in list) {

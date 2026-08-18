@@ -52,12 +52,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
         if (kIsWeb) {
           items = await isar.orderItems.where().findAll();
-          items = items.where((i) => i.order.value?.id == fetched.id || i.itemId != null).toList();
+          items = items.where((i) => i.order.value?.id == fetched.id || i.order.value?.uuid == fetched.uuid).toList();
         } else {
           try {
             await fetched.orderItems.load();
           } catch (_) {}
           items = fetched.orderItems.toList();
+
+          if (items.isEmpty) {
+            final allItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
+            items = allItems.where((i) => i.order.value?.id == fetched.id || i.order.value?.uuid == fetched.uuid).toList();
+          }
         }
 
         setState(() {
