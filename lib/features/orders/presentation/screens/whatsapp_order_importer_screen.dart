@@ -75,6 +75,8 @@ class _WhatsappOrderImporterScreenState extends ConsumerState<WhatsappOrderImpor
 
   ParsedWhatsappOrder? _parsedOrder;
   Party? _selectedParty;
+  String? _selectedSalesman;
+  List<String> _salesmenList = ['Default Salesman', 'Salesperson 1', 'Salesperson 2'];
   List<Party> _allParties = [];
   List<Item> _allItems = [];
   List<_MappedRowState> _mappedRows = [];
@@ -128,6 +130,18 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         mobileNumber: parsed.mobileNumber,
       );
 
+      String? mappedSalesman = parsed.salesRep;
+      if (parsed.salesRep != null && parsed.salesRep!.isNotEmpty) {
+        final salesmanMapping = mappingService.getSalesmanMapping(parsed.salesRep!);
+        if (salesmanMapping != null && salesmanMapping.targetSalesmanName.isNotEmpty) {
+          mappedSalesman = salesmanMapping.targetSalesmanName;
+        }
+      }
+
+      if (mappedSalesman != null && mappedSalesman.isNotEmpty && !_salesmenList.contains(mappedSalesman)) {
+        _salesmenList.add(mappedSalesman);
+      }
+
       final mappedRows = <_MappedRowState>[];
       for (var parsedItem in parsed.items) {
         final matchedItem = await mappingService.matchItem(parsedItem.itemDescription);
@@ -167,6 +181,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
       setState(() {
         _parsedOrder = parsed;
         _selectedParty = matchedParty;
+        _selectedSalesman = mappedSalesman ?? 'Default Salesman';
         _mappedRows = mappedRows;
       });
     } catch (e) {
@@ -513,6 +528,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         await mappingService.savePartyMapping(_parsedOrder!.shopName!, _selectedParty!.uuid!);
       }
 
+      if (_rememberMappings && _parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty && _selectedSalesman != null) {
+        await mappingService.saveSalesmanMapping(_parsedOrder!.salesRep!, _selectedSalesman!);
+      }
+
       final order = Order()
         ..uuid = const Uuid().v4()
         ..orderNumber = nextOrderNumber
@@ -526,7 +545,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         ..longitude = _parsedOrder?.longitude
         ..locationUrl = _parsedOrder?.locationUrl
         ..remarks = 'WhatsApp Order ID: ${_parsedOrder?.orderId ?? "N/A"} | WhatsApp Rep: ${_parsedOrder?.salesRep ?? "N/A"}'
-        ..createdBy = _parsedOrder?.salesRep ?? 'WhatsApp Importer'
+        ..createdBy = _selectedSalesman ?? _parsedOrder?.salesRep ?? 'WhatsApp Importer'
         ..subtotal = subtotal
         ..discountAmount = 0.0
         ..discountPercent = 0.0
@@ -787,6 +806,50 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   ),
                                 );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 3b. Salesman Selection Dropdown
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('ASSIGN SALESMAN / EXECUTIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                if (_parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                                    child: Text('WhatsApp Rep: ${_parsedOrder!.salesRep}', style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: (_selectedSalesman != null && _salesmenList.contains(_selectedSalesman)) ? _selectedSalesman : _salesmenList.first,
+                              decoration: const InputDecoration(
+                                labelText: 'Select Sales Representative',
+                                prefixIcon: Icon(Icons.badge_outlined),
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              ),
+                              items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                              onChanged: (val) {
+                                if (val != null) setState(() => _selectedSalesman = val);
                               },
                             ),
                           ],

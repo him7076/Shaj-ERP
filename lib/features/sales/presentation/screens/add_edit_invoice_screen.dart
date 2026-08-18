@@ -185,6 +185,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       ref.read(invoiceCartProvider.notifier).clear();
       if (widget.invoiceUuid != null) {
         await _loadInvoiceData();
+      } else if (widget.sourceOrderUuid != null) {
+        await _loadOrderDataForConversion();
       } else {
         try {
           final repo = ref.read(invoiceRepositoryProvider);
@@ -302,7 +304,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         _sourceOrder = order;
         final nextNo = await ref.read(invoiceRepositoryProvider).generateNextInvoiceNumber();
         _voucherNumberDisplay = nextNo;
-        _remarksController.text = 'Converted from Order #${order.orderNumber}. ${order.remarks ?? ""}';
+        _remarksController.text = 'Converted from Sales Order #${order.orderNumber}';
 
         if (order.createdBy != null && order.createdBy!.isNotEmpty) {
           _selectedSalesman = order.createdBy!;
@@ -316,23 +318,23 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           try { await order.orderItems.load(); } catch (_) {}
         }
 
-        final party = kIsWeb
-            ? (order.partyId != null ? await db.partys.get(order.partyId!) : null)
-            : order.party.value;
+        Party? party = order.party.value;
+        if (party == null && order.partyId != null) {
+          party = await db.partys.get(order.partyId!);
+        }
 
         if (party != null) {
           List<OrderItem> orderItemsList = [];
           if (!kIsWeb) {
             try { await order.orderItems.load(); } catch (_) {}
-            orderItemsList = order.orderItems.toList();
+            orderItemsList = order.orderItems.where((i) => !i.isDeleted).toList();
           }
           if (orderItemsList.isEmpty) {
-            final targetId = order.id;
             orderItemsList = await db.orderItems
                 .filter()
                 .isDeletedEqualTo(false)
                 .and()
-                .order((q) => q.idEqualTo(targetId))
+                .group((q) => q.orderUuidEqualTo(order.uuid).or().order((o) => o.uuidEqualTo(order.uuid)))
                 .findAll();
           }
 
@@ -341,9 +343,10 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             if (!kIsWeb) {
               try { await item.item.load(); } catch (_) {}
             }
-            final dbItem = kIsWeb
-                ? (item.itemId != null ? await db.items.get(item.itemId!) : null)
-                : item.item.value;
+            var dbItem = item.item.value;
+            if (dbItem == null && item.itemId != null) {
+              dbItem = await db.items.get(item.itemId!);
+            }
 
             if (dbItem != null) {
               final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
@@ -361,6 +364,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   discountPercent: discPct,
                   discountAmount: item.discountAmount ?? 0.0,
                   gstPercent: item.gstPercent ?? dbItem.gstRate ?? 18.0,
+                  batchNumber: item.batchNumber,
+                  expiryDate: item.expiryDate,
+                  mfgDate: item.mfgDate,
                 ),
               );
             }

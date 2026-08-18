@@ -126,6 +126,16 @@ const OrderItemSchema = CollectionSchema(
       id: 21,
       name: r'version',
       type: IsarType.long,
+    ),
+    r'orderId': PropertySchema(
+      id: 22,
+      name: r'orderId',
+      type: IsarType.long,
+    ),
+    r'orderUuid': PropertySchema(
+      id: 23,
+      name: r'orderUuid',
+      type: IsarType.string,
     )
   },
   estimateSize: _orderItemEstimateSize,
@@ -142,6 +152,19 @@ const OrderItemSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'uuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'orderUuid': IndexSchema(
+      id: 3948571029384756,
+      name: r'orderUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'orderUuid',
           type: IndexType.hash,
           caseSensitive: true,
         )
@@ -217,6 +240,12 @@ int _orderItemEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.orderUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -248,6 +277,8 @@ void _orderItemSerialize(
   writer.writeDateTime(offsets[19], object.updatedAt);
   writer.writeString(offsets[20], object.uuid);
   writer.writeLong(offsets[21], object.version);
+  if (offsets.length > 22) writer.writeLong(offsets[22], object.orderId);
+  if (offsets.length > 23) writer.writeString(offsets[23], object.orderUuid);
 }
 
 OrderItem _orderItemDeserialize(
@@ -280,6 +311,8 @@ OrderItem _orderItemDeserialize(
   object.updatedAt = reader.readDateTime(offsets[19]);
   object.uuid = reader.readStringOrNull(offsets[20]);
   object.version = reader.readLong(offsets[21]);
+  if (offsets.length > 22) object.orderId = reader.readLongOrNull(offsets[22]);
+  if (offsets.length > 23) object.orderUuid = reader.readStringOrNull(offsets[23]);
   return object;
 }
 
@@ -334,6 +367,10 @@ P _orderItemDeserializeProp<P>(
       return (reader.readStringOrNull(offset)) as P;
     case 21:
       return (reader.readLong(offset)) as P;
+    case 22:
+      return (reader.readLongOrNull(offset)) as P;
+    case 23:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -785,6 +822,30 @@ extension OrderItemQueryFilter
         property: r'discountAmount',
         value: value,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      orderIdEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'orderId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      orderUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'orderUuid',
+        value: value,
+        caseSensitive: caseSensitive,
       ));
     });
   }

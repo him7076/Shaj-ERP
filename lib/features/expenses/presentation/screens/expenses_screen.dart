@@ -204,17 +204,32 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddEditExpenseScreen(),
-            ),
-          );
-        },
-        icon: const Icon(Icons.add_card_rounded),
-        label: const Text('Record Expense'),
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'import_expenses_excel_fab',
+            backgroundColor: Colors.green.shade700,
+            foregroundColor: Colors.white,
+            onPressed: _importFromExcel,
+            icon: const Icon(Icons.file_upload_rounded),
+            label: const Text('Import Excel'),
+          ),
+          const SizedBox(width: 12),
+          FloatingActionButton.extended(
+            heroTag: 'add_expense_fab',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddEditExpenseScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.add_card_rounded),
+            label: const Text('Record Expense'),
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

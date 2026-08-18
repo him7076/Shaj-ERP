@@ -29,6 +29,7 @@ class ExpenseExcelImportService {
     sheet.appendRow([
       TextCellValue('Date'),
       TextCellValue('Expense Category'),
+      TextCellValue('Payee / Party Name'),
       TextCellValue('Amount (₹)'),
       TextCellValue('Payment Mode'),
       TextCellValue('Paid Through / Account'),
@@ -40,6 +41,7 @@ class ExpenseExcelImportService {
     sheet.appendRow([
       TextCellValue('19-08-2026'),
       TextCellValue('Rent'),
+      TextCellValue('ABC Real Estate Ltd'),
       DoubleCellValue(15000.00),
       TextCellValue('Bank Transfer'),
       TextCellValue('HDFC Bank Main'),
@@ -50,6 +52,7 @@ class ExpenseExcelImportService {
     sheet.appendRow([
       TextCellValue('19-08-2026'),
       TextCellValue('Tea & Snacks'),
+      TextCellValue('Shree Ganesh Tea Stall'),
       DoubleCellValue(450.00),
       TextCellValue('Cash'),
       TextCellValue('Main Cash'),
@@ -94,11 +97,12 @@ class ExpenseExcelImportService {
 
       final colDate = _findCol(colMap, ['date', 'expense date', 'voucher date'], 0);
       final colCategory = _findCol(colMap, ['expense category', 'category', 'type', 'head'], 1);
-      final colAmount = _findCol(colMap, ['amount (₹)', 'amount', 'total amount', 'outflow'], 2);
-      final colMode = _findCol(colMap, ['payment mode', 'mode', 'payment type'], 3);
-      final colPaidThrough = _findCol(colMap, ['paid through / account', 'paid through', 'account', 'bank'], 4);
-      final colRef = _findCol(colMap, ['reference no', 'ref no', 'voucher no', 'bill no'], 5);
-      final colRemarks = _findCol(colMap, ['remarks / notes', 'remarks', 'notes', 'description'], 6);
+      final colPayee = _findCol(colMap, ['payee / party name', 'party name', 'payee', 'vendor', 'party'], 2);
+      final colAmount = _findCol(colMap, ['amount (₹)', 'amount', 'total amount', 'outflow'], 3);
+      final colMode = _findCol(colMap, ['payment mode', 'mode', 'payment type'], 4);
+      final colPaidThrough = _findCol(colMap, ['paid through / account', 'paid through', 'account', 'bank'], 5);
+      final colRef = _findCol(colMap, ['reference no', 'ref no', 'voucher no', 'bill no'], 6);
+      final colRemarks = _findCol(colMap, ['remarks / notes', 'remarks', 'notes', 'description'], 7);
 
       for (int r = 1; r < sheet.rows.length; r++) {
         final row = sheet.rows[r];
@@ -113,6 +117,7 @@ class ExpenseExcelImportService {
         await Future.delayed(Duration.zero);
 
         final dateStr = _getCellValue(row, colDate).trim();
+        final payeeStr = _getCellValue(row, colPayee).trim();
         final modeStr = _getCellValue(row, colMode).trim();
         final paidThrough = _getCellValue(row, colPaidThrough).trim();
         final refNo = _getCellValue(row, colRef).trim();
@@ -147,6 +152,7 @@ class ExpenseExcelImportService {
         final expense = Expense()
           ..uuid = const Uuid().v4()
           ..category = effectiveCategory
+          ..partyName = payeeStr.isNotEmpty ? payeeStr : null
           ..amount = rawAmount
           ..expenseDate = expDate
           ..paymentMode = effectiveMode

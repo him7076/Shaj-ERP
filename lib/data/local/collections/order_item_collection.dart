@@ -18,6 +18,10 @@ class OrderItem implements IsarModel {
   String? itemName;
   String? hsnCode;
 
+  int? orderId;
+  @Index()
+  String? orderUuid;
+
   double? quantity;
   double? freeQuantity;
   String? unit;

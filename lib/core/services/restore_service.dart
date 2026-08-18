@@ -1169,13 +1169,24 @@ class RestoreService {
   OrderItem _mapMapToOrderItem(Map<String, dynamic> map) {
     final entity = OrderItem()
       ..uuid = map['uuid']
+      ..orderId = map['orderId'] as int?
+      ..orderUuid = map['orderUuid'] as String?
       ..itemId = map['itemId'] as int?
       ..itemName = map['itemName']
       ..hsnCode = map['hsnCode']
       ..quantity = (map['quantity'] as num?)?.toDouble()
+      ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
       ..unit = map['unit']
       ..rate = (map['rate'] as num?)?.toDouble()
+      ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
+      ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+      ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+      ..gstPercent = (map['gstPercent'] as num?)?.toDouble()
+      ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
       ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
+      ..batchNumber = map['batchNumber'] as String?
+      ..expiryDate = map['expiryDate'] as String?
+      ..mfgDate = map['mfgDate'] as String?
       ..createdAt = DateTime.parse(map['createdAt'])
       ..updatedAt = DateTime.parse(map['updatedAt'])
       ..isDeleted = map['isDeleted'] as bool? ?? false

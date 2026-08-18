@@ -469,6 +469,8 @@ class BackupService {
       case 'order_items':
         final e = entity as OrderItem;
         return baseMap..addAll({
+          'orderId': e.orderId,
+          'orderUuid': e.orderUuid ?? e.order.value?.uuid,
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
@@ -482,7 +484,9 @@ class BackupService {
           'gstPercent': e.gstPercent,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
-          'orderUuid': e.order.value?.uuid,
+          'batchNumber': e.batchNumber,
+          'expiryDate': e.expiryDate,
+          'mfgDate': e.mfgDate,
           'itemUuid': e.item.value?.uuid,
         });
       case 'invoices':

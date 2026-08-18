@@ -52,18 +52,24 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           await fetched.party.load();
         } catch (_) {}
 
-        if (kIsWeb) {
-          items = await isar.orderItems.where().findAll();
-          items = items.where((i) => i.order.value?.id == fetched.id || i.order.value?.uuid == fetched.uuid).toList();
-        } else {
+        if (!kIsWeb) {
           try {
             await fetched.orderItems.load();
+            items = fetched.orderItems.where((i) => !i.isDeleted).toList();
           } catch (_) {}
-          items = fetched.orderItems.toList();
+        }
 
-          if (items.isEmpty) {
+        if (items.isEmpty) {
+          try {
+            items = await isar.orderItems
+                .filter()
+                .isDeletedEqualTo(false)
+                .and()
+                .group((q) => q.orderUuidEqualTo(fetched.uuid).or().order((o) => o.uuidEqualTo(fetched.uuid)))
+                .findAll();
+          } catch (_) {
             final allItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
-            items = allItems.where((i) => i.order.value?.id == fetched.id || i.order.value?.uuid == fetched.uuid).toList();
+            items = allItems.where((i) => i.orderUuid == fetched.uuid || i.order.value?.id == fetched.id || i.order.value?.uuid == fetched.uuid).toList();
           }
         }
 
@@ -544,6 +550,17 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 ),
               ],
             ),
+            if (order.createdBy != null && order.createdBy!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  const Icon(Icons.badge_outlined, size: 15, color: Color(0xFF1E88E5)),
+                  const SizedBox(width: 6),
+                  Text('Salesman / Rep: ', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(order.createdBy!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
             if (order.locationAddress != null && order.locationAddress!.isNotEmpty) ...[
               const SizedBox(height: 10),
               Row(

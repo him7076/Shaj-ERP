@@ -2312,6 +2312,8 @@ class SyncService {
         break;
       case 'OrderItem':
         entity = OrderItem()
+          ..orderId = data['orderId'] as int?
+          ..orderUuid = data['orderUuid'] as String?
           ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
@@ -2324,7 +2326,10 @@ class SyncService {
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
           ..gstPercent = (data['gstPercent'] as num?)?.toDouble()
           ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble()
+          ..batchNumber = data['batchNumber'] as String?
+          ..expiryDate = data['expiryDate'] as String?
+          ..mfgDate = data['mfgDate'] as String?;
         break;
       case 'Invoice':
         entity = Invoice()

@@ -103,13 +103,13 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
           item.isSynced = false;
           item.version = isNew ? 1 : item.version + 1;
 
-          if (!kIsWeb) {
-            item.order.value = order;
-          }
+          item.orderId = orderId;
+          item.orderUuid = order.uuid;
+          item.order.value = order;
           await isar.orderItems.put(item);
-          if (!kIsWeb) {
-            try { await item.order.save(); } catch (_) {}
-          }
+          try {
+            await item.order.save();
+          } catch (_) {}
 
           // Deduct stock if reservation setting is enabled
           final dbItem = kIsWeb
