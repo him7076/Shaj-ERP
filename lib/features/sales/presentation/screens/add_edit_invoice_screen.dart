@@ -25,7 +25,10 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 
 
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
@@ -363,10 +366,12 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             }
           }
 
-          ref.read(invoiceCartProvider.notifier).loadInvoice(
-            party: party,
+          final cartNotifier = ref.read(invoiceCartProvider.notifier);
+          cartNotifier.setParty(party);
+          cartNotifier.state = cartNotifier.state.copyWith(
             items: cartItems,
             isGstInclusive: false,
+            remarks: _remarksController.text,
           );
         }
         setState(() {});
@@ -572,7 +577,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         await isar.writeTxn(() async {
           await isar.orders.put(_sourceOrder!);
           final q = SyncQueue()
-            ..uuid = const Uuid().v4()
+            ..uuid = Uuid().v4()
             ..entityType = 'Order'
             ..entityId = _sourceOrder!.id
             ..entityUuid = _sourceOrder!.uuid

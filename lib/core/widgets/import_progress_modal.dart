@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 typedef ImportProgressCallback = void Function(int current, int total, String statusMessage);
@@ -24,19 +25,32 @@ class ImportProgressModal extends StatefulWidget {
     required this.progressStream,
   }) : super(key: key);
 
-  static void show({
+  static Future<T?> show<T>({
     required BuildContext context,
     required String title,
-    required Stream<ImportProgressState> progressStream,
-  }) {
+    required Future<T> Function(ImportProgressCallback onProgress) task,
+  }) async {
+    final controller = StreamController<ImportProgressState>();
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => ImportProgressModal(
         title: title,
-        progressStream: progressStream,
+        progressStream: controller.stream,
       ),
     );
+
+    try {
+      final res = await task((current, total, statusMessage) {
+        if (!controller.isClosed) {
+          controller.add(ImportProgressState(current: current, total: total, statusMessage: statusMessage));
+        }
+      });
+      return res;
+    } finally {
+      await controller.close();
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+    }
   }
 
   @override

@@ -151,7 +151,6 @@ class ExpenseExcelImportService {
           ..expenseDate = expDate
           ..paymentMode = effectiveMode
           ..remarks = combinedRemarks
-          ..createdBy = 'Excel Import'
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now()
           ..isDeleted = false
