@@ -15,7 +15,7 @@ extension GetUnitCollection on Isar {
 
 const UnitSchema = CollectionSchema(
   name: r'Unit',
-  id: 1936173518563207,
+  id: 5852079958688209740,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -27,33 +27,38 @@ const UnitSchema = CollectionSchema(
       name: r'isDeleted',
       type: IsarType.bool,
     ),
-    r'isSynced': PropertySchema(
+    r'isSecondary': PropertySchema(
       id: 2,
+      name: r'isSecondary',
+      type: IsarType.bool,
+    ),
+    r'isSynced': PropertySchema(
+      id: 3,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'shortName': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'shortName',
       type: IsarType.string,
     ),
     r'unitName': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'unitName',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'version',
       type: IsarType.long,
     )
@@ -65,7 +70,7 @@ const UnitSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -121,12 +126,13 @@ void _unitSerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeBool(offsets[1], object.isDeleted);
-  writer.writeBool(offsets[2], object.isSynced);
-  writer.writeString(offsets[3], object.shortName);
-  writer.writeString(offsets[4], object.unitName);
-  writer.writeDateTime(offsets[5], object.updatedAt);
-  writer.writeString(offsets[6], object.uuid);
-  writer.writeLong(offsets[7], object.version);
+  writer.writeBool(offsets[2], object.isSecondary);
+  writer.writeBool(offsets[3], object.isSynced);
+  writer.writeString(offsets[4], object.shortName);
+  writer.writeString(offsets[5], object.unitName);
+  writer.writeDateTime(offsets[6], object.updatedAt);
+  writer.writeString(offsets[7], object.uuid);
+  writer.writeLong(offsets[8], object.version);
 }
 
 Unit _unitDeserialize(
@@ -139,12 +145,13 @@ Unit _unitDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.id = id;
   object.isDeleted = reader.readBool(offsets[1]);
-  object.isSynced = reader.readBool(offsets[2]);
-  object.shortName = reader.readStringOrNull(offsets[3]);
-  object.unitName = reader.readStringOrNull(offsets[4]);
-  object.updatedAt = reader.readDateTime(offsets[5]);
-  object.uuid = reader.readStringOrNull(offsets[6]);
-  object.version = reader.readLong(offsets[7]);
+  object.isSecondary = reader.readBool(offsets[2]);
+  object.isSynced = reader.readBool(offsets[3]);
+  object.shortName = reader.readStringOrNull(offsets[4]);
+  object.unitName = reader.readStringOrNull(offsets[5]);
+  object.updatedAt = reader.readDateTime(offsets[6]);
+  object.uuid = reader.readStringOrNull(offsets[7]);
+  object.version = reader.readLong(offsets[8]);
   return object;
 }
 
@@ -162,14 +169,16 @@ P _unitDeserializeProp<P>(
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
       return (reader.readStringOrNull(offset)) as P;
     case 5:
-      return (reader.readDateTime(offset)) as P;
-    case 6:
       return (reader.readStringOrNull(offset)) as P;
+    case 6:
+      return (reader.readDateTime(offset)) as P;
     case 7:
+      return (reader.readStringOrNull(offset)) as P;
+    case 8:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -490,6 +499,16 @@ extension UnitQueryFilter on QueryBuilder<Unit, Unit, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isDeleted',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Unit, Unit, QAfterFilterCondition> isSecondaryEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isSecondary',
         value: value,
       ));
     });
@@ -1074,6 +1093,18 @@ extension UnitQuerySortBy on QueryBuilder<Unit, Unit, QSortBy> {
     });
   }
 
+  QueryBuilder<Unit, Unit, QAfterSortBy> sortByIsSecondary() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSecondary', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Unit, Unit, QAfterSortBy> sortByIsSecondaryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSecondary', Sort.desc);
+    });
+  }
+
   QueryBuilder<Unit, Unit, QAfterSortBy> sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -1184,6 +1215,18 @@ extension UnitQuerySortThenBy on QueryBuilder<Unit, Unit, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Unit, Unit, QAfterSortBy> thenByIsSecondary() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSecondary', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Unit, Unit, QAfterSortBy> thenByIsSecondaryDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isSecondary', Sort.desc);
+    });
+  }
+
   QueryBuilder<Unit, Unit, QAfterSortBy> thenByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -1270,6 +1313,12 @@ extension UnitQueryWhereDistinct on QueryBuilder<Unit, Unit, QDistinct> {
     });
   }
 
+  QueryBuilder<Unit, Unit, QDistinct> distinctByIsSecondary() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isSecondary');
+    });
+  }
+
   QueryBuilder<Unit, Unit, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -1329,6 +1378,12 @@ extension UnitQueryProperty on QueryBuilder<Unit, Unit, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Unit, bool, QQueryOperations> isSecondaryProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isSecondary');
+    });
+  }
+
   QueryBuilder<Unit, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
@@ -1365,13 +1420,3 @@ extension UnitQueryProperty on QueryBuilder<Unit, Unit, QQueryProperty> {
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

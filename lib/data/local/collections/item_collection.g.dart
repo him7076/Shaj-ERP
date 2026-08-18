@@ -15,7 +15,7 @@ extension GetItemCollection on Isar {
 
 const ItemSchema = CollectionSchema(
   name: r'Item',
-  id: 4400046225713158,
+  id: 7900997316587104717,
   properties: {
     r'barcode': PropertySchema(
       id: 0,
@@ -47,143 +47,158 @@ const ItemSchema = CollectionSchema(
       name: r'currentStock',
       type: IsarType.double,
     ),
-    r'description': PropertySchema(
+    r'defaultBatchNumber': PropertySchema(
       id: 6,
+      name: r'defaultBatchNumber',
+      type: IsarType.string,
+    ),
+    r'description': PropertySchema(
+      id: 7,
       name: r'description',
       type: IsarType.string,
     ),
     r'dimensions': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'dimensions',
       type: IsarType.string,
     ),
+    r'enableBatchTracking': PropertySchema(
+      id: 9,
+      name: r'enableBatchTracking',
+      type: IsarType.bool,
+    ),
     r'firebaseImageUrls': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'firebaseImageUrls',
       type: IsarType.stringList,
     ),
     r'gstApplicable': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'gstApplicable',
       type: IsarType.bool,
     ),
     r'gstRate': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'gstRate',
       type: IsarType.double,
     ),
     r'hsnCode': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'hsnCode',
       type: IsarType.string,
     ),
     r'imagePaths': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'imagePaths',
       type: IsarType.stringList,
     ),
     r'isDeleted': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'itemCode': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'itemCode',
       type: IsarType.string,
     ),
     r'itemName': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'itemName',
       type: IsarType.string,
     ),
     r'minimumSellingPrice': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'minimumSellingPrice',
       type: IsarType.double,
     ),
     r'minimumStock': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'minimumStock',
       type: IsarType.double,
     ),
     r'mrp': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'mrp',
       type: IsarType.double,
     ),
     r'notes': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'notes',
       type: IsarType.string,
     ),
     r'openingStock': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'openingStock',
       type: IsarType.double,
     ),
+    r'primaryUnitName': PropertySchema(
+      id: 24,
+      name: r'primaryUnitName',
+      type: IsarType.string,
+    ),
     r'reorderLevel': PropertySchema(
-      id: 22,
+      id: 25,
       name: r'reorderLevel',
       type: IsarType.double,
     ),
     r'secondaryUnit': PropertySchema(
-      id: 23,
+      id: 26,
       name: r'secondaryUnit',
       type: IsarType.string,
     ),
     r'sellRate': PropertySchema(
-      id: 24,
+      id: 27,
       name: r'sellRate',
       type: IsarType.double,
     ),
     r'shortName': PropertySchema(
-      id: 25,
+      id: 28,
       name: r'shortName',
       type: IsarType.string,
     ),
     r'sku': PropertySchema(
-      id: 26,
+      id: 29,
       name: r'sku',
       type: IsarType.string,
     ),
     r'skuCode': PropertySchema(
-      id: 27,
+      id: 30,
       name: r'skuCode',
       type: IsarType.string,
     ),
     r'thumbnailImage': PropertySchema(
-      id: 28,
+      id: 31,
       name: r'thumbnailImage',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 29,
+      id: 32,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 30,
+      id: 33,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 31,
+      id: 34,
       name: r'version',
       type: IsarType.long,
     ),
     r'weight': PropertySchema(
-      id: 32,
+      id: 35,
       name: r'weight',
       type: IsarType.double,
     ),
     r'wholesaleRate': PropertySchema(
-      id: 33,
+      id: 36,
       name: r'wholesaleRate',
       type: IsarType.double,
     )
@@ -195,7 +210,7 @@ const ItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -208,7 +223,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: 8930733254646107,
+      id: -1692757059073837553,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -221,7 +236,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemName': IndexSchema(
-      id: 2219846343528,
+      id: 2219846343528216480,
       name: r'itemName',
       unique: false,
       replace: false,
@@ -234,7 +249,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: 4764465767181275,
+      id: -9149027471911101060,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -247,7 +262,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'barcode': IndexSchema(
-      id: 1156800733621,
+      id: 1156800733621869998,
       name: r'barcode',
       unique: false,
       replace: false,
@@ -260,7 +275,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: 732383677009178,
+      id: -3348042439688860591,
       name: r'sku',
       unique: false,
       replace: false,
@@ -273,7 +288,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'skuCode': IndexSchema(
-      id: 2008583941080,
+      id: 2008583941080558886,
       name: r'skuCode',
       unique: false,
       replace: false,
@@ -288,19 +303,19 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: 5321634955284113,
+      id: -1059489203734757626,
       name: r'category',
       target: r'Category',
       single: true,
     ),
     r'unit': LinkSchema(
-      id: 7514228656935,
+      id: 7514228656935813173,
       name: r'unit',
       target: r'Unit',
       single: true,
     ),
     r'brand': LinkSchema(
-      id: 2993955207832,
+      id: 2993955207832475027,
       name: r'brand',
       target: r'Brand',
       single: true,
@@ -321,6 +336,12 @@ int _itemEstimateSize(
   var bytesCount = offsets.last;
   {
     final value = object.barcode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.defaultBatchNumber;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -386,6 +407,12 @@ int _itemEstimateSize(
     }
   }
   {
+    final value = object.primaryUnitName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.secondaryUnit;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -436,34 +463,37 @@ void _itemSerialize(
   writer.writeDouble(offsets[3], object.conversionFactor);
   writer.writeDateTime(offsets[4], object.createdAt);
   writer.writeDouble(offsets[5], object.currentStock);
-  writer.writeString(offsets[6], object.description);
-  writer.writeString(offsets[7], object.dimensions);
-  writer.writeStringList(offsets[8], object.firebaseImageUrls);
-  writer.writeBool(offsets[9], object.gstApplicable);
-  writer.writeDouble(offsets[10], object.gstRate);
-  writer.writeString(offsets[11], object.hsnCode);
-  writer.writeStringList(offsets[12], object.imagePaths);
-  writer.writeBool(offsets[13], object.isDeleted);
-  writer.writeBool(offsets[14], object.isSynced);
-  writer.writeString(offsets[15], object.itemCode);
-  writer.writeString(offsets[16], object.itemName);
-  writer.writeDouble(offsets[17], object.minimumSellingPrice);
-  writer.writeDouble(offsets[18], object.minimumStock);
-  writer.writeDouble(offsets[19], object.mrp);
-  writer.writeString(offsets[20], object.notes);
-  writer.writeDouble(offsets[21], object.openingStock);
-  writer.writeDouble(offsets[22], object.reorderLevel);
-  writer.writeString(offsets[23], object.secondaryUnit);
-  writer.writeDouble(offsets[24], object.sellRate);
-  writer.writeString(offsets[25], object.shortName);
-  writer.writeString(offsets[26], object.sku);
-  writer.writeString(offsets[27], object.skuCode);
-  writer.writeString(offsets[28], object.thumbnailImage);
-  writer.writeDateTime(offsets[29], object.updatedAt);
-  writer.writeString(offsets[30], object.uuid);
-  writer.writeLong(offsets[31], object.version);
-  writer.writeDouble(offsets[32], object.weight);
-  writer.writeDouble(offsets[33], object.wholesaleRate);
+  writer.writeString(offsets[6], object.defaultBatchNumber);
+  writer.writeString(offsets[7], object.description);
+  writer.writeString(offsets[8], object.dimensions);
+  writer.writeBool(offsets[9], object.enableBatchTracking);
+  writer.writeStringList(offsets[10], object.firebaseImageUrls);
+  writer.writeBool(offsets[11], object.gstApplicable);
+  writer.writeDouble(offsets[12], object.gstRate);
+  writer.writeString(offsets[13], object.hsnCode);
+  writer.writeStringList(offsets[14], object.imagePaths);
+  writer.writeBool(offsets[15], object.isDeleted);
+  writer.writeBool(offsets[16], object.isSynced);
+  writer.writeString(offsets[17], object.itemCode);
+  writer.writeString(offsets[18], object.itemName);
+  writer.writeDouble(offsets[19], object.minimumSellingPrice);
+  writer.writeDouble(offsets[20], object.minimumStock);
+  writer.writeDouble(offsets[21], object.mrp);
+  writer.writeString(offsets[22], object.notes);
+  writer.writeDouble(offsets[23], object.openingStock);
+  writer.writeString(offsets[24], object.primaryUnitName);
+  writer.writeDouble(offsets[25], object.reorderLevel);
+  writer.writeString(offsets[26], object.secondaryUnit);
+  writer.writeDouble(offsets[27], object.sellRate);
+  writer.writeString(offsets[28], object.shortName);
+  writer.writeString(offsets[29], object.sku);
+  writer.writeString(offsets[30], object.skuCode);
+  writer.writeString(offsets[31], object.thumbnailImage);
+  writer.writeDateTime(offsets[32], object.updatedAt);
+  writer.writeString(offsets[33], object.uuid);
+  writer.writeLong(offsets[34], object.version);
+  writer.writeDouble(offsets[35], object.weight);
+  writer.writeDouble(offsets[36], object.wholesaleRate);
 }
 
 Item _itemDeserialize(
@@ -479,35 +509,38 @@ Item _itemDeserialize(
   object.conversionFactor = reader.readDoubleOrNull(offsets[3]);
   object.createdAt = reader.readDateTime(offsets[4]);
   object.currentStock = reader.readDoubleOrNull(offsets[5]);
-  object.description = reader.readStringOrNull(offsets[6]);
-  object.dimensions = reader.readStringOrNull(offsets[7]);
-  object.firebaseImageUrls = reader.readStringList(offsets[8]);
-  object.gstApplicable = reader.readBool(offsets[9]);
-  object.gstRate = reader.readDoubleOrNull(offsets[10]);
-  object.hsnCode = reader.readStringOrNull(offsets[11]);
+  object.defaultBatchNumber = reader.readStringOrNull(offsets[6]);
+  object.description = reader.readStringOrNull(offsets[7]);
+  object.dimensions = reader.readStringOrNull(offsets[8]);
+  object.enableBatchTracking = reader.readBool(offsets[9]);
+  object.firebaseImageUrls = reader.readStringList(offsets[10]);
+  object.gstApplicable = reader.readBool(offsets[11]);
+  object.gstRate = reader.readDoubleOrNull(offsets[12]);
+  object.hsnCode = reader.readStringOrNull(offsets[13]);
   object.id = id;
-  object.imagePaths = reader.readStringList(offsets[12]);
-  object.isDeleted = reader.readBool(offsets[13]);
-  object.isSynced = reader.readBool(offsets[14]);
-  object.itemCode = reader.readStringOrNull(offsets[15]);
-  object.itemName = reader.readStringOrNull(offsets[16]);
-  object.minimumSellingPrice = reader.readDoubleOrNull(offsets[17]);
-  object.minimumStock = reader.readDoubleOrNull(offsets[18]);
-  object.mrp = reader.readDoubleOrNull(offsets[19]);
-  object.notes = reader.readStringOrNull(offsets[20]);
-  object.openingStock = reader.readDoubleOrNull(offsets[21]);
-  object.reorderLevel = reader.readDoubleOrNull(offsets[22]);
-  object.secondaryUnit = reader.readStringOrNull(offsets[23]);
-  object.sellRate = reader.readDoubleOrNull(offsets[24]);
-  object.shortName = reader.readStringOrNull(offsets[25]);
-  object.sku = reader.readStringOrNull(offsets[26]);
-  object.skuCode = reader.readStringOrNull(offsets[27]);
-  object.thumbnailImage = reader.readStringOrNull(offsets[28]);
-  object.updatedAt = reader.readDateTime(offsets[29]);
-  object.uuid = reader.readStringOrNull(offsets[30]);
-  object.version = reader.readLong(offsets[31]);
-  object.weight = reader.readDoubleOrNull(offsets[32]);
-  object.wholesaleRate = reader.readDoubleOrNull(offsets[33]);
+  object.imagePaths = reader.readStringList(offsets[14]);
+  object.isDeleted = reader.readBool(offsets[15]);
+  object.isSynced = reader.readBool(offsets[16]);
+  object.itemCode = reader.readStringOrNull(offsets[17]);
+  object.itemName = reader.readStringOrNull(offsets[18]);
+  object.minimumSellingPrice = reader.readDoubleOrNull(offsets[19]);
+  object.minimumStock = reader.readDoubleOrNull(offsets[20]);
+  object.mrp = reader.readDoubleOrNull(offsets[21]);
+  object.notes = reader.readStringOrNull(offsets[22]);
+  object.openingStock = reader.readDoubleOrNull(offsets[23]);
+  object.primaryUnitName = reader.readStringOrNull(offsets[24]);
+  object.reorderLevel = reader.readDoubleOrNull(offsets[25]);
+  object.secondaryUnit = reader.readStringOrNull(offsets[26]);
+  object.sellRate = reader.readDoubleOrNull(offsets[27]);
+  object.shortName = reader.readStringOrNull(offsets[28]);
+  object.sku = reader.readStringOrNull(offsets[29]);
+  object.skuCode = reader.readStringOrNull(offsets[30]);
+  object.thumbnailImage = reader.readStringOrNull(offsets[31]);
+  object.updatedAt = reader.readDateTime(offsets[32]);
+  object.uuid = reader.readStringOrNull(offsets[33]);
+  object.version = reader.readLong(offsets[34]);
+  object.weight = reader.readDoubleOrNull(offsets[35]);
+  object.wholesaleRate = reader.readDoubleOrNull(offsets[36]);
   return object;
 }
 
@@ -535,56 +568,62 @@ P _itemDeserializeProp<P>(
     case 7:
       return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readStringList(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 11:
-      return (reader.readStringOrNull(offset)) as P;
-    case 12:
       return (reader.readStringList(offset)) as P;
+    case 11:
+      return (reader.readBool(offset)) as P;
+    case 12:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 13:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringList(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 17:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 18:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
       return (reader.readDoubleOrNull(offset)) as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 21:
       return (reader.readDoubleOrNull(offset)) as P;
     case 22:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (reader.readStringOrNull(offset)) as P;
-    case 24:
       return (reader.readDoubleOrNull(offset)) as P;
-    case 25:
+    case 24:
       return (reader.readStringOrNull(offset)) as P;
+    case 25:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 26:
       return (reader.readStringOrNull(offset)) as P;
     case 27:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 28:
       return (reader.readStringOrNull(offset)) as P;
     case 29:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 30:
       return (reader.readStringOrNull(offset)) as P;
     case 31:
-      return (reader.readLong(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 32:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 33:
+      return (reader.readStringOrNull(offset)) as P;
+    case 34:
+      return (reader.readLong(offset)) as P;
+    case 35:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 36:
       return (reader.readDoubleOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1745,6 +1784,154 @@ extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'defaultBatchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+      defaultBatchNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'defaultBatchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'defaultBatchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'defaultBatchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'defaultBatchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'defaultBatchNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'defaultBatchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'defaultBatchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'defaultBatchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'defaultBatchNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> defaultBatchNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'defaultBatchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition>
+      defaultBatchNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'defaultBatchNumber',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Item, Item, QAfterFilterCondition> descriptionIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2033,6 +2220,16 @@ extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'dimensions',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> enableBatchTrackingEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'enableBatchTracking',
+        value: value,
       ));
     });
   }
@@ -3560,6 +3757,152 @@ extension ItemQueryFilter on QueryBuilder<Item, Item, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'primaryUnitName',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'primaryUnitName',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'primaryUnitName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'primaryUnitName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'primaryUnitName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'primaryUnitName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'primaryUnitName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'primaryUnitName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'primaryUnitName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'primaryUnitName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'primaryUnitName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterFilterCondition> primaryUnitNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'primaryUnitName',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Item, Item, QAfterFilterCondition> reorderLevelIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -4962,6 +5305,18 @@ extension ItemQuerySortBy on QueryBuilder<Item, Item, QSortBy> {
     });
   }
 
+  QueryBuilder<Item, Item, QAfterSortBy> sortByDefaultBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultBatchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByDefaultBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultBatchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<Item, Item, QAfterSortBy> sortByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.asc);
@@ -4983,6 +5338,18 @@ extension ItemQuerySortBy on QueryBuilder<Item, Item, QSortBy> {
   QueryBuilder<Item, Item, QAfterSortBy> sortByDimensionsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dimensions', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByEnableBatchTracking() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'enableBatchTracking', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByEnableBatchTrackingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'enableBatchTracking', Sort.desc);
     });
   }
 
@@ -5127,6 +5494,18 @@ extension ItemQuerySortBy on QueryBuilder<Item, Item, QSortBy> {
   QueryBuilder<Item, Item, QAfterSortBy> sortByOpeningStockDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openingStock', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByPrimaryUnitName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'primaryUnitName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> sortByPrimaryUnitNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'primaryUnitName', Sort.desc);
     });
   }
 
@@ -5348,6 +5727,18 @@ extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Item, Item, QAfterSortBy> thenByDefaultBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultBatchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByDefaultBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'defaultBatchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<Item, Item, QAfterSortBy> thenByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.asc);
@@ -5369,6 +5760,18 @@ extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
   QueryBuilder<Item, Item, QAfterSortBy> thenByDimensionsDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dimensions', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByEnableBatchTracking() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'enableBatchTracking', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByEnableBatchTrackingDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'enableBatchTracking', Sort.desc);
     });
   }
 
@@ -5525,6 +5928,18 @@ extension ItemQuerySortThenBy on QueryBuilder<Item, Item, QSortThenBy> {
   QueryBuilder<Item, Item, QAfterSortBy> thenByOpeningStockDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'openingStock', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByPrimaryUnitName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'primaryUnitName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Item, Item, QAfterSortBy> thenByPrimaryUnitNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'primaryUnitName', Sort.desc);
     });
   }
 
@@ -5711,6 +6126,14 @@ extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
     });
   }
 
+  QueryBuilder<Item, Item, QDistinct> distinctByDefaultBatchNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'defaultBatchNumber',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Item, Item, QDistinct> distinctByDescription(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -5722,6 +6145,12 @@ extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'dimensions', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Item, Item, QDistinct> distinctByEnableBatchTracking() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'enableBatchTracking');
     });
   }
 
@@ -5810,6 +6239,14 @@ extension ItemQueryWhereDistinct on QueryBuilder<Item, Item, QDistinct> {
   QueryBuilder<Item, Item, QDistinct> distinctByOpeningStock() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'openingStock');
+    });
+  }
+
+  QueryBuilder<Item, Item, QDistinct> distinctByPrimaryUnitName(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'primaryUnitName',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -5937,6 +6374,12 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Item, String?, QQueryOperations> defaultBatchNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'defaultBatchNumber');
+    });
+  }
+
   QueryBuilder<Item, String?, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
@@ -5946,6 +6389,12 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
   QueryBuilder<Item, String?, QQueryOperations> dimensionsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dimensions');
+    });
+  }
+
+  QueryBuilder<Item, bool, QQueryOperations> enableBatchTrackingProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'enableBatchTracking');
     });
   }
 
@@ -6034,6 +6483,12 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Item, String?, QQueryOperations> primaryUnitNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'primaryUnitName');
+    });
+  }
+
   QueryBuilder<Item, double?, QQueryOperations> reorderLevelProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reorderLevel');
@@ -6106,13 +6561,3 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

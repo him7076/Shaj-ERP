@@ -15,7 +15,7 @@ extension GetTransactionCollection on Isar {
 
 const TransactionSchema = CollectionSchema(
   name: r'Transaction',
-  id: 4917862190673987,
+  id: 5320225499417954855,
   properties: {
     r'amount': PropertySchema(
       id: 0,
@@ -62,53 +62,58 @@ const TransactionSchema = CollectionSchema(
       name: r'paymentMode',
       type: IsarType.string,
     ),
-    r'referenceNumber': PropertySchema(
+    r'paymentStatus': PropertySchema(
       id: 9,
+      name: r'paymentStatus',
+      type: IsarType.string,
+    ),
+    r'referenceNumber': PropertySchema(
+      id: 10,
       name: r'referenceNumber',
       type: IsarType.string,
     ),
     r'remarks': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'remarks',
       type: IsarType.string,
     ),
     r'targetPartyName': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'targetPartyName',
       type: IsarType.string,
     ),
     r'targetPartyUuid': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'targetPartyUuid',
       type: IsarType.string,
     ),
     r'transactionDate': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'transactionDate',
       type: IsarType.dateTime,
     ),
     r'transactionNumber': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'transactionNumber',
       type: IsarType.string,
     ),
     r'transactionType': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'transactionType',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'version',
       type: IsarType.long,
     )
@@ -120,7 +125,7 @@ const TransactionSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -133,7 +138,7 @@ const TransactionSchema = CollectionSchema(
       ],
     ),
     r'transactionNumber': IndexSchema(
-      id: 7174131964986,
+      id: 7174131964986850033,
       name: r'transactionNumber',
       unique: true,
       replace: false,
@@ -146,7 +151,7 @@ const TransactionSchema = CollectionSchema(
       ],
     ),
     r'transactionType': IndexSchema(
-      id: 4016403751383419,
+      id: -8267383906769644232,
       name: r'transactionType',
       unique: false,
       replace: false,
@@ -161,7 +166,7 @@ const TransactionSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 4965014976422647,
+      id: 6188862237908358961,
       name: r'party',
       target: r'Party',
       single: true,
@@ -206,6 +211,12 @@ int _transactionEstimateSize(
   }
   {
     final value = object.paymentMode;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.paymentStatus;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -270,16 +281,17 @@ void _transactionSerialize(
   writer.writeString(offsets[6], object.partyName);
   writer.writeString(offsets[7], object.partyUuid);
   writer.writeString(offsets[8], object.paymentMode);
-  writer.writeString(offsets[9], object.referenceNumber);
-  writer.writeString(offsets[10], object.remarks);
-  writer.writeString(offsets[11], object.targetPartyName);
-  writer.writeString(offsets[12], object.targetPartyUuid);
-  writer.writeDateTime(offsets[13], object.transactionDate);
-  writer.writeString(offsets[14], object.transactionNumber);
-  writer.writeString(offsets[15], object.transactionType);
-  writer.writeDateTime(offsets[16], object.updatedAt);
-  writer.writeString(offsets[17], object.uuid);
-  writer.writeLong(offsets[18], object.version);
+  writer.writeString(offsets[9], object.paymentStatus);
+  writer.writeString(offsets[10], object.referenceNumber);
+  writer.writeString(offsets[11], object.remarks);
+  writer.writeString(offsets[12], object.targetPartyName);
+  writer.writeString(offsets[13], object.targetPartyUuid);
+  writer.writeDateTime(offsets[14], object.transactionDate);
+  writer.writeString(offsets[15], object.transactionNumber);
+  writer.writeString(offsets[16], object.transactionType);
+  writer.writeDateTime(offsets[17], object.updatedAt);
+  writer.writeString(offsets[18], object.uuid);
+  writer.writeLong(offsets[19], object.version);
 }
 
 Transaction _transactionDeserialize(
@@ -299,16 +311,17 @@ Transaction _transactionDeserialize(
   object.partyName = reader.readStringOrNull(offsets[6]);
   object.partyUuid = reader.readStringOrNull(offsets[7]);
   object.paymentMode = reader.readStringOrNull(offsets[8]);
-  object.referenceNumber = reader.readStringOrNull(offsets[9]);
-  object.remarks = reader.readStringOrNull(offsets[10]);
-  object.targetPartyName = reader.readStringOrNull(offsets[11]);
-  object.targetPartyUuid = reader.readStringOrNull(offsets[12]);
-  object.transactionDate = reader.readDateTimeOrNull(offsets[13]);
-  object.transactionNumber = reader.readStringOrNull(offsets[14]);
-  object.transactionType = reader.readStringOrNull(offsets[15]);
-  object.updatedAt = reader.readDateTime(offsets[16]);
-  object.uuid = reader.readStringOrNull(offsets[17]);
-  object.version = reader.readLong(offsets[18]);
+  object.paymentStatus = reader.readStringOrNull(offsets[9]);
+  object.referenceNumber = reader.readStringOrNull(offsets[10]);
+  object.remarks = reader.readStringOrNull(offsets[11]);
+  object.targetPartyName = reader.readStringOrNull(offsets[12]);
+  object.targetPartyUuid = reader.readStringOrNull(offsets[13]);
+  object.transactionDate = reader.readDateTimeOrNull(offsets[14]);
+  object.transactionNumber = reader.readStringOrNull(offsets[15]);
+  object.transactionType = reader.readStringOrNull(offsets[16]);
+  object.updatedAt = reader.readDateTime(offsets[17]);
+  object.uuid = reader.readStringOrNull(offsets[18]);
+  object.version = reader.readLong(offsets[19]);
   return object;
 }
 
@@ -346,16 +359,18 @@ P _transactionDeserializeProp<P>(
     case 12:
       return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readDateTimeOrNull(offset)) as P;
-    case 14:
       return (reader.readStringOrNull(offset)) as P;
+    case 14:
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 15:
       return (reader.readStringOrNull(offset)) as P;
     case 16:
-      return (reader.readDateTime(offset)) as P;
-    case 17:
       return (reader.readStringOrNull(offset)) as P;
+    case 17:
+      return (reader.readDateTime(offset)) as P;
     case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1741,6 +1756,160 @@ extension TransactionQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'paymentMode',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'paymentStatus',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'paymentStatus',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'paymentStatus',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'paymentStatus',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'paymentStatus',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paymentStatus',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterFilterCondition>
+      paymentStatusIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'paymentStatus',
         value: '',
       ));
     });
@@ -3133,6 +3302,19 @@ extension TransactionQuerySortBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByPaymentStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy>
+      sortByPaymentStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> sortByReferenceNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'referenceNumber', Sort.asc);
@@ -3386,6 +3568,19 @@ extension TransactionQuerySortThenBy
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QAfterSortBy> thenByPaymentStatus() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Transaction, Transaction, QAfterSortBy>
+      thenByPaymentStatusDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentStatus', Sort.desc);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QAfterSortBy> thenByReferenceNumber() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'referenceNumber', Sort.asc);
@@ -3577,6 +3772,14 @@ extension TransactionQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Transaction, Transaction, QDistinct> distinctByPaymentStatus(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'paymentStatus',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Transaction, Transaction, QDistinct> distinctByReferenceNumber(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3715,6 +3918,12 @@ extension TransactionQueryProperty
     });
   }
 
+  QueryBuilder<Transaction, String?, QQueryOperations> paymentStatusProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'paymentStatus');
+    });
+  }
+
   QueryBuilder<Transaction, String?, QQueryOperations>
       referenceNumberProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3781,13 +3990,3 @@ extension TransactionQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

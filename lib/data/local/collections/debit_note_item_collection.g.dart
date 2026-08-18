@@ -15,95 +15,115 @@ extension GetDebitNoteItemCollection on Isar {
 
 const DebitNoteItemSchema = CollectionSchema(
   name: r'DebitNoteItem',
-  id: 7105980264366310,
+  id: -1541205412217221491,
   properties: {
-    r'createdAt': PropertySchema(
+    r'batchNumber': PropertySchema(
       id: 0,
+      name: r'batchNumber',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'discount': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'discount',
       type: IsarType.double,
     ),
+    r'expiryDate': PropertySchema(
+      id: 3,
+      name: r'expiryDate',
+      type: IsarType.string,
+    ),
     r'freeQuantity': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'freeQuantity',
       type: IsarType.double,
     ),
     r'gstAmount': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'gstAmount',
       type: IsarType.double,
     ),
     r'gstRate': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'gstRate',
       type: IsarType.double,
     ),
     r'hsnCode': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'hsnCode',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'itemId': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'itemId',
       type: IsarType.long,
     ),
     r'itemName': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'itemName',
       type: IsarType.string,
     ),
+    r'mfgDate': PropertySchema(
+      id: 12,
+      name: r'mfgDate',
+      type: IsarType.string,
+    ),
     r'parentDebitNoteId': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'parentDebitNoteId',
       type: IsarType.long,
     ),
     r'quantity': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'rate': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'rate',
       type: IsarType.double,
     ),
     r'taxableAmount': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'totalAmount',
       type: IsarType.double,
     ),
+    r'unit': PropertySchema(
+      id: 18,
+      name: r'unit',
+      type: IsarType.string,
+    ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 19,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 16,
+      id: 20,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 17,
+      id: 21,
       name: r'version',
       type: IsarType.long,
     )
@@ -115,7 +135,7 @@ const DebitNoteItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -130,13 +150,13 @@ const DebitNoteItemSchema = CollectionSchema(
   },
   links: {
     r'debitNote': LinkSchema(
-      id: 136084769660186,
+      id: -136084769660186207,
       name: r'debitNote',
       target: r'DebitNote',
       single: true,
     ),
     r'item': LinkSchema(
-      id: 458245476381734,
+      id: 2455680485937155413,
       name: r'item',
       target: r'Item',
       single: true,
@@ -156,6 +176,18 @@ int _debitNoteItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.batchNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.expiryDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.hsnCode;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -163,6 +195,18 @@ int _debitNoteItemEstimateSize(
   }
   {
     final value = object.itemName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.mfgDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.unit;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -182,24 +226,28 @@ void _debitNoteItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeDouble(offsets[1], object.discount);
-  writer.writeDouble(offsets[2], object.freeQuantity);
-  writer.writeDouble(offsets[3], object.gstAmount);
-  writer.writeDouble(offsets[4], object.gstRate);
-  writer.writeString(offsets[5], object.hsnCode);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeBool(offsets[7], object.isSynced);
-  writer.writeLong(offsets[8], object.itemId);
-  writer.writeString(offsets[9], object.itemName);
-  writer.writeLong(offsets[10], object.parentDebitNoteId);
-  writer.writeDouble(offsets[11], object.quantity);
-  writer.writeDouble(offsets[12], object.rate);
-  writer.writeDouble(offsets[13], object.taxableAmount);
-  writer.writeDouble(offsets[14], object.totalAmount);
-  writer.writeDateTime(offsets[15], object.updatedAt);
-  writer.writeString(offsets[16], object.uuid);
-  writer.writeLong(offsets[17], object.version);
+  writer.writeString(offsets[0], object.batchNumber);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeDouble(offsets[2], object.discount);
+  writer.writeString(offsets[3], object.expiryDate);
+  writer.writeDouble(offsets[4], object.freeQuantity);
+  writer.writeDouble(offsets[5], object.gstAmount);
+  writer.writeDouble(offsets[6], object.gstRate);
+  writer.writeString(offsets[7], object.hsnCode);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isSynced);
+  writer.writeLong(offsets[10], object.itemId);
+  writer.writeString(offsets[11], object.itemName);
+  writer.writeString(offsets[12], object.mfgDate);
+  writer.writeLong(offsets[13], object.parentDebitNoteId);
+  writer.writeDouble(offsets[14], object.quantity);
+  writer.writeDouble(offsets[15], object.rate);
+  writer.writeDouble(offsets[16], object.taxableAmount);
+  writer.writeDouble(offsets[17], object.totalAmount);
+  writer.writeString(offsets[18], object.unit);
+  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeString(offsets[20], object.uuid);
+  writer.writeLong(offsets[21], object.version);
 }
 
 DebitNoteItem _debitNoteItemDeserialize(
@@ -209,25 +257,29 @@ DebitNoteItem _debitNoteItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = DebitNoteItem();
-  object.createdAt = reader.readDateTime(offsets[0]);
-  object.discount = reader.readDoubleOrNull(offsets[1]);
-  object.freeQuantity = reader.readDoubleOrNull(offsets[2]);
-  object.gstAmount = reader.readDoubleOrNull(offsets[3]);
-  object.gstRate = reader.readDoubleOrNull(offsets[4]);
-  object.hsnCode = reader.readStringOrNull(offsets[5]);
+  object.batchNumber = reader.readStringOrNull(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.discount = reader.readDoubleOrNull(offsets[2]);
+  object.expiryDate = reader.readStringOrNull(offsets[3]);
+  object.freeQuantity = reader.readDoubleOrNull(offsets[4]);
+  object.gstAmount = reader.readDoubleOrNull(offsets[5]);
+  object.gstRate = reader.readDoubleOrNull(offsets[6]);
+  object.hsnCode = reader.readStringOrNull(offsets[7]);
   object.id = id;
-  object.isDeleted = reader.readBool(offsets[6]);
-  object.isSynced = reader.readBool(offsets[7]);
-  object.itemId = reader.readLongOrNull(offsets[8]);
-  object.itemName = reader.readStringOrNull(offsets[9]);
-  object.parentDebitNoteId = reader.readLongOrNull(offsets[10]);
-  object.quantity = reader.readDoubleOrNull(offsets[11]);
-  object.rate = reader.readDoubleOrNull(offsets[12]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[13]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
-  object.uuid = reader.readStringOrNull(offsets[16]);
-  object.version = reader.readLong(offsets[17]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isSynced = reader.readBool(offsets[9]);
+  object.itemId = reader.readLongOrNull(offsets[10]);
+  object.itemName = reader.readStringOrNull(offsets[11]);
+  object.mfgDate = reader.readStringOrNull(offsets[12]);
+  object.parentDebitNoteId = reader.readLongOrNull(offsets[13]);
+  object.quantity = reader.readDoubleOrNull(offsets[14]);
+  object.rate = reader.readDoubleOrNull(offsets[15]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[16]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[17]);
+  object.unit = reader.readStringOrNull(offsets[18]);
+  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.uuid = reader.readStringOrNull(offsets[20]);
+  object.version = reader.readLong(offsets[21]);
   return object;
 }
 
@@ -239,40 +291,48 @@ P _debitNoteItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readDoubleOrNull(offset)) as P;
     case 3:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readDoubleOrNull(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
-      return (reader.readLongOrNull(offset)) as P;
-    case 9:
       return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
     case 10:
       return (reader.readLongOrNull(offset)) as P;
     case 11:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 14:
       return (reader.readDoubleOrNull(offset)) as P;
     case 15:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 17:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
+      return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -500,6 +560,160 @@ extension DebitNoteItemQueryWhere
 extension DebitNoteItemQueryFilter
     on QueryBuilder<DebitNoteItem, DebitNoteItem, QFilterCondition> {
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'batchNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'batchNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      batchNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
       createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -635,6 +849,160 @@ extension DebitNoteItemQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expiryDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'expiryDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      expiryDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'expiryDate',
+        value: '',
       ));
     });
   }
@@ -1348,6 +1716,160 @@ extension DebitNoteItemQueryFilter
   }
 
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mfgDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mfgDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      mfgDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
       parentDebitNoteIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1756,6 +2278,159 @@ extension DebitNoteItemQueryFilter
   }
 
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'unit',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'unit',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition> unitEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition> unitBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'unit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition> unitMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'unit',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'unit',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
+      unitIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'unit',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterFilterCondition>
       updatedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2057,6 +2732,19 @@ extension DebitNoteItemQueryLinks
 
 extension DebitNoteItemQuerySortBy
     on QueryBuilder<DebitNoteItem, DebitNoteItem, QSortBy> {
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy>
+      sortByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2080,6 +2768,19 @@ extension DebitNoteItemQuerySortBy
       sortByDiscountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy>
+      sortByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2185,6 +2886,18 @@ extension DebitNoteItemQuerySortBy
     });
   }
 
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy>
       sortByParentDebitNoteId() {
     return QueryBuilder.apply(this, (query) {
@@ -2251,6 +2964,18 @@ extension DebitNoteItemQuerySortBy
     });
   }
 
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.desc);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> sortByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -2291,6 +3016,19 @@ extension DebitNoteItemQuerySortBy
 
 extension DebitNoteItemQuerySortThenBy
     on QueryBuilder<DebitNoteItem, DebitNoteItem, QSortThenBy> {
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy>
+      thenByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2314,6 +3052,19 @@ extension DebitNoteItemQuerySortThenBy
       thenByDiscountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy>
+      thenByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2431,6 +3182,18 @@ extension DebitNoteItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy>
       thenByParentDebitNoteId() {
     return QueryBuilder.apply(this, (query) {
@@ -2497,6 +3260,18 @@ extension DebitNoteItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.desc);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QAfterSortBy> thenByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -2537,6 +3312,13 @@ extension DebitNoteItemQuerySortThenBy
 
 extension DebitNoteItemQueryWhereDistinct
     on QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> {
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByBatchNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'batchNumber', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -2546,6 +3328,13 @@ extension DebitNoteItemQueryWhereDistinct
   QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByDiscount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'discount');
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByExpiryDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expiryDate', caseSensitive: caseSensitive);
     });
   }
 
@@ -2600,6 +3389,13 @@ extension DebitNoteItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByMfgDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mfgDate', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct>
       distinctByParentDebitNoteId() {
     return QueryBuilder.apply(this, (query) {
@@ -2633,6 +3429,13 @@ extension DebitNoteItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByUnit(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'unit', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DebitNoteItem, QDistinct> distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'updatedAt');
@@ -2661,6 +3464,12 @@ extension DebitNoteItemQueryProperty
     });
   }
 
+  QueryBuilder<DebitNoteItem, String?, QQueryOperations> batchNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'batchNumber');
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
@@ -2670,6 +3479,12 @@ extension DebitNoteItemQueryProperty
   QueryBuilder<DebitNoteItem, double?, QQueryOperations> discountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discount');
+    });
+  }
+
+  QueryBuilder<DebitNoteItem, String?, QQueryOperations> expiryDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expiryDate');
     });
   }
 
@@ -2722,6 +3537,12 @@ extension DebitNoteItemQueryProperty
     });
   }
 
+  QueryBuilder<DebitNoteItem, String?, QQueryOperations> mfgDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mfgDate');
+    });
+  }
+
   QueryBuilder<DebitNoteItem, int?, QQueryOperations>
       parentDebitNoteIdProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2754,6 +3575,12 @@ extension DebitNoteItemQueryProperty
     });
   }
 
+  QueryBuilder<DebitNoteItem, String?, QQueryOperations> unitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'unit');
+    });
+  }
+
   QueryBuilder<DebitNoteItem, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
@@ -2772,13 +3599,3 @@ extension DebitNoteItemQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

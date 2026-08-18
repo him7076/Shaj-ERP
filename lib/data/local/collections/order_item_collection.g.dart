@@ -15,100 +15,115 @@ extension GetOrderItemCollection on Isar {
 
 const OrderItemSchema = CollectionSchema(
   name: r'OrderItem',
-  id: 7694089936020240,
+  id: -5113141332666578860,
   properties: {
-    r'createdAt': PropertySchema(
+    r'batchNumber': PropertySchema(
       id: 0,
+      name: r'batchNumber',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'discountAmount': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'discountAmount',
       type: IsarType.double,
     ),
     r'discountPercent': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'discountPercent',
       type: IsarType.double,
     ),
+    r'expiryDate': PropertySchema(
+      id: 4,
+      name: r'expiryDate',
+      type: IsarType.string,
+    ),
     r'freeQuantity': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'freeQuantity',
       type: IsarType.double,
     ),
     r'gstAmount': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'gstAmount',
       type: IsarType.double,
     ),
     r'gstPercent': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'gstPercent',
       type: IsarType.double,
     ),
     r'hsnCode': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'hsnCode',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'itemId': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'itemId',
       type: IsarType.long,
     ),
     r'itemName': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'itemName',
       type: IsarType.string,
     ),
+    r'mfgDate': PropertySchema(
+      id: 13,
+      name: r'mfgDate',
+      type: IsarType.string,
+    ),
     r'quantity': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'rate': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'rate',
       type: IsarType.double,
     ),
     r'taxableAmount': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'unit': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'unit',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 17,
+      id: 20,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'version',
       type: IsarType.long,
     )
@@ -120,7 +135,7 @@ const OrderItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -135,13 +150,13 @@ const OrderItemSchema = CollectionSchema(
   },
   links: {
     r'order': LinkSchema(
-      id: 2005505930956,
+      id: 2005505930956294984,
       name: r'order',
       target: r'Order',
       single: true,
     ),
     r'item': LinkSchema(
-      id: 458245476381734,
+      id: -8590266203859439807,
       name: r'item',
       target: r'Item',
       single: true,
@@ -161,6 +176,18 @@ int _orderItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.batchNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.expiryDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.hsnCode;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -168,6 +195,12 @@ int _orderItemEstimateSize(
   }
   {
     final value = object.itemName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.mfgDate;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -193,25 +226,28 @@ void _orderItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeDouble(offsets[1], object.discountAmount);
-  writer.writeDouble(offsets[2], object.discountPercent);
-  writer.writeDouble(offsets[3], object.freeQuantity);
-  writer.writeDouble(offsets[4], object.gstAmount);
-  writer.writeDouble(offsets[5], object.gstPercent);
-  writer.writeString(offsets[6], object.hsnCode);
-  writer.writeBool(offsets[7], object.isDeleted);
-  writer.writeBool(offsets[8], object.isSynced);
-  writer.writeLong(offsets[9], object.itemId);
-  writer.writeString(offsets[10], object.itemName);
-  writer.writeDouble(offsets[11], object.quantity);
-  writer.writeDouble(offsets[12], object.rate);
-  writer.writeDouble(offsets[13], object.taxableAmount);
-  writer.writeDouble(offsets[14], object.totalAmount);
-  writer.writeString(offsets[15], object.unit);
-  writer.writeDateTime(offsets[16], object.updatedAt);
-  writer.writeString(offsets[17], object.uuid);
-  writer.writeLong(offsets[18], object.version);
+  writer.writeString(offsets[0], object.batchNumber);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeDouble(offsets[2], object.discountAmount);
+  writer.writeDouble(offsets[3], object.discountPercent);
+  writer.writeString(offsets[4], object.expiryDate);
+  writer.writeDouble(offsets[5], object.freeQuantity);
+  writer.writeDouble(offsets[6], object.gstAmount);
+  writer.writeDouble(offsets[7], object.gstPercent);
+  writer.writeString(offsets[8], object.hsnCode);
+  writer.writeBool(offsets[9], object.isDeleted);
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeLong(offsets[11], object.itemId);
+  writer.writeString(offsets[12], object.itemName);
+  writer.writeString(offsets[13], object.mfgDate);
+  writer.writeDouble(offsets[14], object.quantity);
+  writer.writeDouble(offsets[15], object.rate);
+  writer.writeDouble(offsets[16], object.taxableAmount);
+  writer.writeDouble(offsets[17], object.totalAmount);
+  writer.writeString(offsets[18], object.unit);
+  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeString(offsets[20], object.uuid);
+  writer.writeLong(offsets[21], object.version);
 }
 
 OrderItem _orderItemDeserialize(
@@ -221,26 +257,29 @@ OrderItem _orderItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = OrderItem();
-  object.createdAt = reader.readDateTime(offsets[0]);
-  object.discountAmount = reader.readDoubleOrNull(offsets[1]);
-  object.discountPercent = reader.readDoubleOrNull(offsets[2]);
-  object.freeQuantity = reader.readDoubleOrNull(offsets[3]);
-  object.gstAmount = reader.readDoubleOrNull(offsets[4]);
-  object.gstPercent = reader.readDoubleOrNull(offsets[5]);
-  object.hsnCode = reader.readStringOrNull(offsets[6]);
+  object.batchNumber = reader.readStringOrNull(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.discountAmount = reader.readDoubleOrNull(offsets[2]);
+  object.discountPercent = reader.readDoubleOrNull(offsets[3]);
+  object.expiryDate = reader.readStringOrNull(offsets[4]);
+  object.freeQuantity = reader.readDoubleOrNull(offsets[5]);
+  object.gstAmount = reader.readDoubleOrNull(offsets[6]);
+  object.gstPercent = reader.readDoubleOrNull(offsets[7]);
+  object.hsnCode = reader.readStringOrNull(offsets[8]);
   object.id = id;
-  object.isDeleted = reader.readBool(offsets[7]);
-  object.isSynced = reader.readBool(offsets[8]);
-  object.itemId = reader.readLongOrNull(offsets[9]);
-  object.itemName = reader.readStringOrNull(offsets[10]);
-  object.quantity = reader.readDoubleOrNull(offsets[11]);
-  object.rate = reader.readDoubleOrNull(offsets[12]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[13]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[14]);
-  object.unit = reader.readStringOrNull(offsets[15]);
-  object.updatedAt = reader.readDateTime(offsets[16]);
-  object.uuid = reader.readStringOrNull(offsets[17]);
-  object.version = reader.readLong(offsets[18]);
+  object.isDeleted = reader.readBool(offsets[9]);
+  object.isSynced = reader.readBool(offsets[10]);
+  object.itemId = reader.readLongOrNull(offsets[11]);
+  object.itemName = reader.readStringOrNull(offsets[12]);
+  object.mfgDate = reader.readStringOrNull(offsets[13]);
+  object.quantity = reader.readDoubleOrNull(offsets[14]);
+  object.rate = reader.readDoubleOrNull(offsets[15]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[16]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[17]);
+  object.unit = reader.readStringOrNull(offsets[18]);
+  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.uuid = reader.readStringOrNull(offsets[20]);
+  object.version = reader.readLong(offsets[21]);
   return object;
 }
 
@@ -252,42 +291,48 @@ P _orderItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readDoubleOrNull(offset)) as P;
     case 3:
       return (reader.readDoubleOrNull(offset)) as P;
     case 4:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 5:
       return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 8:
-      return (reader.readBool(offset)) as P;
-    case 9:
-      return (reader.readLongOrNull(offset)) as P;
-    case 10:
       return (reader.readStringOrNull(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
+    case 10:
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 12:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
       return (reader.readDoubleOrNull(offset)) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 16:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
+      return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -506,6 +551,158 @@ extension OrderItemQueryWhere
 
 extension OrderItemQueryFilter
     on QueryBuilder<OrderItem, OrderItem, QFilterCondition> {
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      batchNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      batchNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> batchNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      batchNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> batchNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> batchNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'batchNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      batchNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> batchNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> batchNumberContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> batchNumberMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'batchNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      batchNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      batchNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> createdAtEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -724,6 +921,157 @@ extension OrderItemQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      expiryDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      expiryDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expiryDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      expiryDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> expiryDateMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'expiryDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      expiryDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      expiryDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'expiryDate',
+        value: '',
       ));
     });
   }
@@ -1402,6 +1750,153 @@ extension OrderItemQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'itemName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mfgDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mfgDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition> mfgDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterFilterCondition>
+      mfgDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mfgDate',
         value: '',
       ));
     });
@@ -2162,6 +2657,18 @@ extension OrderItemQueryLinks
 }
 
 extension OrderItemQuerySortBy on QueryBuilder<OrderItem, OrderItem, QSortBy> {
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2195,6 +2702,18 @@ extension OrderItemQuerySortBy on QueryBuilder<OrderItem, OrderItem, QSortBy> {
   QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByDiscountPercentDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discountPercent', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2291,6 +2810,18 @@ extension OrderItemQuerySortBy on QueryBuilder<OrderItem, OrderItem, QSortBy> {
   QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByItemNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'itemName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> sortByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
     });
   }
 
@@ -2393,6 +2924,18 @@ extension OrderItemQuerySortBy on QueryBuilder<OrderItem, OrderItem, QSortBy> {
 
 extension OrderItemQuerySortThenBy
     on QueryBuilder<OrderItem, OrderItem, QSortThenBy> {
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2426,6 +2969,18 @@ extension OrderItemQuerySortThenBy
   QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByDiscountPercentDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discountPercent', Sort.desc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2537,6 +3092,18 @@ extension OrderItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<OrderItem, OrderItem, QAfterSortBy> thenByQuantity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'quantity', Sort.asc);
@@ -2636,6 +3203,13 @@ extension OrderItemQuerySortThenBy
 
 extension OrderItemQueryWhereDistinct
     on QueryBuilder<OrderItem, OrderItem, QDistinct> {
+  QueryBuilder<OrderItem, OrderItem, QDistinct> distinctByBatchNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'batchNumber', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<OrderItem, OrderItem, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -2651,6 +3225,13 @@ extension OrderItemQueryWhereDistinct
   QueryBuilder<OrderItem, OrderItem, QDistinct> distinctByDiscountPercent() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'discountPercent');
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QDistinct> distinctByExpiryDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expiryDate', caseSensitive: caseSensitive);
     });
   }
 
@@ -2701,6 +3282,13 @@ extension OrderItemQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'itemName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<OrderItem, OrderItem, QDistinct> distinctByMfgDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mfgDate', caseSensitive: caseSensitive);
     });
   }
 
@@ -2763,6 +3351,12 @@ extension OrderItemQueryProperty
     });
   }
 
+  QueryBuilder<OrderItem, String?, QQueryOperations> batchNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'batchNumber');
+    });
+  }
+
   QueryBuilder<OrderItem, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
@@ -2778,6 +3372,12 @@ extension OrderItemQueryProperty
   QueryBuilder<OrderItem, double?, QQueryOperations> discountPercentProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discountPercent');
+    });
+  }
+
+  QueryBuilder<OrderItem, String?, QQueryOperations> expiryDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expiryDate');
     });
   }
 
@@ -2829,6 +3429,12 @@ extension OrderItemQueryProperty
     });
   }
 
+  QueryBuilder<OrderItem, String?, QQueryOperations> mfgDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mfgDate');
+    });
+  }
+
   QueryBuilder<OrderItem, double?, QQueryOperations> quantityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'quantity');
@@ -2877,13 +3483,3 @@ extension OrderItemQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

@@ -15,7 +15,7 @@ extension GetUserCollection on Isar {
 
 const UserSchema = CollectionSchema(
   name: r'User',
-  id: 4364992471667666,
+  id: -7838171048429979076,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -70,7 +70,7 @@ const UserSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -1558,13 +1558,3 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

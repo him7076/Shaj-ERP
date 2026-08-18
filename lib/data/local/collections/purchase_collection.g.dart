@@ -15,7 +15,7 @@ extension GetPurchaseCollection on Isar {
 
 const PurchaseSchema = CollectionSchema(
   name: r'Purchase',
-  id: 4510844130422690,
+  id: -2376489861051921561,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -117,28 +117,33 @@ const PurchaseSchema = CollectionSchema(
       name: r'subtotal',
       type: IsarType.double,
     ),
-    r'taxableAmount': PropertySchema(
+    r'supplierInvoiceNumber': PropertySchema(
       id: 20,
+      name: r'supplierInvoiceNumber',
+      type: IsarType.string,
+    ),
+    r'taxableAmount': PropertySchema(
+      id: 21,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalGST': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'totalGST',
       type: IsarType.double,
     ),
     r'updatedAt': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'version',
       type: IsarType.long,
     )
@@ -150,7 +155,7 @@ const PurchaseSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -163,7 +168,7 @@ const PurchaseSchema = CollectionSchema(
       ],
     ),
     r'purchaseNumber': IndexSchema(
-      id: 8689101207271,
+      id: 8689101207271201480,
       name: r'purchaseNumber',
       unique: true,
       replace: false,
@@ -176,7 +181,7 @@ const PurchaseSchema = CollectionSchema(
       ],
     ),
     r'paymentStatus': IndexSchema(
-      id: 7011973130100,
+      id: 7011973130100993011,
       name: r'paymentStatus',
       unique: false,
       replace: false,
@@ -191,13 +196,13 @@ const PurchaseSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 4965014976422647,
+      id: 4001614793129909608,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'purchaseItems': LinkSchema(
-      id: 3471249955400,
+      id: 3471249955400913843,
       name: r'purchaseItems',
       target: r'PurchaseItem',
       single: false,
@@ -254,6 +259,12 @@ int _purchaseEstimateSize(
     }
   }
   {
+    final value = object.supplierInvoiceNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.uuid;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -288,11 +299,12 @@ void _purchaseSerialize(
   writer.writeDouble(offsets[17], object.roundOff);
   writer.writeDouble(offsets[18], object.sgstAmount);
   writer.writeDouble(offsets[19], object.subtotal);
-  writer.writeDouble(offsets[20], object.taxableAmount);
-  writer.writeDouble(offsets[21], object.totalGST);
-  writer.writeDateTime(offsets[22], object.updatedAt);
-  writer.writeString(offsets[23], object.uuid);
-  writer.writeLong(offsets[24], object.version);
+  writer.writeString(offsets[20], object.supplierInvoiceNumber);
+  writer.writeDouble(offsets[21], object.taxableAmount);
+  writer.writeDouble(offsets[22], object.totalGST);
+  writer.writeDateTime(offsets[23], object.updatedAt);
+  writer.writeString(offsets[24], object.uuid);
+  writer.writeLong(offsets[25], object.version);
 }
 
 Purchase _purchaseDeserialize(
@@ -323,11 +335,12 @@ Purchase _purchaseDeserialize(
   object.roundOff = reader.readDoubleOrNull(offsets[17]);
   object.sgstAmount = reader.readDoubleOrNull(offsets[18]);
   object.subtotal = reader.readDoubleOrNull(offsets[19]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[20]);
-  object.totalGST = reader.readDoubleOrNull(offsets[21]);
-  object.updatedAt = reader.readDateTime(offsets[22]);
-  object.uuid = reader.readStringOrNull(offsets[23]);
-  object.version = reader.readLong(offsets[24]);
+  object.supplierInvoiceNumber = reader.readStringOrNull(offsets[20]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[21]);
+  object.totalGST = reader.readDoubleOrNull(offsets[22]);
+  object.updatedAt = reader.readDateTime(offsets[23]);
+  object.uuid = reader.readStringOrNull(offsets[24]);
+  object.version = reader.readLong(offsets[25]);
   return object;
 }
 
@@ -379,14 +392,16 @@ P _purchaseDeserializeProp<P>(
     case 19:
       return (reader.readDoubleOrNull(offset)) as P;
     case 20:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
       return (reader.readDoubleOrNull(offset)) as P;
     case 22:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 23:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 24:
+      return (reader.readStringOrNull(offset)) as P;
+    case 25:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2661,6 +2676,161 @@ extension PurchaseQueryFilter
   }
 
   QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'supplierInvoiceNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'supplierInvoiceNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'supplierInvoiceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'supplierInvoiceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'supplierInvoiceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'supplierInvoiceNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'supplierInvoiceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'supplierInvoiceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'supplierInvoiceNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'supplierInvoiceNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'supplierInvoiceNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
+      supplierInvoiceNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'supplierInvoiceNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterFilterCondition>
       taxableAmountIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3393,6 +3563,19 @@ extension PurchaseQuerySortBy on QueryBuilder<Purchase, Purchase, QSortBy> {
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> sortBySupplierInvoiceNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplierInvoiceNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy>
+      sortBySupplierInvoiceNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplierInvoiceNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QAfterSortBy> sortByTaxableAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'taxableAmount', Sort.asc);
@@ -3708,6 +3891,19 @@ extension PurchaseQuerySortThenBy
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QAfterSortBy> thenBySupplierInvoiceNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplierInvoiceNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Purchase, Purchase, QAfterSortBy>
+      thenBySupplierInvoiceNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'supplierInvoiceNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QAfterSortBy> thenByTaxableAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'taxableAmount', Sort.asc);
@@ -3899,6 +4095,14 @@ extension PurchaseQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Purchase, Purchase, QDistinct> distinctBySupplierInvoiceNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'supplierInvoiceNumber',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Purchase, Purchase, QDistinct> distinctByTaxableAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'taxableAmount');
@@ -4059,6 +4263,13 @@ extension PurchaseQueryProperty
     });
   }
 
+  QueryBuilder<Purchase, String?, QQueryOperations>
+      supplierInvoiceNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'supplierInvoiceNumber');
+    });
+  }
+
   QueryBuilder<Purchase, double?, QQueryOperations> taxableAmountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'taxableAmount');
@@ -4089,13 +4300,3 @@ extension PurchaseQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

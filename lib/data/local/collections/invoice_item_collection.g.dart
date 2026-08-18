@@ -15,95 +15,120 @@ extension GetInvoiceItemCollection on Isar {
 
 const InvoiceItemSchema = CollectionSchema(
   name: r'InvoiceItem',
-  id: 8432723021237087,
+  id: 3489790213250467162,
   properties: {
-    r'createdAt': PropertySchema(
+    r'batchNumber': PropertySchema(
       id: 0,
+      name: r'batchNumber',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'discount': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'discount',
       type: IsarType.double,
     ),
+    r'expiryDate': PropertySchema(
+      id: 3,
+      name: r'expiryDate',
+      type: IsarType.string,
+    ),
     r'freeQuantity': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'freeQuantity',
       type: IsarType.double,
     ),
     r'gstAmount': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'gstAmount',
       type: IsarType.double,
     ),
     r'gstRate': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'gstRate',
       type: IsarType.double,
     ),
     r'hsnCode': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'hsnCode',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'itemId': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'itemId',
       type: IsarType.long,
     ),
     r'itemName': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'itemName',
       type: IsarType.string,
     ),
+    r'mfgDate': PropertySchema(
+      id: 12,
+      name: r'mfgDate',
+      type: IsarType.string,
+    ),
     r'parentInvoiceId': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'parentInvoiceId',
       type: IsarType.long,
     ),
+    r'parentInvoiceUuid': PropertySchema(
+      id: 14,
+      name: r'parentInvoiceUuid',
+      type: IsarType.string,
+    ),
     r'quantity': PropertySchema(
-      id: 11,
+      id: 15,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'rate': PropertySchema(
-      id: 12,
+      id: 16,
       name: r'rate',
       type: IsarType.double,
     ),
     r'taxableAmount': PropertySchema(
-      id: 13,
+      id: 17,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 14,
+      id: 18,
       name: r'totalAmount',
       type: IsarType.double,
     ),
+    r'unit': PropertySchema(
+      id: 19,
+      name: r'unit',
+      type: IsarType.string,
+    ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 20,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 16,
+      id: 21,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 17,
+      id: 22,
       name: r'version',
       type: IsarType.long,
     )
@@ -115,7 +140,7 @@ const InvoiceItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -126,17 +151,43 @@ const InvoiceItemSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'parentInvoiceId': IndexSchema(
+      id: 1508905303563271528,
+      name: r'parentInvoiceId',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'parentInvoiceId',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'parentInvoiceUuid': IndexSchema(
+      id: -3782403528708774392,
+      name: r'parentInvoiceUuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'parentInvoiceUuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
     )
   },
   links: {
     r'invoice': LinkSchema(
-      id: 906780799947911,
+      id: 9067807999479117358,
       name: r'invoice',
       target: r'Invoice',
       single: true,
     ),
     r'item': LinkSchema(
-      id: 458245476381734,
+      id: -4145695838680310432,
       name: r'item',
       target: r'Item',
       single: true,
@@ -156,6 +207,18 @@ int _invoiceItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.batchNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.expiryDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.hsnCode;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -163,6 +226,24 @@ int _invoiceItemEstimateSize(
   }
   {
     final value = object.itemName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.mfgDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.parentInvoiceUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.unit;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -182,24 +263,29 @@ void _invoiceItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeDouble(offsets[1], object.discount);
-  writer.writeDouble(offsets[2], object.freeQuantity);
-  writer.writeDouble(offsets[3], object.gstAmount);
-  writer.writeDouble(offsets[4], object.gstRate);
-  writer.writeString(offsets[5], object.hsnCode);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeBool(offsets[7], object.isSynced);
-  writer.writeLong(offsets[8], object.itemId);
-  writer.writeString(offsets[9], object.itemName);
-  writer.writeLong(offsets[10], object.parentInvoiceId);
-  writer.writeDouble(offsets[11], object.quantity);
-  writer.writeDouble(offsets[12], object.rate);
-  writer.writeDouble(offsets[13], object.taxableAmount);
-  writer.writeDouble(offsets[14], object.totalAmount);
-  writer.writeDateTime(offsets[15], object.updatedAt);
-  writer.writeString(offsets[16], object.uuid);
-  writer.writeLong(offsets[17], object.version);
+  writer.writeString(offsets[0], object.batchNumber);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeDouble(offsets[2], object.discount);
+  writer.writeString(offsets[3], object.expiryDate);
+  writer.writeDouble(offsets[4], object.freeQuantity);
+  writer.writeDouble(offsets[5], object.gstAmount);
+  writer.writeDouble(offsets[6], object.gstRate);
+  writer.writeString(offsets[7], object.hsnCode);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isSynced);
+  writer.writeLong(offsets[10], object.itemId);
+  writer.writeString(offsets[11], object.itemName);
+  writer.writeString(offsets[12], object.mfgDate);
+  writer.writeLong(offsets[13], object.parentInvoiceId);
+  writer.writeString(offsets[14], object.parentInvoiceUuid);
+  writer.writeDouble(offsets[15], object.quantity);
+  writer.writeDouble(offsets[16], object.rate);
+  writer.writeDouble(offsets[17], object.taxableAmount);
+  writer.writeDouble(offsets[18], object.totalAmount);
+  writer.writeString(offsets[19], object.unit);
+  writer.writeDateTime(offsets[20], object.updatedAt);
+  writer.writeString(offsets[21], object.uuid);
+  writer.writeLong(offsets[22], object.version);
 }
 
 InvoiceItem _invoiceItemDeserialize(
@@ -209,25 +295,30 @@ InvoiceItem _invoiceItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = InvoiceItem();
-  object.createdAt = reader.readDateTime(offsets[0]);
-  object.discount = reader.readDoubleOrNull(offsets[1]);
-  object.freeQuantity = reader.readDoubleOrNull(offsets[2]);
-  object.gstAmount = reader.readDoubleOrNull(offsets[3]);
-  object.gstRate = reader.readDoubleOrNull(offsets[4]);
-  object.hsnCode = reader.readStringOrNull(offsets[5]);
+  object.batchNumber = reader.readStringOrNull(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.discount = reader.readDoubleOrNull(offsets[2]);
+  object.expiryDate = reader.readStringOrNull(offsets[3]);
+  object.freeQuantity = reader.readDoubleOrNull(offsets[4]);
+  object.gstAmount = reader.readDoubleOrNull(offsets[5]);
+  object.gstRate = reader.readDoubleOrNull(offsets[6]);
+  object.hsnCode = reader.readStringOrNull(offsets[7]);
   object.id = id;
-  object.isDeleted = reader.readBool(offsets[6]);
-  object.isSynced = reader.readBool(offsets[7]);
-  object.itemId = reader.readLongOrNull(offsets[8]);
-  object.itemName = reader.readStringOrNull(offsets[9]);
-  object.parentInvoiceId = reader.readLongOrNull(offsets[10]);
-  object.quantity = reader.readDoubleOrNull(offsets[11]);
-  object.rate = reader.readDoubleOrNull(offsets[12]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[13]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
-  object.uuid = reader.readStringOrNull(offsets[16]);
-  object.version = reader.readLong(offsets[17]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isSynced = reader.readBool(offsets[9]);
+  object.itemId = reader.readLongOrNull(offsets[10]);
+  object.itemName = reader.readStringOrNull(offsets[11]);
+  object.mfgDate = reader.readStringOrNull(offsets[12]);
+  object.parentInvoiceId = reader.readLongOrNull(offsets[13]);
+  object.parentInvoiceUuid = reader.readStringOrNull(offsets[14]);
+  object.quantity = reader.readDoubleOrNull(offsets[15]);
+  object.rate = reader.readDoubleOrNull(offsets[16]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[17]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[18]);
+  object.unit = reader.readStringOrNull(offsets[19]);
+  object.updatedAt = reader.readDateTime(offsets[20]);
+  object.uuid = reader.readStringOrNull(offsets[21]);
+  object.version = reader.readLong(offsets[22]);
   return object;
 }
 
@@ -239,40 +330,50 @@ P _invoiceItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readDoubleOrNull(offset)) as P;
     case 3:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readDoubleOrNull(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
-      return (reader.readLongOrNull(offset)) as P;
-    case 9:
       return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
     case 10:
       return (reader.readLongOrNull(offset)) as P;
     case 11:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 12:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 13:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 14:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 15:
-      return (reader.readDateTime(offset)) as P;
-    case 16:
       return (reader.readStringOrNull(offset)) as P;
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
+      return (reader.readLongOrNull(offset)) as P;
+    case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 16:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 17:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 18:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 19:
+      return (reader.readStringOrNull(offset)) as P;
+    case 20:
+      return (reader.readDateTime(offset)) as P;
+    case 21:
+      return (reader.readStringOrNull(offset)) as P;
+    case 22:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -354,6 +455,14 @@ extension InvoiceItemQueryWhereSort
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhere> anyParentInvoiceId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'parentInvoiceId'),
+      );
     });
   }
 }
@@ -490,10 +599,346 @@ extension InvoiceItemQueryWhere
       }
     });
   }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'parentInvoiceId',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'parentInvoiceId',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdEqualTo(int? parentInvoiceId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'parentInvoiceId',
+        value: [parentInvoiceId],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdNotEqualTo(int? parentInvoiceId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceId',
+              lower: [],
+              upper: [parentInvoiceId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceId',
+              lower: [parentInvoiceId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceId',
+              lower: [parentInvoiceId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceId',
+              lower: [],
+              upper: [parentInvoiceId],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdGreaterThan(
+    int? parentInvoiceId, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'parentInvoiceId',
+        lower: [parentInvoiceId],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdLessThan(
+    int? parentInvoiceId, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'parentInvoiceId',
+        lower: [],
+        upper: [parentInvoiceId],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceIdBetween(
+    int? lowerParentInvoiceId,
+    int? upperParentInvoiceId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'parentInvoiceId',
+        lower: [lowerParentInvoiceId],
+        includeLower: includeLower,
+        upper: [upperParentInvoiceId],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'parentInvoiceUuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'parentInvoiceUuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceUuidEqualTo(String? parentInvoiceUuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'parentInvoiceUuid',
+        value: [parentInvoiceUuid],
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterWhereClause>
+      parentInvoiceUuidNotEqualTo(String? parentInvoiceUuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceUuid',
+              lower: [],
+              upper: [parentInvoiceUuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceUuid',
+              lower: [parentInvoiceUuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceUuid',
+              lower: [parentInvoiceUuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'parentInvoiceUuid',
+              lower: [],
+              upper: [parentInvoiceUuid],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
 extension InvoiceItemQueryFilter
     on QueryBuilder<InvoiceItem, InvoiceItem, QFilterCondition> {
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'batchNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'batchNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      batchNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
       createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -628,6 +1073,160 @@ extension InvoiceItemQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expiryDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'expiryDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      expiryDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'expiryDate',
+        value: '',
       ));
     });
   }
@@ -1331,6 +1930,158 @@ extension InvoiceItemQueryFilter
   }
 
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      mfgDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      mfgDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> mfgDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      mfgDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> mfgDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> mfgDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mfgDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      mfgDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> mfgDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> mfgDateContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> mfgDateMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mfgDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      mfgDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      mfgDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
       parentInvoiceIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1400,6 +2151,160 @@ extension InvoiceItemQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'parentInvoiceUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'parentInvoiceUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'parentInvoiceUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'parentInvoiceUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'parentInvoiceUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'parentInvoiceUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'parentInvoiceUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'parentInvoiceUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'parentInvoiceUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'parentInvoiceUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'parentInvoiceUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      parentInvoiceUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'parentInvoiceUuid',
+        value: '',
       ));
     });
   }
@@ -1733,6 +2638,154 @@ extension InvoiceItemQueryFilter
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'unit',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      unitIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'unit',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'unit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'unit',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition> unitIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'unit',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
+      unitIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'unit',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterFilterCondition>
       updatedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -2027,6 +3080,18 @@ extension InvoiceItemQueryLinks
 
 extension InvoiceItemQuerySortBy
     on QueryBuilder<InvoiceItem, InvoiceItem, QSortBy> {
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2048,6 +3113,18 @@ extension InvoiceItemQuerySortBy
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByDiscountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2148,6 +3225,18 @@ extension InvoiceItemQuerySortBy
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByParentInvoiceId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'parentInvoiceId', Sort.asc);
@@ -2158,6 +3247,20 @@ extension InvoiceItemQuerySortBy
       sortByParentInvoiceIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'parentInvoiceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy>
+      sortByParentInvoiceUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy>
+      sortByParentInvoiceUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceUuid', Sort.desc);
     });
   }
 
@@ -2210,6 +3313,18 @@ extension InvoiceItemQuerySortBy
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> sortByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -2249,6 +3364,18 @@ extension InvoiceItemQuerySortBy
 
 extension InvoiceItemQuerySortThenBy
     on QueryBuilder<InvoiceItem, InvoiceItem, QSortThenBy> {
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2270,6 +3397,18 @@ extension InvoiceItemQuerySortThenBy
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByDiscountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2382,6 +3521,18 @@ extension InvoiceItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByParentInvoiceId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'parentInvoiceId', Sort.asc);
@@ -2392,6 +3543,20 @@ extension InvoiceItemQuerySortThenBy
       thenByParentInvoiceIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'parentInvoiceId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy>
+      thenByParentInvoiceUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy>
+      thenByParentInvoiceUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'parentInvoiceUuid', Sort.desc);
     });
   }
 
@@ -2444,6 +3609,18 @@ extension InvoiceItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.desc);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QAfterSortBy> thenByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -2483,6 +3660,13 @@ extension InvoiceItemQuerySortThenBy
 
 extension InvoiceItemQueryWhereDistinct
     on QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> {
+  QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByBatchNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'batchNumber', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -2492,6 +3676,13 @@ extension InvoiceItemQueryWhereDistinct
   QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByDiscount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'discount');
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByExpiryDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expiryDate', caseSensitive: caseSensitive);
     });
   }
 
@@ -2545,10 +3736,25 @@ extension InvoiceItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByMfgDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mfgDate', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<InvoiceItem, InvoiceItem, QDistinct>
       distinctByParentInvoiceId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'parentInvoiceId');
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByParentInvoiceUuid(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'parentInvoiceUuid',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -2573,6 +3779,13 @@ extension InvoiceItemQueryWhereDistinct
   QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByTotalAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'totalAmount');
+    });
+  }
+
+  QueryBuilder<InvoiceItem, InvoiceItem, QDistinct> distinctByUnit(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'unit', caseSensitive: caseSensitive);
     });
   }
 
@@ -2604,6 +3817,12 @@ extension InvoiceItemQueryProperty
     });
   }
 
+  QueryBuilder<InvoiceItem, String?, QQueryOperations> batchNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'batchNumber');
+    });
+  }
+
   QueryBuilder<InvoiceItem, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
@@ -2613,6 +3832,12 @@ extension InvoiceItemQueryProperty
   QueryBuilder<InvoiceItem, double?, QQueryOperations> discountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discount');
+    });
+  }
+
+  QueryBuilder<InvoiceItem, String?, QQueryOperations> expiryDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expiryDate');
     });
   }
 
@@ -2664,9 +3889,22 @@ extension InvoiceItemQueryProperty
     });
   }
 
+  QueryBuilder<InvoiceItem, String?, QQueryOperations> mfgDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mfgDate');
+    });
+  }
+
   QueryBuilder<InvoiceItem, int?, QQueryOperations> parentInvoiceIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'parentInvoiceId');
+    });
+  }
+
+  QueryBuilder<InvoiceItem, String?, QQueryOperations>
+      parentInvoiceUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'parentInvoiceUuid');
     });
   }
 
@@ -2694,6 +3932,12 @@ extension InvoiceItemQueryProperty
     });
   }
 
+  QueryBuilder<InvoiceItem, String?, QQueryOperations> unitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'unit');
+    });
+  }
+
   QueryBuilder<InvoiceItem, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
@@ -2712,13 +3956,3 @@ extension InvoiceItemQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

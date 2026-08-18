@@ -15,7 +15,7 @@ extension GetPartyCollection on Isar {
 
 const PartySchema = CollectionSchema(
   name: r'Party',
-  id: 4937967186392407,
+  id: -9169014745120495231,
   properties: {
     r'addressLine1': PropertySchema(
       id: 0,
@@ -200,7 +200,7 @@ const PartySchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -213,7 +213,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'partyCode': IndexSchema(
-      id: 1304360113996150,
+      id: -7650880066646610857,
       name: r'partyCode',
       unique: true,
       replace: false,
@@ -226,7 +226,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'partyName': IndexSchema(
-      id: 3345427415762,
+      id: 3345427415762707765,
       name: r'partyName',
       unique: false,
       replace: false,
@@ -239,7 +239,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'mobileNumber': IndexSchema(
-      id: 6939373467333,
+      id: 6939373467333679590,
       name: r'mobileNumber',
       unique: false,
       replace: false,
@@ -252,7 +252,7 @@ const PartySchema = CollectionSchema(
       ],
     ),
     r'gstNumber': IndexSchema(
-      id: 923739887635916,
+      id: -7301976093885332297,
       name: r'gstNumber',
       unique: false,
       replace: false,
@@ -6757,13 +6757,3 @@ extension PartyQueryProperty on QueryBuilder<Party, Party, QQueryProperty> {
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

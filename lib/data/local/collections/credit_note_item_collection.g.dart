@@ -15,95 +15,115 @@ extension GetCreditNoteItemCollection on Isar {
 
 const CreditNoteItemSchema = CollectionSchema(
   name: r'CreditNoteItem',
-  id: 8650515946436255,
+  id: 4025121608359545129,
   properties: {
-    r'createdAt': PropertySchema(
+    r'batchNumber': PropertySchema(
       id: 0,
+      name: r'batchNumber',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'discount': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'discount',
       type: IsarType.double,
     ),
+    r'expiryDate': PropertySchema(
+      id: 3,
+      name: r'expiryDate',
+      type: IsarType.string,
+    ),
     r'freeQuantity': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'freeQuantity',
       type: IsarType.double,
     ),
     r'gstAmount': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'gstAmount',
       type: IsarType.double,
     ),
     r'gstRate': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'gstRate',
       type: IsarType.double,
     ),
     r'hsnCode': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'hsnCode',
       type: IsarType.string,
     ),
     r'isDeleted': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'isDeleted',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'itemId': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'itemId',
       type: IsarType.long,
     ),
     r'itemName': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'itemName',
       type: IsarType.string,
     ),
+    r'mfgDate': PropertySchema(
+      id: 12,
+      name: r'mfgDate',
+      type: IsarType.string,
+    ),
     r'parentCreditNoteId': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'parentCreditNoteId',
       type: IsarType.long,
     ),
     r'quantity': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'quantity',
       type: IsarType.double,
     ),
     r'rate': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'rate',
       type: IsarType.double,
     ),
     r'taxableAmount': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'totalAmount',
       type: IsarType.double,
     ),
+    r'unit': PropertySchema(
+      id: 18,
+      name: r'unit',
+      type: IsarType.string,
+    ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 19,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 16,
+      id: 20,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 17,
+      id: 21,
       name: r'version',
       type: IsarType.long,
     )
@@ -115,7 +135,7 @@ const CreditNoteItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -130,13 +150,13 @@ const CreditNoteItemSchema = CollectionSchema(
   },
   links: {
     r'creditNote': LinkSchema(
-      id: 5964433615969418,
+      id: -935415200837770496,
       name: r'creditNote',
       target: r'CreditNote',
       single: true,
     ),
     r'item': LinkSchema(
-      id: 458245476381734,
+      id: -862354559449649332,
       name: r'item',
       target: r'Item',
       single: true,
@@ -156,6 +176,18 @@ int _creditNoteItemEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.batchNumber;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.expiryDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.hsnCode;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -163,6 +195,18 @@ int _creditNoteItemEstimateSize(
   }
   {
     final value = object.itemName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.mfgDate;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.unit;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -182,24 +226,28 @@ void _creditNoteItemSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeDouble(offsets[1], object.discount);
-  writer.writeDouble(offsets[2], object.freeQuantity);
-  writer.writeDouble(offsets[3], object.gstAmount);
-  writer.writeDouble(offsets[4], object.gstRate);
-  writer.writeString(offsets[5], object.hsnCode);
-  writer.writeBool(offsets[6], object.isDeleted);
-  writer.writeBool(offsets[7], object.isSynced);
-  writer.writeLong(offsets[8], object.itemId);
-  writer.writeString(offsets[9], object.itemName);
-  writer.writeLong(offsets[10], object.parentCreditNoteId);
-  writer.writeDouble(offsets[11], object.quantity);
-  writer.writeDouble(offsets[12], object.rate);
-  writer.writeDouble(offsets[13], object.taxableAmount);
-  writer.writeDouble(offsets[14], object.totalAmount);
-  writer.writeDateTime(offsets[15], object.updatedAt);
-  writer.writeString(offsets[16], object.uuid);
-  writer.writeLong(offsets[17], object.version);
+  writer.writeString(offsets[0], object.batchNumber);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeDouble(offsets[2], object.discount);
+  writer.writeString(offsets[3], object.expiryDate);
+  writer.writeDouble(offsets[4], object.freeQuantity);
+  writer.writeDouble(offsets[5], object.gstAmount);
+  writer.writeDouble(offsets[6], object.gstRate);
+  writer.writeString(offsets[7], object.hsnCode);
+  writer.writeBool(offsets[8], object.isDeleted);
+  writer.writeBool(offsets[9], object.isSynced);
+  writer.writeLong(offsets[10], object.itemId);
+  writer.writeString(offsets[11], object.itemName);
+  writer.writeString(offsets[12], object.mfgDate);
+  writer.writeLong(offsets[13], object.parentCreditNoteId);
+  writer.writeDouble(offsets[14], object.quantity);
+  writer.writeDouble(offsets[15], object.rate);
+  writer.writeDouble(offsets[16], object.taxableAmount);
+  writer.writeDouble(offsets[17], object.totalAmount);
+  writer.writeString(offsets[18], object.unit);
+  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeString(offsets[20], object.uuid);
+  writer.writeLong(offsets[21], object.version);
 }
 
 CreditNoteItem _creditNoteItemDeserialize(
@@ -209,25 +257,29 @@ CreditNoteItem _creditNoteItemDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = CreditNoteItem();
-  object.createdAt = reader.readDateTime(offsets[0]);
-  object.discount = reader.readDoubleOrNull(offsets[1]);
-  object.freeQuantity = reader.readDoubleOrNull(offsets[2]);
-  object.gstAmount = reader.readDoubleOrNull(offsets[3]);
-  object.gstRate = reader.readDoubleOrNull(offsets[4]);
-  object.hsnCode = reader.readStringOrNull(offsets[5]);
+  object.batchNumber = reader.readStringOrNull(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.discount = reader.readDoubleOrNull(offsets[2]);
+  object.expiryDate = reader.readStringOrNull(offsets[3]);
+  object.freeQuantity = reader.readDoubleOrNull(offsets[4]);
+  object.gstAmount = reader.readDoubleOrNull(offsets[5]);
+  object.gstRate = reader.readDoubleOrNull(offsets[6]);
+  object.hsnCode = reader.readStringOrNull(offsets[7]);
   object.id = id;
-  object.isDeleted = reader.readBool(offsets[6]);
-  object.isSynced = reader.readBool(offsets[7]);
-  object.itemId = reader.readLongOrNull(offsets[8]);
-  object.itemName = reader.readStringOrNull(offsets[9]);
-  object.parentCreditNoteId = reader.readLongOrNull(offsets[10]);
-  object.quantity = reader.readDoubleOrNull(offsets[11]);
-  object.rate = reader.readDoubleOrNull(offsets[12]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[13]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
-  object.uuid = reader.readStringOrNull(offsets[16]);
-  object.version = reader.readLong(offsets[17]);
+  object.isDeleted = reader.readBool(offsets[8]);
+  object.isSynced = reader.readBool(offsets[9]);
+  object.itemId = reader.readLongOrNull(offsets[10]);
+  object.itemName = reader.readStringOrNull(offsets[11]);
+  object.mfgDate = reader.readStringOrNull(offsets[12]);
+  object.parentCreditNoteId = reader.readLongOrNull(offsets[13]);
+  object.quantity = reader.readDoubleOrNull(offsets[14]);
+  object.rate = reader.readDoubleOrNull(offsets[15]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[16]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[17]);
+  object.unit = reader.readStringOrNull(offsets[18]);
+  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.uuid = reader.readStringOrNull(offsets[20]);
+  object.version = reader.readLong(offsets[21]);
   return object;
 }
 
@@ -239,40 +291,48 @@ P _creditNoteItemDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readDoubleOrNull(offset)) as P;
     case 3:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readDoubleOrNull(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
-      return (reader.readLongOrNull(offset)) as P;
-    case 9:
       return (reader.readStringOrNull(offset)) as P;
+    case 8:
+      return (reader.readBool(offset)) as P;
+    case 9:
+      return (reader.readBool(offset)) as P;
     case 10:
       return (reader.readLongOrNull(offset)) as P;
     case 11:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 14:
       return (reader.readDoubleOrNull(offset)) as P;
     case 15:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 16:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 17:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 18:
+      return (reader.readStringOrNull(offset)) as P;
+    case 19:
+      return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
+    case 21:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -500,6 +560,160 @@ extension CreditNoteItemQueryWhere
 extension CreditNoteItemQueryFilter
     on QueryBuilder<CreditNoteItem, CreditNoteItem, QFilterCondition> {
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'batchNumber',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'batchNumber',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'batchNumber',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'batchNumber',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      batchNumberIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'batchNumber',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
       createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -635,6 +849,160 @@ extension CreditNoteItemQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'expiryDate',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'expiryDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'expiryDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'expiryDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'expiryDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      expiryDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'expiryDate',
+        value: '',
       ));
     });
   }
@@ -1349,6 +1717,160 @@ extension CreditNoteItemQueryFilter
   }
 
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'mfgDate',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mfgDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'mfgDate',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'mfgDate',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      mfgDateIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'mfgDate',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
       parentCreditNoteIdIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1759,6 +2281,160 @@ extension CreditNoteItemQueryFilter
   }
 
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'unit',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'unit',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'unit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'unit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'unit',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'unit',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
+      unitIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'unit',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterFilterCondition>
       updatedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2061,6 +2737,20 @@ extension CreditNoteItemQueryLinks
 
 extension CreditNoteItemQuerySortBy
     on QueryBuilder<CreditNoteItem, CreditNoteItem, QSortBy> {
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      sortByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      sortByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2084,6 +2774,20 @@ extension CreditNoteItemQuerySortBy
       sortByDiscountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      sortByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      sortByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2192,6 +2896,19 @@ extension CreditNoteItemQuerySortBy
     });
   }
 
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> sortByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      sortByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
       sortByParentCreditNoteId() {
     return QueryBuilder.apply(this, (query) {
@@ -2259,6 +2976,18 @@ extension CreditNoteItemQuerySortBy
     });
   }
 
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> sortByUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> sortByUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.desc);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> sortByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -2300,6 +3029,20 @@ extension CreditNoteItemQuerySortBy
 
 extension CreditNoteItemQuerySortThenBy
     on QueryBuilder<CreditNoteItem, CreditNoteItem, QSortThenBy> {
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      thenByBatchNumber() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      thenByBatchNumberDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'batchNumber', Sort.desc);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2323,6 +3066,20 @@ extension CreditNoteItemQuerySortThenBy
       thenByDiscountDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'discount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      thenByExpiryDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      thenByExpiryDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'expiryDate', Sort.desc);
     });
   }
 
@@ -2443,6 +3200,19 @@ extension CreditNoteItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> thenByMfgDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
+      thenByMfgDateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mfgDate', Sort.desc);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy>
       thenByParentCreditNoteId() {
     return QueryBuilder.apply(this, (query) {
@@ -2510,6 +3280,18 @@ extension CreditNoteItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> thenByUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> thenByUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'unit', Sort.desc);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QAfterSortBy> thenByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'updatedAt', Sort.asc);
@@ -2551,6 +3333,13 @@ extension CreditNoteItemQuerySortThenBy
 
 extension CreditNoteItemQueryWhereDistinct
     on QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct> {
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct> distinctByBatchNumber(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'batchNumber', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct>
       distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
@@ -2561,6 +3350,13 @@ extension CreditNoteItemQueryWhereDistinct
   QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct> distinctByDiscount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'discount');
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct> distinctByExpiryDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'expiryDate', caseSensitive: caseSensitive);
     });
   }
 
@@ -2617,6 +3413,13 @@ extension CreditNoteItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct> distinctByMfgDate(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mfgDate', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct>
       distinctByParentCreditNoteId() {
     return QueryBuilder.apply(this, (query) {
@@ -2650,6 +3453,13 @@ extension CreditNoteItemQueryWhereDistinct
     });
   }
 
+  QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct> distinctByUnit(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'unit', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<CreditNoteItem, CreditNoteItem, QDistinct>
       distinctByUpdatedAt() {
     return QueryBuilder.apply(this, (query) {
@@ -2679,6 +3489,13 @@ extension CreditNoteItemQueryProperty
     });
   }
 
+  QueryBuilder<CreditNoteItem, String?, QQueryOperations>
+      batchNumberProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'batchNumber');
+    });
+  }
+
   QueryBuilder<CreditNoteItem, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
@@ -2688,6 +3505,12 @@ extension CreditNoteItemQueryProperty
   QueryBuilder<CreditNoteItem, double?, QQueryOperations> discountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'discount');
+    });
+  }
+
+  QueryBuilder<CreditNoteItem, String?, QQueryOperations> expiryDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'expiryDate');
     });
   }
 
@@ -2740,6 +3563,12 @@ extension CreditNoteItemQueryProperty
     });
   }
 
+  QueryBuilder<CreditNoteItem, String?, QQueryOperations> mfgDateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mfgDate');
+    });
+  }
+
   QueryBuilder<CreditNoteItem, int?, QQueryOperations>
       parentCreditNoteIdProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2773,6 +3602,12 @@ extension CreditNoteItemQueryProperty
     });
   }
 
+  QueryBuilder<CreditNoteItem, String?, QQueryOperations> unitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'unit');
+    });
+  }
+
   QueryBuilder<CreditNoteItem, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
@@ -2791,13 +3626,3 @@ extension CreditNoteItemQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-

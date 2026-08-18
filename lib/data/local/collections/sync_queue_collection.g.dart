@@ -15,7 +15,7 @@ extension GetSyncQueueCollection on Isar {
 
 const SyncQueueSchema = CollectionSchema(
   name: r'SyncQueue',
-  id: 8592048831629037,
+  id: -1008958056975989282,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -90,7 +90,7 @@ const SyncQueueSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 1337985571063474,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -103,7 +103,7 @@ const SyncQueueSchema = CollectionSchema(
       ],
     ),
     r'entityId': IndexSchema(
-      id: 7453550216607,
+      id: 745355021660786263,
       name: r'entityId',
       unique: false,
       replace: false,
@@ -116,7 +116,7 @@ const SyncQueueSchema = CollectionSchema(
       ],
     ),
     r'entityUuid': IndexSchema(
-      id: 947171499730917,
+      id: -1414110998250231744,
       name: r'entityUuid',
       unique: false,
       replace: false,
@@ -2336,13 +2336,3 @@ extension SyncQueueQueryProperty
     });
   }
 }
-
-
-
-
-
-
-
-
-
-
