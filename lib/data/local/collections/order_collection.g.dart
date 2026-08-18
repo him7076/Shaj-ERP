@@ -15,7 +15,7 @@ extension GetOrderCollection on Isar {
 
 const OrderSchema = CollectionSchema(
   name: r'Order',
-  id: 103494837486634173,
+  id: 4415645684483272,
   properties: {
     r'cancellationReason': PropertySchema(
       id: 0,
@@ -175,7 +175,7 @@ const OrderSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 8698316308851096,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -188,7 +188,7 @@ const OrderSchema = CollectionSchema(
       ],
     ),
     r'orderNumber': IndexSchema(
-      id: 7506692016205733885,
+      id: 3695037006488382,
       name: r'orderNumber',
       unique: true,
       replace: false,
@@ -201,7 +201,7 @@ const OrderSchema = CollectionSchema(
       ],
     ),
     r'status': IndexSchema(
-      id: -107785170620420283,
+      id: 8705978818269382,
       name: r'status',
       unique: false,
       replace: false,
@@ -216,13 +216,13 @@ const OrderSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 8095062533677143939,
+      id: 6597602919734021,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'orderItems': LinkSchema(
-      id: -1325220897380652884,
+      id: 1162606933727207,
       name: r'orderItems',
       target: r'OrderItem',
       single: false,

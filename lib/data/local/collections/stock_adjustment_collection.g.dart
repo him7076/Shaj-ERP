@@ -15,7 +15,7 @@ extension GetStockAdjustmentCollection on Isar {
 
 const StockAdjustmentSchema = CollectionSchema(
   name: r'StockAdjustment',
-  id: -6799312885113115159,
+  id: 7884647038407945,
   properties: {
     r'adjustmentDate': PropertySchema(
       id: 0,
@@ -110,7 +110,7 @@ const StockAdjustmentSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 8698316308851096,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -123,7 +123,7 @@ const StockAdjustmentSchema = CollectionSchema(
       ],
     ),
     r'itemUuid': IndexSchema(
-      id: -647427939757351820,
+      id: 7916792670741459,
       name: r'itemUuid',
       unique: false,
       replace: false,

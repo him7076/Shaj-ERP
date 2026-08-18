@@ -15,7 +15,7 @@ extension GetItemCollection on Isar {
 
 const ItemSchema = CollectionSchema(
   name: r'Item',
-  id: 7900997316587104717,
+  id: 1683570179255610,
   properties: {
     r'barcode': PropertySchema(
       id: 0,
@@ -210,7 +210,7 @@ const ItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 8698316308851096,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -223,7 +223,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: -1692757059073837553,
+      id: 8410798437272236,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -236,7 +236,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemName': IndexSchema(
-      id: 2219846343528216480,
+      id: 4075326861932694,
       name: r'itemName',
       unique: false,
       replace: false,
@@ -249,7 +249,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: -9149027471911101060,
+      id: 6720228348995195,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -262,7 +262,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'barcode': IndexSchema(
-      id: 1156800733621869998,
+      id: 3879229015023150,
       name: r'barcode',
       unique: false,
       replace: false,
@@ -275,7 +275,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: -3348042439688860591,
+      id: 6371516179952930,
       name: r'sku',
       unique: false,
       replace: false,
@@ -288,7 +288,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'skuCode': IndexSchema(
-      id: 2008583941080558886,
+      id: 8985706528058884,
       name: r'skuCode',
       unique: false,
       replace: false,
@@ -303,19 +303,19 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: -1059489203734757626,
+      id: 5646890930061679,
       name: r'category',
       target: r'Category',
       single: true,
     ),
     r'unit': LinkSchema(
-      id: 7514228656935813173,
+      id: 2224478481826679,
       name: r'unit',
       target: r'Unit',
       single: true,
     ),
     r'brand': LinkSchema(
-      id: 2993955207832475027,
+      id: 3565055258466015,
       name: r'brand',
       target: r'Brand',
       single: true,
