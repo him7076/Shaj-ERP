@@ -1,6 +1,6 @@
 name: business_sahaj_erp
 description: "A professional, offline-first Clean Architecture ERP application for Business Sahaj ERP."
-version: 1.0.5+6
+version: 1.0.6+7
 
 publish_to: 'none'
 
