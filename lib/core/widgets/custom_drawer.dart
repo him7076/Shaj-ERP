@@ -178,6 +178,14 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
+                    icon: Icons.chat_rounded,
+                    label: 'WhatsApp Order Importer',
+                    routePath: '/orders/whatsapp-import',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
                     icon: Icons.receipt_long_rounded,
                     label: 'All Transactions',
                     routePath: '/transactions',
@@ -442,6 +450,7 @@ class CustomDrawer extends ConsumerWidget {
     switch (routePath) {
       case '/dashboard': return const Color(0xFF6366F1);
       case '/orders': return const Color(0xFF0EA5E9);
+      case '/orders/whatsapp-import': return const Color(0xFF25D366);
       case '/transactions': return const Color(0xFF8B5CF6);
       case '/sales': return const Color(0xFF10B981);
       case '/purchases': return const Color(0xFF6366F1);

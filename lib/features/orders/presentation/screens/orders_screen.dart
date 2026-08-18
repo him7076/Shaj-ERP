@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/add_edit_order_screen.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_order_importer_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
@@ -105,6 +106,20 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               setState(() {
                 _showFilters = !_showFilters;
               });
+            },
+          ),
+
+          // 💬 WhatsApp Order Importer Button
+          IconButton(
+            tooltip: 'Import WhatsApp Order',
+            icon: const Icon(Icons.chat_outlined, color: Color(0xFF25D366), size: 20),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WhatsappOrderImporterScreen(),
+                ),
+              ).then((_) => ref.invalidate(filteredOrdersProvider));
             },
           ),
 
