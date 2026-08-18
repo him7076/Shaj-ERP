@@ -4,6 +4,7 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 extension IterableNullSafety<T> on Iterable<T> {
   T? firstWhereOrNull(bool Function(T element) test) {

@@ -231,7 +231,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         final item = row.selectedItem!;
 
         final unitName = row.isSecondaryUnit
-            ? (item.secondaryUnitName ?? 'PCS')
+            ? (item.secondaryUnit ?? 'PCS')
             : (item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS');
 
         final lineTotal = row.subtotal;
@@ -661,7 +661,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                             ),
                                             child: Text(
                                               row.isSecondaryUnit
-                                                  ? (item?.secondaryUnitName ?? 'SEC')
+                                                  ? (item?.secondaryUnit ?? 'SEC')
                                                   : (item?.primaryUnitName ?? item?.unit.value?.shortName ?? 'PRI'),
                                               style: TextStyle(
                                                 fontSize: 11,
