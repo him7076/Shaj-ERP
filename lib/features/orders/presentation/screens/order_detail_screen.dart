@@ -694,6 +694,102 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     );
   }
 
+  Widget _buildLocationCard(Order order, ThemeData theme) {
+    final hasUrl = order.locationUrl != null && order.locationUrl!.trim().isNotEmpty;
+    final hasCoordinates = order.latitude != null && order.longitude != null;
+
+    if (!hasUrl && !hasCoordinates) {
+      return const SizedBox.shrink();
+    }
+
+    final targetUrl = hasUrl
+        ? order.locationUrl!
+        : 'https://www.google.com/maps/search/?api=1&query=${order.latitude},${order.longitude}';
+
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(left: BorderSide(color: Colors.redAccent, width: 5)),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(0xFFFFEBEE),
+                  child: Icon(Icons.map_rounded, color: Colors.redAccent, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GOOGLE MAPS OUTLET LOCATION',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.redAccent,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        hasCoordinates
+                            ? 'GPS Coordinates: ${order.latitude?.toStringAsFixed(5)}, ${order.longitude?.toStringAsFixed(5)}'
+                            : 'WhatsApp Location Link Attached',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final uri = Uri.parse(targetUrl);
+                  try {
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    } else {
+                      await launchUrl(uri);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Could not launch Google Maps: $e')),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.navigation_rounded, color: Colors.white),
+                label: const Text(
+                  'Open Directions in Google Maps',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildModernItemsTable(Order order, ThemeData theme) {
     return Card(
       elevation: 0,
