@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/add_edit_expense_screen.dart';
+import 'package:business_sahaj_erp/core/services/expense_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
 class ExpensesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -39,6 +44,75 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _importFromExcel() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty || result.files.single.bytes == null) {
+        return;
+      }
+
+      final bytes = result.files.single.bytes!;
+      final dbService = ref.read(databaseServiceProvider);
+
+      final importResult = await ImportProgressModal.show<ImportExpenseResult>(
+        context: context,
+        title: 'Importing Operating Expenses',
+        task: (onProgress) => ExpenseExcelImportService.importExpensesFromBytes(
+          bytes,
+          dbService,
+          onProgress: onProgress,
+        ),
+      );
+
+      if (importResult != null && mounted) {
+        ref.invalidate(expenseListProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Successfully imported ${importResult.totalExpensesImported} expenses!'
+              '${importResult.errors.isNotEmpty ? " (${importResult.errors.length} errors)" : ""}',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import expenses: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _downloadSampleTemplate() async {
+    try {
+      final bytes = ExpenseExcelImportService.generateSampleTemplate();
+      if (bytes != null) {
+        await ExcelDownloadHelper.downloadExcel(
+          bytes,
+          'Expense_Import_Template.xlsx',
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Expense Excel template downloaded successfully!'), backgroundColor: Colors.green),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error generating template: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -86,6 +160,40 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 }
               });
             },
+          ),
+          // 📊 Excel Operations Popup Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.table_chart_rounded, size: 20),
+            tooltip: 'Excel Options',
+            onSelected: (val) {
+              if (val == 'import_excel') {
+                _importFromExcel();
+              } else if (val == 'download_template') {
+                _downloadSampleTemplate();
+              }
+            },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                value: 'import_excel',
+                child: Row(
+                  children: [
+                    Icon(Icons.file_upload_outlined, color: Colors.green, size: 18),
+                    SizedBox(width: 8),
+                    Text('Import Expenses from Excel'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'download_template',
+                child: Row(
+                  children: [
+                    Icon(Icons.download_rounded, color: Colors.blue, size: 18),
+                    SizedBox(width: 8),
+                    Text('Download Sample Excel Template'),
+                  ],
+                ),
+              ),
+            ],
           ),
           // 🔄 Refresh Button
           IconButton(

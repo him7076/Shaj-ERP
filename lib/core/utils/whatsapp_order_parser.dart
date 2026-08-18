@@ -54,8 +54,8 @@ class WhatsappOrderParser {
     final orderIdMatch = RegExp(r'Order\s*Id\s*:\s*(.+)', caseSensitive: false).firstMatch(rawText);
     final orderId = orderIdMatch?.group(1)?.trim();
 
-    // d. SalesRep Name: SalesRep\s*:\s*(.+)
-    final salesRepMatch = RegExp(r'SalesRep\s*:\s*(.+)', caseSensitive: false).firstMatch(rawText);
+    // d. SalesRep Name: SalesRep / Salesman / Sales Person / Rep: ...
+    final salesRepMatch = RegExp(r'(?:SalesRep|Sales\s*Rep|Salesman|Sales\s*Person|Salesperson|Executive|Rep)\s*[:\-]\s*(.+)', caseSensitive: false).firstMatch(rawText);
     final salesRep = salesRepMatch?.group(1)?.trim();
 
     // e. Date: Date\s*:\s*(.+)
@@ -94,6 +94,12 @@ class WhatsappOrderParser {
           lower.startsWith('mob') ||
           lower.startsWith('order id:') ||
           lower.startsWith('salesrep:') ||
+          lower.startsWith('sales rep:') ||
+          lower.startsWith('salesman:') ||
+          lower.startsWith('sales person:') ||
+          lower.startsWith('salesperson:') ||
+          lower.startsWith('rep:') ||
+          lower.startsWith('executive:') ||
           lower.startsWith('date:') ||
           lower.startsWith('amount:') ||
           lower.startsWith('location:') ||

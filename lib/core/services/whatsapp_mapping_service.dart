@@ -82,6 +82,27 @@ class WhatsAppPartyMapping {
       );
 }
 
+/// Model representing salesman mapping rule
+class WhatsAppSalesmanMapping {
+  final String rawSalesmanName;
+  final String targetSalesmanName;
+
+  WhatsAppSalesmanMapping({
+    required this.rawSalesmanName,
+    required this.targetSalesmanName,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'rawSalesmanName': rawSalesmanName,
+        'targetSalesmanName': targetSalesmanName,
+      };
+
+  factory WhatsAppSalesmanMapping.fromJson(Map<String, dynamic> json) => WhatsAppSalesmanMapping(
+        rawSalesmanName: json['rawSalesmanName'] ?? '',
+        targetSalesmanName: json['targetSalesmanName'] ?? '',
+      );
+}
+
 /// Result of 3-Tier Multi-Unit conversion engine
 class ConvertedUnitResult {
   final String unitName;
@@ -592,6 +613,131 @@ class WhatsappMappingService {
       convertedQuantity: fallbackQty,
       effectiveRate: unitRate,
     );
+  }
+
+  // --- SALESMAN MAPPING METHODS ---
+
+  List<WhatsAppSalesmanMapping> getAllSalesmanMappings() {
+    try {
+      final isarList = _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Salesman')
+          .and()
+          .isDeletedEqualTo(false)
+          .findAllSync();
+
+      if (isarList.isNotEmpty) {
+        return isarList
+            .where((m) => m.rawKey != null && m.targetUuid != null)
+            .map((m) => WhatsAppSalesmanMapping(
+                  rawSalesmanName: m.rawKey!,
+                  targetSalesmanName: m.targetUuid!,
+                ))
+            .toList();
+      }
+    } catch (_) {}
+
+    final rawJson = _prefs.getString('wa_salesman_mappings_v1');
+    if (rawJson == null || rawJson.isEmpty) return [];
+    try {
+      final List list = jsonDecode(rawJson);
+      return list.map((e) => WhatsAppSalesmanMapping.fromJson(e)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  WhatsAppSalesmanMapping? getSalesmanMapping(String rawSalesmanName) {
+    final cleanName = rawSalesmanName.trim();
+    if (cleanName.isEmpty) return null;
+
+    try {
+      final isarMatch = _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Salesman')
+          .and()
+          .rawKeyEqualTo(cleanName, caseSensitive: false)
+          .and()
+          .isDeletedEqualTo(false)
+          .findFirstSync();
+
+      if (isarMatch != null && isarMatch.targetUuid != null) {
+        return WhatsAppSalesmanMapping(
+          rawSalesmanName: isarMatch.rawKey ?? rawSalesmanName,
+          targetSalesmanName: isarMatch.targetUuid!,
+        );
+      }
+    } catch (_) {}
+
+    final list = getAllSalesmanMappings();
+    return list.firstWhereOrNull((m) => m.rawSalesmanName.trim().toLowerCase() == cleanName.toLowerCase());
+  }
+
+  Future<void> saveSalesmanMapping(String rawSalesmanName, String targetSalesmanName) async {
+    if (rawSalesmanName.trim().isEmpty || targetSalesmanName.trim().isEmpty) return;
+    final cleanRaw = rawSalesmanName.trim();
+    final cleanTarget = targetSalesmanName.trim();
+    final uuidGen = const Uuid();
+
+    try {
+      final existing = await _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Salesman')
+          .and()
+          .rawKeyEqualTo(cleanRaw, caseSensitive: false)
+          .findFirst();
+
+      final entity = existing ??
+          (WhatsAppMapping()
+            ..uuid = uuidGen.v4()
+            ..createdAt = DateTime.now());
+
+      entity
+        ..mappingType = 'Salesman'
+        ..rawKey = cleanRaw
+        ..targetUuid = cleanTarget
+        ..updatedAt = DateTime.now()
+        ..isDeleted = false
+        ..isSynced = false;
+
+      await _isar.writeTxn(() async {
+        await _isar.whatsAppMappings.put(entity);
+
+        final q = SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = 'WhatsAppMapping'
+          ..entityId = entity.id
+          ..entityUuid = entity.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await _isar.syncQueues.put(q);
+      });
+      SyncManager.triggerUpload();
+    } catch (e) {
+      print('Error saving WhatsApp salesman mapping to Isar: $e');
+    }
+  }
+
+  Future<void> deleteSalesmanMapping(String rawSalesmanName) async {
+    try {
+      final match = await _isar.whatsAppMappings
+          .filter()
+          .mappingTypeEqualTo('Salesman')
+          .and()
+          .rawKeyEqualTo(rawSalesmanName.trim(), caseSensitive: false)
+          .findFirst();
+
+      if (match != null) {
+        await _isar.writeTxn(() async {
+          match.isDeleted = true;
+          match.updatedAt = DateTime.now();
+          match.isSynced = false;
+          await _isar.whatsAppMappings.put(match);
+        });
+        SyncManager.triggerUpload();
+      }
+    } catch (_) {}
   }
 }
 

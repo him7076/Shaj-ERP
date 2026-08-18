@@ -19,6 +19,8 @@ import 'package:business_sahaj_erp/core/models/firm_info.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
+
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderUuid;
 
@@ -165,154 +167,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   }
 
   Future<void> _convertToSale() async {
-    final paidController = TextEditingController(text: '0.0');
-    DateTime dueDate = DateTime.now().add(const Duration(days: 15));
-    var invoiceType = 'Tax Invoice';
-    final formKey = GlobalKey<FormState>();
+    if (_order == null) return;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final theme = Theme.of(context);
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Row(
-                children: [
-                  Icon(Icons.receipt_long, color: Colors.purple),
-                  SizedBox(width: 8),
-                  Text('Convert Order to Invoice'),
-                ],
-              ),
-              content: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      DropdownButtonFormField<String>(
-                        value: invoiceType,
-                        decoration: const InputDecoration(
-                          labelText: 'Invoice Billing Type',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: const [
-                          DropdownMenuItem(value: 'Tax Invoice', child: Text('Tax Invoice')),
-                          DropdownMenuItem(value: 'Retail Invoice', child: Text('Retail Invoice')),
-                          DropdownMenuItem(value: 'Cash Invoice', child: Text('Cash Invoice')),
-                          DropdownMenuItem(value: 'Credit Invoice', child: Text('Credit Invoice')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) {
-                            setDialogState(() => invoiceType = val);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: paidController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        decoration: InputDecoration(
-                          labelText: 'Amount Paid (₹)',
-                          border: const OutlineInputBorder(),
-                          helperText: 'Grand Total: ₹${_order?.grandTotal?.toStringAsFixed(2)}',
-                        ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) return 'Required (enter 0 if credit)';
-                          final amt = double.tryParse(v);
-                          if (amt == null || amt < 0) return 'Enter valid amount >= 0';
-                          if (amt > (_order?.grandTotal ?? 0.0)) return 'Paid amount cannot exceed total';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      ListTile(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: theme.colorScheme.outlineVariant),
-                        ),
-                        title: const Text('Credit Due Date'),
-                        subtitle: Text(DateFormat('dd-MM-yyyy').format(dueDate)),
-                        trailing: const Icon(Icons.calendar_today),
-                        onTap: () async {
-                          final selected = await showDatePicker(
-                            context: context,
-                            initialDate: dueDate,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                          );
-                          if (selected != null) {
-                            setDialogState(() => dueDate = selected);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
-                  onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      Navigator.pop(context, true);
-                    }
-                  },
-                  child: const Text('Generate Invoice'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final converted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEditInvoiceScreen(sourceOrderUuid: _order!.uuid),
+      ),
     );
 
-    if (confirm == true && _order != null) {
-      setState(() => _isLoading = true);
-      try {
-        final authState = ref.read(authProvider);
-        final userEmail = authState.email ?? 'salesman@sahaj.com';
-        final paidAmt = double.parse(paidController.text);
-
-        final invoiceRepo = ref.read(invoiceRepositoryProvider);
-        final invoice = await invoiceRepo.convertOrderToInvoice(
-          orderUuid: _order!.uuid!,
-          invoiceType: invoiceType,
-          paidAmount: paidAmt,
-          dueDate: dueDate,
-          user: userEmail,
-        );
-
-        await _loadOrder();
-        ref.invalidate(filteredOrdersProvider);
-        ref.invalidate(filteredInvoicesProvider);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Order converted! Generated Invoice #${invoice.invoiceNumber}.'),
-              backgroundColor: Colors.purple,
-            ),
-          );
-        }
-      } catch (e) {
-        logger.error('Failed to convert order to invoice', e);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Conversion failed: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
+    if (converted == true && mounted) {
+      await _loadOrder();
+      ref.invalidate(filteredOrdersProvider);
+      ref.invalidate(filteredInvoicesProvider);
     }
   }
 

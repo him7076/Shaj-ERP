@@ -25,11 +25,13 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 
 
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
   final String? invoiceUuid;
-  const AddEditInvoiceScreen({Key? key, this.invoiceUuid}) : super(key: key);
+  final String? sourceOrderUuid;
+  const AddEditInvoiceScreen({Key? key, this.invoiceUuid, this.sourceOrderUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditInvoiceScreen> createState() => _AddEditInvoiceScreenState();
@@ -39,6 +41,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
   final ScrollController _itemsScrollController = ScrollController();
+  Order? _sourceOrder;
 
   final TextEditingController _remarksController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
@@ -288,6 +291,93 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     }
   }
 
+  Future<void> _loadOrderDataForConversion() async {
+    try {
+      final db = ref.read(databaseServiceProvider).isar;
+      final order = await db.orders.filter().uuidEqualTo(widget.sourceOrderUuid).findFirst();
+      if (order != null) {
+        _sourceOrder = order;
+        final nextNo = await ref.read(invoiceRepositoryProvider).generateNextInvoiceNumber();
+        _voucherNumberDisplay = nextNo;
+        _remarksController.text = 'Converted from Order #${order.orderNumber}. ${order.remarks ?? ""}';
+
+        if (order.createdBy != null && order.createdBy!.isNotEmpty) {
+          _selectedSalesman = order.createdBy!;
+          if (!_salesmenList.contains(_selectedSalesman)) {
+            _salesmenList.add(_selectedSalesman);
+          }
+        }
+
+        if (!kIsWeb) {
+          try { await order.party.load(); } catch (_) {}
+          try { await order.orderItems.load(); } catch (_) {}
+        }
+
+        final party = kIsWeb
+            ? (order.partyId != null ? await db.partys.get(order.partyId!) : null)
+            : order.party.value;
+
+        if (party != null) {
+          List<OrderItem> orderItemsList = [];
+          if (!kIsWeb) {
+            try { await order.orderItems.load(); } catch (_) {}
+            orderItemsList = order.orderItems.toList();
+          }
+          if (orderItemsList.isEmpty) {
+            final targetId = order.id;
+            orderItemsList = await db.orderItems
+                .filter()
+                .isDeletedEqualTo(false)
+                .and()
+                .order((q) => q.idEqualTo(targetId))
+                .findAll();
+          }
+
+          final List<CartItemState> cartItems = [];
+          for (var item in orderItemsList) {
+            if (!kIsWeb) {
+              try { await item.item.load(); } catch (_) {}
+            }
+            final dbItem = kIsWeb
+                ? (item.itemId != null ? await db.items.get(item.itemId!) : null)
+                : item.item.value;
+
+            if (dbItem != null) {
+              final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
+              final discPct = totalBase > 0 ? ((item.discountAmount ?? 0.0) / totalBase) * 100.0 : 0.0;
+
+              cartItems.add(
+                CartItemState(
+                  item: dbItem,
+                  quantity: item.quantity ?? 1.0,
+                  freeQuantity: item.freeQuantity ?? 0.0,
+                  unit: (item.unit != null && item.unit!.isNotEmpty && item.unit != 'PCS')
+                      ? item.unit!
+                      : (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? item.unit ?? 'PCS'),
+                  rate: item.rate ?? 0.0,
+                  discountPercent: discPct,
+                  discountAmount: item.discountAmount ?? 0.0,
+                  gstPercent: item.gstPercent ?? dbItem.gstRate ?? 18.0,
+                ),
+              );
+            }
+          }
+
+          ref.read(invoiceCartProvider.notifier).loadInvoice(
+            party: party,
+            items: cartItems,
+            isGstInclusive: false,
+          );
+        }
+        setState(() {});
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading sales order: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _remarksController.dispose();
@@ -463,8 +553,36 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         return invItem;
       }).toList();
 
+      if (_sourceOrder != null) {
+        invoice
+          ..sourceOrderId = _sourceOrder!.id
+          ..sourceOrderNumber = _sourceOrder!.orderNumber;
+      }
+
       await Future.delayed(Duration.zero);
       await repo.saveInvoice(invoice, invoiceItems);
+
+      if (_sourceOrder != null) {
+        final isar = ref.read(databaseServiceProvider).isar;
+        _sourceOrder!.status = 'Converted To Sale';
+        _sourceOrder!.updatedAt = DateTime.now();
+        _sourceOrder!.version += 1;
+        _sourceOrder!.isSynced = false;
+
+        await isar.writeTxn(() async {
+          await isar.orders.put(_sourceOrder!);
+          final q = SyncQueue()
+            ..uuid = const Uuid().v4()
+            ..entityType = 'Order'
+            ..entityId = _sourceOrder!.id
+            ..entityUuid = _sourceOrder!.uuid
+            ..operation = 'Update'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(q);
+        });
+        ref.invalidate(filteredOrdersProvider);
+      }
 
       ref.invalidate(filteredInvoicesProvider);
       ref.invalidate(filteredTransactionsProvider);
@@ -477,10 +595,12 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       } catch (_) {}
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Direct Invoice #${invoice.invoiceNumber} recorded!'),
+            content: Text(_sourceOrder != null
+                ? 'Sales Order #${_sourceOrder!.orderNumber} converted to Invoice #${invoice.invoiceNumber}!'
+                : 'Direct Invoice #${invoice.invoiceNumber} recorded!'),
             backgroundColor: Colors.green,
           ),
         );

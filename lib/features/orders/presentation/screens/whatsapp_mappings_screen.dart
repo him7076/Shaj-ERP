@@ -19,6 +19,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
 
   List<WhatsAppPartyMapping> _partyMappings = [];
   List<WhatsAppItemMapping> _itemMappings = [];
+  List<WhatsAppSalesmanMapping> _salesmanMappings = [];
   List<Party> _allParties = [];
   List<Item> _allItems = [];
 
@@ -28,7 +29,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadMappingsAndMasters();
   }
 
@@ -49,6 +50,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
 
       _partyMappings = mappingService.getAllPartyMappings();
       _itemMappings = mappingService.getAllItemMappings();
+      _salesmanMappings = mappingService.getAllSalesmanMappings();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading mappings: $e')));
@@ -331,6 +333,65 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
     );
   }
 
+  void _showAddEditSalesmanMappingDialog([WhatsAppSalesmanMapping? existing]) {
+    final rawSalesmanCtrl = TextEditingController(text: existing?.rawSalesmanName ?? '');
+    final targetSalesmanCtrl = TextEditingController(text: existing?.targetSalesmanName ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(existing == null ? 'Add Salesman Mapping Rule' : 'Edit Salesman Mapping Rule'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: rawSalesmanCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Raw WhatsApp Sales Rep Name',
+                  hintText: 'e.g. Rahul or Rahul Salesman',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: targetSalesmanCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Mapped ERP Salesman Name',
+                  hintText: 'e.g. Rahul Sharma',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+            onPressed: () async {
+              final raw = rawSalesmanCtrl.text.trim();
+              final target = targetSalesmanCtrl.text.trim();
+              if (raw.isEmpty || target.isEmpty) return;
+
+              final mappingService = ref.read(whatsappMappingServiceProvider);
+              await mappingService.saveSalesmanMapping(raw, target);
+
+              Navigator.pop(ctx);
+              _loadMappingsAndMasters();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Salesman mapping for "$raw" saved!')),
+              );
+            },
+            child: const Text('Save Mapping'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -349,6 +410,12 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
       return i.rawItemLine.toLowerCase().contains(q) || (item?.itemName?.toLowerCase().contains(q) ?? false);
     }).toList();
 
+    final filteredSalesmen = _salesmanMappings.where((s) {
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      return s.rawSalesmanName.toLowerCase().contains(q) || s.targetSalesmanName.toLowerCase().contains(q);
+    }).toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('WhatsApp Mapping Master', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -357,8 +424,9 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
           indicatorColor: const Color(0xFF25D366),
           labelColor: const Color(0xFF25D366),
           tabs: [
-            Tab(icon: const Icon(Icons.store_rounded), text: 'Party Mappings (${_partyMappings.length})'),
-            Tab(icon: const Icon(Icons.inventory_2_rounded), text: 'Item Mappings (${_itemMappings.length})'),
+            Tab(icon: const Icon(Icons.store_rounded), text: 'Party (${_partyMappings.length})'),
+            Tab(icon: const Icon(Icons.inventory_2_rounded), text: 'Item (${_itemMappings.length})'),
+            Tab(icon: const Icon(Icons.badge_rounded), text: 'Salesman (${_salesmanMappings.length})'),
           ],
         ),
       ),
@@ -371,7 +439,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                   padding: const EdgeInsets.all(12.0),
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Search raw string, shop name, product...',
+                      hintText: 'Search raw string, shop name, product, salesman...',
                       prefixIcon: const Icon(Icons.search_rounded),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -389,6 +457,9 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
 
                       // Tab 2: Item Mappings
                       _buildItemMappingsTab(filteredItems, theme),
+
+                      // Tab 3: Salesman Mappings
+                      _buildSalesmanMappingsTab(filteredSalesmen, theme),
                     ],
                   ),
                 ),
@@ -398,12 +469,18 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
         backgroundColor: const Color(0xFF25D366),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: Text(_tabController.index == 0 ? 'Add Party Rule' : 'Add Item Rule'),
+        label: Text(_tabController.index == 0
+            ? 'Add Party Rule'
+            : _tabController.index == 1
+                ? 'Add Item Rule'
+                : 'Add Salesman Rule'),
         onPressed: () {
           if (_tabController.index == 0) {
             _showAddEditPartyMappingDialog();
-          } else {
+          } else if (_tabController.index == 1) {
             _showAddEditItemMappingDialog();
+          } else {
+            _showAddEditSalesmanMappingDialog();
           }
         },
       ),
@@ -565,6 +642,69 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                   onPressed: () async {
                     final mappingService = ref.read(whatsappMappingServiceProvider);
                     await mappingService.deleteItemMapping(mapping.rawItemLine);
+                    _loadMappingsAndMasters();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSalesmanMappingsTab(List<WhatsAppSalesmanMapping> list, ThemeData theme) {
+    if (list.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.badge_outlined, size: 64, color: Colors.grey),
+            const SizedBox(height: 12),
+            const Text('No saved WhatsApp salesman mappings found.'),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add Salesman Mapping Rule'),
+              onPressed: () => _showAddEditSalesmanMappingDialog(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      itemCount: list.length,
+      itemBuilder: (context, index) {
+        final mapping = list[index];
+
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          elevation: 0.5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          ),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0x1F25D366),
+              child: Icon(Icons.badge_rounded, color: Color(0xFF25D366)),
+            ),
+            title: Text(mapping.rawSalesmanName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('Mapped ERP Salesman: ${mapping.targetSalesmanName}'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                  onPressed: () => _showAddEditSalesmanMappingDialog(mapping),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: () async {
+                    final mappingService = ref.read(whatsappMappingServiceProvider);
+                    await mappingService.deleteSalesmanMapping(mapping.rawSalesmanName);
                     _loadMappingsAndMasters();
                   },
                 ),
