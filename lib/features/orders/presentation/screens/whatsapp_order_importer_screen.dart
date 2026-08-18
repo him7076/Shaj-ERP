@@ -12,20 +12,25 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_mappings_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 
 class _MappedRowState {
   final ParsedWhatsappOrderItem rawParsedItem;
   Item? selectedItem;
+  WhatsAppItemMapping? mappingRule;
   bool isSecondaryUnit;
+  String unitName;
   double quantity;
   double rate;
 
   _MappedRowState({
     required this.rawParsedItem,
     this.selectedItem,
+    this.mappingRule,
     this.isSecondaryUnit = false,
+    required this.unitName,
     required this.quantity,
     required this.rate,
   });
@@ -101,15 +106,35 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
       final mappedRows = <_MappedRowState>[];
       for (var parsedItem in parsed.items) {
         final matchedItem = await mappingService.matchItem(parsedItem.itemDescription);
-        final rate = matchedItem?.sellRate ?? 0.0;
+        final itemRule = mappingService.getItemMapping(parsedItem.itemDescription);
 
-        mappedRows.add(_MappedRowState(
-          rawParsedItem: parsedItem,
-          selectedItem: matchedItem,
-          isSecondaryUnit: false,
-          quantity: parsedItem.quantity.toDouble(),
-          rate: rate,
-        ));
+        if (matchedItem != null) {
+          final convResult = mappingService.convertWhatsAppPcsToErpUnit(
+            matchedItem,
+            parsedItem.quantity.toDouble(),
+            itemRule,
+          );
+
+          mappedRows.add(_MappedRowState(
+            rawParsedItem: parsedItem,
+            selectedItem: matchedItem,
+            mappingRule: itemRule,
+            isSecondaryUnit: convResult.isSecondaryUnit,
+            unitName: convResult.unitName,
+            quantity: convResult.convertedQuantity,
+            rate: convResult.effectiveRate,
+          ));
+        } else {
+          mappedRows.add(_MappedRowState(
+            rawParsedItem: parsedItem,
+            selectedItem: null,
+            mappingRule: null,
+            isSecondaryUnit: false,
+            unitName: 'PCS',
+            quantity: parsedItem.quantity.toDouble(),
+            rate: 0.0,
+          ));
+        }
       }
 
       setState(() {
@@ -124,6 +149,136 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
     } finally {
       if (mounted) setState(() => _isParsing = false);
     }
+  }
+
+  void _showInlineItemMappingModal(_MappedRowState row) {
+    final bundleCtrl = TextEditingController(text: (row.mappingRule?.pcsPerBundle ?? 1.0).toStringAsFixed(0));
+    final cartonCtrl = TextEditingController(text: (row.mappingRule?.pcsPerCarton ?? row.selectedItem?.conversionFactor ?? 1.0).toStringAsFixed(0));
+    final rateCtrl = TextEditingController(text: (row.rate > 0 ? row.rate : (row.selectedItem?.sellRate ?? 0.0)).toStringAsFixed(2));
+
+    Item? selectedItem = row.selectedItem ?? (_allItems.isNotEmpty ? _allItems.first : null);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Map Product & Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                child: Text('WhatsApp Line: ${row.rawParsedItem.rawLine}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<Item?>(
+                value: selectedItem,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Mapped ERP Product', border: OutlineInputBorder()),
+                items: _allItems
+                    .map((i) => DropdownMenuItem<Item?>(
+                          value: i,
+                          child: Text('${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})'),
+                        ))
+                    .toList(),
+                onChanged: (val) {
+                  setModalState(() {
+                    selectedItem = val;
+                    if (val?.sellRate != null) rateCtrl.text = val!.sellRate!.toStringAsFixed(2);
+                    if (val?.conversionFactor != null) cartonCtrl.text = val!.conversionFactor!.toStringAsFixed(0);
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: bundleCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Pcs / Bundle', border: OutlineInputBorder()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: cartonCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Pcs / Carton', border: OutlineInputBorder()),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: rateCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Custom Sale Rate (₹)', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Save Mapping & Apply'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () async {
+                    if (selectedItem == null) return;
+
+                    final rule = WhatsAppItemMapping(
+                      rawItemLine: row.rawParsedItem.itemDescription,
+                      itemUuid: selectedItem!.uuid!,
+                      pcsPerBundle: double.tryParse(bundleCtrl.text) ?? 1.0,
+                      pcsPerCarton: double.tryParse(cartonCtrl.text) ?? 1.0,
+                      customRate: double.tryParse(rateCtrl.text) ?? 0.0,
+                    );
+
+                    final mappingService = ref.read(whatsappMappingServiceProvider);
+                    await mappingService.saveItemMapping(rule);
+
+                    final convResult = mappingService.convertWhatsAppPcsToErpUnit(
+                      selectedItem!,
+                      row.rawParsedItem.quantity.toDouble(),
+                      rule,
+                    );
+
+                    setState(() {
+                      row.selectedItem = selectedItem;
+                      row.mappingRule = rule;
+                      row.isSecondaryUnit = convResult.isSecondaryUnit;
+                      row.unitName = convResult.unitName;
+                      row.quantity = convResult.convertedQuantity;
+                      row.rate = convResult.effectiveRate;
+                    });
+
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Mapping saved & totals updated LIVE for ${selectedItem?.itemName}!')),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _showCreatePartyDialog() {
@@ -146,19 +301,13 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
           children: [
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Party / Shop Name',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Party / Shop Name', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: mobCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Mobile Number',
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: 'Mobile Number', border: OutlineInputBorder()),
             ),
           ],
         ),
@@ -230,10 +379,6 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         if (row.selectedItem == null) continue;
         final item = row.selectedItem!;
 
-        final unitName = row.isSecondaryUnit
-            ? (item.secondaryUnit ?? 'PCS')
-            : (item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS');
-
         final lineTotal = row.subtotal;
         subtotal += lineTotal;
 
@@ -244,7 +389,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
           ..hsnCode = item.hsnCode
           ..quantity = row.quantity
           ..freeQuantity = 0.0
-          ..unit = unitName
+          ..unit = row.unitName
           ..rate = row.rate
           ..discountPercent = 0.0
           ..discountAmount = 0.0
@@ -258,7 +403,14 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
         orderItems.add(orderItem);
 
         if (_rememberMappings) {
-          await mappingService.saveItemMapping(row.rawParsedItem.itemDescription, item.uuid!);
+          final mapping = WhatsAppItemMapping(
+            rawItemLine: row.rawParsedItem.itemDescription,
+            itemUuid: item.uuid!,
+            pcsPerBundle: row.mappingRule?.pcsPerBundle ?? 1.0,
+            pcsPerCarton: row.mappingRule?.pcsPerCarton ?? item.conversionFactor ?? 1.0,
+            customRate: row.rate,
+          );
+          await mappingService.saveItemMapping(mapping);
         }
       }
 
@@ -343,6 +495,18 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
             Text('WhatsApp Order Importer', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Manage Mappings Master',
+            icon: const Icon(Icons.tune_rounded, color: Color(0xFF25D366)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const WhatsAppMappingsScreen()),
+              ).then((_) => _parseMessage());
+            },
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -482,7 +646,18 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('MAPPED CUSTOMER PARTY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                Row(
+                                  children: [
+                                    const Text('MAPPED CUSTOMER PARTY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                    const SizedBox(width: 8),
+                                    if (_selectedParty == null)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
+                                        child: const Text('Unmapped - Select Below', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                                      ),
+                                  ],
+                                ),
                                 TextButton.icon(
                                   icon: const Icon(Icons.add_rounded, size: 18),
                                   label: const Text('+ Create New Party', style: TextStyle(fontSize: 12)),
@@ -594,17 +769,45 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // WhatsApp line header
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        'Line #${index + 1}: ${row.rawParsedItem.rawLine}',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                                      ),
+                                    // WhatsApp line header with unmapped badge
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: item == null ? Colors.amber.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              'Line #${index + 1}: ${row.rawParsedItem.rawLine}',
+                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: item == null ? Colors.amber.shade900 : null),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        InkWell(
+                                          onTap: () => _showInlineItemMappingModal(row),
+                                          borderRadius: BorderRadius.circular(6),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: item == null ? Colors.red : Colors.blue.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(item == null ? Icons.warning_rounded : Icons.tune_rounded, size: 12, color: item == null ? Colors.white : Colors.blue),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  item == null ? 'Unmapped - Tap to Map' : 'Quick Rules',
+                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: item == null ? Colors.white : Colors.blue),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 8),
 
@@ -660,9 +863,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                               border: Border.all(color: row.isSecondaryUnit ? Colors.purple : Colors.blue),
                                             ),
                                             child: Text(
-                                              row.isSecondaryUnit
-                                                  ? (item?.secondaryUnit ?? 'SEC')
-                                                  : (item?.primaryUnitName ?? item?.unit.value?.shortName ?? 'PRI'),
+                                              row.unitName,
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
@@ -678,6 +879,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                           child: SizedBox(
                                             height: 38,
                                             child: TextFormField(
+                                              key: ValueKey('qty_${index}_${row.quantity}'),
                                               initialValue: row.quantity.toStringAsFixed(0),
                                               keyboardType: TextInputType.number,
                                               style: const TextStyle(fontSize: 12),

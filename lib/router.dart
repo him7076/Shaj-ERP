@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/screens/party_d
 import 'package:business_sahaj_erp/features/items/presentation/screens/items_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/orders_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_order_importer_screen.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_mappings_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/sales_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/reports_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/settings_screen.dart';
@@ -107,6 +108,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/orders/whatsapp-import',
             name: 'whatsapp-order-import',
             builder: (context, state) => const WhatsappOrderImporterScreen(),
+          ),
+          GoRoute(
+            path: '/orders/whatsapp-mappings',
+            name: 'whatsapp-mappings',
+            builder: (context, state) => const WhatsAppMappingsScreen(),
           ),
           GoRoute(
             path: '/sales',
