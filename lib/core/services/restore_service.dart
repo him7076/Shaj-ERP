@@ -175,17 +175,8 @@ class RestoreService {
       }
 
       Uint8List workingBytes = bytes;
-      bool isEncrypted = false;
-      try {
-        if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
-          final archive = ZipDecoder().decodeBytes(workingBytes, verify: false);
-          if (archive.isEmpty) isEncrypted = true;
-        } else if (workingBytes[0] != 0x7B /* '{' */) {
-          isEncrypted = true;
-        }
-      } catch (_) {
-        isEncrypted = true;
-      }
+      bool isEncrypted = workingBytes.length < 2 ||
+          ((workingBytes[0] != 0x50 || workingBytes[1] != 0x4B) && workingBytes[0] != 0x7B);
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
@@ -254,18 +245,8 @@ class RestoreService {
   }) async {
     try {
       Uint8List workingBytes = bytes;
-
-      bool isEncrypted = false;
-      try {
-        if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
-          final archive = ZipDecoder().decodeBytes(workingBytes, verify: false);
-          if (archive.isEmpty) isEncrypted = true;
-        } else if (workingBytes.isEmpty || workingBytes[0] != 0x7B /* '{' */) {
-          isEncrypted = true;
-        }
-      } catch (_) {
-        isEncrypted = true;
-      }
+      bool isEncrypted = workingBytes.length < 2 ||
+          ((workingBytes[0] != 0x50 || workingBytes[1] != 0x4B) && workingBytes[0] != 0x7B);
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
@@ -511,18 +492,8 @@ class RestoreService {
       logger.info('Initiating backup restoration: $filePath');
       
       final fileBytes = await File(filePath).readAsBytes();
-      bool isEncrypted = false;
-
-      // Robust Zip archive verification: attempt direct decoding without assuming byte signatures
-      try {
-        final archive = ZipDecoder().decodeBytes(fileBytes, verify: false);
-        if (archive.isEmpty) {
-          isEncrypted = true;
-        }
-      } catch (_) {
-        // Zip decoding failed, file is likely encrypted
-        isEncrypted = true;
-      }
+      bool isEncrypted = fileBytes.length < 2 ||
+          ((fileBytes[0] != 0x50 || fileBytes[1] != 0x4B) && fileBytes[0] != 0x7B);
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
