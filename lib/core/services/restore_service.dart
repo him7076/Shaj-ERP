@@ -175,6 +175,7 @@ class RestoreService {
         throw const CorruptedBackupException('Backup file is empty.');
       }
 
+      Uint8List workingBytes = bytes;
       bool isEncrypted = false;
       if (workingBytes.length >= 2) {
         final isZip = workingBytes[0] == 0x50 && workingBytes[1] == 0x4B;
@@ -250,6 +251,7 @@ class RestoreService {
     String duplicateStrategy = 'replace',
   }) async {
     try {
+      Uint8List workingBytes = bytes;
       bool isEncrypted = false;
       if (workingBytes.length >= 2) {
         final isZip = workingBytes[0] == 0x50 && workingBytes[1] == 0x4B;
