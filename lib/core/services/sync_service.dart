@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:uuid/uuid.dart';
 import 'package:isar/isar.dart' hide Query;
 import 'package:cloud_firestore/cloud_firestore.dart' hide Order, Settings, Transaction;
