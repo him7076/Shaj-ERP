@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
-import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:business_sahaj_erp/core/services/database_service.dart' hide FileNotFoundException;
 import 'package:business_sahaj_erp/core/services/compression_service.dart';
 import 'package:business_sahaj_erp/core/services/encryption_service.dart';
 import 'package:business_sahaj_erp/domain/models/backup_metadata.dart';

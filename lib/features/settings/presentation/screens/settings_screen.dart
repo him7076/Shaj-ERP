@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/features/backup/presentation/providers/backup_providers.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
