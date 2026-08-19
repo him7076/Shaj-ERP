@@ -1083,9 +1083,9 @@ class SyncService {
           if (filterCutoff != null) {
             query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
           }
-          querySnapshot = await query.get().timeout(const Duration(seconds: 8));
+          querySnapshot = await query.get().timeout(const Duration(seconds: 3));
         } catch (e1) {
-          logger.warning('Primary query failed for $entityType: $e1. Trying firmId-only query...');
+          logger.warning('Primary query failed or timed out (> 3s) for $entityType: $e1. Trying firmId-only query...');
         }
 
         // Step 2: Fallback to firmId query only (bypasses missing companyId/indexes)

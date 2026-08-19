@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:app_links/app_links.dart';
 
+import 'package:path_provider/path_provider.dart';
+
 // Services & Core
 import 'package:business_sahaj_erp/core/theme/app_theme.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
@@ -196,16 +198,56 @@ class _MyAppState extends ConsumerState<MyApp> {
     }
   }
 
-  void _handleIncomingUri(Uri uri) {
+  void _handleIncomingUri(Uri uri) async {
     try {
-      final path = uri.toFilePath();
-      if (path.toLowerCase().endsWith('.bserp')) {
-        final file = File(path);
-        if (file.existsSync()) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _promptRestoreDialog(file);
-          });
+      final uriStr = uri.toString();
+      File? fileToRestore;
+
+      if (uri.scheme == 'content' || uriStr.startsWith('content://')) {
+        final tempDir = await getTemporaryDirectory();
+        final targetPath = '${tempDir.path}/imported_backup_${DateTime.now().millisecondsSinceEpoch}.bserp';
+        final tempFile = File(targetPath);
+
+        final httpClient = HttpClient();
+        try {
+          final request = await httpClient.getUrl(uri);
+          final response = await request.close();
+          final bytesBuilder = BytesBuilder();
+          await for (final chunk in response) {
+            bytesBuilder.add(chunk);
+          }
+          await tempFile.writeAsBytes(bytesBuilder.toBytes(), flush: true);
+          if (await tempFile.exists() && await tempFile.length() > 0) {
+            fileToRestore = tempFile;
+          }
+        } catch (_) {
+          if (uri.path.isNotEmpty) {
+            final rawFile = File(uri.path);
+            if (await rawFile.exists()) {
+              fileToRestore = rawFile;
+            }
+          }
         }
+      } else if (uri.scheme == 'file' || uriStr.startsWith('file://')) {
+        final filePath = uri.toFilePath();
+        if (filePath.toLowerCase().endsWith('.bserp')) {
+          final f = File(filePath);
+          if (await f.exists()) {
+            fileToRestore = f;
+          }
+        }
+      } else if (uriStr.toLowerCase().endsWith('.bserp')) {
+        final f = File(uri.path);
+        if (await f.exists()) {
+          fileToRestore = f;
+        }
+      }
+
+      if (fileToRestore != null && await fileToRestore.exists()) {
+        final finalFile = fileToRestore;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _promptRestoreDialog(finalFile);
+        });
       }
     } catch (e) {
       debugPrint('[FILE INTENT PARSE ERROR] $e');
@@ -269,8 +311,12 @@ class _MyAppState extends ConsumerState<MyApp> {
 
               try {
                 final restoreService = ref.read(restoreServiceProvider);
-                await restoreService.restoreBackup(file.path);
+                await restoreService.restoreBinaryBackupFromFile(bserpFile: file);
                 final ms = DateTime.now().difference(startTime).inMilliseconds;
+
+                final dbService = ref.read(databaseServiceProvider);
+                final sharedPrefs = ref.read(sharedPreferencesProvider);
+                await dbService.reopenDatabase(sharedPrefs);
 
                 ref.invalidate(sharedPreferencesProvider);
                 ref.invalidate(dashboardAnalyticsProvider);

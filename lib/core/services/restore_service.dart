@@ -175,9 +175,14 @@ class RestoreService {
         throw const CorruptedBackupException('Backup file is empty.');
       }
 
-      Uint8List workingBytes = bytes;
-      bool isEncrypted = workingBytes.length < 2 ||
-          ((workingBytes[0] != 0x50 || workingBytes[1] != 0x4B) && workingBytes[0] != 0x7B);
+      bool isEncrypted = false;
+      if (workingBytes.length >= 2) {
+        final isZip = workingBytes[0] == 0x50 && workingBytes[1] == 0x4B;
+        final isJson = workingBytes[0] == 0x7B;
+        isEncrypted = !isZip && !isJson;
+      } else {
+        isEncrypted = true;
+      }
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
@@ -245,9 +250,14 @@ class RestoreService {
     String duplicateStrategy = 'replace',
   }) async {
     try {
-      Uint8List workingBytes = bytes;
-      bool isEncrypted = workingBytes.length < 2 ||
-          ((workingBytes[0] != 0x50 || workingBytes[1] != 0x4B) && workingBytes[0] != 0x7B);
+      bool isEncrypted = false;
+      if (workingBytes.length >= 2) {
+        final isZip = workingBytes[0] == 0x50 && workingBytes[1] == 0x4B;
+        final isJson = workingBytes[0] == 0x7B;
+        isEncrypted = !isZip && !isJson;
+      } else {
+        isEncrypted = true;
+      }
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
@@ -519,8 +529,14 @@ class RestoreService {
 
     try {
       final fileBytes = await File(filePath).readAsBytes();
-      bool isEncrypted = fileBytes.length < 2 ||
-          ((fileBytes[0] != 0x50 || fileBytes[1] != 0x4B) && fileBytes[0] != 0x7B);
+      bool isEncrypted = false;
+      if (fileBytes.length >= 2) {
+        final isZip = fileBytes[0] == 0x50 && fileBytes[1] == 0x4B;
+        final isJson = fileBytes[0] == 0x7B;
+        isEncrypted = !isZip && !isJson;
+      } else {
+        isEncrypted = true;
+      }
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
@@ -596,8 +612,14 @@ class RestoreService {
       logger.info('Initiating backup restoration: $filePath');
       
       final fileBytes = await File(filePath).readAsBytes();
-      bool isEncrypted = fileBytes.length < 2 ||
-          ((fileBytes[0] != 0x50 || fileBytes[1] != 0x4B) && fileBytes[0] != 0x7B);
+      bool isEncrypted = false;
+      if (fileBytes.length >= 2) {
+        final isZip = fileBytes[0] == 0x50 && fileBytes[1] == 0x4B;
+        final isJson = fileBytes[0] == 0x7B;
+        isEncrypted = !isZip && !isJson;
+      } else {
+        isEncrypted = true;
+      }
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {

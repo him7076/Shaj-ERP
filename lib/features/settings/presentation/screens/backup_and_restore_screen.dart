@@ -363,8 +363,16 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
           if (kIsWeb || filePath == null) {
             await restoreService.restoreBackupBytes(fileBytes!, password: currentPassword);
           } else {
-            await restoreService.restoreBackup(filePath, password: currentPassword);
+            await restoreService.restoreBinaryBackupFromFile(
+              bserpFile: File(filePath),
+              password: currentPassword,
+            );
           }
+
+          final dbService = ref.read(databaseServiceProvider);
+          final sharedPrefs = ref.read(sharedPreferencesProvider);
+          await dbService.reopenDatabase(sharedPrefs);
+
           restored = true;
         } catch (e) {
           final errStr = e.toString();
@@ -406,6 +414,10 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
       ref.invalidate(purchaseListProvider);
       ref.invalidate(filteredInvoicesProvider);
       ref.invalidate(filteredOrdersProvider);
+
+      if (mounted) {
+        setState(() {});
+      }
 
       final ms = DateTime.now().difference(startTime).inMilliseconds;
 
