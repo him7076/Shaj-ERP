@@ -4,6 +4,7 @@ import 'package:business_sahaj_erp/data/local/collections/transaction_collection
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/transaction_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/transaction_repository_impl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';

@@ -228,8 +228,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         if (invoice.partyId != null && invoice.partyId! > 0) {
           party = await db.partys.get(invoice.partyId!);
         }
-        if (party == null && invoice.partyUuid != null && invoice.partyUuid!.isNotEmpty) {
-          party = await db.partys.filter().uuidEqualTo(invoice.partyUuid).findFirst();
+        if (party == null && invoice.partyName != null && invoice.partyName!.isNotEmpty) {
+          party = await db.partys.filter().partyNameEqualTo(invoice.partyName!).findFirst();
         }
         if (party == null) {
           try { await invoice.party.load(); } catch (_) {}
@@ -254,8 +254,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             if (item.itemId != null && item.itemId! > 0) {
               dbItem = await db.items.get(item.itemId!);
             }
-            if (dbItem == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) {
-              dbItem = await db.items.filter().uuidEqualTo(item.itemUuid).findFirst();
+            if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
+              dbItem = await db.items.filter().itemNameEqualTo(item.itemName!).findFirst();
             }
             if (dbItem == null) {
               try { await item.item.load(); } catch (_) {}
@@ -322,8 +322,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         if (order.partyId != null && order.partyId! > 0) {
           party = await db.partys.get(order.partyId!);
         }
-        if (party == null && order.partyUuid != null && order.partyUuid!.isNotEmpty) {
-          party = await db.partys.filter().uuidEqualTo(order.partyUuid).findFirst();
+        if (party == null && order.partyName != null && order.partyName!.isNotEmpty) {
+          party = await db.partys.filter().partyNameEqualTo(order.partyName!).findFirst();
         }
         if (party == null) {
           try { await order.party.load(); } catch (_) {}
@@ -348,8 +348,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             if (item.itemId != null && item.itemId! > 0) {
               dbItem = await db.items.get(item.itemId!);
             }
-            if (dbItem == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) {
-              dbItem = await db.items.filter().uuidEqualTo(item.itemUuid).findFirst();
+            if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
+              dbItem = await db.items.filter().itemNameEqualTo(item.itemName!).findFirst();
             }
             if (dbItem == null) {
               try { await item.item.load(); } catch (_) {}

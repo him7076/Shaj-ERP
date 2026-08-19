@@ -261,12 +261,13 @@ class _MyAppState extends ConsumerState<MyApp> {
       if (navContext != null && navContext.mounted) break;
       await Future.delayed(const Duration(milliseconds: 300));
     }
-    if (navContext == null) return;
+    if (navContext == null || !navContext.mounted) return;
 
+    final activeContext = navContext;
     final fileName = file.path.split(Platform.pathSeparator).last;
 
     showDialog(
-      context: navContext,
+      context: activeContext,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
@@ -300,7 +301,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
               // Show progress
               showDialog(
-                context: navContext,
+                context: activeContext,
                 barrierDismissible: false,
                 builder: (_) => AlertDialog(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -326,9 +327,9 @@ class _MyAppState extends ConsumerState<MyApp> {
                 ref.invalidate(sharedPreferencesProvider);
                 ref.invalidate(dashboardAnalyticsProvider);
 
-                if (navContext.mounted) {
-                  Navigator.of(navContext, rootNavigator: true).pop();
-                  ScaffoldMessenger.of(navContext).showSnackBar(
+                if (activeContext.mounted) {
+                  Navigator.of(activeContext, rootNavigator: true).pop();
+                  ScaffoldMessenger.of(activeContext).showSnackBar(
                     SnackBar(
                       content: Text('⚡ Instant database restore complete in ${ms}ms (< 2 seconds)!'),
                       backgroundColor: Colors.green,
@@ -337,9 +338,9 @@ class _MyAppState extends ConsumerState<MyApp> {
                   );
                 }
               } catch (e) {
-                if (navContext.mounted) {
-                  Navigator.of(navContext, rootNavigator: true).pop();
-                  ScaffoldMessenger.of(navContext).showSnackBar(
+                if (activeContext.mounted) {
+                  Navigator.of(activeContext, rootNavigator: true).pop();
+                  ScaffoldMessenger.of(activeContext).showSnackBar(
                     SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red),
                   );
                 }

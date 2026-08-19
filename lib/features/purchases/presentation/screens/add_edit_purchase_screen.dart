@@ -160,9 +160,6 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         if (purchase.partyId != null && purchase.partyId! > 0) {
           party = await isar.partys.get(purchase.partyId!);
         }
-        if (party == null && purchase.partyUuid != null && purchase.partyUuid!.isNotEmpty) {
-          party = await isar.partys.filter().uuidEqualTo(purchase.partyUuid).findFirst();
-        }
         if (party == null && purchase.partyName != null && purchase.partyName!.isNotEmpty) {
           party = await isar.partys.filter().partyNameEqualTo(purchase.partyName!).findFirst();
         }
@@ -201,8 +198,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
           if (pi.itemId != null && pi.itemId! > 0) {
             try { dbItem = await isar.items.get(pi.itemId!); } catch (_) {}
           }
-          if (dbItem == null && pi.itemUuid != null && pi.itemUuid!.isNotEmpty) {
-            try { dbItem = await isar.items.filter().uuidEqualTo(pi.itemUuid).findFirst(); } catch (_) {}
+          if (dbItem == null && pi.itemName != null && pi.itemName!.isNotEmpty) {
+            try { dbItem = await isar.items.filter().itemNameEqualTo(pi.itemName!).findFirst(); } catch (_) {}
           }
           if (dbItem == null) {
             try { await pi.item.load(); } catch (_) {}

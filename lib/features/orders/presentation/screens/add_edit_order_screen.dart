@@ -146,8 +146,8 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
         if (order.partyId != null && order.partyId! > 0) {
           party = await db.partys.get(order.partyId!);
         }
-        if (party == null && order.partyUuid != null && order.partyUuid!.isNotEmpty) {
-          party = await db.partys.filter().uuidEqualTo(order.partyUuid).findFirst();
+        if (party == null && order.partyName != null && order.partyName!.isNotEmpty) {
+          party = await db.partys.filter().partyNameEqualTo(order.partyName!).findFirst();
         }
         if (party == null) {
           try { await order.party.load(); } catch (_) {}
@@ -175,8 +175,8 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
           if (orderItem.itemId != null && orderItem.itemId! > 0) {
             try { itemObj = await db.items.get(orderItem.itemId!); } catch (_) {}
           }
-          if (itemObj == null && orderItem.itemUuid != null && orderItem.itemUuid!.isNotEmpty) {
-            try { itemObj = await db.items.filter().uuidEqualTo(orderItem.itemUuid).findFirst(); } catch (_) {}
+          if (itemObj == null && orderItem.itemName != null && orderItem.itemName!.isNotEmpty) {
+            try { itemObj = await db.items.filter().itemNameEqualTo(orderItem.itemName!).findFirst(); } catch (_) {}
           }
           if (itemObj == null) {
             try { await orderItem.item.load(); } catch (_) {}
