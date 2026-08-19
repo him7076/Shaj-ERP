@@ -156,53 +156,61 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         _paidAmountController.text = purchase.paidAmount?.toString() ?? '0.0';
         _discountController.text = purchase.discountAmount?.toString() ?? '0.0';
 
-        try { await purchase.party.load(); } catch (_) {}
-        _selectedParty = purchase.party.value ?? (purchase.partyId != null ? await isar.partys.get(purchase.partyId!) : null);
-        if (_selectedParty == null && purchase.partyName != null && purchase.partyName!.isNotEmpty) {
-          _selectedParty = await isar.partys.filter().partyNameEqualTo(purchase.partyName!).findFirst();
-          if (_selectedParty == null) {
-            _selectedParty = Party()
-              ..partyName = purchase.partyName
-              ..gstNumber = purchase.gstNumber
-              ..addressLine1 = purchase.address;
-          }
+        Party? party;
+        if (purchase.partyId != null && purchase.partyId! > 0) {
+          party = await isar.partys.get(purchase.partyId!);
         }
+        if (party == null && purchase.partyUuid != null && purchase.partyUuid!.isNotEmpty) {
+          party = await isar.partys.filter().uuidEqualTo(purchase.partyUuid).findFirst();
+        }
+        if (party == null && purchase.partyName != null && purchase.partyName!.isNotEmpty) {
+          party = await isar.partys.filter().partyNameEqualTo(purchase.partyName!).findFirst();
+        }
+        if (party == null) {
+          try { await purchase.party.load(); } catch (_) {}
+          try { party = purchase.party.value; } catch (_) {}
+        }
+        _selectedParty = party ?? (Party()
+          ..partyName = purchase.partyName
+          ..gstNumber = purchase.gstNumber
+          ..addressLine1 = purchase.address);
 
-        try { await purchase.purchaseItems.load(); } catch (_) {}
-        var itemsList = purchase.purchaseItems.toList();
-
+        List<PurchaseItem> itemsList = [];
         final pId = purchase.id;
         final pUuid = purchase.uuid;
 
-        List<PurchaseItem> queriedItems = [];
         if (pUuid != null && pUuid.isNotEmpty) {
-          queriedItems = await isar.purchaseItems
+          itemsList = await isar.purchaseItems
               .filter()
               .purchaseUuidEqualTo(pUuid)
               .findAll();
         }
-        if (queriedItems.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
-          queriedItems = await isar.purchaseItems
+        if (itemsList.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
+          itemsList = await isar.purchaseItems
               .filter()
               .purchaseIdEqualTo(pId)
               .findAll();
         }
-
-        if (queriedItems.isNotEmpty) {
-          itemsList = queriedItems;
+        if (itemsList.isEmpty) {
+          try { await purchase.purchaseItems.load(); } catch (_) {}
+          try { itemsList = purchase.purchaseItems.toList(); } catch (_) {}
         }
 
         for (var pi in itemsList) {
-          if (!kIsWeb) {
+          Item? dbItem;
+          if (pi.itemId != null && pi.itemId! > 0) {
+            try { dbItem = await isar.items.get(pi.itemId!); } catch (_) {}
+          }
+          if (dbItem == null && pi.itemUuid != null && pi.itemUuid!.isNotEmpty) {
+            try { dbItem = await isar.items.filter().uuidEqualTo(pi.itemUuid).findFirst(); } catch (_) {}
+          }
+          if (dbItem == null) {
             try { await pi.item.load(); } catch (_) {}
+            try { dbItem = pi.item.value; } catch (_) {}
           }
-          if (pi.item.value == null && pi.itemId != null) {
-            try {
-              pi.item.value = await isar.items.get(pi.itemId!);
-            } catch (_) {}
-          }
-          if (pi.item.value != null) {
-            try { await pi.item.value!.unit.load(); } catch (_) {}
+          if (dbItem != null) {
+            try { pi.item.value = dbItem; } catch (_) {}
+            try { await dbItem.unit.load(); } catch (_) {}
           }
         }
 

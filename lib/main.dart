@@ -255,7 +255,12 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 
   Future<void> _promptRestoreDialog(File file) async {
-    final navContext = rootNavigatorKey.currentContext;
+    BuildContext? navContext;
+    for (int i = 0; i < 10; i++) {
+      navContext = rootNavigatorKey.currentContext;
+      if (navContext != null && navContext.mounted) break;
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
     if (navContext == null) return;
 
     final fileName = file.path.split(Platform.pathSeparator).last;

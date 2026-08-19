@@ -795,7 +795,7 @@ class SyncService {
     });
   }
 
-  /// Deletes all documents belonging to the active company context from Firestore.
+  /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
   Future<void> clearCloudData() async {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) {
@@ -812,35 +812,51 @@ class SyncService {
 
     for (var entityType in entityTypes) {
       final collectionName = _getFirestoreCollection(entityType);
-      final querySnapshot = await _firebaseService.firestore
-          .collection(collectionName)
-          .where('companyId', isEqualTo: companyId)
-          .get();
+      QuerySnapshot? querySnapshot;
 
-      if (querySnapshot.docs.isEmpty) continue;
-
-      final batch = _firebaseService.firestore.batch();
-      for (var doc in querySnapshot.docs) {
-        batch.delete(doc.reference);
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .get();
+      } catch (e1) {
+        logger.warning('Cloud wipe query for $entityType failed: $e1. Trying full collection query limit 500.');
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .limit(500)
+              .get();
+        } catch (_) {}
       }
-      await batch.commit();
-    }
 
-    // Also hard-delete any firm documents in 'firms' collection
-    try {
-      final firmsSnapshot = await _firebaseService.firestore
-          .collection('firms')
-          .where('companyId', isEqualTo: companyId)
-          .get();
+      if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
 
-      if (firmsSnapshot.docs.isNotEmpty) {
+      try {
         final batch = _firebaseService.firestore.batch();
-        for (var doc in firmsSnapshot.docs) {
+        for (var doc in querySnapshot.docs) {
           batch.delete(doc.reference);
         }
         await batch.commit();
+      } catch (e) {
+        logger.warning('Physical batch delete failed for $entityType ($e). Falling back to soft delete...');
+        try {
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in querySnapshot.docs) {
+            batch.set(
+              doc.reference,
+              {
+                'isDeleted': true,
+                'updatedAt': DateTime.now().toIso8601String(),
+              },
+              SetOptions(merge: true),
+            );
+          }
+          await batch.commit();
+        } catch (softErr) {
+          logger.error('Soft delete fallback failed for $entityType', softErr);
+        }
       }
-    } catch (_) {}
+    }
 
     // Reset local sync state so next sync starts fresh
     await _prefs.remove(AppConstants.keyLastSyncTime);
@@ -866,19 +882,59 @@ class SyncService {
 
     for (var entityType in entityTypes) {
       final collectionName = _getFirestoreCollection(entityType);
-      final querySnapshot = await _firebaseService.firestore
-          .collection(collectionName)
-          .where('companyId', isEqualTo: companyId)
-          .where('firmId', isEqualTo: activeFirmId)
-          .get();
+      QuerySnapshot? querySnapshot;
 
-      if (querySnapshot.docs.isEmpty) continue;
-
-      final batch = _firebaseService.firestore.batch();
-      for (var doc in querySnapshot.docs) {
-        batch.delete(doc.reference);
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: activeFirmId)
+            .get();
+      } catch (e1) {
+        logger.warning('Primary firm wipe query failed for $entityType: $e1. Trying firmId-only query.');
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .where('firmId', isEqualTo: activeFirmId)
+              .get();
+        } catch (e2) {
+          logger.warning('Secondary firm wipe query failed for $entityType: $e2. Trying companyId query.');
+          try {
+            querySnapshot = await _firebaseService.firestore
+                .collection(collectionName)
+                .where('companyId', isEqualTo: companyId)
+                .get();
+          } catch (_) {}
+        }
       }
-      await batch.commit();
+
+      if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
+
+      try {
+        final batch = _firebaseService.firestore.batch();
+        for (var doc in querySnapshot.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      } catch (e) {
+        logger.warning('Physical batch delete failed for firm $activeFirmId ($entityType): $e. Falling back to soft delete...');
+        try {
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in querySnapshot.docs) {
+            batch.set(
+              doc.reference,
+              {
+                'isDeleted': true,
+                'updatedAt': DateTime.now().toIso8601String(),
+              },
+              SetOptions(merge: true),
+            );
+          }
+          await batch.commit();
+        } catch (softErr) {
+          logger.error('Soft delete fallback failed for firm $activeFirmId ($entityType)', softErr);
+        }
+      }
     }
   }
 

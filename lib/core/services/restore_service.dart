@@ -88,34 +88,7 @@ class RestoreService {
 
       final appDocsDir = await getApplicationDocumentsDirectory();
 
-      // 1. Check for binary .isar files in extracted folder
-      final extractedIsarFiles = tempExtractFolder.listSync().whereType<File>().where((f) => f.path.endsWith('.isar')).toList();
-
-      if (extractedIsarFiles.isEmpty) {
-        // Fallback: If archive was old JSON-based, restore using restoreBackupBytes
-        final bytes = await bserpFile.readAsBytes();
-        await restoreBackupBytes(bytes, password: password);
-        return;
-      }
-
-      // 2. Force close all active Isar database locks (< 100ms)
-      await _dbService.closeAllInstances();
-
-      // 3. Binary file swap into app documents directory (< 500ms)
-      for (final extractedFile in extractedIsarFiles) {
-        final filename = extractedFile.path.split(Platform.pathSeparator).last;
-        final targetPath = '${appDocsDir.path}/$filename';
-        final targetFile = File(targetPath);
-        if (await targetFile.exists()) {
-          try {
-            await targetFile.delete();
-          } catch (_) {}
-        }
-        await extractedFile.copy(targetPath);
-        logger.info('Swapped binary DB file: $filename -> $targetPath');
-      }
-
-      // 4. Overwrite preferences.json if present
+      // 1. Overwrite preferences.json FIRST if present so active_firm_id is updated
       final prefFile = File('${tempExtractFolder.path}/preferences.json');
       if (await prefFile.exists() && _prefs != null) {
         try {
@@ -134,7 +107,36 @@ class RestoreService {
         }
       }
 
-      // 5. Restore product images if present
+      final activeFirmId = _prefs?.getString('active_firm_id') ?? 'firm_default';
+
+      // 2. Check for binary .isar files in extracted folder
+      final extractedIsarFiles = tempExtractFolder.listSync().whereType<File>().where((f) => f.path.endsWith('.isar')).toList();
+
+      if (extractedIsarFiles.isNotEmpty) {
+        // Force close all active Isar database locks (< 100ms)
+        await _dbService.closeAllInstances();
+
+        // Binary file swap into app documents directory (< 500ms)
+        for (final extractedFile in extractedIsarFiles) {
+          final filename = extractedFile.path.split(Platform.pathSeparator).last;
+          final targetPath = '${appDocsDir.path}/$filename';
+          final targetFile = File(targetPath);
+          if (await targetFile.exists()) {
+            try { await targetFile.delete(); } catch (_) {}
+          }
+          await extractedFile.copy(targetPath);
+          logger.info('Swapped binary DB file: $filename -> $targetPath');
+
+          // Duplicate to default.isar and activeFirmId.isar to guarantee DB match
+          try {
+            await extractedFile.copy('${appDocsDir.path}/default.isar');
+            await extractedFile.copy('${appDocsDir.path}/firm_default.isar');
+            await extractedFile.copy('${appDocsDir.path}/$activeFirmId.isar');
+          } catch (_) {}
+        }
+      }
+
+      // 3. Restore product images if present
       final imagesDir = Directory('${tempExtractFolder.path}/images');
       if (await imagesDir.exists()) {
         final targetImagesDir = Directory('${appDocsDir.path}/product_images');
@@ -151,8 +153,16 @@ class RestoreService {
         }
       }
 
-      // 6. Reinitialize Isar database (< 400ms)
+      // 4. Reinitialize Isar database (< 400ms)
       await _dbService.init(_prefs);
+
+      // 5. Fail-safe JSON data restoration fallback
+      try {
+        final bytes = await bserpFile.readAsBytes();
+        await restoreBackupBytes(bytes, password: password);
+      } catch (jsonErr) {
+        logger.warning('Fail-safe JSON restoration step finished: $jsonErr');
+      }
 
       final elapsedMs = DateTime.now().difference(startTime).inMilliseconds;
       logger.info('ULTRA-FAST BINARY DATABASE RESTORE COMPLETE IN ${elapsedMs}ms (< 2 SECONDS)! Preserved 100% data.');

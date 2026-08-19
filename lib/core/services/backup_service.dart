@@ -94,7 +94,7 @@ class BackupService {
 
       final List<File> archiveFiles = [];
 
-      // 1. Copy binary .isar files for each firm
+      // 1. Copy binary .isar files for each firm + default.isar
       for (final firmId in firms) {
         final destIsarPath = '${tempBackupFolder.path}/$firmId.isar';
         await _dbService.copyFirmDatabaseFile(firmId, destIsarPath);
@@ -103,6 +103,19 @@ class BackupService {
           archiveFiles.add(file);
         }
       }
+
+      // Also copy default.isar if present
+      try {
+        final appDocsDir = await getApplicationDocumentsDirectory();
+        final defaultIsar = File('${appDocsDir.path}/default.isar');
+        if (await defaultIsar.exists()) {
+          final destDefault = File('${tempBackupFolder.path}/default.isar');
+          await defaultIsar.copy(destDefault.path);
+          if (!archiveFiles.any((f) => f.path.endsWith('default.isar'))) {
+            archiveFiles.add(destDefault);
+          }
+        }
+      } catch (_) {}
 
       // 2. Add metadata.json
       final metaMap = {
@@ -129,44 +142,43 @@ class BackupService {
       await prefFile.writeAsString(jsonEncode(prefMap));
       archiveFiles.add(prefFile);
 
-      // 4. Export JSON collections for web cross-compatibility
-      try {
-        final isar = _dbService.isar;
-        final collections = {
-          'categories': await isar.categorys.where().findAll(),
-          'units': await isar.units.where().findAll(),
-          'brands': await isar.brands.where().findAll(),
-          'parties': await isar.partys.where().findAll(),
-          'items': await isar.items.where().findAll(),
-          'orders': await isar.orders.where().findAll(),
-          'order_items': await isar.orderItems.where().findAll(),
-          'invoices': await isar.invoices.where().findAll(),
-          'invoice_items': await isar.invoiceItems.where().findAll(),
-          'purchases': await isar.purchases.where().findAll(),
-          'purchase_items': await isar.purchaseItems.where().findAll(),
-          'expenses': await isar.expenses.where().findAll(),
-          'expense_items': await isar.collection<ExpenseItem>().where().findAll(),
-          'transactions': await isar.transactions.where().findAll(),
-          'bank_accounts': await isar.bankAccounts.where().findAll(),
-          'credit_notes': await isar.creditNotes.where().findAll(),
-          'credit_note_items': await isar.creditNoteItems.where().findAll(),
-          'debit_notes': await isar.debitNotes.where().findAll(),
-          'debit_note_items': await isar.debitNoteItems.where().findAll(),
-          'stock_adjustments': await isar.collection<StockAdjustment>().where().findAll(),
-          'whatsapp_mappings': await isar.whatsAppMappings.where().findAll(),
-          'settings': await isar.settings.where().findAll(),
-          'users': await isar.users.where().findAll(),
-          'sync_queues': await isar.syncQueues.where().findAll(),
-        };
+      // 4. Export JSON collections per collection for fail-safe cross-compatibility
+      final isar = _dbService.isar;
+      final collectionsMap = <String, List<dynamic>>{};
+      try { collectionsMap['categories'] = await isar.categorys.where().findAll(); } catch (_) {}
+      try { collectionsMap['units'] = await isar.units.where().findAll(); } catch (_) {}
+      try { collectionsMap['brands'] = await isar.brands.where().findAll(); } catch (_) {}
+      try { collectionsMap['parties'] = await isar.partys.where().findAll(); } catch (_) {}
+      try { collectionsMap['items'] = await isar.items.where().findAll(); } catch (_) {}
+      try { collectionsMap['orders'] = await isar.orders.where().findAll(); } catch (_) {}
+      try { collectionsMap['order_items'] = await isar.orderItems.where().findAll(); } catch (_) {}
+      try { collectionsMap['invoices'] = await isar.invoices.where().findAll(); } catch (_) {}
+      try { collectionsMap['invoice_items'] = await isar.invoiceItems.where().findAll(); } catch (_) {}
+      try { collectionsMap['purchases'] = await isar.purchases.where().findAll(); } catch (_) {}
+      try { collectionsMap['purchase_items'] = await isar.purchaseItems.where().findAll(); } catch (_) {}
+      try { collectionsMap['expenses'] = await isar.expenses.where().findAll(); } catch (_) {}
+      try { collectionsMap['expense_items'] = await isar.collection<ExpenseItem>().where().findAll(); } catch (_) {}
+      try { collectionsMap['transactions'] = await isar.transactions.where().findAll(); } catch (_) {}
+      try { collectionsMap['bank_accounts'] = await isar.bankAccounts.where().findAll(); } catch (_) {}
+      try { collectionsMap['credit_notes'] = await isar.creditNotes.where().findAll(); } catch (_) {}
+      try { collectionsMap['credit_note_items'] = await isar.creditNoteItems.where().findAll(); } catch (_) {}
+      try { collectionsMap['debit_notes'] = await isar.debitNotes.where().findAll(); } catch (_) {}
+      try { collectionsMap['debit_note_items'] = await isar.debitNoteItems.where().findAll(); } catch (_) {}
+      try { collectionsMap['stock_adjustments'] = await isar.collection<StockAdjustment>().where().findAll(); } catch (_) {}
+      try { collectionsMap['whatsapp_mappings'] = await isar.whatsAppMappings.where().findAll(); } catch (_) {}
+      try { collectionsMap['settings'] = await isar.settings.where().findAll(); } catch (_) {}
+      try { collectionsMap['users'] = await isar.users.where().findAll(); } catch (_) {}
+      try { collectionsMap['sync_queues'] = await isar.syncQueues.where().findAll(); } catch (_) {}
 
-        for (var entry in collections.entries) {
+      for (var entry in collectionsMap.entries) {
+        try {
           final jsonList = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
           final file = File('${tempBackupFolder.path}/${entry.key}.json');
           await file.writeAsString(jsonEncode(jsonList));
           archiveFiles.add(file);
+        } catch (e) {
+          logger.warning('Skipped mapping for ${entry.key}: $e');
         }
-      } catch (e) {
-        logger.warning('Non-fatal: failed to export JSON collections in binary backup: $e');
       }
 
       // 4. Images directory

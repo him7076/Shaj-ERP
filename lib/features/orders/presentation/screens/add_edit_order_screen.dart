@@ -141,32 +141,47 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
         }
 
         final cart = ref.read(cartProvider.notifier);
-        if (kIsWeb) {
-          if (order.partyId != null) {
-            ref.read(partiesListProvider).whenData((parties) {
-              Party? matchingParty;
-              for (var p in parties) {
-                if (p.id == order.partyId) {
-                  matchingParty = p;
-                  break;
-                }
-              }
-              if (matchingParty != null) cart.setParty(matchingParty);
-            });
-          }
-        } else {
-          cart.setParty(order.party.value);
+        final db = ref.read(databaseServiceProvider).isar;
+        Party? party;
+        if (order.partyId != null && order.partyId! > 0) {
+          party = await db.partys.get(order.partyId!);
+        }
+        if (party == null && order.partyUuid != null && order.partyUuid!.isNotEmpty) {
+          party = await db.partys.filter().uuidEqualTo(order.partyUuid).findFirst();
+        }
+        if (party == null) {
+          try { await order.party.load(); } catch (_) {}
+          try { party = order.party.value; } catch (_) {}
+        }
+        if (party != null) {
+          cart.setParty(party);
         }
         cart.toggleGstInclusive(true);
         cart.setOrderDiscounts(order.discountPercent, order.discountAmount);
 
-        for (var orderItem in order.orderItems) {
-          if (!kIsWeb) {
-            try { await orderItem.item.load(); } catch (_) {}
+        List<OrderItem> orderItemsList = await db.orderItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) => q.orderUuidEqualTo(order.uuid).or().order((o) => o.uuidEqualTo(order.uuid)))
+            .findAll();
+        if (orderItemsList.isEmpty) {
+          try { await order.orderItems.load(); } catch (_) {}
+          try { orderItemsList = order.orderItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
+        }
+
+        for (var orderItem in orderItemsList) {
+          Item? itemObj;
+          if (orderItem.itemId != null && orderItem.itemId! > 0) {
+            try { itemObj = await db.items.get(orderItem.itemId!); } catch (_) {}
           }
-          final itemObj = kIsWeb
-              ? (orderItem.itemId != null ? (await ref.read(databaseServiceProvider).isar.items.get(orderItem.itemId!)) : null)
-              : orderItem.item.value;
+          if (itemObj == null && orderItem.itemUuid != null && orderItem.itemUuid!.isNotEmpty) {
+            try { itemObj = await db.items.filter().uuidEqualTo(orderItem.itemUuid).findFirst(); } catch (_) {}
+          }
+          if (itemObj == null) {
+            try { await orderItem.item.load(); } catch (_) {}
+            try { itemObj = orderItem.item.value; } catch (_) {}
+          }
           if (itemObj != null) {
             cart.addItem(itemObj, qty: orderItem.quantity ?? 0.0);
             cart.updateItem(

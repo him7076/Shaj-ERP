@@ -224,38 +224,43 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         final double discPctVal = subVal > 0 ? (discAmtVal / subVal * 100) : 0.0;
         _discountPercentController.text = discPctVal.toStringAsFixed(1);
 
-        if (!kIsWeb) {
-          await invoice.party.load();
-          await invoice.invoiceItems.load();
+        Party? party;
+        if (invoice.partyId != null && invoice.partyId! > 0) {
+          party = await db.partys.get(invoice.partyId!);
         }
-        final party = kIsWeb
-            ? (invoice.partyId != null ? await db.partys.get(invoice.partyId!) : null)
-            : invoice.party.value;
+        if (party == null && invoice.partyUuid != null && invoice.partyUuid!.isNotEmpty) {
+          party = await db.partys.filter().uuidEqualTo(invoice.partyUuid).findFirst();
+        }
+        if (party == null) {
+          try { await invoice.party.load(); } catch (_) {}
+          try { party = invoice.party.value; } catch (_) {}
+        }
 
         if (party != null) {
-          List<InvoiceItem> itemsList = [];
-          if (!kIsWeb) {
-            try { await invoice.invoiceItems.load(); } catch (_) {}
-            itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList();
-          }
+          List<InvoiceItem> itemsList = await db.invoiceItems
+              .filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q.parentInvoiceIdEqualTo(invoice.id).or().parentInvoiceUuidEqualTo(invoice.uuid))
+              .findAll();
           if (itemsList.isEmpty) {
-            final targetId = invoice.id;
-            itemsList = await db.invoiceItems
-                .filter()
-                .isDeletedEqualTo(false)
-                .and()
-                .parentInvoiceIdEqualTo(targetId)
-                .findAll();
+            try { await invoice.invoiceItems.load(); } catch (_) {}
+            try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
           }
 
           final List<CartItemState> cartItems = [];
           for (var item in itemsList) {
-            if (!kIsWeb) {
-              await item.item.load();
+            Item? dbItem;
+            if (item.itemId != null && item.itemId! > 0) {
+              dbItem = await db.items.get(item.itemId!);
             }
-            final dbItem = kIsWeb
-                ? (item.itemId != null ? await db.items.get(item.itemId!) : null)
-                : item.item.value;
+            if (dbItem == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) {
+              dbItem = await db.items.filter().uuidEqualTo(item.itemUuid).findFirst();
+            }
+            if (dbItem == null) {
+              try { await item.item.load(); } catch (_) {}
+              try { dbItem = item.item.value; } catch (_) {}
+            }
             if (dbItem != null) {
               final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
               final discPct = totalBase > 0 ? ((item.discount ?? 0.0) / totalBase) * 100.0 : 0.0;
@@ -313,39 +318,42 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           }
         }
 
-        if (!kIsWeb) {
-          try { await order.party.load(); } catch (_) {}
-          try { await order.orderItems.load(); } catch (_) {}
-        }
-
-        Party? party = order.party.value;
-        if (party == null && order.partyId != null) {
+        Party? party;
+        if (order.partyId != null && order.partyId! > 0) {
           party = await db.partys.get(order.partyId!);
+        }
+        if (party == null && order.partyUuid != null && order.partyUuid!.isNotEmpty) {
+          party = await db.partys.filter().uuidEqualTo(order.partyUuid).findFirst();
+        }
+        if (party == null) {
+          try { await order.party.load(); } catch (_) {}
+          try { party = order.party.value; } catch (_) {}
         }
 
         if (party != null) {
-          List<OrderItem> orderItemsList = [];
-          if (!kIsWeb) {
-            try { await order.orderItems.load(); } catch (_) {}
-            orderItemsList = order.orderItems.where((i) => !i.isDeleted).toList();
-          }
+          List<OrderItem> orderItemsList = await db.orderItems
+              .filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q.orderUuidEqualTo(order.uuid).or().order((o) => o.uuidEqualTo(order.uuid)))
+              .findAll();
           if (orderItemsList.isEmpty) {
-            orderItemsList = await db.orderItems
-                .filter()
-                .isDeletedEqualTo(false)
-                .and()
-                .group((q) => q.orderUuidEqualTo(order.uuid).or().order((o) => o.uuidEqualTo(order.uuid)))
-                .findAll();
+            try { await order.orderItems.load(); } catch (_) {}
+            try { orderItemsList = order.orderItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
           }
 
           final List<CartItemState> cartItems = [];
           for (var item in orderItemsList) {
-            if (!kIsWeb) {
-              try { await item.item.load(); } catch (_) {}
-            }
-            var dbItem = item.item.value;
-            if (dbItem == null && item.itemId != null) {
+            Item? dbItem;
+            if (item.itemId != null && item.itemId! > 0) {
               dbItem = await db.items.get(item.itemId!);
+            }
+            if (dbItem == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) {
+              dbItem = await db.items.filter().uuidEqualTo(item.itemUuid).findFirst();
+            }
+            if (dbItem == null) {
+              try { await item.item.load(); } catch (_) {}
+              try { dbItem = item.item.value; } catch (_) {}
             }
 
             if (dbItem != null) {

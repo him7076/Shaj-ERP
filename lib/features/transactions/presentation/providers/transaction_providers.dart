@@ -49,88 +49,135 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   final isar = ref.watch(isarProvider);
   final repo = ref.watch(transactionRepositoryProvider);
 
+  // 0. Build Party ID/UUID lookup map to avoid unattached IsarLink dereference crashes
+  final Map<int, String> partyIdToUuidMap = {};
+  try {
+    final allParties = await isar.partys.where().findAll();
+    for (var p in allParties) {
+      if (p.uuid != null && p.uuid!.isNotEmpty) {
+        partyIdToUuidMap[p.id] = p.uuid!;
+      }
+    }
+  } catch (_) {}
+
   // 1. Fetch Transactions
-  var rawTransactions = await repo.searchTransactions('');
+  List<Transaction> rawTransactions = [];
+  try {
+    rawTransactions = await repo.searchTransactions('');
+  } catch (_) {}
 
   // 2. Fetch Invoices (Sales)
-  final rawInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
-  final invoiceTransactions = rawInvoices.map((inv) {
-    String pMode = 'Credit';
-    if (inv.remarks != null && inv.remarks!.contains('[Paid via ')) {
-      final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(inv.remarks!);
-      if (match != null) pMode = match.group(1) ?? 'Cash';
-    } else if ((inv.paidAmount ?? 0) >= (inv.grandTotal ?? 0) && (inv.grandTotal ?? 0) > 0) {
-      pMode = 'Cash';
-    }
+  List<Transaction> invoiceTransactions = [];
+  try {
+    final rawInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    invoiceTransactions = rawInvoices.map((inv) {
+      String pMode = 'Credit';
+      if (inv.remarks != null && inv.remarks!.contains('[Paid via ')) {
+        final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(inv.remarks!);
+        if (match != null) pMode = match.group(1) ?? 'Cash';
+      } else if ((inv.paidAmount ?? 0) >= (inv.grandTotal ?? 0) && (inv.grandTotal ?? 0) > 0) {
+        pMode = 'Cash';
+      }
 
-    String pStatus = inv.paymentStatus ?? 'Unpaid';
-    final paid = inv.paidAmount ?? 0.0;
-    final grand = inv.grandTotal ?? 0.0;
-    if (paid >= grand && grand > 0) {
-      pStatus = 'Paid';
-    } else if (paid > 0) {
-      pStatus = 'Partially Paid';
-    }
+      String pStatus = inv.paymentStatus ?? 'Unpaid';
+      final paid = inv.paidAmount ?? 0.0;
+      final grand = inv.grandTotal ?? 0.0;
+      if (paid >= grand && grand > 0) {
+        pStatus = 'Paid';
+      } else if (paid > 0) {
+        pStatus = 'Partially Paid';
+      }
 
-    return Transaction()
-      ..id = 100000000 + (inv.id ?? 0)
-      ..uuid = inv.uuid
-      ..transactionNumber = inv.invoiceNumber ?? 'INV-01'
-      ..transactionType = 'Sales'
-      ..transactionDate = inv.invoiceDate ?? inv.createdAt ?? DateTime.now()
-      ..amount = inv.grandTotal ?? 0.0
-      ..partyName = inv.partyName ?? 'Party'
-      ..partyUuid = inv.party.value?.uuid ?? (inv.partyId != null ? inv.partyId.toString() : null)
-      ..paymentMode = pMode
-      ..paymentStatus = pStatus
-      ..remarks = inv.remarks
-      ..createdAt = inv.createdAt ?? DateTime.now();
-  }).toList();
+      String? pUuid;
+      if (inv.partyId != null) {
+        pUuid = partyIdToUuidMap[inv.partyId!];
+      }
+      if (pUuid == null) {
+        try { pUuid = inv.party.value?.uuid; } catch (_) {}
+      }
+
+      return Transaction()
+        ..id = 100000000 + (inv.id ?? 0)
+        ..uuid = inv.uuid
+        ..transactionNumber = inv.invoiceNumber ?? 'INV-01'
+        ..transactionType = 'Sales'
+        ..transactionDate = inv.invoiceDate ?? inv.createdAt ?? DateTime.now()
+        ..amount = inv.grandTotal ?? 0.0
+        ..partyName = inv.partyName ?? 'Party'
+        ..partyUuid = pUuid ?? (inv.partyId != null ? inv.partyId.toString() : null)
+        ..paymentMode = pMode
+        ..paymentStatus = pStatus
+        ..remarks = inv.remarks
+        ..createdAt = inv.createdAt ?? DateTime.now();
+    }).toList();
+  } catch (_) {}
 
   // 3. Fetch Orders (Sales Orders)
-  final rawOrders = await isar.orders.filter().isDeletedEqualTo(false).findAll();
-  final orderTransactions = rawOrders.map((ord) {
-    return Transaction()
-      ..id = 200000000 + (ord.id ?? 0)
-      ..uuid = ord.uuid
-      ..transactionNumber = ord.orderNumber ?? 'SO-01'
-      ..transactionType = 'Sales Order'
-      ..transactionDate = ord.orderDate ?? ord.createdAt ?? DateTime.now()
-      ..amount = ord.grandTotal ?? 0.0
-      ..partyName = ord.partyName ?? 'Party'
-      ..partyUuid = ord.party.value?.uuid ?? (ord.partyId != null ? ord.partyId.toString() : null)
-      ..paymentMode = 'Order'
-      ..paymentStatus = ord.status ?? 'Pending'
-      ..remarks = ord.remarks
-      ..createdAt = ord.createdAt ?? DateTime.now();
-  }).toList();
+  List<Transaction> orderTransactions = [];
+  try {
+    final rawOrders = await isar.orders.filter().isDeletedEqualTo(false).findAll();
+    orderTransactions = rawOrders.map((ord) {
+      String? pUuid;
+      if (ord.partyId != null) {
+        pUuid = partyIdToUuidMap[ord.partyId!];
+      }
+      if (pUuid == null) {
+        try { pUuid = ord.party.value?.uuid; } catch (_) {}
+      }
+
+      return Transaction()
+        ..id = 200000000 + (ord.id ?? 0)
+        ..uuid = ord.uuid
+        ..transactionNumber = ord.orderNumber ?? 'SO-01'
+        ..transactionType = 'Sales Order'
+        ..transactionDate = ord.orderDate ?? ord.createdAt ?? DateTime.now()
+        ..amount = ord.grandTotal ?? 0.0
+        ..partyName = ord.partyName ?? 'Party'
+        ..partyUuid = pUuid ?? (ord.partyId != null ? ord.partyId.toString() : null)
+        ..paymentMode = 'Order'
+        ..paymentStatus = ord.status ?? 'Pending'
+        ..remarks = ord.remarks
+        ..createdAt = ord.createdAt ?? DateTime.now();
+    }).toList();
+  } catch (_) {}
 
   // 4. Fetch Purchases (Purchase Bills)
-  final rawPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
-  final purchaseTransactions = rawPurchases.map((pur) {
-    String pStatus = pur.paymentStatus ?? 'Unpaid';
-    final paid = pur.paidAmount ?? 0.0;
-    final grand = pur.grandTotal ?? 0.0;
-    if (paid >= grand && grand > 0) {
-      pStatus = 'Paid';
-    } else if (paid > 0) {
-      pStatus = 'Partially Paid';
-    }
+  List<Transaction> purchaseTransactions = [];
+  try {
+    final rawPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    purchaseTransactions = rawPurchases.map((pur) {
+      String pStatus = pur.paymentStatus ?? 'Unpaid';
+      final paid = pur.paidAmount ?? 0.0;
+      final grand = pur.grandTotal ?? 0.0;
+      if (paid >= grand && grand > 0) {
+        pStatus = 'Paid';
+      } else if (paid > 0) {
+        pStatus = 'Partially Paid';
+      }
 
-    return Transaction()
-      ..id = 300000000 + (pur.id ?? 0)
-      ..uuid = pur.uuid
-      ..transactionNumber = pur.purchaseNumber ?? 'PUR-01'
-      ..transactionType = 'Purchase'
-      ..transactionDate = pur.purchaseDate ?? pur.createdAt ?? DateTime.now()
-      ..amount = pur.grandTotal ?? 0.0
-      ..partyName = pur.partyName ?? 'Supplier'
-      ..partyUuid = pur.party.value?.uuid ?? (pur.partyId != null ? pur.partyId.toString() : null)
-      ..paymentMode = 'Bill'
-      ..paymentStatus = pStatus
-      ..remarks = pur.remarks
-      ..createdAt = pur.createdAt ?? DateTime.now();
-  }).toList();
+      String? pUuid;
+      if (pur.partyId != null) {
+        pUuid = partyIdToUuidMap[pur.partyId!];
+      }
+      if (pUuid == null) {
+        try { pUuid = pur.party.value?.uuid; } catch (_) {}
+      }
+
+      return Transaction()
+        ..id = 300000000 + (pur.id ?? 0)
+        ..uuid = pur.uuid
+        ..transactionNumber = pur.purchaseNumber ?? 'PUR-01'
+        ..transactionType = 'Purchase'
+        ..transactionDate = pur.purchaseDate ?? pur.createdAt ?? DateTime.now()
+        ..amount = pur.grandTotal ?? 0.0
+        ..partyName = pur.partyName ?? 'Supplier'
+        ..partyUuid = pUuid ?? (pur.partyId != null ? pur.partyId.toString() : null)
+        ..paymentMode = 'Bill'
+        ..paymentStatus = pStatus
+        ..remarks = pur.remarks
+        ..createdAt = pur.createdAt ?? DateTime.now();
+    }).toList();
+  } catch (_) {}
 
   // Combine all 4 lists
   List<Transaction> list = [

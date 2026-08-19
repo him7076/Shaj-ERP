@@ -56,7 +56,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     onException: (context, state, navigation) {
       final uriStr = state.uri.toString();
       if (uriStr.startsWith('content://') || (uriStr.startsWith('file://') && uriStr.endsWith('.bserp'))) {
-        // Handled by AppLinks listener in main.dart
+        // Redirect to splash so app boots cleanly while AppLinks listener prompts for restore
+        navigation.go('/splash');
         return;
       }
     },
