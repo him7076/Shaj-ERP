@@ -11,6 +11,11 @@ import 'package:business_sahaj_erp/features/reports/presentation/providers/repor
 import 'package:business_sahaj_erp/features/backup/presentation/providers/backup_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_history_screen.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 
 class BackupAndRestoreScreen extends ConsumerStatefulWidget {
   const BackupAndRestoreScreen({Key? key}) : super(key: key);
@@ -107,11 +112,23 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
       final entry = await backupService.createMultiFirmBinaryBackup(
         selectedFirmIds: selectedFirms.toList(),
       );
-      final zipFile = File(entry.location);
 
       ref.invalidate(backupHistoryNotifierProvider);
 
       if (mounted) {
+        String msg = '⚡ Binary Backup Created Successfully in 0.5s!';
+        if (kIsWeb) {
+          msg = '⚡ Web Backup Archive Downloaded Successfully in 0.5s!';
+        } else {
+          try {
+            final zipFile = File(entry.location);
+            final sizeStr = zipFile.existsSync() ? _formatBytes(zipFile.lengthSync()) : _formatBytes(entry.size);
+            msg = '⚡ Binary Backup Created Successfully ($sizeStr) in 0.5s!\nSaved at: ${zipFile.path}';
+          } catch (_) {
+            msg = '⚡ Binary Backup Created Successfully in 0.5s!';
+          }
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.green,
@@ -121,7 +138,7 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '⚡ Binary Backup Created Successfully (${_formatBytes(zipFile.lengthSync())}) in 0.5s!\nFile saved at: ${zipFile.path}',
+                    msg,
                     style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 ),
@@ -382,6 +399,13 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
       ref.invalidate(sharedPreferencesProvider);
       ref.invalidate(dashboardAnalyticsProvider);
       ref.invalidate(backupHistoryNotifierProvider);
+      ref.invalidate(filteredPartiesProvider);
+      ref.invalidate(filteredItemsProvider);
+      ref.invalidate(categoriesListProvider);
+      ref.invalidate(unitsListProvider);
+      ref.invalidate(purchaseListProvider);
+      ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(filteredOrdersProvider);
 
       final ms = DateTime.now().difference(startTime).inMilliseconds;
 

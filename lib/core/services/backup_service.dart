@@ -128,6 +128,46 @@ class BackupService {
       await prefFile.writeAsString(jsonEncode(prefMap));
       archiveFiles.add(prefFile);
 
+      // 4. Export JSON collections for web cross-compatibility
+      try {
+        final isar = _dbService.isar;
+        final collections = {
+          'categories': await isar.categorys.where().findAll(),
+          'units': await isar.units.where().findAll(),
+          'brands': await isar.brands.where().findAll(),
+          'parties': await isar.partys.where().findAll(),
+          'items': await isar.items.where().findAll(),
+          'orders': await isar.orders.where().findAll(),
+          'order_items': await isar.orderItems.where().findAll(),
+          'invoices': await isar.invoices.where().findAll(),
+          'invoice_items': await isar.invoiceItems.where().findAll(),
+          'purchases': await isar.purchases.where().findAll(),
+          'purchase_items': await isar.purchaseItems.where().findAll(),
+          'expenses': await isar.expenses.where().findAll(),
+          'expense_items': await isar.collection<ExpenseItem>().where().findAll(),
+          'transactions': await isar.transactions.where().findAll(),
+          'bank_accounts': await isar.bankAccounts.where().findAll(),
+          'credit_notes': await isar.creditNotes.where().findAll(),
+          'credit_note_items': await isar.creditNoteItems.where().findAll(),
+          'debit_notes': await isar.debitNotes.where().findAll(),
+          'debit_note_items': await isar.debitNoteItems.where().findAll(),
+          'stock_adjustments': await isar.collection<StockAdjustment>().where().findAll(),
+          'whatsapp_mappings': await isar.whatsAppMappings.where().findAll(),
+          'settings': await isar.settings.where().findAll(),
+          'users': await isar.users.where().findAll(),
+          'sync_queues': await isar.syncQueues.where().findAll(),
+        };
+
+        for (var entry in collections.entries) {
+          final jsonList = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
+          final file = File('${tempBackupFolder.path}/${entry.key}.json');
+          await file.writeAsString(jsonEncode(jsonList));
+          archiveFiles.add(file);
+        }
+      } catch (e) {
+        logger.warning('Non-fatal: failed to export JSON collections in binary backup: $e');
+      }
+
       // 4. Images directory
       Directory? imagesDir;
       if (includeImages) {
