@@ -19,6 +19,7 @@ import 'package:business_sahaj_erp/features/purchases/presentation/providers/pur
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/constants/color_constants.dart';
