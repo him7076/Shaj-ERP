@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
-import 'package:printing/printing.dart';
+import 'package:business_sahaj_erp/core/utils/web_download_stub.dart'
+    if (dart.library.html) 'package:business_sahaj_erp/core/utils/web_download_html.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -305,13 +306,19 @@ class BackupService {
           webPayload[entry.key] = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
         }
 
+        // Include preferences in web backup for complete restore
+        final Map<String, dynamic> prefMap = {};
+        for (var key in _prefs.getKeys()) {
+          if (key.startsWith('firm_') || key.startsWith('firms_') || key.startsWith('enable_firm_') || key == 'active_firm_id') {
+            prefMap[key] = _prefs.get(key);
+          }
+        }
+        webPayload['preferences'] = prefMap;
+
         final jsonString = jsonEncode(webPayload);
         final jsonBytes = Uint8List.fromList(utf8.encode(jsonString));
 
-        await Printing.sharePdf(
-          bytes: jsonBytes,
-          filename: bserpFilename,
-        );
+        downloadWebFile(jsonBytes, bserpFilename);
 
         final historyEntry = BackupHistoryEntry(
           backupName: bserpFilename,

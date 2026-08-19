@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/compression_service.dart';
 import 'package:business_sahaj_erp/core/services/encryption_service.dart';
+import 'package:business_sahaj_erp/core/services/web_mock_isar.dart';
 import 'package:business_sahaj_erp/domain/models/backup_metadata.dart';
 
 // Collections
@@ -232,7 +233,7 @@ class RestoreService {
     }
   }
 
-  /// Restores database directly from Uint8List bytes
+  /// Restores database directly from Uint8List bytes — COMPLETE database replace
   Future<void> restoreBackupBytes(
     Uint8List bytes, {
     String? password,
@@ -266,7 +267,7 @@ class RestoreService {
       } else if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
         final archive = ZipDecoder().decodeBytes(workingBytes);
         for (var file in archive) {
-          if (file.isFile && file.name.endsWith('.json') && file.name != 'metadata.json') {
+          if (file.isFile && file.name.endsWith('.json') && file.name != 'metadata.json' && !file.name.endsWith('.isar')) {
             final colName = file.name.replaceAll('.json', '');
             final contentStr = utf8.decode(file.content as List<int>);
             collectionsMap[colName] = jsonDecode(contentStr);
@@ -274,131 +275,233 @@ class RestoreService {
         }
       }
 
+      // Restore preferences.json if present
+      if (_prefs != null && collectionsMap.containsKey('preferences')) {
+        try {
+          final prefData = collectionsMap['preferences'];
+          if (prefData is Map<String, dynamic>) {
+            for (var entry in prefData.entries) {
+              final val = entry.value;
+              if (val is bool) await _prefs!.setBool(entry.key, val);
+              else if (val is String) await _prefs!.setString(entry.key, val);
+              else if (val is int) await _prefs!.setInt(entry.key, val);
+              else if (val is double) await _prefs!.setDouble(entry.key, val);
+              else if (val is List) await _prefs!.setStringList(entry.key, List<String>.from(val));
+            }
+          }
+        } catch (e) {
+          logger.warning('Non-fatal: failed to restore preferences from bytes: $e');
+        }
+      }
+
       final isar = _dbService.isar;
 
+      // STEP 1: Clear ALL existing data — complete database replace
       await isar.writeTxn(() async {
-        if (restoreParties && collectionsMap.containsKey('parties')) {
-          final list = collectionsMap['parties'] as List;
-          for (var itemMap in list) {
-            final party = _mapMapToParty(itemMap as Map<String, dynamic>);
-            await isar.partys.put(party);
-          }
-        }
+        await isar.clear();
+      });
 
-        if (restoreItems && collectionsMap.containsKey('items')) {
-          final list = collectionsMap['items'] as List;
-          for (var itemMap in list) {
-            final item = _mapMapToItem(itemMap as Map<String, dynamic>);
-            await isar.items.put(item);
-          }
-        }
-
-        if (restoreItems && collectionsMap.containsKey('categories')) {
+      // STEP 2: Restore ALL 24 collections — nothing left behind
+      await isar.writeTxn(() async {
+        // 1. Categories
+        if (collectionsMap.containsKey('categories')) {
           final list = collectionsMap['categories'] as List;
           for (var itemMap in list) {
-            final cat = _mapMapToCategory(itemMap as Map<String, dynamic>);
-            await isar.categorys.put(cat);
+            await isar.categorys.put(_mapMapToCategory(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreItems && collectionsMap.containsKey('units')) {
+        // 2. Units
+        if (collectionsMap.containsKey('units')) {
           final list = collectionsMap['units'] as List;
           for (var itemMap in list) {
-            final unit = _mapMapToUnit(itemMap as Map<String, dynamic>);
-            await isar.units.put(unit);
+            await isar.units.put(_mapMapToUnit(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreItems && collectionsMap.containsKey('brands')) {
+        // 3. Brands
+        if (collectionsMap.containsKey('brands')) {
           final list = collectionsMap['brands'] as List;
           for (var itemMap in list) {
-            final brand = _mapMapToBrand(itemMap as Map<String, dynamic>);
-            await isar.brands.put(brand);
+            await isar.brands.put(_mapMapToBrand(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreOrders && collectionsMap.containsKey('orders')) {
+        // 4. Parties
+        if (collectionsMap.containsKey('parties')) {
+          final list = collectionsMap['parties'] as List;
+          for (var itemMap in list) {
+            await isar.partys.put(_mapMapToParty(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 5. Items
+        if (collectionsMap.containsKey('items')) {
+          final list = collectionsMap['items'] as List;
+          for (var itemMap in list) {
+            await isar.items.put(_mapMapToItem(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 6. Orders
+        if (collectionsMap.containsKey('orders')) {
           final list = collectionsMap['orders'] as List;
           for (var itemMap in list) {
-            final order = _mapMapToOrder(itemMap as Map<String, dynamic>);
-            await isar.orders.put(order);
+            await isar.orders.put(_mapMapToOrder(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreOrders && collectionsMap.containsKey('order_items')) {
+        // 7. Order Items
+        if (collectionsMap.containsKey('order_items')) {
           final list = collectionsMap['order_items'] as List;
           for (var itemMap in list) {
-            final oi = _mapMapToOrderItem(itemMap as Map<String, dynamic>);
-            await isar.orderItems.put(oi);
+            await isar.orderItems.put(_mapMapToOrderItem(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreInvoices && collectionsMap.containsKey('invoices')) {
+        // 8. Invoices
+        if (collectionsMap.containsKey('invoices')) {
           final list = collectionsMap['invoices'] as List;
           for (var itemMap in list) {
-            final inv = _mapMapToInvoice(itemMap as Map<String, dynamic>);
-            await isar.invoices.put(inv);
+            await isar.invoices.put(_mapMapToInvoice(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreInvoices && collectionsMap.containsKey('invoice_items')) {
+        // 9. Invoice Items
+        if (collectionsMap.containsKey('invoice_items')) {
           final list = collectionsMap['invoice_items'] as List;
           for (var itemMap in list) {
-            final ii = _mapMapToInvoiceItem(itemMap as Map<String, dynamic>);
-            await isar.invoiceItems.put(ii);
+            await isar.invoiceItems.put(_mapMapToInvoiceItem(itemMap as Map<String, dynamic>));
           }
         }
 
+        // 10. Purchases
         if (collectionsMap.containsKey('purchases')) {
           final list = collectionsMap['purchases'] as List;
           for (var itemMap in list) {
-            final pur = _mapMapToPurchase(itemMap as Map<String, dynamic>);
-            await isar.purchases.put(pur);
+            await isar.purchases.put(_mapMapToPurchase(itemMap as Map<String, dynamic>));
           }
         }
 
+        // 11. Purchase Items
         if (collectionsMap.containsKey('purchase_items')) {
           final list = collectionsMap['purchase_items'] as List;
           for (var itemMap in list) {
-            final pi = _mapMapToPurchaseItem(itemMap as Map<String, dynamic>);
-            await isar.purchaseItems.put(pi);
+            await isar.purchaseItems.put(_mapMapToPurchaseItem(itemMap as Map<String, dynamic>));
           }
         }
 
+        // 12. Expenses
         if (collectionsMap.containsKey('expenses')) {
           final list = collectionsMap['expenses'] as List;
           for (var itemMap in list) {
-            final exp = _mapMapToExpense(itemMap as Map<String, dynamic>);
-            await isar.expenses.put(exp);
+            await isar.expenses.put(_mapMapToExpense(itemMap as Map<String, dynamic>));
           }
         }
 
+        // 13. Expense Items
         if (collectionsMap.containsKey('expense_items')) {
           final list = collectionsMap['expense_items'] as List;
           for (var itemMap in list) {
-            final expItem = _mapMapToExpenseItem(itemMap as Map<String, dynamic>);
-            await isar.collection<ExpenseItem>().put(expItem);
+            await isar.collection<ExpenseItem>().put(_mapMapToExpenseItem(itemMap as Map<String, dynamic>));
           }
         }
 
+        // 14. Transactions
+        if (collectionsMap.containsKey('transactions')) {
+          final list = collectionsMap['transactions'] as List;
+          for (var itemMap in list) {
+            await isar.transactions.put(_mapMapToTransaction(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 15. Bank Accounts
+        if (collectionsMap.containsKey('bank_accounts')) {
+          final list = collectionsMap['bank_accounts'] as List;
+          for (var itemMap in list) {
+            await isar.bankAccounts.put(_mapMapToBankAccount(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 16. Credit Notes
+        if (collectionsMap.containsKey('credit_notes')) {
+          final list = collectionsMap['credit_notes'] as List;
+          for (var itemMap in list) {
+            await isar.creditNotes.put(_mapMapToCreditNote(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 17. Credit Note Items
+        if (collectionsMap.containsKey('credit_note_items')) {
+          final list = collectionsMap['credit_note_items'] as List;
+          for (var itemMap in list) {
+            await isar.creditNoteItems.put(_mapMapToCreditNoteItem(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 18. Debit Notes
+        if (collectionsMap.containsKey('debit_notes')) {
+          final list = collectionsMap['debit_notes'] as List;
+          for (var itemMap in list) {
+            await isar.debitNotes.put(_mapMapToDebitNote(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 19. Debit Note Items
+        if (collectionsMap.containsKey('debit_note_items')) {
+          final list = collectionsMap['debit_note_items'] as List;
+          for (var itemMap in list) {
+            await isar.debitNoteItems.put(_mapMapToDebitNoteItem(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 20. Stock Adjustments
+        if (collectionsMap.containsKey('stock_adjustments')) {
+          final list = collectionsMap['stock_adjustments'] as List;
+          for (var itemMap in list) {
+            await isar.collection<StockAdjustment>().put(_mapMapToStockAdjustment(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 21. WhatsApp Mappings
         if (collectionsMap.containsKey('whatsapp_mappings')) {
           final list = collectionsMap['whatsapp_mappings'] as List;
           for (var itemMap in list) {
-            final wam = _mapMapToWhatsAppMapping(itemMap as Map<String, dynamic>);
-            await isar.whatsAppMappings.put(wam);
+            await isar.whatsAppMappings.put(_mapMapToWhatsAppMapping(itemMap as Map<String, dynamic>));
           }
         }
 
-        if (restoreSettings && collectionsMap.containsKey('settings')) {
+        // 22. Settings
+        if (collectionsMap.containsKey('settings')) {
           final list = collectionsMap['settings'] as List;
           for (var itemMap in list) {
-            final st = _mapMapToSettings(itemMap as Map<String, dynamic>);
-            await isar.settings.put(st);
+            await isar.settings.put(_mapMapToSettings(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 23. Users
+        if (collectionsMap.containsKey('users')) {
+          final list = collectionsMap['users'] as List;
+          for (var itemMap in list) {
+            await isar.users.put(_mapMapToUser(itemMap as Map<String, dynamic>));
+          }
+        }
+
+        // 24. Sync Queues
+        if (collectionsMap.containsKey('sync_queues')) {
+          final list = collectionsMap['sync_queues'] as List;
+          for (var itemMap in list) {
+            await isar.syncQueues.put(_mapMapToSyncQueue(itemMap as Map<String, dynamic>));
           }
         }
       });
 
-      logger.info('Database restore from bytes completed successfully.');
+      // STEP 3: On Web, persist to SharedPreferences/localStorage
+      if (kIsWeb && isar is WebMockIsar) {
+        await (isar as WebMockIsar).autoSave();
+      }
+
+      logger.info('Database restore from bytes completed successfully. ALL 24 collections restored.');
     } catch (e, stack) {
       logger.error('Failed to restore database from bytes', e, stack);
       throw RestoreException('Failed to restore database: $e');
@@ -416,7 +519,8 @@ class RestoreService {
 
     try {
       final fileBytes = await File(filePath).readAsBytes();
-      bool isEncrypted = fileBytes.length < 2 || fileBytes[0] != 0x50 || fileBytes[1] != 0x4B;
+      bool isEncrypted = fileBytes.length < 2 ||
+          ((fileBytes[0] != 0x50 || fileBytes[1] != 0x4B) && fileBytes[0] != 0x7B);
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {

@@ -2,7 +2,7 @@
 import 'dart:html' as html;
 
 void downloadWebFile(List<int> bytes, String filename) {
-  final blob = html.Blob([bytes], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  final blob = html.Blob([bytes], 'application/octet-stream');
   final url = html.Url.createObjectUrlFromBlob(blob);
   final anchor = html.AnchorElement(href: url)
     ..setAttribute('download', filename)
