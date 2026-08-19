@@ -145,6 +145,113 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
     }
   }
 
+  Future<String?> _showPasswordDialog({String? fileName, String? errorMessage}) async {
+    final controller = TextEditingController();
+    bool obscureText = true;
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Row(
+                children: [
+                  Icon(Icons.lock_outline_rounded, color: Color(0xFF6366F1)),
+                  SizedBox(width: 10),
+                  Text('Password Required', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fileName != null
+                        ? 'The backup file "$fileName" is encrypted.'
+                        : 'This backup file is encrypted with a password.',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Please enter the password to decrypt and restore your database:',
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
+                  ),
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              errorMessage,
+                              style: const TextStyle(color: Colors.red, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    obscureText: obscureText,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'Backup Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureText ? Icons.visibility : Icons.visibility_off),
+                        onPressed: () {
+                          setDialogState(() => obscureText = !obscureText);
+                        },
+                      ),
+                    ),
+                    onSubmitted: (val) {
+                      if (val.trim().isNotEmpty) {
+                        Navigator.pop(ctx, val.trim());
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, null),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6366F1),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.key, size: 16),
+                  label: const Text('Decrypt & Restore'),
+                  onPressed: () {
+                    final pw = controller.text.trim();
+                    if (pw.isNotEmpty) {
+                      Navigator.pop(ctx, pw);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _pickAndRestoreBinaryBackup() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
@@ -213,7 +320,44 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
 
     try {
       final restoreService = ref.read(restoreServiceProvider);
-      await restoreService.restoreBackup(filePath);
+
+      bool restored = false;
+      String? currentPassword;
+      String? lastErrorMsg;
+
+      while (!restored) {
+        try {
+          await restoreService.restoreBackup(filePath, password: currentPassword);
+          restored = true;
+        } catch (e) {
+          final errStr = e.toString();
+          if (errStr.contains('EncryptionException') ||
+              errStr.contains('encrypted') ||
+              errStr.contains('password') ||
+              errStr.contains('Password')) {
+            // Backup is encrypted or password was invalid
+            final isWrongPassword = currentPassword != null && currentPassword.isNotEmpty;
+            lastErrorMsg = isWrongPassword
+                ? 'Incorrect password! Please try again.'
+                : 'This backup file is encrypted. Password is required.';
+
+            final enteredPw = await _showPasswordDialog(
+              fileName: fileName,
+              errorMessage: lastErrorMsg,
+            );
+
+            if (enteredPw == null) {
+              // User cancelled password dialog
+              if (mounted) setState(() => _isRestoringBackup = false);
+              return;
+            }
+            currentPassword = enteredPw;
+          } else {
+            // Non-encryption error
+            rethrow;
+          }
+        }
+      }
 
       ref.invalidate(sharedPreferencesProvider);
       ref.invalidate(dashboardAnalyticsProvider);
