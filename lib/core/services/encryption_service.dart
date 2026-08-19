@@ -96,10 +96,3 @@ class EncryptionService {
     }
   }
 }
-
-class FileNotFoundException implements Exception {
-  final String message;
-  const FileNotFoundException(this.message);
-  @override
-  String toString() => 'FileNotFoundException: $message';
-}

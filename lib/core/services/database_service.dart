@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode, debugPrint;
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/web_mock_isar.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
@@ -586,11 +587,4 @@ class DatabaseService {
     // Currently at Version 1, so no active migrations.
     logger.debug('Database migration check complete. No migrations pending.');
   }
-}
-
-class FileNotFoundException implements Exception {
-  final String message;
-  FileNotFoundException(this.message);
-  @override
-  String toString() => 'FileNotFoundException: $message';
 }
