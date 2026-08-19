@@ -19,8 +19,8 @@ import 'package:business_sahaj_erp/features/purchases/presentation/providers/pur
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
-import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
-
+import 'package:intl/intl.dart';
+import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/constants/color_constants.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -529,13 +529,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: StreamBuilder<dynamic>(
-                  stream: ref.watch(syncServiceProvider).stateStream,
+                child: StreamBuilder<SyncState>(
+                  stream: ref.watch(syncServiceProvider).syncStateStream,
                   builder: (context, snapshot) {
-                    final syncState = ref.watch(syncServiceProvider).currentState;
-                    final isOnline = syncState.status != SyncStatus.error;
-                    final hasError = syncState.status == SyncStatus.error || (syncState.errorMessage != null && syncState.errorMessage!.isNotEmpty);
-                    final isQuotaError = hasError && (syncState.errorMessage?.toLowerCase().contains('quota') == true || syncState.errorMessage?.toLowerCase().contains('exceeded') == true);
+                    final syncState = snapshot.data ?? ref.watch(syncServiceProvider).currentState;
+                    final hasError = syncState.status == SyncStatus.failure || (syncState.message.toLowerCase().contains('quota') || syncState.message.toLowerCase().contains('exceeded') || syncState.message.toLowerCase().contains('error'));
+                    final isQuotaError = syncState.message.toLowerCase().contains('quota') || syncState.message.toLowerCase().contains('exceeded');
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,7 +636,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ),
                           ],
                         ),
-                        if (hasError && syncState.errorMessage != null) ...[
+                        if (hasError && syncState.message.isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Container(
                             width: double.infinity,
@@ -653,7 +652,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    syncState.errorMessage!,
+                                    syncState.message,
                                     style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
                                   ),
                                 ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/providers/backup_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/backup_history_screen.dart';
@@ -101,9 +102,10 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
 
     try {
       final backupService = ref.read(backupServiceProvider);
-      final zipFile = await backupService.createMultiFirmBinaryBackup(
-        firmIds: selectedFirms.toList(),
+      final entry = await backupService.createMultiFirmBinaryBackup(
+        selectedFirmIds: selectedFirms.toList(),
       );
+      final zipFile = File(entry.filePath);
 
       ref.invalidate(backupHistoryNotifierProvider);
 
