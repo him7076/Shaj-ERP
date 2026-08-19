@@ -380,7 +380,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       if (validAllocations.isNotEmpty) {
         final numbers = <String>[];
         for (final uuid in validAllocations.keys) {
-          final bill = _pendingBills.firstWhere((b) => b.uuid == uuid, orElse: () => null);
+          final bill = _pendingBills.where((b) => b.uuid == uuid).firstOrNull;
           if (bill != null) {
             final numStr = _transactionType == 'Receipt' || _transactionType == 'Credit Note'
                 ? (bill.invoiceNumber ?? '')
@@ -836,7 +836,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             return Dialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Container(
-                width: 580,
+                width: min(580.0, MediaQuery.of(context).size.width - 24.0),
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

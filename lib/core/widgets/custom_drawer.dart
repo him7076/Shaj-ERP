@@ -342,7 +342,7 @@ class CustomDrawer extends ConsumerWidget {
                     context: context,
                     ref: ref,
                     icon: Icons.sd_storage_rounded,
-                    label: 'Local Backup',
+                    label: 'Backup & Restore',
                     routePath: '/backup',
                     currentPath: location,
                   ),

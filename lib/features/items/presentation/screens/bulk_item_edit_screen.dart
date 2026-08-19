@@ -135,10 +135,105 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
     }
   }
 
+  Future<void> _showCreateUnitDialog(String fieldName, Item item) async {
+    final controller = TextEditingController();
+    final createdName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.add_circle_outline, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Create New Unit'),
+          ],
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Unit Symbol (e.g. BTL, PACK, KG)',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    if (createdName != null && createdName.isNotEmpty) {
+      try {
+        final isar = ref.read(databaseServiceProvider).isar;
+        final newUnit = Unit()
+          ..uuid = const Uuid().v4()
+          ..unitName = createdName
+          ..shortName = createdName
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+
+        await isar.writeTxn(() async {
+          await isar.units.put(newUnit);
+        });
+
+        ref.invalidate(unitsListProvider);
+        _onFieldChanged(item, fieldName, createdName);
+      } catch (e) {
+        logger.error('Failed to create new unit in bulk edit', e);
+      }
+    }
+  }
+
+  Widget _buildUnitDropdown(Item item, String fieldName, String currentValue, List<Unit> units) {
+    final unitNames = units.map((u) => u.shortName ?? u.unitName ?? '').where((s) => s.isNotEmpty).toSet().toList();
+    if (currentValue.isNotEmpty && !unitNames.contains(currentValue)) {
+      unitNames.insert(0, currentValue);
+    }
+    if (!unitNames.contains('PCS')) unitNames.add('PCS');
+    if (!unitNames.contains('BOX')) unitNames.add('BOX');
+
+    return DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: unitNames.contains(currentValue) ? currentValue : (unitNames.isNotEmpty ? unitNames.first : null),
+        isDense: true,
+        isExpanded: true,
+        items: [
+          ...unitNames.map((u) => DropdownMenuItem<String>(
+            value: u,
+            child: Text(u, style: const TextStyle(fontSize: 12)),
+          )),
+          const DropdownMenuItem<String>(
+            value: '__CREATE_NEW_UNIT__',
+            child: Row(
+              children: [
+                Icon(Icons.add, size: 14, color: Colors.blue),
+                SizedBox(width: 4),
+                Text('+ Create New', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+        onChanged: (val) {
+          if (val == '__CREATE_NEW_UNIT__') {
+            _showCreateUnitDialog(fieldName, item);
+          } else if (val != null) {
+            _onFieldChanged(item, fieldName, val);
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final itemsAsync = ref.watch(filteredItemsProvider);
+    final unitsAsync = ref.watch(unitsListProvider);
+    final unitsList = unitsAsync.asData?.value ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -268,21 +363,23 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
                                         ),
                                         DataCell(
                                           SizedBox(
-                                            width: 100,
-                                            child: TextFormField(
-                                              initialValue: item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS',
-                                              decoration: const InputDecoration(isDense: true, border: InputBorder.none),
-                                              onChanged: (v) => _onFieldChanged(item, 'primaryUnitName', v),
+                                            width: 110,
+                                            child: _buildUnitDropdown(
+                                              item,
+                                              'primaryUnitName',
+                                              _editedItemsMap[item.id]?['primaryUnitName'] ?? item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS',
+                                              unitsList,
                                             ),
                                           ),
                                         ),
                                         DataCell(
                                           SizedBox(
-                                            width: 100,
-                                            child: TextFormField(
-                                              initialValue: item.secondaryUnit ?? '',
-                                              decoration: const InputDecoration(isDense: true, border: InputBorder.none, hintText: 'None'),
-                                              onChanged: (v) => _onFieldChanged(item, 'secondaryUnit', v),
+                                            width: 110,
+                                            child: _buildUnitDropdown(
+                                              item,
+                                              'secondaryUnit',
+                                              _editedItemsMap[item.id]?['secondaryUnit'] ?? item.secondaryUnit ?? '',
+                                              unitsList,
                                             ),
                                           ),
                                         ),

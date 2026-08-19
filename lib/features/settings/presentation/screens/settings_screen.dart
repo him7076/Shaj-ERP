@@ -520,7 +520,156 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Database Backup & Instant Restore System Card
+            // FIREBASE CLOUD CONNECTION STATUS & QUOTA ERROR INDICATOR CARD
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: StreamBuilder<dynamic>(
+                  stream: ref.watch(syncServiceProvider).stateStream,
+                  builder: (context, snapshot) {
+                    final syncState = ref.watch(syncServiceProvider).currentState;
+                    final isOnline = syncState.status != SyncStatus.error;
+                    final hasError = syncState.status == SyncStatus.error || (syncState.errorMessage != null && syncState.errorMessage!.isNotEmpty);
+                    final isQuotaError = hasError && (syncState.errorMessage?.toLowerCase().contains('quota') == true || syncState.errorMessage?.toLowerCase().contains('exceeded') == true);
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: (hasError ? Colors.red : Colors.green).withOpacity(0.12),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    hasError ? Icons.cloud_off_rounded : Icons.cloud_done_rounded,
+                                    color: hasError ? Colors.red : Colors.green,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Firebase Cloud Connection Status',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (hasError ? Colors.red : Colors.green).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: hasError ? Colors.red : Colors.green),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color: hasError ? Colors.red : Colors.green,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    hasError
+                                        ? (isQuotaError ? '🔴 Firestore Quota Exceeded' : '🔴 Cloud Sync Error')
+                                        : '🟢 Firebase Cloud Active',
+                                    style: TextStyle(
+                                      color: hasError ? Colors.red : Colors.green,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Last Cloud Sync', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    syncState.lastSyncTime != null
+                                        ? DateFormat('dd MMM yyyy, hh:mm a').format(syncState.lastSyncTime!)
+                                        : 'Never synced',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Sync Status', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    syncState.status.name.toUpperCase(),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: hasError ? Colors.red : Colors.blue,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (hasError && syncState.errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.red.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, color: Colors.red, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    syncState.errorMessage!,
+                                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Consolidated Backup & Restore Center Card
             Card(
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -537,14 +686,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.12),
+                            color: Colors.indigo.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.speed_rounded, color: Colors.green, size: 20),
+                          child: const Icon(Icons.swap_calls_rounded, color: Colors.indigo, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Ultra-Fast <2s Database Backup & Restore',
+                          'Backup & Restore Center',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
@@ -553,31 +702,167 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     const Divider(height: 24),
                     const Text(
-                      'Export binary database backups (.bserp) for single or multiple firms instantly with 100% complete data preservation, or restore in under 2 seconds.',
+                      'Access the unified offline-first backup & restore system. Instant 0.5s binary backups & < 1s database restores with 100% data preservation.',
                       style: TextStyle(fontSize: 13, height: 1.4),
                     ),
                     const SizedBox(height: 16),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                            foregroundColor: Colors.white,
-                          ),
-                          icon: const Icon(Icons.archive_outlined, size: 18),
-                          label: const Text('Export Multi-Firm Backup (.bserp)'),
-                          onPressed: () => _showMultiFirmBackupDialog(prefs, firmsList),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade700,
-                            foregroundColor: Colors.white,
+                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: const Text('Open Backup & Restore Center', style: TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: () => context.go('/backup'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // INSTANT LOCAL & CLOUD DATA MAINTENANCE (WIPE CONTROLS) CARD
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: Colors.red.withOpacity(0.4)),
+              ),
+              color: Colors.red.withOpacity(isDark ? 0.1 : 0.03),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          icon: const Icon(Icons.unarchive_outlined, size: 18),
-                          label: const Text('Instant Restore (< 2s)'),
-                          onPressed: () => _pickAndRestoreBackupFile(),
+                          child: const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Firm Data Maintenance & Reset Controls',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    Text(
+                      'Clear or wipe database records specifically for active company "$activeFirmId". Local wipe clears Isar database; Cloud wipe clears Firestore documents.',
+                      style: const TextStyle(fontSize: 12, height: 1.4, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.delete_sweep_rounded, size: 18),
+                            label: const Text('Wipe Local Data'),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  title: const Text('Confirm Local Data Wipe'),
+                                  content: Text('Are you sure you want to CLEAR ALL local Isar database records for "$activeFirmId"? This action cannot be undone unless you have a backup.'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Clear Local Isar DB'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                try {
+                                  final db = ref.read(databaseServiceProvider);
+                                  await db.clearDatabase();
+
+                                  ref.invalidate(sharedPreferencesProvider);
+                                  ref.invalidate(dashboardAnalyticsProvider);
+                                  ref.invalidate(filteredPartiesProvider);
+                                  ref.invalidate(filteredItemsProvider);
+
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('🗑️ Local database cleared for active firm.'), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Local Wipe Failed: $e'), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.deepOrange,
+                              side: const BorderSide(color: Colors.deepOrange),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            icon: const Icon(Icons.cloud_off_rounded, size: 18),
+                            label: const Text('Wipe Cloud Data'),
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  title: const Text('Confirm Cloud Data Wipe'),
+                                  content: Text('Are you sure you want to DELETE ALL remote Firestore documents for firm "$activeFirmId"? Local device data will not be affected.'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Wipe Firestore Documents'),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm == true) {
+                                try {
+                                  await ref.read(syncServiceProvider).clearCloudDataForActiveFirm();
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('🌩️ Cloud Firestore data wiped for active firm.'), backgroundColor: Colors.deepOrange),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Cloud Wipe Failed: $e'), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
+                              }
+                            },
+                          ),
                         ),
                       ],
                     ),
