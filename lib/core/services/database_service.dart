@@ -253,6 +253,16 @@ class DatabaseService {
     }
   }
 
+  /// Safely close Isar database connection for binary restore swap
+  Future<void> closeDatabase() async {
+    await closeAllInstances();
+  }
+
+  /// Re-open Isar database connection after binary file swap
+  Future<void> reopenDatabase([SharedPreferences? prefs]) async {
+    await init(prefs ?? _prefs);
+  }
+
   /// Copies a firm's binary .isar file to a destination path
   Future<void> copyFirmDatabaseFile(String firmId, String destPath) async {
     if (kIsWeb) return;

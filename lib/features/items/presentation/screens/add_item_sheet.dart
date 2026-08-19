@@ -34,6 +34,9 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _sellRateController = TextEditingController();
   
+  final TextEditingController _tertiaryUnitController = TextEditingController();
+  final TextEditingController _secToTerConversionController = TextEditingController();
+
   Category? _selectedCategory;
   Unit? _selectedUnit;
   double _selectedGstRate = 18.0;
@@ -67,6 +70,8 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
     _nameController.dispose();
     _codeController.dispose();
     _sellRateController.dispose();
+    _tertiaryUnitController.dispose();
+    _secToTerConversionController.dispose();
     super.dispose();
   }
 
@@ -87,7 +92,9 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
         ..gstRate = _selectedGstRate
         ..currentStock = 0.0
         ..reorderLevel = 0.0
-        ..openingStock = 0.0;
+        ..openingStock = 0.0
+        ..tertiaryUnit = _tertiaryUnitController.text.trim().isEmpty ? null : _tertiaryUnitController.text.trim()
+        ..secondaryToTertiaryConversion = double.tryParse(_secToTerConversionController.text.trim());
 
       if (_selectedCategory != null) {
         newItem.category.value = _selectedCategory;
@@ -311,6 +318,35 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       },
                       loading: () => const Center(child: LinearProgressIndicator()),
                       error: (e, _) => const Icon(Icons.error_outline),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // 3rd Unit & Conversion Factor Row (Optional)
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _tertiaryUnitController,
+                      decoration: const InputDecoration(
+                        labelText: '3rd Unit (Optional, e.g. Candies)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.inventory_2_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _secToTerConversionController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: '2nd to 3rd Factor (e.g. 50)',
+                        border: OutlineInputBorder(),
+                        helperText: 'E.g. 1 Jar = 50 Candies',
+                      ),
                     ),
                   ),
                 ],

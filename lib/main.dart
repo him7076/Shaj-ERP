@@ -269,7 +269,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
               try {
                 final restoreService = ref.read(restoreServiceProvider);
-                await restoreService.restoreBinaryBackupFromFile(bserpFile: file);
+                await restoreService.restoreBackup(file.path);
                 final ms = DateTime.now().difference(startTime).inMilliseconds;
 
                 ref.invalidate(sharedPreferencesProvider);
