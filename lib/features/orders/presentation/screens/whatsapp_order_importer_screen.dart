@@ -25,6 +25,8 @@ class _MappedRowState {
   double quantity;
   double rate;
   bool isTaxInclusive;
+  late TextEditingController qtyController;
+  late TextEditingController rateController;
 
   _MappedRowState({
     required this.rawParsedItem,
@@ -35,7 +37,28 @@ class _MappedRowState {
     required this.quantity,
     required this.rate,
     this.isTaxInclusive = false,
-  });
+  }) {
+    qtyController = TextEditingController(
+      text: quantity > 0 ? (quantity % 1 == 0 ? quantity.toInt().toString() : quantity.toString()) : '1',
+    );
+    rateController = TextEditingController(text: rate.toStringAsFixed(2));
+  }
+
+  void syncControllers() {
+    final qtyStr = quantity > 0 ? (quantity % 1 == 0 ? quantity.toInt().toString() : quantity.toString()) : '1';
+    if (qtyController.text != qtyStr) {
+      qtyController.text = qtyStr;
+    }
+    final rateStr = rate.toStringAsFixed(2);
+    if (rateController.text != rateStr) {
+      rateController.text = rateStr;
+    }
+  }
+
+  void dispose() {
+    qtyController.dispose();
+    rateController.dispose();
+  }
 
   double get gstPercent => selectedItem?.gstRate ?? 0.0;
 
@@ -104,7 +127,77 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
   @override
   void dispose() {
     _textController.dispose();
+    for (var r in _mappedRows) {
+      r.dispose();
+    }
     super.dispose();
+  }
+
+  void _showCreateSalesmanDialog() {
+    final nameCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add New Sales Representative'),
+        content: TextField(
+          controller: nameCtrl,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Sales Representative Name',
+            hintText: 'e.g. Vikram Singh',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newName = nameCtrl.text.trim();
+              if (newName.isNotEmpty) {
+                setState(() {
+                  if (!_salesmenList.contains(newName)) {
+                    _salesmenList.add(newName);
+                  }
+                  _selectedSalesman = newName;
+                });
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add & Select'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _addNewEmptyItemRow() {
+    final defaultItem = _allItems.isNotEmpty ? _allItems.first : null;
+    final newRow = _MappedRowState(
+      rawParsedItem: ParsedWhatsappOrderItem(
+        rawLine: 'Extra Item #${_mappedRows.length + 1}',
+        itemDescription: defaultItem?.itemName ?? 'Extra Item',
+        quantity: 1,
+      ),
+      selectedItem: defaultItem,
+      unitName: defaultItem != null ? (defaultItem.primaryUnitName ?? 'PCS') : 'PCS',
+      quantity: 1.0,
+      rate: defaultItem != null ? (defaultItem.sellRate ?? 0.0) : 0.0,
+    );
+    setState(() {
+      _mappedRows.add(newRow);
+    });
+  }
+
+  void _removeRowAt(int index) {
+    if (index >= 0 && index < _mappedRows.length) {
+      setState(() {
+        final removed = _mappedRows.removeAt(index);
+        removed.dispose();
+      });
+    }
   }
 
   Future<void> _parseMessage() async {
@@ -179,6 +272,9 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
       }
 
       setState(() {
+        for (var r in _mappedRows) {
+          r.dispose();
+        }
         _parsedOrder = parsed;
         _selectedParty = matchedParty;
         _selectedSalesman = mappedSalesman ?? 'Default Salesman';
@@ -829,13 +925,24 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('ASSIGN SALESMAN / EXECUTIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                if (_parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                                    child: Text('WhatsApp Rep: ${_parsedOrder!.salesRep}', style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
-                                  ),
+                                Row(
+                                  children: [
+                                    const Text('ASSIGN SALESMAN / EXECUTIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                    if (_parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                                        child: Text('WhatsApp: ${_parsedOrder!.salesRep}', style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                TextButton.icon(
+                                  icon: const Icon(Icons.add_rounded, size: 18),
+                                  label: const Text('+ New Salesman', style: TextStyle(fontSize: 12)),
+                                  onPressed: _showCreateSalesmanDialog,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -920,8 +1027,23 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text('ITEMS MAPPING & RATES TABLE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                                Text('${_mappedRows.length} Items Parsed', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                Row(
+                                  children: [
+                                    const Text('ITEMS MAPPING & RATES TABLE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                    const SizedBox(width: 8),
+                                    Text('(${_mappedRows.length} Items)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    backgroundColor: theme.colorScheme.primaryContainer,
+                                    foregroundColor: theme.colorScheme.onPrimaryContainer,
+                                  ),
+                                  icon: const Icon(Icons.add_rounded, size: 16),
+                                  label: const Text('+ Add Item', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                  onPressed: _addNewEmptyItemRow,
+                                ),
                               ],
                             ),
                             const Divider(height: 20),
@@ -937,7 +1059,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    // WhatsApp line header with unmapped badge
+                                    // WhatsApp line header with unmapped badge & delete button
                                     Row(
                                       children: [
                                         Expanded(
@@ -975,6 +1097,12 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                             ),
                                           ),
                                         ),
+                                        const SizedBox(width: 4),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                          tooltip: 'Delete Line Item',
+                                          onPressed: () => _removeRowAt(index),
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
@@ -992,6 +1120,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                         setState(() {
                                           row.selectedItem = selection;
                                           row.rate = selection.sellRate ?? 0.0;
+                                          row.syncControllers();
                                         });
                                       },
                                       fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
@@ -1014,7 +1143,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     // Unit Dropdown, Qty, Rate, Tax Mode, Subtotal Row
                                     Row(
                                       children: [
-                                        // Unit Dropdown (Shows ALL units for product: Primary, Secondary, PCS)
+                                        // Unit Dropdown
                                         Builder(
                                           builder: (context) {
                                             final availableUnits = <String>[
@@ -1048,7 +1177,6 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                           if (newUnit == null) return;
                                                           setState(() {
                                                             row.unitName = newUnit;
-                                                            final primary = item.primaryUnitName ?? 'Carton';
                                                             final secondary = item.secondaryUnit ?? 'Bundle';
                                                             final factor = item.conversionFactor ?? 1.0;
 
@@ -1059,6 +1187,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                               row.isSecondaryUnit = false;
                                                               row.rate = item.sellRate ?? 0.0;
                                                             }
+                                                            row.syncControllers();
                                                           });
                                                         },
                                                 ),
@@ -1068,14 +1197,13 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                         ),
                                         const SizedBox(width: 8),
 
-                                        // Qty Input
+                                        // Qty Input (Persistent Controller)
                                         Expanded(
                                           child: SizedBox(
                                             height: 38,
-                                            child: TextFormField(
-                                              key: ValueKey('qty_${index}_${row.quantity}'),
-                                              initialValue: row.quantity.toStringAsFixed(0),
-                                              keyboardType: TextInputType.number,
+                                            child: TextField(
+                                              controller: row.qtyController,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                               style: const TextStyle(fontSize: 12),
                                               decoration: const InputDecoration(
                                                 labelText: 'Qty',
@@ -1084,22 +1212,21 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                               ),
                                               onChanged: (val) {
-                                                final q = double.tryParse(val) ?? 1.0;
-                                                setState(() => row.quantity = q);
+                                                row.quantity = double.tryParse(val) ?? 0.0;
+                                                setState(() {});
                                               },
                                             ),
                                           ),
                                         ),
                                         const SizedBox(width: 8),
 
-                                        // Rate Input
+                                        // Rate Input (Persistent Controller)
                                         Expanded(
                                           child: SizedBox(
                                             height: 38,
-                                            child: TextFormField(
-                                              key: ValueKey('rate_${index}_${row.rate}'),
-                                              initialValue: row.rate.toStringAsFixed(2),
-                                              keyboardType: TextInputType.number,
+                                            child: TextField(
+                                              controller: row.rateController,
+                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                               style: const TextStyle(fontSize: 12),
                                               decoration: const InputDecoration(
                                                 labelText: 'Rate (₹)',
@@ -1108,8 +1235,8 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                 contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                               ),
                                               onChanged: (val) {
-                                                final r = double.tryParse(val) ?? 0.0;
-                                                setState(() => row.rate = r);
+                                                row.rate = double.tryParse(val) ?? 0.0;
+                                                setState(() {});
                                               },
                                             ),
                                           ),
