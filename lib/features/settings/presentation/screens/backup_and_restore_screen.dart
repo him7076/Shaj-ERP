@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -256,21 +257,36 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
     final result = await FilePicker.platform.pickFiles(
       type: FileType.any,
       allowMultiple: false,
+      withData: true,
     );
 
-    if (result == null || result.files.isEmpty || result.files.single.path == null) {
+    if (result == null || result.files.isEmpty) {
       return;
     }
 
-    final filePath = result.files.single.path!;
-    final file = File(filePath);
-    final fileName = file.path.split(Platform.pathSeparator).last;
+    final platformFile = result.files.single;
+    final fileName = platformFile.name;
+    final filePath = platformFile.path;
+    final fileBytes = platformFile.bytes;
 
-    if (!fileName.toLowerCase().endsWith('.bserp') && !fileName.toLowerCase().endsWith('.zip')) {
+    if (filePath == null && fileBytes == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Invalid backup file! Please select a .bserp or .zip backup archive.'),
+            content: Text('Failed to read backup file contents.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final lowerName = fileName.toLowerCase();
+    if (!lowerName.endsWith('.bserp') && !lowerName.endsWith('.zip') && !lowerName.endsWith('.json')) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid backup file! Please select a .bserp, .zip, or .json backup archive.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -327,7 +343,11 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
 
       while (!restored) {
         try {
-          await restoreService.restoreBackup(filePath, password: currentPassword);
+          if (kIsWeb || filePath == null) {
+            await restoreService.restoreBackupBytes(fileBytes!, password: currentPassword);
+          } else {
+            await restoreService.restoreBackup(filePath, password: currentPassword);
+          }
           restored = true;
         } catch (e) {
           final errStr = e.toString();

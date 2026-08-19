@@ -174,9 +174,32 @@ class RestoreService {
         throw const CorruptedBackupException('Backup file is empty.');
       }
 
+      Uint8List workingBytes = bytes;
+      bool isEncrypted = false;
+      try {
+        if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
+          final archive = ZipDecoder().decodeBytes(workingBytes, verify: false);
+          if (archive.isEmpty) isEncrypted = true;
+        } else if (workingBytes[0] != 0x7B /* '{' */) {
+          isEncrypted = true;
+        }
+      } catch (_) {
+        isEncrypted = true;
+      }
+
+      if (isEncrypted) {
+        if (password == null || password.isEmpty) {
+          throw const EncryptionException('This backup file is encrypted. Password is required.');
+        }
+        workingBytes = _encryptionService.decryptBytes(
+          bytes: workingBytes,
+          password: password,
+        );
+      }
+
       // 1. Raw JSON Payload (Web Download Format)
-      if (bytes[0] == 0x7B /* '{' */) {
-        final jsonString = utf8.decode(bytes);
+      if (workingBytes.isNotEmpty && workingBytes[0] == 0x7B /* '{' */) {
+        final jsonString = utf8.decode(workingBytes);
         final Map<String, dynamic> fullMap = jsonDecode(jsonString);
         if (!fullMap.containsKey('metadata')) {
           throw const CorruptedBackupException('Invalid backup archive: missing metadata header.');
@@ -192,8 +215,8 @@ class RestoreService {
       }
 
       // 2. ZIP Archive (PK Header Format)
-      if (bytes.length > 2 && bytes[0] == 0x50 && bytes[1] == 0x4B) {
-        final archive = ZipDecoder().decodeBytes(bytes);
+      if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
+        final archive = ZipDecoder().decodeBytes(workingBytes);
         final metaArchiveFile = archive.findFile('metadata.json');
         if (metaArchiveFile == null) {
           throw const CorruptedBackupException('Invalid backup archive: missing metadata header.');
@@ -230,13 +253,37 @@ class RestoreService {
     String duplicateStrategy = 'replace',
   }) async {
     try {
+      Uint8List workingBytes = bytes;
+
+      bool isEncrypted = false;
+      try {
+        if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
+          final archive = ZipDecoder().decodeBytes(workingBytes, verify: false);
+          if (archive.isEmpty) isEncrypted = true;
+        } else if (workingBytes.isEmpty || workingBytes[0] != 0x7B /* '{' */) {
+          isEncrypted = true;
+        }
+      } catch (_) {
+        isEncrypted = true;
+      }
+
+      if (isEncrypted) {
+        if (password == null || password.isEmpty) {
+          throw const EncryptionException('This backup file is encrypted. Password is required.');
+        }
+        workingBytes = _encryptionService.decryptBytes(
+          bytes: workingBytes,
+          password: password,
+        );
+      }
+
       Map<String, dynamic> collectionsMap = {};
 
-      if (bytes[0] == 0x7B /* '{' */) {
-        final jsonString = utf8.decode(bytes);
+      if (workingBytes.isNotEmpty && workingBytes[0] == 0x7B /* '{' */) {
+        final jsonString = utf8.decode(workingBytes);
         collectionsMap = jsonDecode(jsonString);
-      } else if (bytes.length > 2 && bytes[0] == 0x50 && bytes[1] == 0x4B) {
-        final archive = ZipDecoder().decodeBytes(bytes);
+      } else if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
+        final archive = ZipDecoder().decodeBytes(workingBytes);
         for (var file in archive) {
           if (file.isFile && file.name.endsWith('.json') && file.name != 'metadata.json') {
             final colName = file.name.replaceAll('.json', '');

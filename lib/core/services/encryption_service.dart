@@ -68,6 +68,28 @@ class EncryptionService {
       }
 
       final bytes = await srcFile.readAsBytes();
+      final decryptedBytes = decryptBytes(bytes: bytes, password: password);
+
+      final destFile = File(destPath);
+      await destFile.parent.create(recursive: true);
+      await destFile.writeAsBytes(decryptedBytes, flush: true);
+
+      logger.info('File decrypted successfully.');
+    } catch (e, stackTrace) {
+      if (e is FileNotFoundException || e is CorruptedBackupException || e is EncryptionException) {
+        rethrow;
+      }
+      logger.error('Decryption failed', e, stackTrace);
+      throw EncryptionException('Failed to decrypt backup file. Please verify password. Error: $e');
+    }
+  }
+
+  /// Decrypts encrypted bytes using AES-256 (CBC mode) with a key derived from the password.
+  Uint8List decryptBytes({
+    required Uint8List bytes,
+    required String password,
+  }) {
+    try {
       if (bytes.length < 16) {
         throw const CorruptedBackupException('Invalid encrypted file: too small.');
       }
@@ -85,13 +107,9 @@ class EncryptionService {
       final encrypter = enc.Encrypter(enc.AES(key, mode: enc.AESMode.cbc));
       final decryptedBytes = encrypter.decryptBytes(enc.Encrypted(cipherBytes), iv: iv);
 
-      final destFile = File(destPath);
-      await destFile.parent.create(recursive: true);
-      await destFile.writeAsBytes(decryptedBytes, flush: true);
-
-      logger.info('File decrypted successfully.');
+      return Uint8List.fromList(decryptedBytes);
     } catch (e, stackTrace) {
-      logger.error('Decryption failed', e, stackTrace);
+      logger.error('Decryption of bytes failed', e, stackTrace);
       throw EncryptionException('Failed to decrypt backup file. Please verify password. Error: $e');
     }
   }
