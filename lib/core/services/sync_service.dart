@@ -1768,7 +1768,9 @@ class SyncService {
           'minimumStock': e.minimumStock,
           'primaryUnitName': e.primaryUnitName ?? e.unit.value?.shortName ?? e.unit.value?.unitName,
           'secondaryUnit': e.secondaryUnit,
+          'tertiaryUnit': e.tertiaryUnit,
           'conversionFactor': e.conversionFactor,
+          'secondaryToTertiaryConversion': e.secondaryToTertiaryConversion,
           'barcode': e.barcode,
           'sku': e.sku,
           'skuCode': e.skuCode,
@@ -2261,7 +2263,9 @@ class SyncService {
           ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
           ..primaryUnitName = (data['primaryUnitName'] as String?)?.isNotEmpty == true ? (data['primaryUnitName'] as String) : ((data['unit'] as String?)?.isNotEmpty == true ? (data['unit'] as String) : null)
           ..secondaryUnit = data['secondaryUnit']
+          ..tertiaryUnit = data['tertiaryUnit']
           ..conversionFactor = (data['conversionFactor'] as num?)?.toDouble()
+          ..secondaryToTertiaryConversion = (data['secondaryToTertiaryConversion'] as num?)?.toDouble()
           ..barcode = data['barcode']
           ..sku = data['sku']
           ..skuCode = data['skuCode']

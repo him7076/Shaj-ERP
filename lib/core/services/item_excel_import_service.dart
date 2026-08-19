@@ -40,6 +40,8 @@ class ItemExcelImportService {
       TextCellValue('Primary Unit'),
       TextCellValue('Secondary Unit'),
       TextCellValue('Conversion Factor'),
+      TextCellValue('3rd Unit'),
+      TextCellValue('2nd to 3rd Unit Factor'),
       TextCellValue('Sale Price'),
       TextCellValue('Sale Price Tax Type'), // With Tax / Without Tax
       TextCellValue('Wholesale Price'),
@@ -178,8 +180,10 @@ class ItemExcelImportService {
       final colUnit = _findCol(colMap, ['primary unit', 'unit', 'uom', 'pack'], 6);
       final colSecUnit = _findCol(colMap, ['secondary unit', 'sec unit', 'sub unit'], 7);
       final colConvFactor = _findCol(colMap, ['conversion factor', 'conversion', 'factor'], 8);
+      final colTerUnit = _findCol(colMap, ['3rd unit', 'tertiary unit', 'ter unit'], 9);
+      final colSecToTerConv = _findCol(colMap, ['2nd to 3rd unit factor', 'tertiary conversion', '3rd factor'], 10);
       
-      final colSalePrice = _findCol(colMap, ['sale price', 'selling price', 'sell rate', 'rate'], 9);
+      final colSalePrice = _findCol(colMap, ['sale price', 'selling price', 'sell rate', 'rate'], 11);
       final colSaleTaxType = _findCol(colMap, ['sale price tax type', 'sale tax type', 'sell tax mode'], 10);
       
       final colWholesalePrice = _findCol(colMap, ['wholesale price', 'wholesale rate'], 11);
@@ -229,6 +233,8 @@ class ItemExcelImportService {
         final primaryUnitStr = _getCellValue(row, colUnit).trim();
         final secUnitStr = _getCellValue(row, colSecUnit).trim();
         final convFactor = _parseDouble(_getCellValue(row, colConvFactor));
+        final terUnitStr = _getCellValue(row, colTerUnit).trim();
+        final secToTerConv = _parseDouble(_getCellValue(row, colSecToTerConv));
         
         final rawSalePrice = _parseDouble(_getCellValue(row, colSalePrice));
         final saleTaxType = _getCellValue(row, colSaleTaxType).trim();
@@ -378,6 +384,8 @@ class ItemExcelImportService {
             existingItem.primaryUnitName = primaryUnitStr.isNotEmpty ? primaryUnitStr : (existingItem.primaryUnitName ?? unitObj?.shortName ?? 'PCS');
             existingItem.secondaryUnit = secUnitStr.isNotEmpty ? secUnitStr : existingItem.secondaryUnit;
             existingItem.conversionFactor = convFactor > 0 ? convFactor : existingItem.conversionFactor;
+            existingItem.tertiaryUnit = terUnitStr.isNotEmpty ? terUnitStr : existingItem.tertiaryUnit;
+            existingItem.secondaryToTertiaryConversion = secToTerConv > 0 ? secToTerConv : existingItem.secondaryToTertiaryConversion;
             existingItem.barcode = barcode.isNotEmpty ? barcode : existingItem.barcode;
             existingItem.sku = sku.isNotEmpty ? sku : existingItem.sku;
             existingItem.skuCode = sku.isNotEmpty ? sku : existingItem.skuCode;
@@ -437,6 +445,8 @@ class ItemExcelImportService {
               ..primaryUnitName = primaryUnitStr.isNotEmpty ? primaryUnitStr : (unitObj?.shortName ?? 'PCS')
               ..secondaryUnit = secUnitStr
               ..conversionFactor = convFactor > 0 ? convFactor : 1.0
+              ..tertiaryUnit = terUnitStr
+              ..secondaryToTertiaryConversion = secToTerConv > 0 ? secToTerConv : 1.0
               ..barcode = barcode
               ..sku = sku
               ..skuCode = sku

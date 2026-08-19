@@ -45,6 +45,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   final TextEditingController _reorderLevelController = TextEditingController();
   final TextEditingController _minStockController = TextEditingController();
   final TextEditingController _conversionController = TextEditingController();
+  final TextEditingController _secToTerConversionController = TextEditingController();
 
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _dimensionsController = TextEditingController();
@@ -56,6 +57,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   Brand? _selectedBrand;
   Unit? _selectedUnit;
   Unit? _selectedSecUnit;
+  Unit? _selectedTertiaryUnit;
   String _rateUnitType = 'Primary'; // 'Primary' or 'Secondary'
   String _buyRateTaxType = 'Without Tax'; // 'Without Tax' or 'With Tax'
   String _sellRateTaxType = 'With Tax'; // 'With Tax' or 'Without Tax'
@@ -197,6 +199,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         _reorderLevelController.text = item.reorderLevel?.toString() ?? '';
         _minStockController.text = item.minimumStock?.toString() ?? '';
         _conversionController.text = item.conversionFactor?.toString() ?? '';
+        _secToTerConversionController.text = item.secondaryToTertiaryConversion?.toString() ?? '';
 
         _weightController.text = item.weight?.toString() ?? '';
         _dimensionsController.text = item.dimensions ?? '';
@@ -237,6 +240,16 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             _selectedSecUnit = Unit()
               ..shortName = item.secondaryUnit
               ..unitName = item.secondaryUnit;
+          }
+        }
+
+        if (item.tertiaryUnit != null && item.tertiaryUnit!.isNotEmpty) {
+          try {
+            _selectedTertiaryUnit = units.firstWhere((u) => u.shortName?.trim().toLowerCase() == item.tertiaryUnit!.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == item.tertiaryUnit!.trim().toLowerCase());
+          } catch (_) {
+            _selectedTertiaryUnit = Unit()
+              ..shortName = item.tertiaryUnit
+              ..unitName = item.tertiaryUnit;
           }
         }
       }
@@ -552,7 +565,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.minimumStock = double.tryParse(_minStockController.text.trim()) ?? 0.0;
       item.primaryUnitName = _selectedUnit?.shortName ?? _selectedUnit?.unitName ?? item.primaryUnitName ?? 'PCS';
       item.secondaryUnit = _selectedSecUnit?.shortName ?? _selectedSecUnit?.unitName;
+      item.tertiaryUnit = _selectedTertiaryUnit?.shortName ?? _selectedTertiaryUnit?.unitName;
       item.conversionFactor = double.tryParse(_conversionController.text.trim());
+      item.secondaryToTertiaryConversion = double.tryParse(_secToTerConversionController.text.trim());
 
       item.gstApplicable = _gstApplicable;
       item.gstRate = _gstRate;

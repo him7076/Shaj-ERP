@@ -43,8 +43,10 @@ class Item implements IsarModel {
   double? minimumStock;
 
   String? secondaryUnit;
+  String? tertiaryUnit;
   String? primaryUnitName; // Direct stored unit name fallback e.g. Carton, Bundle, Box
-  double? conversionFactor; // E.g. 1 BOX = 10 PCS
+  double? conversionFactor; // E.g. 1 BOX = 10 JARS
+  double? secondaryToTertiaryConversion; // E.g. 1 JAR = 50 CANDIES
 
   @Index()
   String? barcode;

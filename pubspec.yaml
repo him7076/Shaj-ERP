@@ -1,6 +1,6 @@
 name: business_sahaj_erp
 description: "A professional, offline-first Clean Architecture ERP application for Business Sahaj ERP."
-version: 1.0.6+9
+version: 1.0.7+9
 
 publish_to: 'none'
 
@@ -18,6 +18,7 @@ dependencies:
 
   # Navigation
   go_router: ^14.2.0
+  app_links: ^6.3.2
 
   # Local Storage (Isar Database)
   isar: ^3.1.0+1

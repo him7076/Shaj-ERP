@@ -225,6 +225,61 @@ class DatabaseService {
     }
   }
 
+  /// Force close all open Isar instances across all firms for file swapping
+  Future<void> closeAllInstances() async {
+    if (kIsWeb) {
+      _isar = null;
+      return;
+    }
+    try {
+      if (_isar != null) {
+        await _isar!.close();
+        _isar = null;
+      }
+      // Close any other named instance registered in Isar
+      final activeFirmInstance = Isar.getInstance(_activeFirmId);
+      if (activeFirmInstance != null && activeFirmInstance.isOpen) {
+        await activeFirmInstance.close();
+      }
+      final defaultInstance = Isar.getInstance('firm_default');
+      if (defaultInstance != null && defaultInstance.isOpen) {
+        await defaultInstance.close();
+      }
+      logger.info('Closed all Isar database instances.');
+    } catch (e) {
+      logger.warning('Error closing all Isar instances: $e');
+      _isar = null;
+    }
+  }
+
+  /// Copies a firm's binary .isar file to a destination path
+  Future<void> copyFirmDatabaseFile(String firmId, String destPath) async {
+    if (kIsWeb) return;
+    try {
+      final destFile = File(destPath);
+      if (await destFile.exists()) {
+        await destFile.delete();
+      }
+      if (_activeFirmId == firmId && _isar != null && _isar is! WebMockIsar) {
+        await _isar!.copyToFile(destPath);
+        return;
+      }
+      final instance = Isar.getInstance(firmId);
+      if (instance != null && instance.isOpen) {
+        await instance.copyToFile(destPath);
+        return;
+      }
+      final appDocsDir = await getApplicationDocumentsDirectory();
+      final sourceFile = File('${appDocsDir.path}/$firmId.isar');
+      if (await sourceFile.exists()) {
+        await sourceFile.copy(destPath);
+      }
+    } catch (e) {
+      logger.error('Failed to copy firm database file for $firmId', e);
+      rethrow;
+    }
+  }
+
   /// Switch active firm database
   Future<void> switchFirm(String newFirmId, SharedPreferences prefs) async {
     await close();

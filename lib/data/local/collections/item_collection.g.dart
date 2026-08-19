@@ -201,6 +201,16 @@ const ItemSchema = CollectionSchema(
       id: 36,
       name: r'wholesaleRate',
       type: IsarType.double,
+    ),
+    r'secondaryToTertiaryConversion': PropertySchema(
+      id: 37,
+      name: r'secondaryToTertiaryConversion',
+      type: IsarType.double,
+    ),
+    r'tertiaryUnit': PropertySchema(
+      id: 38,
+      name: r'tertiaryUnit',
+      type: IsarType.string,
     )
   },
   estimateSize: _itemEstimateSize,
@@ -448,6 +458,12 @@ int _itemEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.tertiaryUnit;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -494,6 +510,8 @@ void _itemSerialize(
   writer.writeLong(offsets[34], object.version);
   writer.writeDouble(offsets[35], object.weight);
   writer.writeDouble(offsets[36], object.wholesaleRate);
+  if (offsets.length > 37) writer.writeDouble(offsets[37], object.secondaryToTertiaryConversion);
+  if (offsets.length > 38) writer.writeString(offsets[38], object.tertiaryUnit);
 }
 
 Item _itemDeserialize(
@@ -541,6 +559,8 @@ Item _itemDeserialize(
   object.version = reader.readLong(offsets[34]);
   object.weight = reader.readDoubleOrNull(offsets[35]);
   object.wholesaleRate = reader.readDoubleOrNull(offsets[36]);
+  if (offsets.length > 37) object.secondaryToTertiaryConversion = reader.readDoubleOrNull(offsets[37]);
+  if (offsets.length > 38) object.tertiaryUnit = reader.readStringOrNull(offsets[38]);
   return object;
 }
 
@@ -625,6 +645,10 @@ P _itemDeserializeProp<P>(
       return (reader.readDoubleOrNull(offset)) as P;
     case 36:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 37:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 38:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

@@ -41,11 +41,14 @@ class RiverpodRefreshListenable extends ChangeNotifier {
   }
 }
 
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 // Router Provider
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshListenable = RiverpodRefreshListenable(ref, [authProvider]);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     refreshListenable: refreshListenable,
     debugLogDiagnostics: true,
