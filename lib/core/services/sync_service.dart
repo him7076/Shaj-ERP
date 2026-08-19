@@ -1133,7 +1133,7 @@ class SyncService {
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
-          if (d % 10 == 0) await Future.delayed(Duration.zero);
+          if (kIsWeb ? (d % 5 == 0) : (d % 10 == 0)) await Future.delayed(Duration.zero);
 
           try {
             final doc = querySnapshot.docs[d];
@@ -2658,6 +2658,7 @@ class SyncService {
   /// Inserts a new remote record downloaded into local database
   /// Includes duplicate voucher number detection across devices
   Future<void> _insertLocalRecord(String entityType, Map<String, dynamic> data) async {
+    if (kIsWeb) await Future.delayed(Duration.zero);
     final isar = _dbService.isar;
     final uuid = data['uuid'] as String?;
 

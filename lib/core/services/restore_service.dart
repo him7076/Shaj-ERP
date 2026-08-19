@@ -464,7 +464,18 @@ class RestoreService {
       logger.info('Initiating backup restoration: $filePath');
       
       final fileBytes = await File(filePath).readAsBytes();
-      bool isEncrypted = fileBytes.length < 2 || fileBytes[0] != 0x50 || fileBytes[1] != 0x4B;
+      bool isEncrypted = false;
+
+      // Robust Zip archive verification: attempt direct decoding without assuming byte signatures
+      try {
+        final archive = ZipDecoder().decodeBytes(fileBytes, verify: false);
+        if (archive.isEmpty) {
+          isEncrypted = true;
+        }
+      } catch (_) {
+        // Zip decoding failed, file is likely encrypted
+        isEncrypted = true;
+      }
 
       if (isEncrypted) {
         if (password == null || password.isEmpty) {
