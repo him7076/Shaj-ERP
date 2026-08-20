@@ -260,7 +260,12 @@ class DatabaseService {
 
   /// Re-open Isar database connection after binary file swap
   Future<void> reopenDatabase([SharedPreferences? prefs]) async {
-    await init(prefs ?? _prefs);
+    _prefs = prefs ?? _prefs;
+    if (kIsWeb) {
+      WebMockIsar.resetAllInMemDbs();
+    }
+    _isar = null;
+    await init(_prefs);
   }
 
   /// Copies a firm's binary .isar file to a destination path

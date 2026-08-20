@@ -38,6 +38,10 @@ class WebMockIsar implements Isar {
     }
   }
 
+  static void resetAllInMemDbs() {
+    _dbs.clear();
+  }
+
   Future<void> autoSave() async {
     try {
       final p = prefs ?? await SharedPreferences.getInstance();

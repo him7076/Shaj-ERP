@@ -286,7 +286,13 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
     final platformFile = result.files.single;
     final fileName = platformFile.name;
     final filePath = platformFile.path;
-    final fileBytes = platformFile.bytes;
+    Uint8List? fileBytes = platformFile.bytes;
+
+    if (fileBytes == null && filePath != null && !kIsWeb) {
+      try {
+        fileBytes = await File(filePath).readAsBytes();
+      } catch (_) {}
+    }
 
     if (filePath == null && fileBytes == null) {
       if (mounted) {

@@ -540,6 +540,15 @@ class BackupService {
   }
 
   /// Serialize Isar models to Map
+  String? _safeGetLinkUuid(dynamic link) {
+    if (link == null) return null;
+    try {
+      return link.value?.uuid;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Map<String, dynamic> _mapEntityToMap(String type, dynamic entity) {
     final baseMap = {
       'id': entity.id,
@@ -557,7 +566,7 @@ class BackupService {
         return baseMap..addAll({
           'categoryName': e.categoryName,
           'description': e.description,
-          'parentCategoryUuid': e.parentCategory.value?.uuid,
+          'parentCategoryUuid': _safeGetLinkUuid(e.parentCategory),
         });
       case 'units':
         final e = entity as Unit;
@@ -636,9 +645,9 @@ class BackupService {
           'notes': e.notes,
           'enableBatchTracking': e.enableBatchTracking,
           'defaultBatchNumber': e.defaultBatchNumber,
-          'categoryUuid': e.category.value?.uuid,
-          'unitUuid': e.unit.value?.uuid,
-          'brandUuid': e.brand.value?.uuid,
+          'categoryUuid': _safeGetLinkUuid(e.category),
+          'unitUuid': _safeGetLinkUuid(e.unit),
+          'brandUuid': _safeGetLinkUuid(e.brand),
         });
       case 'orders':
         final e = entity as Order;
@@ -668,13 +677,13 @@ class BackupService {
           'createdBy': e.createdBy,
           'editedBy': e.editedBy,
           'editTime': e.editTime?.toIso8601String(),
-          'partyUuid': e.party.value?.uuid,
+          'partyUuid': _safeGetLinkUuid(e.party),
         });
       case 'order_items':
         final e = entity as OrderItem;
         return baseMap..addAll({
           'orderId': e.orderId,
-          'orderUuid': e.orderUuid ?? e.order.value?.uuid,
+          'orderUuid': e.orderUuid ?? _safeGetLinkUuid(e.order),
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
@@ -691,7 +700,7 @@ class BackupService {
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'itemUuid': e.item.value?.uuid,
+          'itemUuid': _safeGetLinkUuid(e.item),
         });
       case 'invoices':
         final e = entity as Invoice;
@@ -727,18 +736,19 @@ class BackupService {
           'createdBy': e.createdBy,
           'editedBy': e.editedBy,
           'editTime': e.editTime?.toIso8601String(),
-          'partyUuid': e.party.value?.uuid,
-          'orderUuid': e.order.value?.uuid,
+          'partyUuid': _safeGetLinkUuid(e.party),
+          'orderUuid': _safeGetLinkUuid(e.order),
         });
       case 'invoice_items':
         final e = entity as InvoiceItem;
+        final invUuid = _safeGetLinkUuid(e.invoice) ?? e.parentInvoiceUuid;
         return baseMap..addAll({
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
           'parentInvoiceId': e.parentInvoiceId,
-          'parentInvoiceUuid': e.invoice.value?.uuid,
-          'invoiceUuid': e.invoice.value?.uuid,
+          'parentInvoiceUuid': invUuid,
+          'invoiceUuid': invUuid,
           'quantity': e.quantity,
           'freeQuantity': e.freeQuantity,
           'unit': e.unit,
@@ -751,7 +761,7 @@ class BackupService {
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'itemUuid': e.item.value?.uuid,
+          'itemUuid': _safeGetLinkUuid(e.item),
         });
       case 'purchases':
         final e = entity as Purchase;
@@ -776,13 +786,13 @@ class BackupService {
           'paidAmount': e.paidAmount,
           'pendingAmount': e.pendingAmount,
           'remarks': e.remarks,
-          'partyUuid': e.party.value?.uuid,
+          'partyUuid': _safeGetLinkUuid(e.party),
         });
       case 'purchase_items':
         final e = entity as PurchaseItem;
         return baseMap..addAll({
           'purchaseId': e.purchaseId,
-          'purchaseUuid': e.purchaseUuid ?? e.purchase.value?.uuid,
+          'purchaseUuid': e.purchaseUuid ?? _safeGetLinkUuid(e.purchase),
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
@@ -797,7 +807,7 @@ class BackupService {
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'itemUuid': e.item.value?.uuid,
+          'itemUuid': _safeGetLinkUuid(e.item),
         });
       case 'expenses':
         final e = entity as Expense;

@@ -942,6 +942,8 @@ class SyncService {
   Future<void> _uploadLocalChanges() async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
+    await _enqueueAllLocalRecordsForUpload(forceAll: false);
+    await _queueService.resetAllRetries();
     final queueItems = await _queueService.getPendingQueue();
 
     if (queueItems.isEmpty) {
@@ -1754,6 +1756,24 @@ class SyncService {
     }
   }
 
+  String? _safeGetLinkUuid(dynamic link) {
+    if (link == null) return null;
+    try {
+      return link.value?.uuid;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _safeGetLinkShortName(dynamic link) {
+    if (link == null) return null;
+    try {
+      return link.value?.shortName ?? link.value?.unitName;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Maps Isar entity to JSON map for Firestore
   Future<Map<String, dynamic>> _mapEntityToMap(String entityType, dynamic entity) async {
     final baseMap = {
@@ -1823,7 +1843,7 @@ class SyncService {
           'stock': e.currentStock,
           'reorderLevel': e.reorderLevel,
           'minimumStock': e.minimumStock,
-          'primaryUnitName': e.primaryUnitName ?? e.unit.value?.shortName ?? e.unit.value?.unitName,
+          'primaryUnitName': e.primaryUnitName ?? _safeGetLinkShortName(e.unit),
           'secondaryUnit': e.secondaryUnit,
           'tertiaryUnit': e.tertiaryUnit,
           'conversionFactor': e.conversionFactor,
@@ -1834,9 +1854,9 @@ class SyncService {
           'imagePaths': e.imagePaths,
           'firebaseImageUrls': e.firebaseImageUrls,
           'thumbnailImage': e.thumbnailImage,
-          'categoryUuid': e.category.value?.uuid,
-          'unitUuid': e.unit.value?.uuid,
-          'brandUuid': e.brand.value?.uuid,
+          'categoryUuid': _safeGetLinkUuid(e.category),
+          'unitUuid': _safeGetLinkUuid(e.unit),
+          'brandUuid': _safeGetLinkUuid(e.brand),
         });
       case 'Category':
         final e = entity as Category;
@@ -1883,7 +1903,7 @@ class SyncService {
           'createdBy': e.createdBy,
           'editedBy': e.editedBy,
           'editTime': e.editTime?.toIso8601String(),
-          'partyUuid': e.party.value?.uuid,
+          'partyUuid': _safeGetLinkUuid(e.party),
         });
       case 'OrderItem':
         final e = entity as OrderItem;
@@ -1901,8 +1921,8 @@ class SyncService {
           'gstPercent': e.gstPercent,
           'gstAmount': e.gstAmount,
           'totalAmount': e.totalAmount,
-          'orderUuid': e.order.value?.uuid,
-          'itemUuid': e.item.value?.uuid,
+          'orderUuid': _safeGetLinkUuid(e.order),
+          'itemUuid': _safeGetLinkUuid(e.item),
         });
       case 'Invoice':
         final e = entity as Invoice;
@@ -1961,13 +1981,13 @@ class SyncService {
           'createdBy': e.createdBy,
           'editedBy': e.editedBy,
           'editTime': e.editTime?.toIso8601String(),
-          'partyUuid': e.party.value?.uuid,
-          'orderUuid': e.order.value?.uuid,
+          'partyUuid': _safeGetLinkUuid(e.party),
+          'orderUuid': _safeGetLinkUuid(e.order),
           'items': itemsMapList,
         });
       case 'InvoiceItem':
         final e = entity as InvoiceItem;
-        String? invUuid = e.invoice.value?.uuid;
+        String? invUuid = _safeGetLinkUuid(e.invoice);
         if ((invUuid == null || invUuid.isEmpty) && e.parentInvoiceId != null) {
           final parentInv = await _dbService.isar.invoices.get(e.parentInvoiceId!);
           invUuid = parentInv?.uuid;
@@ -1991,7 +2011,7 @@ class SyncService {
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'itemUuid': e.item.value?.uuid,
+          'itemUuid': _safeGetLinkUuid(e.item),
         });
       case 'Settings':
         final e = entity as Settings;
@@ -2056,12 +2076,12 @@ class SyncService {
           'paidAmount': e.paidAmount,
           'pendingAmount': e.pendingAmount,
           'remarks': e.remarks,
-          'partyUuid': e.party.value?.uuid,
+          'partyUuid': _safeGetLinkUuid(e.party),
           'items': pItemsMapList,
         });
       case 'PurchaseItem':
         final e = entity as PurchaseItem;
-        String? pUuid = e.purchaseUuid ?? e.purchase.value?.uuid;
+        String? pUuid = e.purchaseUuid ?? _safeGetLinkUuid(e.purchase);
         if ((pUuid == null || pUuid.isEmpty) && e.purchaseId != null) {
           final parentP = await _dbService.isar.purchases.get(e.purchaseId!);
           pUuid = parentP?.uuid;
@@ -2083,7 +2103,7 @@ class SyncService {
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'itemUuid': e.item.value?.uuid,
+          'itemUuid': _safeGetLinkUuid(e.item),
         });
       case 'Expense':
         final e = entity as Expense;

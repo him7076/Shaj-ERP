@@ -526,9 +526,14 @@ class RestoreService {
         }
       });
 
-      // STEP 3: On Web, persist to SharedPreferences/localStorage
-      if (kIsWeb && isar is WebMockIsar) {
-        await (isar as WebMockIsar).autoSave();
+      // STEP 3: On Web, persist to SharedPreferences/localStorage and re-initialize in-memory maps
+      if (kIsWeb) {
+        if (isar is WebMockIsar) {
+          await (isar as WebMockIsar).autoSave();
+        }
+        if (_prefs != null) {
+          await _dbService.reopenDatabase(_prefs!);
+        }
       }
 
       logger.info('Database restore from bytes completed successfully. ALL 24 collections restored.');
