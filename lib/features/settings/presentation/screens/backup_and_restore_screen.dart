@@ -418,11 +418,8 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
       ref.invalidate(categoriesListProvider);
       ref.invalidate(unitsListProvider);
       ref.invalidate(purchaseListProvider);
-      ref.invalidate(purchasesListProvider);
       ref.invalidate(filteredInvoicesProvider);
-      ref.invalidate(invoicesListProvider);
       ref.invalidate(filteredOrdersProvider);
-      ref.invalidate(ordersListProvider);
       ref.invalidate(filteredTransactionsProvider);
 
       final ms = DateTime.now().difference(startTime).inMilliseconds;
