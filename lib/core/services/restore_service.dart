@@ -64,6 +64,13 @@ class RestoreService {
       throw FileNotFoundException('Backup file not found at: ${bserpFile.path}');
     }
 
+    final rawBytes = await bserpFile.readAsBytes();
+    if (rawBytes.isNotEmpty && rawBytes[0] == 0x7B /* '{' */) {
+      logger.info('Detected raw JSON web backup file. Delegating to restoreBackupBytes...');
+      await restoreBackupBytes(rawBytes, password: password);
+      return;
+    }
+
     Directory? tempExtractFolder;
     try {
       final tempDir = await getTemporaryDirectory();
@@ -289,8 +296,9 @@ class RestoreService {
       } else if (workingBytes.length > 2 && workingBytes[0] == 0x50 && workingBytes[1] == 0x4B) {
         final archive = ZipDecoder().decodeBytes(workingBytes);
         for (var file in archive) {
-          if (file.isFile && file.name.endsWith('.json') && file.name != 'metadata.json' && !file.name.endsWith('.isar')) {
-            final colName = file.name.replaceAll('.json', '');
+          final cleanName = file.name.split('/').last.split('\\').last;
+          if (file.isFile && cleanName.endsWith('.json') && cleanName != 'metadata.json' && !cleanName.endsWith('.isar')) {
+            final colName = cleanName.replaceAll('.json', '');
             final contentStr = utf8.decode(file.content as List<int>);
             collectionsMap[colName] = jsonDecode(contentStr);
           }

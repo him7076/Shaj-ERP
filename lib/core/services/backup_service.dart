@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
+import 'package:archive/archive.dart';
 import 'package:business_sahaj_erp/core/utils/web_download_stub.dart'
     if (dart.library.html) 'package:business_sahaj_erp/core/utils/web_download_html.dart';
 import 'package:isar/isar.dart';
@@ -310,39 +311,45 @@ class BackupService {
 
       // --- WEB-SPECIFIC IN-MEMORY BACKUP & DOWNLOAD ---
       if (kIsWeb) {
-        final Map<String, dynamic> webPayload = {
-          'metadata': metadata.toJson(),
-        };
+        final archive = Archive();
 
-        for (var entry in collections.entries) {
-          webPayload[entry.key] = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
-        }
+        // 1. Add metadata.json
+        final metaString = jsonEncode(metadata.toJson());
+        archive.addFile(ArchiveFile('metadata.json', metaString.length, utf8.encode(metaString)));
 
-        // Include preferences in web backup for complete restore
+        // 2. Add preferences.json
         final Map<String, dynamic> prefMap = {};
         for (var key in _prefs.getKeys()) {
           if (key.startsWith('firm_') || key.startsWith('firms_') || key.startsWith('enable_firm_') || key == 'active_firm_id') {
             prefMap[key] = _prefs.get(key);
           }
         }
-        webPayload['preferences'] = prefMap;
+        final prefString = jsonEncode(prefMap);
+        archive.addFile(ArchiveFile('preferences.json', prefString.length, utf8.encode(prefString)));
 
-        final jsonString = jsonEncode(webPayload);
-        final jsonBytes = Uint8List.fromList(utf8.encode(jsonString));
+        // 3. Add each collection .json file
+        for (var entry in collections.entries) {
+          final jsonList = entry.value.map((e) => _mapEntityToMap(entry.key, e)).toList();
+          final colString = jsonEncode(jsonList);
+          archive.addFile(ArchiveFile('${entry.key}.json', colString.length, utf8.encode(colString)));
+        }
 
-        downloadWebFile(jsonBytes, bserpFilename);
+        final zipBytes = ZipEncoder().encode(archive);
+        final zipUint8List = Uint8List.fromList(zipBytes ?? []);
+
+        downloadWebFile(zipUint8List, bserpFilename);
 
         final historyEntry = BackupHistoryEntry(
           backupName: bserpFilename,
           date: backupTimestamp,
-          size: jsonBytes.length,
+          size: zipUint8List.length,
           location: 'Browser Downloads',
           isCloud: false,
           isEncrypted: false,
         );
 
         await _registerBackupInHistory(historyEntry);
-        logger.info('Web backup generated and downloaded successfully: $bserpFilename');
+        logger.info('Web backup generated and downloaded successfully as standard ZIP: $bserpFilename');
         return historyEntry;
       }
 

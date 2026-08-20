@@ -16,6 +16,8 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
+import 'package:go_router/go_router.dart';
 
 class BackupAndRestoreScreen extends ConsumerStatefulWidget {
   const BackupAndRestoreScreen({Key? key}) : super(key: key);
@@ -404,20 +406,24 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
         }
       }
 
+      ref.invalidate(databaseServiceProvider);
+      ref.invalidate(isarProvider);
       ref.invalidate(sharedPreferencesProvider);
       ref.invalidate(dashboardAnalyticsProvider);
       ref.invalidate(backupHistoryNotifierProvider);
       ref.invalidate(filteredPartiesProvider);
+      ref.invalidate(partiesListProvider);
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
       ref.invalidate(categoriesListProvider);
       ref.invalidate(unitsListProvider);
       ref.invalidate(purchaseListProvider);
+      ref.invalidate(purchasesListProvider);
       ref.invalidate(filteredInvoicesProvider);
+      ref.invalidate(invoicesListProvider);
       ref.invalidate(filteredOrdersProvider);
-
-      if (mounted) {
-        setState(() {});
-      }
+      ref.invalidate(ordersListProvider);
+      ref.invalidate(filteredTransactionsProvider);
 
       final ms = DateTime.now().difference(startTime).inMilliseconds;
 
@@ -437,9 +443,10 @@ class _BackupAndRestoreScreenState extends ConsumerState<BackupAndRestoreScreen>
                 ),
               ],
             ),
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 4),
           ),
         );
+        context.go('/splash');
       }
     } catch (e, st) {
       logger.error('Failed to restore binary backup', e, st);
