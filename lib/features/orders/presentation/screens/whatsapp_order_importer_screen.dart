@@ -738,6 +738,8 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
       final nextOrderNumber = await orderRepo.generateNextOrderNumber();
 
       final orderUuid = const Uuid().v4();
+      double subtotal = 0.0;
+      final orderItems = <OrderItem>[];
 
       for (var row in _mappedRows) {
         if (row.selectedItem == null) continue;
