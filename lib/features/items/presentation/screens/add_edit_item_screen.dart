@@ -1067,64 +1067,72 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   }
 
   Widget _buildIdentificationSection() {
+    final isMobile = ResponsiveLayout.isMobile(context);
+    final barcodeField = Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _barcodeController,
+            decoration: const InputDecoration(
+              labelText: 'Barcode (UPC/EAN)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.qr_code),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton.filled(
+          icon: const Icon(Icons.camera_alt),
+          tooltip: 'Scan Barcode',
+          onPressed: _scanBarcode,
+          style: IconButton.styleFrom(
+            padding: const EdgeInsets.all(14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final skuField = TextFormField(
+      controller: _skuController,
+      decoration: const InputDecoration(
+        labelText: 'SKU Code',
+        border: OutlineInputBorder(),
+      ),
+    );
+
+    final extSkuField = TextFormField(
+      controller: _skuCodeController,
+      decoration: const InputDecoration(
+        labelText: 'Catalog / Ext SKU Code',
+        border: OutlineInputBorder(),
+      ),
+    );
+
     return _buildSectionCard(
       context: context,
       title: 'Identifiers & Barcodes',
       icon: Icons.qr_code_scanner,
       color: Colors.purple,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _barcodeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Barcode (UPC/EAN)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.qr_code),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    icon: const Icon(Icons.camera_alt),
-                    tooltip: 'Scan Barcode',
-                    onPressed: _scanBarcode,
-                    style: IconButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _skuController,
-                decoration: const InputDecoration(
-                  labelText: 'SKU Code',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _skuCodeController,
-                decoration: const InputDecoration(
-                  labelText: 'Catalog / Ext SKU Code',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-          ],
-        ),
+        if (isMobile) ...[
+          barcodeField,
+          const SizedBox(height: 12),
+          skuField,
+          const SizedBox(height: 12),
+          extSkuField,
+        ] else
+          Row(
+            children: [
+              Expanded(child: barcodeField),
+              const SizedBox(width: 16),
+              Expanded(child: skuField),
+              const SizedBox(width: 16),
+              Expanded(child: extSkuField),
+            ],
+          ),
       ],
     );
   }

@@ -360,6 +360,14 @@ class _MyAppState extends ConsumerState<MyApp> {
 
     return MaterialApp.router(
       title: 'Sahaj ERP Pro',
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        final clampedScaler = mediaQuery.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.20);
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaler: clampedScaler),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       theme: AppTheme.getLightTheme(
         themeState.themePreset,
         customPrimary: themeState.customPrimaryColor,

@@ -88,7 +88,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
       },
       optionsViewBuilder: (context, onSelected, options) {
         final screenWidth = MediaQuery.of(context).size.width;
-        final dropdownWidth = screenWidth < 500 ? (screenWidth - 48) : 420.0;
+        final dropdownWidth = (screenWidth - 32).clamp(260.0, 480.0);
 
         return Align(
           alignment: Alignment.topLeft,

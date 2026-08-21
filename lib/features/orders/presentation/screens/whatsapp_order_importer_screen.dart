@@ -1032,16 +1032,36 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                 ),
                                 Wrap(
                                   spacing: 4,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
-                                    TextButton.icon(
-                                      icon: const Icon(Icons.bookmark_add_rounded, size: 16, color: Colors.blue),
-                                      label: const Text('Quick Mapping', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
-                                      onPressed: _showPartyQuickMappingModal,
+                                    InkWell(
+                                      onTap: _showPartyQuickMappingModal,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(Icons.bookmark_add_rounded, size: 14, color: Colors.blue),
+                                            SizedBox(width: 4),
+                                            Text('Quick Mapping', style: TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                    TextButton.icon(
-                                      icon: const Icon(Icons.add_rounded, size: 18),
-                                      label: const Text('+ Create Party', style: TextStyle(fontSize: 12)),
-                                      onPressed: _showCreatePartyDialog,
+                                    InkWell(
+                                      onTap: _showCreatePartyDialog,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: const [
+                                            Icon(Icons.add_rounded, size: 16, color: Color(0xFF6366F1)),
+                                            SizedBox(width: 2),
+                                            Text('+ Party', style: TextStyle(fontSize: 11, color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1113,10 +1133,19 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     ],
                                   ],
                                 ),
-                                TextButton.icon(
-                                  icon: const Icon(Icons.add_rounded, size: 18),
-                                  label: const Text('+ New Salesman', style: TextStyle(fontSize: 12)),
-                                  onPressed: _showCreateSalesmanDialog,
+                                InkWell(
+                                  onTap: _showCreateSalesmanDialog,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(Icons.add_rounded, size: 16, color: Color(0xFF6366F1)),
+                                        SizedBox(width: 2),
+                                        Text('+ Salesman', style: TextStyle(fontSize: 11, color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

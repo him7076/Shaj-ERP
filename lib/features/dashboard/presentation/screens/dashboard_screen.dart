@@ -188,7 +188,7 @@ class DashboardScreen extends ConsumerWidget {
                   crossAxisCount: ResponsiveLayout.isMobile(context) ? 2 : crossAxisCount,
                   crossAxisSpacing: ResponsiveLayout.isMobile(context) ? 8 : 18,
                   mainAxisSpacing: ResponsiveLayout.isMobile(context) ? 8 : 18,
-                  childAspectRatio: ResponsiveLayout.isMobile(context) ? 2.8 : 1.6,
+                  childAspectRatio: ResponsiveLayout.isMobile(context) ? 2.0 : 1.6,
                   children: [
                     _buildStatCard(
                       context: context,

@@ -16,6 +16,7 @@ import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.d
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -586,7 +587,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                                 purchase.partyName ?? 'Unknown Supplier',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                               ),
                                             ),
                                             const SizedBox(width: 8),
@@ -595,7 +596,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                                 color: theme.colorScheme.primary,
-                                                fontSize: 16,
+                                                fontSize: 14,
                                               ),
                                             ),
                                           ],
@@ -642,6 +643,16 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                                   builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
                                                 ),
                                               ).then((_) => ref.invalidate(purchaseListProvider));
+                                            } else if (val == 'payment') {
+                                              try { await purchase.party.load(); } catch (_) {}
+                                              AddEditTransactionDialog.show(
+                                                context,
+                                                initialType: 'Payment',
+                                                initialParty: purchase.party.value,
+                                                initialBillUuid: purchase.uuid,
+                                                initialBillNumber: purchase.purchaseNumber,
+                                                initialAmount: purchase.pendingAmount ?? purchase.grandTotal ?? 0.0,
+                                              );
                                             } else if (val == 'cancel') {
                                               final newStatus = purchase.paymentStatus == 'Cancelled' ? 'Unpaid' : 'Cancelled';
                                               await isar.writeTxn(() async {
@@ -692,12 +703,16 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                               value: 'edit',
                                               child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit Purchase')]),
                                             ),
+                                            const PopupMenuItem(
+                                              value: 'payment',
+                                              child: Row(children: [Icon(Icons.payments_outlined, size: 18, color: Colors.green), SizedBox(width: 8), Text('Make Payment', style: TextStyle(color: Colors.green))]),
+                                            ),
                                             PopupMenuItem(
                                               value: 'cancel',
                                               child: Row(children: [
                                                 Icon(purchase.paymentStatus == 'Cancelled' ? Icons.check_circle_outline : Icons.block_outlined, size: 18, color: Colors.orange),
                                                 const SizedBox(width: 8),
-                                                Text(purchase.purchaseNumber == 'Cancelled' ? 'Reactivate Bill' : 'Cancel Bill', style: const TextStyle(color: Colors.orange)),
+                                                Text(purchase.paymentStatus == 'Cancelled' ? 'Reactivate Bill' : 'Cancel Bill', style: const TextStyle(color: Colors.orange)),
                                               ]),
                                             ),
                                             const PopupMenuItem(

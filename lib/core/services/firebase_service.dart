@@ -26,6 +26,13 @@ class FirebaseService {
     }
   }
 
+  bool get isSyncConfigured {
+    final apiKey = _prefs.getString('firebase_api_key') ?? '';
+    final projectId = _prefs.getString('firebase_project_id') ?? '';
+    final appId = _prefs.getString('firebase_app_id') ?? '';
+    return apiKey.isNotEmpty && projectId.isNotEmpty && appId.isNotEmpty && _isFirebaseReady;
+  }
+
   bool _hasFirebaseApp() {
     try {
       return Firebase.apps.isNotEmpty;

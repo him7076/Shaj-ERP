@@ -788,9 +788,16 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         ),
                       ),
                       () {
-                        final unitRate = buyRateCache[item.itemName?.trim().toLowerCase() ?? ''] 
-                            ?? ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
-                        final double calculatedValue = stockVal <= 0 ? 0.0 : stockVal * unitRate;
+                        double costRate = buyRateCache[item.itemName?.trim().toLowerCase() ?? ''] ?? 0.0;
+                        if (costRate <= 0) {
+                          if (item.buyRate != null && item.buyRate! > 0) {
+                            costRate = item.buyRate!;
+                          } else if (item.sellRate != null && item.sellRate! > 0) {
+                            final double gstPct = item.gstApplicable ? (item.gstRate ?? 0.0) : 0.0;
+                            costRate = item.sellRate! / (1.0 + (gstPct / 100.0));
+                          }
+                        }
+                        final double calculatedValue = stockVal <= 0 ? 0.0 : stockVal * costRate;
                         return Text(
                           'Val: ${currencyFormat.format(calculatedValue)}',
                           style: const TextStyle(

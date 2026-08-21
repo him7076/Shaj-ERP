@@ -607,7 +607,7 @@ class SalesExcelImportService {
               ..uuid = _uuidGen.v4()
               ..parentInvoiceId = null
               ..itemId = catalogItem?.id
-              ..itemName = itemName
+              ..itemName = (catalogItem?.itemName?.isNotEmpty == true) ? catalogItem!.itemName! : itemName
               ..hsnCode = hsn
               ..quantity = qty > 0 ? qty : 1.0
               ..unit = unit.isNotEmpty ? unit : (catalogItem?.primaryUnitName ?? catalogItem?.unit.value?.shortName ?? 'PCS')

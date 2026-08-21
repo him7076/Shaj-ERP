@@ -1999,20 +1999,6 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             const SizedBox(width: 8),
             Expanded(
               child: TextFormField(
-                controller: _freeQtyController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
-                onChanged: (val) {
-                  final double? qty = double.tryParse(val);
-                  if (qty != null) {
-                    ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, freeQuantity: qty);
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: OutlineInputBorder()),

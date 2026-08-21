@@ -1302,9 +1302,9 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove, size: 18),
+                          icon: const Icon(Icons.remove, size: 16),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 40),
                           onPressed: () {
                             final current = item.quantity ?? 1.0;
                             if (current > 1) {
@@ -1315,12 +1315,12 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           },
                         ),
                         SizedBox(
-                          width: 44,
+                          width: 36,
                           child: TextFormField(
                             controller: _qtyController,
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
                             onChanged: (val) {
                               final double? qtyVal = double.tryParse(val);
@@ -1331,9 +1331,9 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.add, size: 18),
+                          icon: const Icon(Icons.add, size: 16),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 40),
                           onPressed: () {
                             final next = (item.quantity ?? 1.0) + 1.0;
                             _qtyController.text = next.toInt().toString();

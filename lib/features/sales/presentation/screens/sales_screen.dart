@@ -21,6 +21,7 @@ import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.d
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -806,6 +807,16 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                   builder: (context) => AddEditInvoiceScreen(invoiceUuid: invoice.uuid),
                                 ),
                               ).then((_) => ref.invalidate(filteredInvoicesProvider));
+                            } else if (val == 'receipt') {
+                              try { await invoice.party.load(); } catch (_) {}
+                              AddEditTransactionDialog.show(
+                                context,
+                                initialType: 'Receipt',
+                                initialParty: invoice.party.value,
+                                initialBillUuid: invoice.uuid,
+                                initialBillNumber: invoice.invoiceNumber,
+                                initialAmount: invoice.pendingAmount ?? invoice.grandTotal ?? 0.0,
+                              );
                             } else if (val == 'cancel') {
                               final newStatus = invoice.paymentStatus == 'Cancelled' ? 'Unpaid' : 'Cancelled';
                               await isar.writeTxn(() async {
@@ -859,6 +870,10 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                             const PopupMenuItem(
                               value: 'edit',
                               child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit Invoice')]),
+                            ),
+                            const PopupMenuItem(
+                              value: 'receipt',
+                              child: Row(children: [Icon(Icons.payments_outlined, size: 18, color: Colors.green), SizedBox(width: 8), Text('Received Payment', style: TextStyle(color: Colors.green))]),
                             ),
                             PopupMenuItem(
                               value: 'cancel',

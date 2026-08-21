@@ -271,7 +271,7 @@ class SyncService {
   void syncPendingChangesQuietly({Duration delay = const Duration(seconds: 2)}) {
     _quietSyncDebounceTimer?.cancel();
     _quietSyncDebounceTimer = Timer(delay, () async {
-      if (_isUploadingQuietly) return;
+      if (!_firebaseService.isSyncConfigured) return;
       final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
       if (!cloudSyncEnabled) return;
       final activeFirmId = _dbService.activeFirmId;
@@ -295,6 +295,15 @@ class SyncService {
 
   /// Triggers full synchronization of all collections: upload edits, download changes, resolve conflicts
   Future<void> syncAll() async {
+    if (!_firebaseService.isSyncConfigured) {
+      logger.info('Firebase keys not configured in Sync Center. Bypassing cloud sync.');
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Offline Mode (Firebase Not Configured)',
+      ));
+      return;
+    }
+
     final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
     if (!cloudSyncEnabled) {
       logger.info('Firebase Cloud Sync is turned OFF by user. Bypassing cloud sync.');

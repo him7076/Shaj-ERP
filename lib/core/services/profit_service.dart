@@ -53,13 +53,20 @@ class ProfitService {
 
         // Fetch buyRate of item. Fallback to 0.0 if not configured.
         double buyRate = 0.0;
+        Item? originalItem;
         if (invoiceItem.itemId != null) {
-          final originalItem = await isar.items.get(invoiceItem.itemId!);
-          if (originalItem != null) {
-            buyRate = originalItem.buyRate ?? 0.0;
-          }
+          originalItem = await isar.items.get(invoiceItem.itemId!);
         } else if (!kIsWeb && invoiceItem.item.value != null) {
-          buyRate = invoiceItem.item.value!.buyRate ?? 0.0;
+          originalItem = invoiceItem.item.value;
+        }
+
+        if (originalItem != null) {
+          if (originalItem.buyRate != null && originalItem.buyRate! > 0) {
+            buyRate = originalItem.buyRate!;
+          } else if (originalItem.sellRate != null && originalItem.sellRate! > 0) {
+            final double gstPct = originalItem.gstApplicable ? (originalItem.gstRate ?? 0.0) : 0.0;
+            buyRate = originalItem.sellRate! / (1.0 + (gstPct / 100.0));
+          }
         }
 
         final cost = buyRate * qty;

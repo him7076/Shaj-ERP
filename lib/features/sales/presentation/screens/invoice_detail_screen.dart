@@ -97,6 +97,13 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           }
         }
 
+        for (var itm in items) {
+          try { await itm.item.load(); } catch (_) {}
+          if (itm.item.value == null && itm.itemId != null) {
+            try { itm.item.value = await isar.items.get(itm.itemId!); } catch (_) {}
+          }
+        }
+
         setState(() {
           _invoice = fetched;
           _invoiceItems = items;
@@ -650,10 +657,16 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              item.itemName ?? 'Unnamed Item',
-                              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                            ),
+                            () {
+                              final catalogName = item.item.value?.itemName;
+                              final displayName = (catalogName != null && catalogName.trim().isNotEmpty)
+                                  ? catalogName
+                                  : (item.itemName ?? 'Unnamed Item');
+                              return Text(
+                                displayName,
+                                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                              );
+                            }(),
                             const SizedBox(height: 4),
                             Wrap(
                               spacing: 8,

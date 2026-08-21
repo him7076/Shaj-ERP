@@ -370,31 +370,38 @@ class CustomDrawer extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Theme Switcher Tile
-                      InkWell(
-                        onTap: () {
-                          ref.read(themeProvider.notifier).toggleTheme();
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                                size: 16,
-                                color: isDark ? const Color(0xFFF59E0B) : const Color(0xFF6366F1),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                isDark ? 'Dark Mode' : 'Light Mode',
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                              ),
-                            ],
+                      Flexible(
+                        child: InkWell(
+                          onTap: () {
+                            ref.read(themeProvider.notifier).toggleTheme();
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                                  size: 16,
+                                  color: isDark ? const Color(0xFFF59E0B) : const Color(0xFF6366F1),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    isDark ? 'Dark Mode' : 'Light Mode',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

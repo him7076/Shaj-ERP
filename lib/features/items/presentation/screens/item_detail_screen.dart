@@ -587,8 +587,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 () {
-                                  final double unitRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
-                                  final double stockValAmt = primaryStock <= 0 ? 0.0 : primaryStock * unitRate;
+                                  double costRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : 0.0;
+                                  if (costRate <= 0 && item.sellRate != null && item.sellRate! > 0) {
+                                    final double gstPct = item.gstApplicable ? (item.gstRate ?? 0.0) : 0.0;
+                                    costRate = item.sellRate! / (1.0 + (gstPct / 100.0));
+                                  }
+                                  final double stockValAmt = primaryStock <= 0 ? 0.0 : primaryStock * costRate;
                                   return Text(
                                     'Total Stock Value: ${_currencyFormat.format(stockValAmt)}',
                                     style: const TextStyle(

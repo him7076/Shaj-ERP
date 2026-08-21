@@ -650,15 +650,15 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                       ElevatedButton.icon(
                                         onPressed: _isFetchingGst ? null : _fetchGstDetails,
                                         style: ElevatedButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
                                           backgroundColor: Colors.amber.shade800,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                         ),
                                         icon: _isFetchingGst
-                                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                            : const Icon(Icons.bolt),
-                                        label: const Text('Auto-Fetch', style: TextStyle(fontWeight: FontWeight.bold)),
+                                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                            : const Icon(Icons.bolt, size: 18),
+                                        label: const Text('Fetch', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                       ),
                                     ],
                                   ),
