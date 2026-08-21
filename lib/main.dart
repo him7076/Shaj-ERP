@@ -206,7 +206,7 @@ class _MyAppState extends ConsumerState<MyApp> {
 
       if (uri.scheme == 'content' || uriStr.startsWith('content://')) {
         try {
-          const platform = MethodChannel('com.example.business_sahaj_erp/content_reader');
+          final platform = MethodChannel('com.example.business_sahaj_erp/content_reader');
           final Uint8List? bytes = await platform.invokeMethod<Uint8List>('readContentUriBytes', {'uri': uriStr});
           if (bytes != null && bytes.isNotEmpty) {
             final tempDir = await getTemporaryDirectory();

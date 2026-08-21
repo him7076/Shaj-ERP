@@ -169,9 +169,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           item.version = isNew ? 1 : item.version + 1;
 
           item.parentInvoiceId = invoice.id;
-          if (!kIsWeb) {
+          item.parentInvoiceUuid = invoice.uuid;
+          try {
             item.invoice.value = invoice;
-          }
+          } catch (_) {}
 
           final dbItem = targetItemMap[item.itemId ?? 0] ?? (kIsWeb ? null : item.item.value);
           if (dbItem != null) {

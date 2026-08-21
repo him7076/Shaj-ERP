@@ -57,34 +57,39 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       if (fetched != null) {
         try { await fetched.party.load(); } catch (_) {}
 
-        List<InvoiceItem> items = [];
-        try {
-          await fetched.invoiceItems.load();
-          items = fetched.invoiceItems.where((i) => !i.isDeleted).toList();
-        } catch (_) {}
+        final targetId = fetched.id;
+        final targetUuid = fetched.uuid;
+
+        // 1. Query items by parent invoice ID or parent invoice UUID first
+        List<InvoiceItem> items = await isar.invoiceItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) {
+              var builder = q.parentInvoiceIdEqualTo(targetId);
+              if (targetUuid != null && targetUuid.isNotEmpty) {
+                builder = builder.or().parentInvoiceUuidEqualTo(targetUuid);
+              }
+              return builder;
+            })
+            .findAll();
 
         if (items.isEmpty) {
-          final targetId = fetched.id;
-          final targetUuid = fetched.uuid;
+          try {
+            await fetched.invoiceItems.load();
+            items = fetched.invoiceItems.where((i) => !i.isDeleted).toList();
+          } catch (_) {}
+        }
 
-          final allItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-          items = allItems.where((i) {
-            if (i.parentInvoiceId == targetId) return true;
-            if (targetUuid != null && targetUuid.isNotEmpty) {
-              if (i.parentInvoiceUuid == targetUuid) return true;
-              try {
-                if (i.invoice.value?.uuid == targetUuid) return true;
-              } catch (_) {}
-            }
-            return false;
-          }).toList();
-
-          if (items.isNotEmpty) {
+        // Self-heal parent invoice IDs and UUIDs if missing
+        if (items.isNotEmpty) {
+          final needsRepair = items.any((i) => i.parentInvoiceId != targetId || i.parentInvoiceUuid != targetUuid);
+          if (needsRepair) {
             await isar.writeTxn(() async {
               for (var itm in items) {
                 itm.parentInvoiceId = targetId;
                 itm.parentInvoiceUuid = targetUuid;
-                itm.invoice.value = fetched;
+                try { itm.invoice.value = fetched; } catch (_) {}
                 await isar.invoiceItems.put(itm);
                 try { await itm.invoice.save(); } catch (_) {}
               }
