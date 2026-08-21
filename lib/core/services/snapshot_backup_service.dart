@@ -11,8 +11,7 @@ import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/web_mock_isar.dart';
 
-// Conditional import for web HTML Blob downloading
-import 'package:url_launcher/url_launcher.dart';
+import 'package:business_sahaj_erp/core/utils/web_download_helper.dart';
 
 class SnapshotBackupResult {
   final String fileName;
@@ -62,7 +61,23 @@ class SnapshotBackupService {
     final manifestBytes = utf8.encode(jsonEncode(manifestMap));
     archive.addFile(ArchiveFile('manifest.json', manifestBytes.length, manifestBytes));
 
-    // 3. Package Database Files / JSON Dumps
+    // 3. Export SharedPreferences (firm settings, counters, etc.)
+    try {
+      final prefKeys = prefs.getKeys();
+      final Map<String, dynamic> prefMap = {};
+      for (final key in prefKeys) {
+        final val = prefs.get(key);
+        if (val != null) {
+          prefMap[key] = val;
+        }
+      }
+      final prefBytes = utf8.encode(jsonEncode(prefMap));
+      archive.addFile(ArchiveFile('preferences.json', prefBytes.length, prefBytes));
+    } catch (e) {
+      logger.warning('Could not export preferences to snapshot: $e');
+    }
+
+    // 4. Package Database Files / JSON Dumps
     for (final firmId in firmsToExport) {
       if (kIsWeb) {
         // Web: Dump WebMockIsar collections to JSON
@@ -75,33 +90,17 @@ class SnapshotBackupService {
         archive.addFile(ArchiveFile('database_$firmId.json', jsonBytes.length, jsonBytes));
       } else {
         // Native (Android/iOS):
-        // A. Copy raw Isar binary file using Isar.copyToFile
+        // A. Read raw Isar binary file from appDocsDir
         try {
-          final tempDir = await getTemporaryDirectory();
-          final tempIsarPath = '${tempDir.path}/temp_$firmId.isar';
-          final tempIsarFile = File(tempIsarPath);
-          if (await tempIsarFile.exists()) {
-            await tempIsarFile.delete();
-          }
-
-          if (firmId == activeFirmId) {
-            await dbService.isar.copyToFile(tempIsarPath);
-          }
-
-          if (await tempIsarFile.exists() && await tempIsarFile.length() > 0) {
-            final isarBytes = await tempIsarFile.readAsBytes();
+          final appDocsDir = await getApplicationDocumentsDirectory();
+          final isarFile = File('${appDocsDir.path}/$firmId.isar');
+          if (await isarFile.exists()) {
+            final isarBytes = await isarFile.readAsBytes();
+            logger.info('Captured raw Isar binary file for $firmId (${isarBytes.length} bytes)');
             archive.addFile(ArchiveFile('database_$firmId.isar', isarBytes.length, isarBytes));
-            await tempIsarFile.delete().catchError((_) {});
-          } else {
-            final appDocsDir = await getApplicationDocumentsDirectory();
-            final isarFile = File('${appDocsDir.path}/$firmId.isar');
-            if (await isarFile.exists()) {
-              final isarBytes = await isarFile.readAsBytes();
-              archive.addFile(ArchiveFile('database_$firmId.isar', isarBytes.length, isarBytes));
-            }
           }
         } catch (e) {
-          logger.warning('Could not copy raw Isar file for $firmId: $e');
+          logger.warning('Could not read raw Isar file for $firmId: $e');
         }
 
         // B. Also include JSON dump for cross-platform restoration compatibility on Web
@@ -115,7 +114,7 @@ class SnapshotBackupService {
       }
     }
 
-    // 4. Encode ZIP archive
+    // 5. Encode ZIP archive
     final zipEncoder = ZipEncoder();
     final encodedBytes = zipEncoder.encode(archive);
     if (encodedBytes == null) {
@@ -123,15 +122,10 @@ class SnapshotBackupService {
     }
     final archiveUint8List = Uint8List.fromList(encodedBytes);
 
-    // 5. Handle Platform Storage
+    // 6. Handle Platform Storage
     if (kIsWeb) {
-      // Trigger Web download via data URI
-      final base64Data = base64Encode(archiveUint8List);
-      final dataUri = 'data:application/octet-stream;base64,$base64Data';
-      final uri = Uri.parse(dataUri);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      }
+      // Trigger Web download via native HTML anchor
+      triggerWebDownload(archiveUint8List, fileName);
       return SnapshotBackupResult(
         fileName: fileName,
         filePath: 'Browser Downloads',
@@ -223,6 +217,32 @@ class SnapshotBackupService {
     final exportedFirms = (manifest['exportedFirms'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [activeFirmId];
 
     logger.info('Validated snapshot manifest. Active firm: $activeFirmId, Exported firms: $exportedFirms');
+
+    // Restore SharedPreferences if available
+    ArchiveFile? prefFile;
+    for (final f in archive) {
+      if (f.name == 'preferences.json') {
+        prefFile = f;
+        break;
+      }
+    }
+    if (prefFile != null) {
+      try {
+        final prefJsonStr = utf8.decode(prefFile.content as List<int>);
+        final prefMap = jsonDecode(prefJsonStr) as Map<String, dynamic>;
+        for (final entry in prefMap.entries) {
+          final key = entry.key;
+          final val = entry.value;
+          if (val is bool) await prefs.setBool(key, val);
+          else if (val is int) await prefs.setInt(key, val);
+          else if (val is double) await prefs.setDouble(key, val);
+          else if (val is String) await prefs.setString(key, val);
+          else if (val is List) await prefs.setStringList(key, val.map((e) => e.toString()).toList());
+        }
+      } catch (e) {
+        logger.warning('Could not restore preferences from snapshot: $e');
+      }
+    }
 
     // 3. Atomic Restore with Rollback Safeguard
     File? tempBackupFile;

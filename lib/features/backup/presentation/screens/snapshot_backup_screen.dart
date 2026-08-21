@@ -72,7 +72,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Fast, zero-data-loss, cross-compatible binary snapshot backup & instant < 1s restoration across Mobile and Web.',
+                          'Fast, zero-data-loss, cross-compatible binary snapshot backup & instant restoration across Mobile and Web.',
                           style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.4),
                         ),
                       ],
@@ -130,7 +130,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
                         icon: _isCreatingBackup
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : const Icon(Icons.download_rounded, size: 18),
-                        label: Text(_isCreatingBackup ? 'Generating Snapshot...' : 'Export .sahaj Snapshot (< 1s)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        label: Text(_isCreatingBackup ? 'Generating Snapshot...' : 'Export .sahaj Snapshot', style: const TextStyle(fontWeight: FontWeight.bold)),
                         onPressed: _isCreatingBackup ? null : () => _exportSnapshotBackup(),
                       ),
                     ),
@@ -233,7 +233,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Generated in ${ms}ms (< 1s)!', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                Text('Generated in ${ms}ms!', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                 const SizedBox(height: 8),
                 Text('File Name: ${result.fileName}', style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 4),
@@ -288,7 +288,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
               Text('Restore database from snapshot "${selectedFile.name}"?', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 8),
               const Text(
-                'This will replace your database with 100% data preservation in under 1 second! Current data will be safely backed up before replacement.',
+                'This will replace your database with 100% data preservation! Current data will be safely backed up before replacement.',
                 style: TextStyle(fontSize: 13, height: 1.4),
               ),
             ],
@@ -298,7 +298,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
               icon: const Icon(Icons.flash_on, size: 18),
-              label: const Text('Yes, Instant Restore (< 1s)'),
+              label: const Text('Yes, Restore Database'),
               onPressed: () => Navigator.pop(ctx, true),
             ),
           ],
@@ -344,7 +344,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('⚡ Instant database snapshot restore complete in ${ms}ms (< 1s)!'),
+            content: Text('⚡ Complete database snapshot restore finished successfully in ${ms}ms!'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 4),
           ),

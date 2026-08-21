@@ -1,5 +1,5 @@
 import 'dart:typed_data';
 
-void downloadWebFile(List<int> bytes, String filename) {
-  // Stub for non-web platforms
+void triggerWebDownload(Uint8List bytes, String fileName) {
+  // Non-web platform stub
 }
