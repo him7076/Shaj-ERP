@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.business_sahaj_erp"
-    compileSdk = 36
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -28,7 +28,7 @@ android {
         // Application ID matched to previous release for in-place overwrite updates
         applicationId = "com.sahaj.business_sahaj_erp"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -42,8 +42,10 @@ android {
                 rootProject.file(fileProp)
             } else if (file("release.keystore").exists()) {
                 file("release.keystore")
+            } else if (rootProject.file("android/app/release.keystore").exists()) {
+                rootProject.file("android/app/release.keystore")
             } else {
-                null
+                signingConfigs.getByName("debug").storeFile
             }
             storePassword = (keystoreProperties["storePassword"] as String?) ?: "sahajerppassword"
         }
