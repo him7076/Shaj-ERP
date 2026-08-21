@@ -159,15 +159,21 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
         cart.toggleGstInclusive(true);
         cart.setOrderDiscounts(order.discountPercent, order.discountAmount);
 
-        List<OrderItem> orderItemsList = await db.orderItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) => q.orderUuidEqualTo(order.uuid).or().order((o) => o.uuidEqualTo(order.uuid)))
-            .findAll();
+        List<OrderItem> orderItemsList = [];
+        try {
+          await order.orderItems.load();
+          orderItemsList = order.orderItems.where((i) => !i.isDeleted).toList();
+        } catch (_) {}
+
         if (orderItemsList.isEmpty) {
-          try { await order.orderItems.load(); } catch (_) {}
-          try { orderItemsList = order.orderItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
+          final targetUuid = order.uuid;
+          final targetId = order.id;
+          final allItems = await db.orderItems.filter().isDeletedEqualTo(false).findAll();
+          orderItemsList = allItems.where((i) {
+            if (targetUuid != null && targetUuid.isNotEmpty && i.orderUuid == targetUuid) return true;
+            if (targetId > 0 && (i.orderId == targetId || i.order.value?.id == targetId)) return true;
+            return false;
+          }).toList();
         }
 
         for (var orderItem in orderItemsList) {
@@ -1306,9 +1312,12 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('GST: ${item.gstPercent.toInt()}%', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
                     Text(
-                      'Total: ₹${item.itemTotal.toStringAsFixed(2)}',
+                      widget.isGstInclusive ? 'GST: ${item.gstPercent.toInt()}% (Incl Tax)' : 'GST: ${item.gstPercent.toInt()}% (Excl Tax)',
+                      style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+                    ),
+                    Text(
+                      'Total: ₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                     ),
                   ],

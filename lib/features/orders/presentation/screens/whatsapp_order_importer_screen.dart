@@ -737,8 +737,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
 
       final nextOrderNumber = await orderRepo.generateNextOrderNumber();
 
-      double subtotal = 0.0;
-      final orderItems = <OrderItem>[];
+      final orderUuid = const Uuid().v4();
 
       for (var row in _mappedRows) {
         if (row.selectedItem == null) continue;
@@ -749,6 +748,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
 
         final orderItem = OrderItem()
           ..uuid = const Uuid().v4()
+          ..orderUuid = orderUuid
           ..itemId = item.id
           ..itemName = item.itemName
           ..hsnCode = item.hsnCode
@@ -766,31 +766,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
           ..updatedAt = DateTime.now();
 
         orderItems.add(orderItem);
-
-        if (_rememberMappings) {
-          final mapping = WhatsAppItemMapping(
-            rawItemLine: row.rawParsedItem.itemDescription,
-            itemUuid: item.uuid!,
-            pcsPerBundle: row.mappingRule?.pcsPerBundle ?? 1.0,
-            pcsPerCarton: row.mappingRule?.pcsPerCarton ?? item.conversionFactor ?? 1.0,
-            customRate: row.rate,
-            rateUnit: row.unitName,
-            isTaxInclusive: row.isTaxInclusive,
-          );
-          await mappingService.saveItemMapping(mapping);
-        }
-      }
-
-      if (_rememberMappings && _parsedOrder?.shopName != null) {
-        await mappingService.savePartyMapping(_parsedOrder!.shopName!, _selectedParty!.uuid!);
-      }
-
-      if (_rememberMappings && _parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty && _selectedSalesman != null) {
-        await mappingService.saveSalesmanMapping(_parsedOrder!.salesRep!, _selectedSalesman!);
       }
 
       final order = Order()
-        ..uuid = const Uuid().v4()
+        ..uuid = orderUuid
         ..orderNumber = nextOrderNumber
         ..orderDate = DateTime.now()
         ..status = 'Pending'
@@ -814,13 +793,40 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
 
       order.party.value = _selectedParty;
 
+      // 1. Save order & items to Isar immediately
       await orderRepo.saveOrder(order, orderItems);
-
-      try {
-        ref.read(syncServiceProvider).syncPendingChangesQuietly();
-      } catch (_) {}
-
       ref.invalidate(filteredOrdersProvider);
+
+      // 2. Defer background mapping saves & sync to microtask so UI transitions instantly
+      Future.microtask(() async {
+        try {
+          if (_rememberMappings) {
+            for (var row in _mappedRows) {
+              if (row.selectedItem == null) continue;
+              final mapping = WhatsAppItemMapping(
+                rawItemLine: row.rawParsedItem.itemDescription,
+                itemUuid: row.selectedItem!.uuid!,
+                pcsPerBundle: row.mappingRule?.pcsPerBundle ?? 1.0,
+                pcsPerCarton: row.mappingRule?.pcsPerCarton ?? row.selectedItem!.conversionFactor ?? 1.0,
+                customRate: row.rate,
+                rateUnit: row.unitName,
+                isTaxInclusive: row.isTaxInclusive,
+              );
+              await mappingService.saveItemMapping(mapping);
+            }
+
+            if (_parsedOrder?.shopName != null && _selectedParty != null) {
+              await mappingService.savePartyMapping(_parsedOrder!.shopName!, _selectedParty!.uuid!);
+            }
+
+            if (_parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty && _selectedSalesman != null) {
+              await mappingService.saveSalesmanMapping(_parsedOrder!.salesRep!, _selectedSalesman!);
+            }
+          }
+
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -60,17 +60,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         }
 
         if (items.isEmpty) {
-          try {
-            items = await isar.orderItems
-                .filter()
-                .isDeletedEqualTo(false)
-                .and()
-                .group((q) => q.orderUuidEqualTo(fetched.uuid).or().order((o) => o.uuidEqualTo(fetched.uuid)))
-                .findAll();
-          } catch (_) {
-            final allItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
-            items = allItems.where((i) => i.orderUuid == fetched.uuid || i.order.value?.id == fetched.id || i.order.value?.uuid == fetched.uuid).toList();
-          }
+          final targetUuid = fetched.uuid;
+          final targetId = fetched.id;
+          final allItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
+          items = allItems.where((i) {
+            if (targetUuid != null && targetUuid.isNotEmpty && i.orderUuid == targetUuid) return true;
+            if (targetId > 0 && (i.orderId == targetId || i.order.value?.id == targetId)) return true;
+            return false;
+          }).toList();
         }
 
         setState(() {

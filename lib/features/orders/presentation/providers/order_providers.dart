@@ -59,10 +59,17 @@ class CartItemState {
     this.mfgDate,
   });
 
-  double get itemTotal {
+  double calculateItemTotal(bool isGstInclusive) {
     final base = (rate * quantity) - discountAmount;
-    return base + (base * (gstPercent / 100.0));
+    if (isGstInclusive) {
+      return base < 0 ? 0.0 : base;
+    } else {
+      final total = base + (base * (gstPercent / 100.0));
+      return total < 0 ? 0.0 : total;
+    }
   }
+
+  double get itemTotal => calculateItemTotal(true);
 
   CartItemState copyWith({
     double? quantity,
