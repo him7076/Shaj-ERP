@@ -42,7 +42,15 @@ jobs:
       - name: Build Release APK
         env:
           JAVA_HOME: ${{ env.JAVA_HOME }}
-        run: flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8
+        run: |
+          flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8 -v > flutter_build.log 2>&1 || (cat flutter_build.log | tail -n 200 && exit 1)
+
+      - name: Upload Build Log Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flutter-build-log
+          path: flutter_build.log
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
