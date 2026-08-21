@@ -26,7 +26,7 @@ subprojects {
             if (ns == null || ns.isEmpty()) {
                 android.namespace = "com.example." + project.name.replace("-", ".").replace("_", "")
             }
-            android.compileSdkVersion(34)
+            android.compileSdkVersion(35)
             android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
             android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
         }

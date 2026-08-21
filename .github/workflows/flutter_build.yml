@@ -57,6 +57,17 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Patch isar_flutter_libs manifest for AGP 8.7+ compatibility
+        run: |
+          ISAR_MANIFEST=$(find $HOME/.pub-cache -path "*/isar_flutter_libs-*/android/src/main/AndroidManifest.xml" 2>/dev/null | head -1)
+          if [ -n "$ISAR_MANIFEST" ]; then
+            echo "Patching $ISAR_MANIFEST"
+            sed -i 's/package="dev.isar.isar_flutter_libs"//g' "$ISAR_MANIFEST"
+            cat "$ISAR_MANIFEST"
+          else
+            echo "isar_flutter_libs manifest not found, skipping patch"
+          fi
+
       - name: Build Release APK 
         run: flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8
 
