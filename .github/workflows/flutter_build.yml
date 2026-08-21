@@ -39,7 +39,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Release APK
-        run: flutter build apk --release --no-tree-shake-icons
+        run: flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8
 
       - name: Publish Direct Download APK to GitHub Releases
         uses: softprops/action-gh-release@v2

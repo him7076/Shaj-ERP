@@ -28,8 +28,8 @@ android {
         applicationId = "com.sahaj.business_sahaj_erp"
         minSdk = 21
         targetSdk = 34
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = (flutter.versionCode as Int?) ?: 11
+        versionName = (flutter.versionName as String?) ?: "1.0.8"
     }
 
     signingConfigs {
