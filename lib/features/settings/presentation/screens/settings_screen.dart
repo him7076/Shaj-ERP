@@ -664,6 +664,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     );
                   },
                 ),
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Consolidated Snapshot Backup & Restore Center (.sahaj) Card

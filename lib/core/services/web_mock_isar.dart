@@ -65,15 +65,6 @@ class WebMockIsar implements Isar {
     });
   }
 
-  Future<void> saveToPrefs(SharedPreferences p) async {
-    try {
-      final jsonStr = jsonEncode(exportCollectionsJson());
-      await p.setString('web_db_dump_$firmId', jsonStr);
-    } catch (e) {
-      print('WebMockIsar saveToPrefs failed: $e');
-    }
-  }
-
   Future<void> autoSave() async {
     try {
       final p = prefs ?? await SharedPreferences.getInstance();

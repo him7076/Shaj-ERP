@@ -13,11 +13,6 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/core/services/snapshot_backup_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
-// Snapshot Backup Service Provider
-final snapshotBackupServiceProvider = Provider<SnapshotBackupService>((ref) {
-  return SnapshotBackupService();
-});
-
 // Repositories
 import 'package:business_sahaj_erp/domain/repositories/sync_queue_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/sync_queue_repository_impl.dart';
@@ -29,6 +24,11 @@ import 'package:business_sahaj_erp/domain/repositories/credit_note_repository.da
 import 'package:business_sahaj_erp/data/repositories/credit_note_repository_impl.dart';
 import 'package:business_sahaj_erp/domain/repositories/debit_note_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/debit_note_repository_impl.dart';
+
+// Snapshot Backup Service Provider
+final snapshotBackupServiceProvider = Provider<SnapshotBackupService>((ref) {
+  return SnapshotBackupService();
+});
 
 // Logger provider
 final loggerProvider = Provider<LoggerService>((ref) {
