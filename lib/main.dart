@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/core/theme/app_theme.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/router.dart';
 
@@ -164,7 +165,6 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
-    _initFileIntentListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         // Initialize sync manager with timeout guard to prevent boot hang
