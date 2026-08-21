@@ -37,28 +37,14 @@ android {
         create("release") {
             keyAlias = (keystoreProperties["keyAlias"] as String?) ?: "sahajkey"
             keyPassword = (keystoreProperties["keyPassword"] as String?) ?: "sahajerppassword"
-            val fileProp = keystoreProperties["storeFile"] as String?
-            storeFile = if (fileProp != null && rootProject.file(fileProp).exists()) {
-                rootProject.file(fileProp)
-            } else if (file("release.keystore").exists()) {
-                file("release.keystore")
-            } else if (rootProject.file("android/app/release.keystore").exists()) {
-                rootProject.file("android/app/release.keystore")
-            } else {
-                file("release.keystore")
-            }
+            storeFile = file("release.keystore")
             storePassword = (keystoreProperties["storePassword"] as String?) ?: "sahajerppassword"
         }
     }
 
     buildTypes {
         release {
-            val relConfig = signingConfigs.findByName("release")
-            if (relConfig != null && relConfig.storeFile != null && relConfig.storeFile!.exists()) {
-                signingConfig = relConfig
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

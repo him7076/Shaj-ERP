@@ -39,11 +39,11 @@ subprojects {
                 // Dynamically align compileSdk to 36 for all dependencies to support latest lifecycle/geolocator libs
                 try {
                     val compileSdkMethod = android.javaClass.getMethod("setCompileSdk", Int::class.javaPrimitiveType)
-                    compileSdkMethod.invoke(android, 36)
+                    compileSdkMethod.invoke(android, 35)
                 } catch (e: Exception) {
                     try {
                         val compileSdkVersionMethod = android.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType)
-                        compileSdkVersionMethod.invoke(android, 36)
+                        compileSdkVersionMethod.invoke(android, 35)
                     } catch (ex: Exception) {
                         // Ignore
                     }
