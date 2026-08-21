@@ -47,9 +47,13 @@ class WebMockIsar implements Isar {
     _db.forEach((collectionName, list) {
       exportedMap[collectionName] = list.map((item) {
         try {
-          return (item as dynamic).toJson();
+          return _entityToMap(item);
         } catch (_) {
-          return item;
+          try {
+            return (item as dynamic).toJson();
+          } catch (_) {
+            return <String, dynamic>{};
+          }
         }
       }).toList();
     });
@@ -60,7 +64,16 @@ class WebMockIsar implements Isar {
     _db.clear();
     jsonMap.forEach((collectionName, list) {
       if (list is List) {
-        _db[collectionName] = List<dynamic>.from(list);
+        _db[collectionName] = list.map((item) {
+          if (item is Map<String, dynamic>) {
+            try {
+              return _mapToEntity(item);
+            } catch (_) {
+              return item;
+            }
+          }
+          return item;
+        }).toList();
       }
     });
   }

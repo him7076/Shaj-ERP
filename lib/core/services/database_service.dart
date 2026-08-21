@@ -288,11 +288,21 @@ class DatabaseService {
       final orders = await isar.orders.where().exportJson();
       final orderItems = await isar.orderItems.where().exportJson();
       final expenses = await isar.expenses.where().exportJson();
+      final expenseItems = await isar.expenseItems.where().exportJson();
       final transactions = await isar.transactions.where().exportJson();
       final categories = await isar.categorys.where().exportJson();
       final brands = await isar.brands.where().exportJson();
       final units = await isar.units.where().exportJson();
       final bankAccounts = await isar.bankAccounts.where().exportJson();
+      final creditNotes = await isar.creditNotes.where().exportJson();
+      final creditNoteItems = await isar.creditNoteItems.where().exportJson();
+      final debitNotes = await isar.debitNotes.where().exportJson();
+      final debitNoteItems = await isar.debitNoteItems.where().exportJson();
+      final deletedVouchers = await isar.deletedVouchers.where().exportJson();
+      final stockAdjustments = await isar.stockAdjustments.where().exportJson();
+      final whatsAppMappings = await isar.whatsAppMappings.where().exportJson();
+      final settings = await isar.settings.where().exportJson();
+      final users = await isar.users.where().exportJson();
 
       result['partys'] = parties;
       result['items'] = items;
@@ -303,11 +313,21 @@ class DatabaseService {
       result['orders'] = orders;
       result['orderItems'] = orderItems;
       result['expenses'] = expenses;
+      result['expenseItems'] = expenseItems;
       result['transactions'] = transactions;
       result['categorys'] = categories;
       result['brands'] = brands;
       result['units'] = units;
       result['bankAccounts'] = bankAccounts;
+      result['creditNotes'] = creditNotes;
+      result['creditNoteItems'] = creditNoteItems;
+      result['debitNotes'] = debitNotes;
+      result['debitNoteItems'] = debitNoteItems;
+      result['deletedVouchers'] = deletedVouchers;
+      result['stockAdjustments'] = stockAdjustments;
+      result['whatsAppMappings'] = whatsAppMappings;
+      result['settings'] = settings;
+      result['users'] = users;
     } catch (e) {
       logger.warning('Failed to export collections to JSON: $e');
     }
@@ -351,6 +371,9 @@ class DatabaseService {
         if (collectionsData.containsKey('expenses') && collectionsData['expenses'] is List) {
           await isar.expenses.importJson(collectionsData['expenses'] as List<Map<String, dynamic>>);
         }
+        if (collectionsData.containsKey('expenseItems') && collectionsData['expenseItems'] is List) {
+          await isar.expenseItems.importJson(collectionsData['expenseItems'] as List<Map<String, dynamic>>);
+        }
         if (collectionsData.containsKey('transactions') && collectionsData['transactions'] is List) {
           await isar.transactions.importJson(collectionsData['transactions'] as List<Map<String, dynamic>>);
         }
@@ -365,6 +388,33 @@ class DatabaseService {
         }
         if (collectionsData.containsKey('bankAccounts') && collectionsData['bankAccounts'] is List) {
           await isar.bankAccounts.importJson(collectionsData['bankAccounts'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('creditNotes') && collectionsData['creditNotes'] is List) {
+          await isar.creditNotes.importJson(collectionsData['creditNotes'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('creditNoteItems') && collectionsData['creditNoteItems'] is List) {
+          await isar.creditNoteItems.importJson(collectionsData['creditNoteItems'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('debitNotes') && collectionsData['debitNotes'] is List) {
+          await isar.debitNotes.importJson(collectionsData['debitNotes'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('debitNoteItems') && collectionsData['debitNoteItems'] is List) {
+          await isar.debitNoteItems.importJson(collectionsData['debitNoteItems'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('deletedVouchers') && collectionsData['deletedVouchers'] is List) {
+          await isar.deletedVouchers.importJson(collectionsData['deletedVouchers'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('stockAdjustments') && collectionsData['stockAdjustments'] is List) {
+          await isar.stockAdjustments.importJson(collectionsData['stockAdjustments'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('whatsAppMappings') && collectionsData['whatsAppMappings'] is List) {
+          await isar.whatsAppMappings.importJson(collectionsData['whatsAppMappings'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('settings') && collectionsData['settings'] is List) {
+          await isar.settings.importJson(collectionsData['settings'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('users') && collectionsData['users'] is List) {
+          await isar.users.importJson(collectionsData['users'] as List<Map<String, dynamic>>);
         }
       });
     } catch (e) {

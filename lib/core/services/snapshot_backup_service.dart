@@ -75,16 +75,33 @@ class SnapshotBackupService {
         archive.addFile(ArchiveFile('database_$firmId.json', jsonBytes.length, jsonBytes));
       } else {
         // Native (Android/iOS):
-        // A. Copy raw Isar binary file if available
+        // A. Copy raw Isar binary file using Isar.copyToFile
         try {
-          final appDocsDir = await getApplicationDocumentsDirectory();
-          final isarFile = File('${appDocsDir.path}/$firmId.isar');
-          if (await isarFile.exists()) {
-            final isarBytes = await isarFile.readAsBytes();
+          final tempDir = await getTemporaryDirectory();
+          final tempIsarPath = '${tempDir.path}/temp_$firmId.isar';
+          final tempIsarFile = File(tempIsarPath);
+          if (await tempIsarFile.exists()) {
+            await tempIsarFile.delete();
+          }
+
+          if (firmId == activeFirmId) {
+            await dbService.isar.copyToFile(tempIsarPath);
+          }
+
+          if (await tempIsarFile.exists() && await tempIsarFile.length() > 0) {
+            final isarBytes = await tempIsarFile.readAsBytes();
             archive.addFile(ArchiveFile('database_$firmId.isar', isarBytes.length, isarBytes));
+            await tempIsarFile.delete().catchError((_) {});
+          } else {
+            final appDocsDir = await getApplicationDocumentsDirectory();
+            final isarFile = File('${appDocsDir.path}/$firmId.isar');
+            if (await isarFile.exists()) {
+              final isarBytes = await isarFile.readAsBytes();
+              archive.addFile(ArchiveFile('database_$firmId.isar', isarBytes.length, isarBytes));
+            }
           }
         } catch (e) {
-          logger.warning('Could not read raw Isar file for $firmId: $e');
+          logger.warning('Could not copy raw Isar file for $firmId: $e');
         }
 
         // B. Also include JSON dump for cross-platform restoration compatibility on Web
