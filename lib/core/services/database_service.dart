@@ -679,9 +679,9 @@ class DatabaseService {
       logger.info('Starting legacy data repair...');
       await isar.writeTxn(() async {
         // Actually, let's fix Items first
-        final allItems = await isar.items.findAll();
+        final allItems = await isar.items.where().findAll();
         
-        final invItems = await isar.invoiceItems.findAll();
+        final invItems = await isar.invoiceItems.where().findAll();
         for (var ii in invItems) {
           bool changed = false;
           // Fix item link
@@ -703,7 +703,7 @@ class DatabaseService {
           }
         }
         
-        final ordItems = await isar.orderItems.findAll();
+        final ordItems = await isar.orderItems.where().findAll();
         for (var oi in ordItems) {
           bool changed = false;
           if (oi.itemId == null && oi.itemName != null) {
@@ -723,7 +723,7 @@ class DatabaseService {
           }
         }
         
-        final purItems = await isar.purchaseItems.findAll();
+        final purItems = await isar.purchaseItems.where().findAll();
         for (var pi in purItems) {
           bool changed = false;
           if (pi.itemId == null && pi.itemName != null) {
