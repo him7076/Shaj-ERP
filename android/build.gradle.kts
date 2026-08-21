@@ -19,44 +19,21 @@ subprojects {
 
 
 subprojects {
-    plugins.withId("com.android.library") {
-        (extensions.findByName("android") as? com.android.build.gradle.BaseExtension)?.let { android ->
-            if (android.namespace == null) {
-                android.namespace = "com.example." + project.name.replace("-", ".").replace("_", ".")
-            }
-        }
-    }
-    plugins.withId("com.android.application") {
-        (extensions.findByName("android") as? com.android.build.gradle.BaseExtension)?.let { android ->
-            if (android.namespace == null) {
-                android.namespace = "com.example." + project.name.replace("-", ".").replace("_", ".")
-            }
-        }
-    }
-
-    val configureSubproject = {
+    plugins.withType<com.android.build.gradle.api.AndroidBasePlugin> {
         val android = extensions.findByName("android") as? com.android.build.gradle.BaseExtension
         if (android != null) {
-            if (android.namespace == null) {
-                android.namespace = "com.example." + project.name.replace("-", ".").replace("_", ".")
+            if (android.namespace == null || android.namespace.isEmpty()) {
+                android.namespace = "com.example." + project.name.replace("-", ".").replace("_", "")
             }
             android.compileSdkVersion(34)
             android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
             android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
         }
-
-        tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-            compilerOptions {
-                jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-            }
-        }
     }
 
-    if (state.executed) {
-        configureSubproject()
-    } else {
-        afterEvaluate {
-            configureSubproject()
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
 }
