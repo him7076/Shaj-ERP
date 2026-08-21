@@ -15,11 +15,6 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-subprojects {
-    if (project.name != "app") {
-        project.evaluationDependsOn(":app")
-    }
-}
 
 subprojects {
     val configureSubproject = {
