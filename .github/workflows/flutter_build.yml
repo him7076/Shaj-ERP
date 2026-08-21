@@ -37,6 +37,11 @@ jobs:
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
 
+      - name: Clean Flutter and Gradle
+        run: |
+          flutter clean
+          cd android && ./gradlew clean && cd ..
+
       - name: Install Dependencies
         run: flutter pub get
 

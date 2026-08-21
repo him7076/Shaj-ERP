@@ -66,6 +66,17 @@ android {
             isShrinkResources = false
         }
     }
+
+    packaging {
+        resources {
+            excludes.add("META-INF/proguard/androidx-*.pro")
+            excludes.add("META-INF/DEPENDENCIES")
+            excludes.add("META-INF/NOTICE")
+            excludes.add("META-INF/LICENSE")
+            excludes.add("META-INF/LICENSE.txt")
+            excludes.add("META-INF/NOTICE.txt")
+        }
+    }
 }
 
 kotlin {
@@ -80,4 +91,6 @@ flutter {
 
 dependencies {
     implementation("androidx.multidex:multidex:2.0.1")
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
 }
