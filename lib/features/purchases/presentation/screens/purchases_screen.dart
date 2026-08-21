@@ -523,6 +523,29 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                               ? DateFormat('dd MMM yyyy').format(purchase.purchaseDate!)
                               : 'N/A';
 
+                          Color statusColor = Colors.grey;
+                          IconData statusIcon = Icons.shopping_bag_outlined;
+
+                          final pStatus = purchase.paymentStatus ?? 'Unpaid';
+                          switch (pStatus) {
+                            case 'Unpaid':
+                              statusColor = Colors.red;
+                              statusIcon = Icons.hourglass_empty;
+                              break;
+                            case 'Partially Paid':
+                              statusColor = Colors.orange;
+                              statusIcon = Icons.payments_outlined;
+                              break;
+                            case 'Paid':
+                              statusColor = Colors.green;
+                              statusIcon = Icons.check_circle_outline;
+                              break;
+                            case 'Cancelled':
+                              statusColor = Colors.grey;
+                              statusIcon = Icons.cancel_outlined;
+                              break;
+                          }
+
                           return Card(
                             elevation: 0,
                             margin: const EdgeInsets.only(bottom: 12),
@@ -538,7 +561,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                   children: [
                                     Container(
                                       width: 6,
-                                      color: theme.colorScheme.primary,
+                                      color: statusColor,
                                     ),
                                     Expanded(
                                       child: ListTile(
@@ -552,16 +575,21 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                           ).then((_) => ref.invalidate(purchaseListProvider));
                                         },
                                         leading: CircleAvatar(
-                                          backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
-                                          child: Icon(Icons.shopping_bag_outlined, color: theme.colorScheme.primary, size: 20),
+                                          backgroundColor: statusColor.withOpacity(0.08),
+                                          child: Icon(statusIcon, color: statusColor, size: 20),
                                         ),
                                         title: Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            Text(
-                                              purchase.partyName ?? 'Unknown Supplier',
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                            Expanded(
+                                              child: Text(
+                                                purchase.partyName ?? 'Unknown Supplier',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                              ),
                                             ),
+                                            const SizedBox(width: 8),
                                             Text(
                                               currencyFormat.format(purchase.grandTotal ?? 0.0),
                                               style: TextStyle(
@@ -573,23 +601,31 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                           ],
                                         ),
                                         subtitle: Padding(
-                                          padding: const EdgeInsets.only(top: 8.0),
+                                          padding: const EdgeInsets.only(top: 6.0),
                                           child: Wrap(
                                             spacing: 8,
                                             runSpacing: 4,
-                                            alignment: WrapAlignment.spaceBetween,
                                             crossAxisAlignment: WrapCrossAlignment.center,
                                             children: [
                                               Text(
                                                 'Bill No: ${purchase.purchaseNumber ?? "N/A"}${purchase.supplierInvoiceNumber != null && purchase.supplierInvoiceNumber!.isNotEmpty ? " (Supp: ${purchase.supplierInvoiceNumber})" : ""}  •  $dateStr',
                                                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13),
                                               ),
-                                              if (purchase.remarks != null && purchase.remarks!.isNotEmpty)
-                                                Icon(
-                                                  Icons.comment_outlined,
-                                                  size: 14,
-                                                  color: theme.colorScheme.onSurfaceVariant,
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: statusColor.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(6),
                                                 ),
+                                                child: Text(
+                                                  pStatus.toUpperCase(),
+                                                  style: TextStyle(
+                                                    color: statusColor,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),

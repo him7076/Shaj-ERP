@@ -253,7 +253,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
     ],
+    onException: (context, state, router) {
+      final uriStr = state.uri.toString();
+      if (uriStr.startsWith('content://') || uriStr.startsWith('file://')) {
+        router.go('/backup');
+      } else {
+        router.go('/dashboard');
+      }
+    },
     redirect: (context, state) {
+      final uriStr = state.uri.toString();
+      if (uriStr.startsWith('content://') || uriStr.startsWith('file://')) {
+        return '/backup';
+      }
+
       final authState = ref.read(authProvider);
       final status = authState.status;
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
@@ -13,6 +15,11 @@ import 'package:business_sahaj_erp/features/orders/presentation/screens/order_de
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/core/services/receipt_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
+import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 class TransactionsScreen extends ConsumerStatefulWidget {
   final String? lockedType;
@@ -264,6 +271,141 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 
+  Future<void> _downloadReceiptSampleExcel() async {
+    try {
+      final sampleBytes = ReceiptExcelImportService.generateSampleTemplate();
+      if (sampleBytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate sample template.')),
+        );
+        return;
+      }
+
+      await ExcelDownloadHelper.downloadExcel(
+        sampleBytes,
+        'Receipts_Import_Sample_Template.xlsx',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('📥 Sample Receipt Excel Template downloaded! Fill details and click Import Excel.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating sample Excel: $e')),
+      );
+    }
+  }
+
+  Future<void> _importReceiptExcel() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xlsx', 'xls'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final fileBytes = result.files.first.bytes;
+      if (fileBytes == null || fileBytes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not read the selected Excel file.')),
+        );
+        return;
+      }
+
+      final progressController = StreamController<ImportProgressState>.broadcast();
+      BuildContext? progressDialogContext;
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            progressDialogContext = ctx;
+            return ImportProgressModal(
+              title: 'Importing Receipts (Payment In)',
+              progressStream: progressController.stream,
+            );
+          },
+        );
+      }
+
+      final dbService = ref.read(databaseServiceProvider);
+      final importResult = await ReceiptExcelImportService.importReceiptsFromBytes(
+        fileBytes,
+        dbService,
+        onProgress: (current, total, statusMessage) {
+          progressController.add(ImportProgressState(
+            current: current,
+            total: total,
+            statusMessage: statusMessage,
+          ));
+        },
+      );
+
+      await progressController.close();
+      if (progressDialogContext != null && progressDialogContext!.mounted) {
+        Navigator.of(progressDialogContext!).pop();
+      }
+
+      ref.read(syncServiceProvider).syncAll();
+      ref.invalidate(filteredTransactionsProvider);
+      ref.invalidate(filteredPartiesProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(
+                  importResult.totalReceiptsImported > 0 ? Icons.check_circle : Icons.warning_amber_rounded,
+                  color: importResult.totalReceiptsImported > 0 ? Colors.green : Colors.amber,
+                  size: 28,
+                ),
+                const SizedBox(width: 10),
+                const Text('Receipts Excel Import', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('✨ Receipts Imported: ${importResult.totalReceiptsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  if (importResult.errors.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to import Excel file: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -323,6 +465,41 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               });
             },
           ),
+          if (widget.lockedType == 'Receipt' || widget.lockedType == null) ...[
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded, size: 20),
+              tooltip: 'Receipt Tools',
+              onSelected: (value) {
+                if (value == 'sample') {
+                  _downloadReceiptSampleExcel();
+                } else if (value == 'import') {
+                  _importReceiptExcel();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'sample',
+                  child: Row(
+                    children: [
+                      Icon(Icons.file_download_outlined, size: 18, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('Sample Excel Sheet'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'import',
+                  child: Row(
+                    children: [
+                      Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
+                      SizedBox(width: 8),
+                      Text('Import Excel Receipts'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(width: 4),
         ],
       ),

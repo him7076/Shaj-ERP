@@ -73,9 +73,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _loadItem() async {
     setState(() => _isLoading = true);
     try {
-      try {
-        await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
-      } catch (_) {}
       final repo = ref.read(itemRepositoryProvider);
       final isar = ref.read(databaseServiceProvider).isar;
       final fetchedItem = await repo.getByUuid(widget.itemUuid);
@@ -89,17 +86,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final itemName = fetchedItem.itemName?.trim().toLowerCase() ?? '';
         final itemUuid = fetchedItem.uuid;
 
-        // 1. Fetch Sales Invoices for this item
-        final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-        final matchedInvItems = allInvItems.where((ii) {
-          try { ii.item.loadSync(); } catch (_) {}
-          final linkedUuid = ii.item.value?.uuid;
-          if (linkedUuid != null && linkedUuid.isNotEmpty) {
-            return linkedUuid == itemUuid;
-          }
-          final iiName = ii.itemName?.trim().toLowerCase() ?? '';
-          return itemName.isNotEmpty && iiName == itemName;
-        }).toList();
+        // 1. Indexed query for Sales Invoices
+        final matchedInvItems = await isar.invoiceItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) {
+              var builder = q.itemIdEqualTo(fetchedItem.id);
+              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
+                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              }
+              return builder;
+            })
+            .findAll();
 
         for (var ii in matchedInvItems) {
           Invoice? inv;
@@ -123,17 +122,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
-        // 2. Fetch Purchase Bills for this item
-        final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
-        final matchedPurItems = allPurItems.where((pi) {
-          try { pi.item.loadSync(); } catch (_) {}
-          final linkedUuid = pi.item.value?.uuid;
-          if (linkedUuid != null && linkedUuid.isNotEmpty) {
-            return linkedUuid == itemUuid;
-          }
-          final piName = pi.itemName?.trim().toLowerCase() ?? '';
-          return itemName.isNotEmpty && piName == itemName;
-        }).toList();
+        // 2. Indexed query for Purchase Bills
+        final matchedPurItems = await isar.purchaseItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) {
+              var builder = q.itemIdEqualTo(fetchedItem.id);
+              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
+                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              }
+              return builder;
+            })
+            .findAll();
 
         for (var pi in matchedPurItems) {
           Purchase? pur;
@@ -157,17 +158,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
-        // 3. Fetch Orders for this item
-        final allOrdItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
-        final matchedOrdItems = allOrdItems.where((oi) {
-          try { oi.item.loadSync(); } catch (_) {}
-          final linkedUuid = oi.item.value?.uuid;
-          if (linkedUuid != null && linkedUuid.isNotEmpty) {
-            return linkedUuid == itemUuid;
-          }
-          final oiName = oi.itemName?.trim().toLowerCase() ?? '';
-          return itemName.isNotEmpty && oiName == itemName;
-        }).toList();
+        // 3. Indexed query for Orders
+        final matchedOrdItems = await isar.orderItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) {
+              var builder = q.itemIdEqualTo(fetchedItem.id);
+              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
+                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              }
+              return builder;
+            })
+            .findAll();
 
         for (var oi in matchedOrdItems) {
           Order? ord;
@@ -190,18 +193,22 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
-        // 4. Fetch Stock Adjustments for this item
-        final allAdjustments = await isar.collection<StockAdjustment>()
+        // 4. Indexed query for Stock Adjustments
+        final adjustments = await isar.collection<StockAdjustment>()
             .filter()
             .isDeletedEqualTo(false)
+            .and()
+            .group((q) {
+              var builder = q.itemIdEqualTo(fetchedItem.id);
+              if (itemUuid != null && itemUuid.isNotEmpty) {
+                builder = builder.or().itemUuidEqualTo(itemUuid);
+              }
+              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
+                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              }
+              return builder;
+            })
             .findAll();
-
-        final adjustments = allAdjustments.where((adj) {
-          final matchUuid = (adj.itemUuid != null && adj.itemUuid!.isNotEmpty && adj.itemUuid == itemUuid);
-          final matchId = (adj.itemId != null && adj.itemId == fetchedItem.id);
-          final matchName = (adj.itemName != null && fetchedItem.itemName != null && adj.itemName!.trim().toLowerCase() == fetchedItem.itemName!.trim().toLowerCase());
-          return matchUuid || matchId || matchName;
-        }).toList();
 
         for (var adj in adjustments) {
           final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
@@ -578,6 +585,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                                   'Reorder Level: ${item.reorderLevel ?? 0.0} | Min: ${item.minimumStock ?? 0.0}',
                                   style: theme.textTheme.bodySmall,
                                 ),
+                                const SizedBox(height: 4),
+                                () {
+                                  final double unitRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0);
+                                  final double stockValAmt = primaryStock <= 0 ? 0.0 : primaryStock * unitRate;
+                                  return Text(
+                                    'Total Stock Value: ${_currencyFormat.format(stockValAmt)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF10B981),
+                                    ),
+                                  );
+                                }(),
                               ],
                             ),
                           ),
@@ -738,15 +758,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Widget _buildImageHeader(Item item, ThemeData theme) {
     final images = item.imagePaths ?? [];
     if (images.isEmpty) {
-      return Container(
-        height: 180,
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-        child: Icon(
-          Icons.image_outlined,
-          size: 64,
-          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return SizedBox(

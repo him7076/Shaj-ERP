@@ -205,37 +205,26 @@ class _MyAppState extends ConsumerState<MyApp> {
       File? fileToRestore;
 
       if (uri.scheme == 'content' || uriStr.startsWith('content://')) {
-        final tempDir = await getTemporaryDirectory();
-        final targetPath = '${tempDir.path}/incoming_backup_${DateTime.now().millisecondsSinceEpoch}.sahaj';
-        final tempFile = File(targetPath);
-
-        final httpClient = HttpClient();
         try {
-          final request = await httpClient.getUrl(uri);
-          final response = await request.close();
-          final bytesBuilder = BytesBuilder();
-          await for (final chunk in response) {
-            bytesBuilder.add(chunk);
-          }
-          await tempFile.writeAsBytes(bytesBuilder.toBytes(), flush: true);
-          if (await tempFile.exists() && await tempFile.length() > 0) {
-            fileToRestore = tempFile;
-          }
-        } catch (_) {
-          if (uri.path.isNotEmpty) {
-            final rawFile = File(uri.path);
-            if (await rawFile.exists()) {
-              fileToRestore = rawFile;
+          const platform = MethodChannel('com.example.business_sahaj_erp/content_reader');
+          final Uint8List? bytes = await platform.invokeMethod<Uint8List>('readContentUriBytes', {'uri': uriStr});
+          if (bytes != null && bytes.isNotEmpty) {
+            final tempDir = await getTemporaryDirectory();
+            final targetPath = '${tempDir.path}/incoming_backup_${DateTime.now().millisecondsSinceEpoch}.sahaj';
+            final tempFile = File(targetPath);
+            await tempFile.writeAsBytes(bytes, flush: true);
+            if (await tempFile.exists() && await tempFile.length() > 0) {
+              fileToRestore = tempFile;
             }
           }
+        } catch (channelErr) {
+          debugPrint('[CONTENT METHODCHANNEL ERROR] $channelErr');
         }
       } else if (uri.scheme == 'file' || uriStr.startsWith('file://')) {
         final filePath = uri.toFilePath();
-        if (filePath.toLowerCase().endsWith('.sahaj') || filePath.toLowerCase().endsWith('.bserp')) {
-          final f = File(filePath);
-          if (await f.exists()) {
-            fileToRestore = f;
-          }
+        final f = File(filePath);
+        if (await f.exists()) {
+          fileToRestore = f;
         }
       } else if (uriStr.toLowerCase().endsWith('.sahaj') || uriStr.toLowerCase().endsWith('.bserp')) {
         final f = File(uri.path);

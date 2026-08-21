@@ -790,8 +790,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                       () {
                         final unitRate = buyRateCache[item.itemName?.trim().toLowerCase() ?? ''] 
                             ?? ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
+                        final double calculatedValue = stockVal <= 0 ? 0.0 : stockVal * unitRate;
                         return Text(
-                          'Val: ${currencyFormat.format(stockVal * unitRate)}',
+                          'Val: ${currencyFormat.format(calculatedValue)}',
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
