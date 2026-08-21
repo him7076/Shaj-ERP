@@ -27,14 +27,6 @@ subprojects {
                 android.namespace = "com.example." + project.name.replace("-", ".").replace("_", "")
             }
             android.compileSdkVersion(35)
-            android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
-            android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
-        }
-    }
-
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
 }
