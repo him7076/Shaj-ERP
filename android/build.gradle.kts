@@ -33,20 +33,6 @@ subprojects {
                 jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
             }
         }
-
-        val manifestFile = file("src/main/AndroidManifest.xml")
-        if (manifestFile.exists()) {
-            try {
-                var content = manifestFile.readText(Charsets.UTF_8)
-                if (content.contains("package=")) {
-                    val regex = Regex("""package="[^"]*"""")
-                    content = content.replace(regex, "")
-                    manifestFile.writeText(content, Charsets.UTF_8)
-                }
-            } catch (e: Exception) {
-                // Ignore
-            }
-        }
     }
 
     if (state.executed) {
