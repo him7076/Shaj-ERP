@@ -17,8 +17,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/screens/reports
 import 'package:business_sahaj_erp/features/settings/presentation/screens/settings_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/manage_categories_screen.dart';
 import 'package:business_sahaj_erp/features/bank/presentation/screens/manage_cash_and_bank_screen.dart';
-import 'package:business_sahaj_erp/features/settings/presentation/screens/backup_and_restore_screen.dart';
-import 'package:business_sahaj_erp/features/backup/presentation/screens/sync_center_screen.dart';
+import 'package:business_sahaj_erp/features/sync/presentation/screens/sync_center_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
@@ -53,14 +52,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     refreshListenable: refreshListenable,
     debugLogDiagnostics: true,
-    onException: (context, state, navigation) {
-      final uriStr = state.uri.toString();
-      if (uriStr.startsWith('content://') || (uriStr.startsWith('file://') && uriStr.endsWith('.bserp'))) {
-        // Redirect to splash so app boots cleanly while AppLinks listener prompts for restore
-        navigation.go('/splash');
-        return;
-      }
-    },
     routes: [
       GoRoute(
         path: '/splash',
@@ -154,11 +145,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/reports',
             name: 'reports',
             builder: (context, state) => const ReportsScreen(),
-          ),
-          GoRoute(
-            path: '/backup',
-            name: 'backup',
-            builder: (context, state) => const BackupAndRestoreScreen(),
           ),
           GoRoute(
             path: '/sync-center',

@@ -268,129 +268,12 @@ class DatabaseService {
     await init(_prefs);
   }
 
-  /// Copies a firm's binary .isar file to a destination path
-  Future<void> copyFirmDatabaseFile(String firmId, String destPath) async {
-    if (kIsWeb) return;
-    try {
-      final destFile = File(destPath);
-      if (await destFile.exists()) {
-        await destFile.delete();
-      }
-      if (_activeFirmId == firmId && _isar != null && _isar is! WebMockIsar) {
-        await _isar!.copyToFile(destPath);
-        return;
-      }
-      final instance = Isar.getInstance(firmId);
-      if (instance != null && instance.isOpen) {
-        await instance.copyToFile(destPath);
-        return;
-      }
-      final appDocsDir = await getApplicationDocumentsDirectory();
-      final sourceFile = File('${appDocsDir.path}/$firmId.isar');
-      if (await sourceFile.exists()) {
-        await sourceFile.copy(destPath);
-      }
-    } catch (e) {
-      logger.error('Failed to copy firm database file for $firmId', e);
-      rethrow;
-    }
-  }
-
   /// Switch active firm database
   Future<void> switchFirm(String newFirmId, SharedPreferences prefs) async {
     await close();
     _activeFirmId = newFirmId;
     await prefs.setString('active_firm_id', newFirmId);
     await init(prefs);
-  }
-
-  /// Purges all data in all collections
-  Future<void> clearDatabase() async {
-    logger.warning('Purging local database for $_activeFirmId...');
-    try {
-      await isar.writeTxn(() async {
-        await isar.clear();
-      });
-
-      if (kIsWeb) {
-        final webIsar = isar as WebMockIsar;
-        webIsar.clearAllData();
-      }
-
-      if (_prefs != null) {
-        await _prefs!.setBool('demo_seeded_$_activeFirmId', true);
-        final keys = _prefs!.getKeys().where((k) => k.contains(_activeFirmId)).toList();
-        for (var k in keys) {
-          if (!k.startsWith('firm_name_') && !k.startsWith('firm_gst_') && !k.startsWith('firm_mobile_') && k != 'demo_seeded_$_activeFirmId') {
-            await _prefs!.remove(k);
-          }
-        }
-      }
-      logger.info('Local database purged successfully.');
-    } catch (e, stackTrace) {
-      logger.error('Failed to purge local database', e, stackTrace);
-      rethrow;
-    }
-  }
-
-  /// Creates a backup file of the current .isar database
-  Future<void> backupDatabase(String destinationPath) async {
-    if (kIsWeb) {
-      throw UnsupportedError('Database backup is not supported on the web.');
-    }
-    logger.info('Backing up local database to: $destinationPath');
-    try {
-      final file = File(destinationPath);
-      // Ensure directory exists
-      final dir = file.parent;
-      if (!await dir.exists()) {
-        await dir.create(recursive: true);
-      }
-      // If destination file already exists, delete it first (Isar copy requires it)
-      if (await file.exists()) {
-        await file.delete();
-      }
-      
-      await isar.copyToFile(destinationPath);
-      logger.info('Database backup completed successfully.');
-    } catch (e, stackTrace) {
-      logger.error('Database backup failed', e, stackTrace);
-      rethrow;
-    }
-  }
-
-  /// Restores the database from a backup file
-  Future<void> restoreDatabase(String sourcePath) async {
-    if (kIsWeb) {
-      throw UnsupportedError('Database restore is not supported on the web.');
-    }
-    logger.warning('Restoring database from backup: $sourcePath');
-    try {
-      final sourceFile = File(sourcePath);
-      if (!await sourceFile.exists()) {
-        throw FileNotFoundException('Backup file not found at: $sourcePath');
-      }
-
-      final dir = await getApplicationDocumentsDirectory();
-      final activeDbPath = '${dir.path}/default.isar';
-
-      // 1. Close current Isar connection
-      await close();
-
-      // 2. Overwrite default.isar with backup
-      final activeFile = File(activeDbPath);
-      if (await activeFile.exists()) {
-        await activeFile.delete();
-      }
-      await sourceFile.copy(activeDbPath);
-      logger.info('Database restore complete. Re-opening connection...');
-
-      // 3. Reinitialize Isar
-      await init();
-    } catch (e, stackTrace) {
-      logger.error('Database restore failed', e, stackTrace);
-      rethrow;
-    }
   }
 
   /// Cascading rename Party Name across all transactions, invoices, purchases, orders, credit notes, and debit notes
