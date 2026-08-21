@@ -472,8 +472,8 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
           // List Body
           Expanded(
             child: _isNearbyMode
-                ? _buildNearbyListView(nearbyPartiesAsync)
-                : _buildStandardListView(partiesFuture),
+                ? _buildNearbyListView(nearbyPartiesAsync, balanceCache)
+                : _buildStandardListView(partiesFuture, balanceCache),
           ),
         ],
       ),
@@ -494,7 +494,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     );
   }
 
-  Widget _buildStandardListView(AsyncValue<List<Party>> partiesFuture) {
+  Widget _buildStandardListView(AsyncValue<List<Party>> partiesFuture, Map<String, double> balanceCache) {
     return partiesFuture.when(
       data: (list) {
         if (list.isEmpty) {
@@ -524,7 +524,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     );
   }
 
-  Widget _buildNearbyListView(AsyncValue<List<NearbyParty>> nearbyAsync) {
+  Widget _buildNearbyListView(AsyncValue<List<NearbyParty>> nearbyAsync, Map<String, double> balanceCache) {
     return nearbyAsync.when(
       data: (list) {
         if (list.isEmpty) {

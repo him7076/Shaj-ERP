@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
@@ -237,7 +239,7 @@ final itemCartNotifierProvider = StateNotifierProvider<ItemCartNotifier, Map<Str
 final itemBuyRateCacheProvider = FutureProvider<Map<String, double>>((ref) async {
   final isar = ref.watch(isarProvider);
 
-  final purchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+  final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
 
   final Map<String, double> totalAmtMap = {};
   final Map<String, double> totalQtyMap = {};
