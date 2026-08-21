@@ -16,7 +16,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.business_sahaj_erp"
-    compileSdk = 35
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -27,8 +27,8 @@ android {
     defaultConfig {
         // Application ID matched to previous release for in-place overwrite updates
         applicationId = "com.sahaj.business_sahaj_erp"
-        minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        minSdk = 21
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
