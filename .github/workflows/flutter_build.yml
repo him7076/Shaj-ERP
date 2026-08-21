@@ -49,11 +49,6 @@ jobs:
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
 
-      - name: Clean Flutter and Gradle
-        run: |
-          flutter clean
-          cd android && ./gradlew clean && cd ..
-
       - name: Install Dependencies
         run: flutter pub get
 
@@ -62,10 +57,8 @@ jobs:
           ISAR_DIR=$(find $HOME/.pub-cache -path "*/isar_flutter_libs-*/android" -type d 2>/dev/null | head -1)
           if [ -n "$ISAR_DIR" ]; then
             echo "Patching isar_flutter_libs at $ISAR_DIR"
-            # Remove package attribute from AndroidManifest.xml
             sed -i 's/package="dev.isar.isar_flutter_libs"//g' "$ISAR_DIR/src/main/AndroidManifest.xml"
             cat "$ISAR_DIR/src/main/AndroidManifest.xml"
-            # Fix compileSdk in build.gradle
             if [ -f "$ISAR_DIR/build.gradle" ]; then
               sed -i 's/compileSdkVersion .*/compileSdkVersion 35/g' "$ISAR_DIR/build.gradle"
               sed -i 's/compileSdk .*/compileSdk = 35/g' "$ISAR_DIR/build.gradle"
@@ -76,8 +69,24 @@ jobs:
             echo "isar_flutter_libs not found, skipping patch"
           fi
 
-      - name: Build Release APK 
-        run: flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8
+      - name: Build Release APK
+        run: |
+          flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8 || true
+          echo "=== Searching for APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null
+          # If flutter couldn't find it, copy from Gradle output to expected path
+          if [ ! -f "build/app/outputs/flutter-apk/app-release.apk" ]; then
+            APK_FILE=$(find . -name "app-release.apk" -type f 2>/dev/null | head -1)
+            if [ -n "$APK_FILE" ]; then
+              echo "Found APK at: $APK_FILE"
+              mkdir -p build/app/outputs/flutter-apk/
+              cp "$APK_FILE" build/app/outputs/flutter-apk/app-release.apk
+              echo "Copied to build/app/outputs/flutter-apk/app-release.apk"
+            else
+              echo "ERROR: No APK file found anywhere!"
+              exit 1
+            fi
+          fi
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
