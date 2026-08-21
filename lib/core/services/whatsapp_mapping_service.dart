@@ -579,8 +579,32 @@ class WhatsappMappingService {
 
     final double pcsPerBundle = (mapping != null && mapping.pcsPerBundle > 0) ? mapping.pcsPerBundle : 1.0;
 
-    final double defaultRate = item.sellRate ?? 0.0;
-    final double baseCartonRate = (mapping != null && mapping.customRate > 0) ? mapping.customRate : defaultRate;
+    // 1. Calculate per-PCS rate from mapping customRate & rateUnit (or item default sellRate)
+    double pcsRate = 0.0;
+
+    if (mapping != null && mapping.customRate > 0) {
+      final double userRate = mapping.customRate;
+      final String userUnit = mapping.rateUnit ?? primaryName;
+
+      if (userUnit == secondaryName) {
+        // User specified rate per Bundle
+        pcsRate = pcsPerBundle > 0 ? (userRate / pcsPerBundle) : userRate;
+      } else if (userUnit == 'PCS' || userUnit == 'Pcs' || userUnit == 'Pcs.') {
+        // User specified rate per PCS
+        pcsRate = userRate;
+      } else {
+        // User specified rate per Primary Unit / Carton
+        pcsRate = pcsPerCarton > 0 ? (userRate / pcsPerCarton) : userRate;
+      }
+    } else {
+      // Default to item's sellRate (which is per Primary Unit / Carton)
+      final double defaultCartonRate = item.sellRate ?? 0.0;
+      pcsRate = pcsPerCarton > 0 ? (defaultCartonRate / pcsPerCarton) : defaultCartonRate;
+    }
+
+    // 2. Compute exact rate for each unit type
+    final double cartonRate = pcsRate * pcsPerCarton;
+    final double bundleRate = pcsRate * pcsPerBundle;
 
     // a. Check Carton (Primary Unit) divisible
     if (pcsPerCarton > 0 && (rawPcsQty % pcsPerCarton == 0)) {
@@ -588,13 +612,12 @@ class WhatsappMappingService {
         unitName: primaryName,
         isSecondaryUnit: false,
         convertedQuantity: rawPcsQty / pcsPerCarton,
-        effectiveRate: baseCartonRate,
+        effectiveRate: cartonRate,
       );
     }
 
     // b. Check Bundle (Secondary Unit) divisible
     if (pcsPerBundle > 0 && (rawPcsQty % pcsPerBundle == 0)) {
-      final double bundleRate = pcsPerCarton > 0 ? (baseCartonRate / pcsPerCarton * pcsPerBundle) : baseCartonRate;
       return ConvertedUnitResult(
         unitName: secondaryName,
         isSecondaryUnit: true,
@@ -605,7 +628,7 @@ class WhatsappMappingService {
 
     // c. Fallback to Secondary Unit / Pcs
     final double fallbackQty = pcsPerBundle > 0 ? (rawPcsQty / pcsPerBundle) : rawPcsQty;
-    final double unitRate = pcsPerCarton > 0 ? (baseCartonRate / pcsPerCarton) : baseCartonRate;
+    final double unitRate = pcsPerBundle > 0 ? bundleRate : pcsRate;
 
     return ConvertedUnitResult(
       unitName: secondaryName,

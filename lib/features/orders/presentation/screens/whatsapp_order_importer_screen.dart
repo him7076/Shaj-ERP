@@ -71,30 +71,38 @@ class _MappedRowState {
         ? mappingRule!.pcsPerBundle
         : 1.0;
 
-    final double baseCartonRate = (mappingRule != null && mappingRule!.customRate > 0)
-        ? mappingRule!.customRate
-        : (item.sellRate ?? 0.0);
+    double pcsRate = 0.0;
+    if (mappingRule != null && mappingRule!.customRate > 0) {
+      final userRate = mappingRule!.customRate;
+      final userUnit = mappingRule!.rateUnit ?? primaryUnit;
+
+      if (userUnit == secondaryUnit) {
+        pcsRate = pcsPerBundle > 0 ? (userRate / pcsPerBundle) : userRate;
+      } else if (userUnit == 'PCS' || userUnit == 'Pcs' || userUnit == 'Pcs.') {
+        pcsRate = userRate;
+      } else {
+        pcsRate = pcsPerCarton > 0 ? (userRate / pcsPerCarton) : userRate;
+      }
+    } else {
+      final defaultCartonRate = item.sellRate ?? 0.0;
+      pcsRate = pcsPerCarton > 0 ? (defaultCartonRate / pcsPerCarton) : defaultCartonRate;
+    }
+
+    final double cartonRate = pcsRate * pcsPerCarton;
+    final double bundleRate = pcsRate * pcsPerBundle;
 
     if (newUnit == primaryUnit) {
       isSecondaryUnit = false;
-      rate = baseCartonRate;
+      rate = cartonRate;
     } else if (newUnit == secondaryUnit) {
       isSecondaryUnit = true;
-      if (pcsPerCarton > 0 && pcsPerBundle > 0) {
-        rate = (baseCartonRate / pcsPerCarton) * pcsPerBundle;
-      } else {
-        rate = baseCartonRate;
-      }
+      rate = bundleRate;
     } else if (newUnit == 'PCS' || newUnit == 'Pcs' || newUnit == 'Pcs.') {
       isSecondaryUnit = true;
-      if (pcsPerCarton > 0) {
-        rate = baseCartonRate / pcsPerCarton;
-      } else {
-        rate = baseCartonRate;
-      }
+      rate = pcsRate;
     } else {
       isSecondaryUnit = false;
-      rate = baseCartonRate;
+      rate = cartonRate;
     }
 
     syncControllers();
@@ -374,11 +382,11 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                   initialValue: TextEditingValue(text: localSelectedParty?.partyName ?? ''),
                   displayStringForOption: (Party p) => '${p.partyName ?? "Party"} (${p.mobileNumber ?? "No Mob"})',
                   optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty) return _allParties;
+                    if (textEditingValue.text.isEmpty) return _allParties.take(25);
                     final q = textEditingValue.text.toLowerCase();
                     return _allParties.where((p) =>
                         (p.partyName ?? '').toLowerCase().contains(q) ||
-                        (p.mobileNumber ?? '').contains(q));
+                        (p.mobileNumber ?? '').contains(q)).take(25);
                   },
                   onSelected: (Party selection) {
                     setModalState(() => localSelectedParty = selection);
@@ -490,9 +498,9 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
                     displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})',
                     optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) return _allItems;
+                      if (textEditingValue.text.isEmpty) return _allItems.take(25);
                       final q = textEditingValue.text.toLowerCase();
-                      return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                      return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q)).take(25);
                     },
                     onSelected: (Item selection) {
                       setModalState(() {
@@ -1044,11 +1052,11 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                               initialValue: TextEditingValue(text: _selectedParty?.partyName ?? ''),
                               displayStringForOption: (Party p) => '${p.partyName ?? "Party"} (${p.mobileNumber ?? "No Mob"})',
                               optionsBuilder: (TextEditingValue textEditingValue) {
-                                if (textEditingValue.text.isEmpty) return _allParties;
+                                if (textEditingValue.text.isEmpty) return _allParties.take(25);
                                 final q = textEditingValue.text.toLowerCase();
                                 return _allParties.where((p) =>
                                     (p.partyName ?? '').toLowerCase().contains(q) ||
-                                    (p.mobileNumber ?? '').contains(q));
+                                    (p.mobileNumber ?? '').contains(q)).take(25);
                               },
                               onSelected: (Party selection) {
                                 setState(() => _selectedParty = selection);
@@ -1275,9 +1283,9 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                       initialValue: TextEditingValue(text: row.selectedItem?.itemName ?? ''),
                                       displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (Rate: ₹${i.sellRate ?? 0})',
                                       optionsBuilder: (TextEditingValue textEditingValue) {
-                                        if (textEditingValue.text.isEmpty) return _allItems;
+                                        if (textEditingValue.text.isEmpty) return _allItems.take(25);
                                         final q = textEditingValue.text.toLowerCase();
-                                        return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q));
+                                        return _allItems.where((i) => (i.itemName ?? '').toLowerCase().contains(q)).take(25);
                                       },
                                       onSelected: (Item selection) {
                                         setState(() {
