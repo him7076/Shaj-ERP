@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/party_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/party_repository_impl.dart';
 import 'package:business_sahaj_erp/data/local/party_local_data_source.dart';
 import 'package:business_sahaj_erp/data/remote/party_remote_data_source.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:isar/isar.dart';
 
 // Local DataSource Provider
 final partyLocalDataSourceProvider = Provider<PartyLocalDataSource>((ref) {
@@ -144,4 +147,36 @@ final nearbyPartyProvider = StateNotifierProvider<NearbyPartyNotifier, AsyncValu
 final partiesListProvider = FutureProvider<List<Party>>((ref) async {
   final repo = ref.watch(partyRepositoryProvider);
   return repo.getAll();
+});
+
+// Pre-computed party balance cache — built ONCE, used by all party cards instantly
+// Eliminates per-card FutureBuilder N+1 full-table-scan queries
+final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) async {
+  final isar = ref.watch(isarProvider);
+
+  final Map<String, double> balanceMap = {};
+
+  // Customer receivables from invoices (single pass)
+  final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+  for (var inv in invoices) {
+    if (inv.paymentStatus == 'Cancelled') continue;
+    final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
+    if (pending > 0 && inv.partyName != null && inv.partyName!.trim().isNotEmpty) {
+      final key = inv.partyName!.trim().toLowerCase();
+      balanceMap[key] = (balanceMap[key] ?? 0.0) + pending;
+    }
+  }
+
+  // Supplier payables from purchases (single pass, separate key prefix)
+  final purchases = await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll();
+  for (var pur in purchases) {
+    if (pur.paymentStatus == 'Cancelled') continue;
+    final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+    if (pending > 0 && pur.partyName != null && pur.partyName!.trim().isNotEmpty) {
+      final key = 'supp_${pur.partyName!.trim().toLowerCase()}';
+      balanceMap[key] = (balanceMap[key] ?? 0.0) + pending;
+    }
+  }
+
+  return balanceMap;
 });

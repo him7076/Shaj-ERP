@@ -86,6 +86,7 @@ class SyncService {
   final SharedPreferences _prefs;
 
   final _stateController = StreamController<SyncState>.broadcast();
+  bool _isRecalculating = false; // Lock flag to prevent concurrent stock recalculations
   SyncState _currentState = const SyncState(
     status: SyncStatus.idle,
     message: 'System ready for sync',
@@ -1523,6 +1524,11 @@ class SyncService {
   /// Dynamically computes real current stock for all items from local transactions:
   /// Current Stock = (openingStock ?? 0) + (Purchases) - (Sales) + (Sales Returns) - (Purchase Returns)
   Future<void> recalculateAllItemStocksFromTransactions() async {
+    if (_isRecalculating) {
+      logger.info('Stock recalculation already in progress, skipping duplicate run.');
+      return;
+    }
+    _isRecalculating = true;
     final isar = _dbService.isar;
     logger.info('Recalculating item stocks dynamically from local transactions...');
 
@@ -1664,6 +1670,8 @@ class SyncService {
       logger.info('Recalculated stocks for ${allItems.length} items from local transactions successfully.');
     } catch (e, stackTrace) {
       logger.error('Failed to recalculate item stocks from transactions', e, stackTrace);
+    } finally {
+      _isRecalculating = false;
     }
   }
 

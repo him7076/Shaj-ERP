@@ -231,3 +231,35 @@ class ItemCartNotifier extends StateNotifier<Map<String, int>> {
 final itemCartNotifierProvider = StateNotifierProvider<ItemCartNotifier, Map<String, int>>((ref) {
   return ItemCartNotifier();
 });
+
+// Pre-computed weighted average buy rate cache — built ONCE, used by all item cards instantly
+// Eliminates per-card FutureBuilder N+1 full-table-scan queries
+final itemBuyRateCacheProvider = FutureProvider<Map<String, double>>((ref) async {
+  final isar = ref.watch(isarProvider);
+
+  final purchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+
+  final Map<String, double> totalAmtMap = {};
+  final Map<String, double> totalQtyMap = {};
+
+  for (var pi in purchaseItems) {
+    final key = pi.itemName?.trim().toLowerCase() ?? '';
+    if (key.isEmpty) continue;
+    final q = pi.quantity ?? 0.0;
+    final r = pi.rate ?? 0.0;
+    if (q > 0) {
+      totalAmtMap[key] = (totalAmtMap[key] ?? 0.0) + (q * r);
+      totalQtyMap[key] = (totalQtyMap[key] ?? 0.0) + q;
+    }
+  }
+
+  final Map<String, double> rateMap = {};
+  for (var key in totalAmtMap.keys) {
+    final qty = totalQtyMap[key] ?? 0.0;
+    if (qty > 0) {
+      rateMap[key] = totalAmtMap[key]! / qty;
+    }
+  }
+
+  return rateMap;
+});

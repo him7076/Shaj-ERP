@@ -40,13 +40,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      try {
-        ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions().then((_) {
-          if (mounted) ref.invalidate(filteredItemsProvider);
-        });
-      } catch (_) {}
-    });
+    // Stock recalculation REMOVED from initState — it was loading 8 full DB collections
+    // and running O(N*M) nested loops on every screen open (3-10s freeze).
+    // Stock is now only recalculated after backup restore, Excel import, or cloud sync.
   }
 
   @override
@@ -224,6 +220,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     final lowStockAsync = ref.watch(lowStockAlertProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
     final brandsAsync = ref.watch(brandsListProvider);
+    final buyRateCache = ref.watch(itemBuyRateCacheProvider).valueOrNull ?? {};
 
     // Responsive grid columns
     final screenWidth = MediaQuery.of(context).size.width;
@@ -464,7 +461,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         itemCount: visibleList.length,
                         itemBuilder: (context, index) {
                           final item = visibleList[index];
-                          return _buildProductCard(item, theme);
+                          return _buildProductCard(item, theme, buyRateCache: buyRateCache);
                         },
                       ),
                     ),
@@ -668,7 +665,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     );
   }
 
-  Widget _buildProductCard(Item item, ThemeData theme) {
+  Widget _buildProductCard(Item item, ThemeData theme, {Map<String, double> buyRateCache = const {}}) {
     final rawCurrent = item.currentStock ?? 0.0;
     final rawOpening = item.openingStock ?? 0.0;
     final stockVal = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
@@ -790,20 +787,18 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                           color: theme.colorScheme.primary,
                         ),
                       ),
-                      FutureBuilder<double>(
-                        future: _getEffectiveBuyRate(item),
-                        builder: (context, snapshot) {
-                          final unitRate = snapshot.data ?? ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
-                          return Text(
-                            'Val: ${currencyFormat.format(stockVal * unitRate)}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF10B981),
-                            ),
-                          );
-                        },
-                      ),
+                      () {
+                        final unitRate = buyRateCache[item.itemName?.trim().toLowerCase() ?? ''] 
+                            ?? ((item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : (item.sellRate ?? 0.0));
+                        return Text(
+                          'Val: ${currencyFormat.format(stockVal * unitRate)}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10B981),
+                          ),
+                        );
+                      }(),
                     ],
                   ),
                   Container(
@@ -916,58 +911,5 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     return fallbackVal < 0 ? 0.0 : fallbackVal;
   }
 
-  Future<double> _getEffectiveBuyRate(Item item) async {
-    try {
-      final isar = ref.read(databaseServiceProvider).isar;
-      final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
-      
-      double totalAmt = 0.0;
-      double totalQty = 0.0;
-
-      for (var pi in purchaseItems) {
-        try { await pi.item.load(); } catch (_) {}
-        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && pi.item.value?.uuid == item.uuid;
-        final matchName = pi.itemName != null && item.itemName != null && pi.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
-        final matchId = pi.itemId != null && pi.itemId! > 0 && pi.itemId == item.id;
-
-        if (matchUuid || matchName || matchId) {
-          final q = pi.quantity ?? 0.0;
-          final r = pi.rate ?? 0.0;
-          if (q > 0) {
-            totalAmt += (q * r);
-            totalQty += q;
-          }
-        }
-      }
-
-      final adjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
-      for (var sa in adjustments) {
-        final isAdd = sa.adjustmentType == 'Add' || sa.adjustmentType == 'Stock In';
-        if (!isAdd) continue;
-
-        final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && sa.itemUuid == item.uuid;
-        final matchName = sa.itemName != null && item.itemName != null && sa.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
-        final matchId = sa.itemId != null && sa.itemId! > 0 && sa.itemId == item.id;
-
-        if (matchUuid || matchName || matchId) {
-          final q = sa.quantity ?? 0.0;
-          final r = sa.ratePerUnit ?? 0.0;
-          if (q > 0 && r > 0) {
-            totalAmt += (q * r);
-            totalQty += q;
-          }
-        }
-      }
-
-      if (totalQty > 0) {
-        return totalAmt / totalQty; // Dynamic Weighted Average Purchase Rate
-      }
-    } catch (_) {}
-
-    return (item.buyRate != null && item.buyRate! > 0)
-        ? item.buyRate!
-        : (item.wholesaleRate != null && item.wholesaleRate! > 0)
-            ? item.wholesaleRate!
-            : (item.sellRate ?? 0.0);
-  }
+  // _getEffectiveBuyRate REMOVED — replaced by itemBuyRateCacheProvider (single-pass cache)
 }

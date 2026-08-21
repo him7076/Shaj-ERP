@@ -235,3 +235,20 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
 
   return list;
 });
+
+// Lightweight provider for Dashboard "Recent Transactions" widget ONLY.
+// OPTIMIZED: Dashboard was using filteredTransactionsProvider which loads
+// ALL parties + ALL transactions + ALL invoices + ALL orders + ALL purchases
+// on every dashboard render. This provider only fetches the last 10 transactions.
+final recentTransactionsProvider = FutureProvider<List<Transaction>>((ref) async {
+  final isar = ref.watch(isarProvider);
+
+  // Only fetch last 10 transactions sorted by date descending — instant response
+  final recent = await isar.transactions.filter()
+      .isDeletedEqualTo(false)
+      .sortByTransactionDateDesc()
+      .limit(10)
+      .findAll();
+
+  return recent;
+});

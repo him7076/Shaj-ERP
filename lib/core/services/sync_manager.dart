@@ -70,8 +70,9 @@ class SyncManager {
   }
 
   void _triggerStartupSync() {
-    // Delay 3 seconds after boot so UI & dashboard render instantly first
-    Future.delayed(const Duration(seconds: 3), () {
+    // Delay 10 seconds after boot so UI & dashboard render instantly first
+    // Before: 3s was too aggressive, sync DB operations competed with UI thread
+    Future.delayed(const Duration(seconds: 10), () {
       Connectivity().checkConnectivity().then((results) {
         final isOnline = results.any((result) => result != ConnectivityResult.none);
         if (isOnline) {

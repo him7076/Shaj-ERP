@@ -10,6 +10,9 @@ class LiquidGlassCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? accentGlowColor;
   final Border? customBorder;
+  /// When true, skips BackdropFilter to avoid GPU overdraw in scrolling lists.
+  /// Use lightweight: true inside ListView/GridView items for smooth 60fps scroll.
+  final bool lightweight;
 
   const LiquidGlassCard({
     Key? key,
@@ -21,6 +24,7 @@ class LiquidGlassCard extends StatelessWidget {
     this.onTap,
     this.accentGlowColor,
     this.customBorder,
+    this.lightweight = false,
   }) : super(key: key);
 
   @override
@@ -53,6 +57,12 @@ class LiquidGlassCard extends StatelessWidget {
           width: 1.2,
         );
 
+    final innerDecoration = BoxDecoration(
+      gradient: baseGradient,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: borderColor,
+    );
+
     Widget cardContent = Container(
       margin: margin,
       decoration: BoxDecoration(
@@ -73,18 +83,22 @@ class LiquidGlassCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Container(
-            padding: padding,
-            decoration: BoxDecoration(
-              gradient: baseGradient,
-              borderRadius: BorderRadius.circular(borderRadius),
-              border: borderColor,
-            ),
-            child: child,
-          ),
-        ),
+        child: lightweight
+            // Lightweight mode: skip BackdropFilter for smooth scrolling in lists
+            ? Container(
+                padding: padding,
+                decoration: innerDecoration,
+                child: child,
+              )
+            // Full mode: use BackdropFilter for premium static cards (dashboard, dialogs)
+            : BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                child: Container(
+                  padding: padding,
+                  decoration: innerDecoration,
+                  child: child,
+                ),
+              ),
       ),
     );
 
@@ -102,3 +116,4 @@ class LiquidGlassCard extends StatelessWidget {
     return cardContent;
   }
 }
+

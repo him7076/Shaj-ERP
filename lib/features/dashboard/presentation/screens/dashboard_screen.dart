@@ -237,7 +237,7 @@ class DashboardScreen extends ConsumerWidget {
                 // Real Recent Activity Timeline Card
                 Consumer(
                   builder: (context, ref, _) {
-                    final txsAsync = ref.watch(filteredTransactionsProvider);
+                    final txsAsync = ref.watch(recentTransactionsProvider);
                     return AnimatedHoverCard(
                       glowColor: theme.colorScheme.primary,
                       enableScale: false,

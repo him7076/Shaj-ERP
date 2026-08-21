@@ -92,68 +92,25 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .statusEqualTo('Pending')
         .count();
 
-    // 4. Receivables and Payables outstanding
+    // 4. Receivables and Payables — use Party.outstandingBalance directly
+    // OPTIMIZED: Previous code loaded ALL invoices + ALL purchases + ran party.load()
+    // per record in nested loops. Now uses pre-stored balance on Party collection.
     final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
-    final Map<String, double> partyNameToDue = {};
-    final Map<String, double> customerUuidDues = {};
-    final Map<String, double> supplierUuidDues = {};
-
-    for (var inv in allInvoices) {
-      if (inv.paymentStatus == 'Cancelled') continue;
-      final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
-      if (pending > 0) {
-        try { await inv.party.load(); } catch (_) {}
-        final pUuid = inv.party.value?.uuid;
-        if (pUuid != null && pUuid.isNotEmpty) {
-          customerUuidDues[pUuid] = (customerUuidDues[pUuid] ?? 0.0) + pending;
-        }
-        if (inv.partyName != null && inv.partyName!.trim().isNotEmpty) {
-          final pNameKey = inv.partyName!.trim().toLowerCase();
-          partyNameToDue['cust_$pNameKey'] = (partyNameToDue['cust_$pNameKey'] ?? 0.0) + pending;
-        }
-      }
-    }
-
-    for (var pur in allPurchases) {
-      if (pur.paymentStatus == 'Cancelled') continue;
-      final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
-      if (pending > 0) {
-        try { await pur.party.load(); } catch (_) {}
-        final pUuid = pur.party.value?.uuid;
-        if (pUuid != null && pUuid.isNotEmpty) {
-          supplierUuidDues[pUuid] = (supplierUuidDues[pUuid] ?? 0.0) + pending;
-        }
-        if (pur.partyName != null && pur.partyName!.trim().isNotEmpty) {
-          final pNameKey = pur.partyName!.trim().toLowerCase();
-          partyNameToDue['supp_$pNameKey'] = (partyNameToDue['supp_$pNameKey'] ?? 0.0) + pending;
-        }
-      }
-    }
 
     double totalOutstanding = 0.0;
     double totalPayable = 0.0;
 
     for (var p in parties) {
-      final pUuid = p.uuid;
-      final pNameKey = p.partyName?.trim().toLowerCase() ?? '';
-
-      final uCustDue = pUuid != null && pUuid.isNotEmpty ? (customerUuidDues[pUuid] ?? 0.0) : 0.0;
-      final nCustDue = pNameKey.isNotEmpty ? (partyNameToDue['cust_$pNameKey'] ?? 0.0) : 0.0;
-      final custDue = uCustDue > 0 ? uCustDue : nCustDue;
-
-      final uSuppDue = pUuid != null && pUuid.isNotEmpty ? (supplierUuidDues[pUuid] ?? 0.0) : 0.0;
-      final nSuppDue = pNameKey.isNotEmpty ? (partyNameToDue['supp_$pNameKey'] ?? 0.0) : 0.0;
-      final suppDue = uSuppDue > 0 ? uSuppDue : nSuppDue;
-
+      final bal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
+      if (bal <= 0) continue;
+      
       final pType = (p.partyType ?? '').trim().toLowerCase();
-      final isSupp = pType == 'supplier' || pType == 'vendor' || pType == 'both' || p.balanceType == 'credit' || suppDue > 0;
+      final isSupp = pType == 'supplier' || pType == 'vendor' || p.balanceType == 'credit';
 
       if (isSupp) {
-        final due = suppDue > 0 ? suppDue : (p.outstandingBalance ?? p.openingBalance ?? 0.0);
-        if (due > 0) totalPayable += due;
+        totalPayable += bal;
       } else {
-        final due = custDue > 0 ? custDue : (p.outstandingBalance ?? p.openingBalance ?? 0.0);
-        if (due > 0) totalOutstanding += due;
+        totalOutstanding += bal;
       }
     }
 
@@ -205,27 +162,24 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     }).toList();
     topCustomers.sort((a, b) => b.revenue.compareTo(a.revenue));
 
-    // 7. Top Products (last 30 days)
+    // 7. Top Products (last 30 days) — single bulk query instead of per-invoice N+1
+    final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+    final recentInvIds = recentInvoices.map((i) => i.id).toSet();
+    
     final Map<String, _ProductAggregate> productMap = {};
-    for (var inv in recentInvoices) {
-      final invoiceItems = await isar.invoiceItems
-          .filter()
-          .parentInvoiceIdEqualTo(inv.id)
-          .and()
-          .isDeletedEqualTo(false)
-          .findAll();
+    for (var item in allInvItems) {
+      // Only include items belonging to recent invoices
+      if (item.parentInvoiceId == null || !recentInvIds.contains(item.parentInvoiceId)) continue;
+      
+      final name = item.itemName ?? 'Unknown Product';
+      final qty = (item.quantity ?? 0.0) + (item.freeQuantity ?? 0.0);
+      final revenue = item.totalAmount ?? 0.0;
 
-      for (var item in invoiceItems) {
-        final name = item.itemName ?? 'Unknown Product';
-        final qty = (item.quantity ?? 0.0) + (item.freeQuantity ?? 0.0);
-        final revenue = item.totalAmount ?? 0.0;
-
-        if (productMap.containsKey(name)) {
-          productMap[name]!.qty += qty;
-          productMap[name]!.revenue += revenue;
-        } else {
-          productMap[name] = _ProductAggregate(name, qty, revenue);
-        }
+      if (productMap.containsKey(name)) {
+        productMap[name]!.qty += qty;
+        productMap[name]!.revenue += revenue;
+      } else {
+        productMap[name] = _ProductAggregate(name, qty, revenue);
       }
     }
 
