@@ -34,6 +34,13 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Create local.properties
+        run: |
+          cd android
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          echo "flutter.sdk=$FLUTTER_HOME" >> local.properties
+          cd ..
+
       - name: Make Gradlew Executable
         run: chmod +x android/gradlew
 
