@@ -36,7 +36,8 @@ android {
     defaultConfig {
         // Application ID matched to previous release for in-place overwrite updates
         applicationId = "com.sahaj.business_sahaj_erp"
-        minSdk = 23
+        val customMinSdk: Int = 23
+        minSdk = customMinSdk
         targetSdk = 34
         versionCode = flutterVersionCode
         versionName = flutterVersionName
