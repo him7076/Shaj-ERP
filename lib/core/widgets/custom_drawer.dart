@@ -341,6 +341,14 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
+                    icon: Icons.sd_storage_rounded,
+                    label: 'Backup & Restore (.sahaj)',
+                    routePath: '/backup',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
                     icon: Icons.settings_rounded,
                     label: 'Settings',
                     routePath: '/settings',
@@ -470,6 +478,7 @@ class CustomDrawer extends ConsumerWidget {
       case '/bulk-item-edit': return const Color(0xFFF59E0B);
       case '/reports': return const Color(0xFF06B6D4);
       case '/sync-center': return const Color(0xFF10B981);
+      case '/backup': return const Color(0xFF8B5CF6);
       case '/settings': return const Color(0xFF64748B);
       default: return const Color(0xFF6366F1);
     }

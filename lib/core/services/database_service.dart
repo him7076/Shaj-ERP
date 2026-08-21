@@ -268,6 +268,111 @@ class DatabaseService {
     await init(_prefs);
   }
 
+  /// Exports all database collections for firmId to a JSON Map
+  Future<Map<String, dynamic>> exportCollectionsToJson([String? targetFirmId]) async {
+    final firm = targetFirmId ?? _activeFirmId;
+    if (kIsWeb) {
+      if (_isar is WebMockIsar) {
+        return (_isar as WebMockIsar).exportCollectionsJson();
+      }
+      return {};
+    }
+    final Map<String, dynamic> result = {};
+    try {
+      final parties = await isar.partys.where().exportJson();
+      final items = await isar.items.where().exportJson();
+      final invoices = await isar.invoices.where().exportJson();
+      final invoiceItems = await isar.invoiceItems.where().exportJson();
+      final purchases = await isar.purchases.where().exportJson();
+      final purchaseItems = await isar.purchaseItems.where().exportJson();
+      final orders = await isar.orders.where().exportJson();
+      final orderItems = await isar.orderItems.where().exportJson();
+      final expenses = await isar.expenses.where().exportJson();
+      final transactions = await isar.transactions.where().exportJson();
+      final categories = await isar.categorys.where().exportJson();
+      final brands = await isar.brands.where().exportJson();
+      final units = await isar.units.where().exportJson();
+      final bankAccounts = await isar.bankAccounts.where().exportJson();
+
+      result['partys'] = parties;
+      result['items'] = items;
+      result['invoices'] = invoices;
+      result['invoiceItems'] = invoiceItems;
+      result['purchases'] = purchases;
+      result['purchaseItems'] = purchaseItems;
+      result['orders'] = orders;
+      result['orderItems'] = orderItems;
+      result['expenses'] = expenses;
+      result['transactions'] = transactions;
+      result['categorys'] = categories;
+      result['brands'] = brands;
+      result['units'] = units;
+      result['bankAccounts'] = bankAccounts;
+    } catch (e) {
+      logger.warning('Failed to export collections to JSON: $e');
+    }
+    return result;
+  }
+
+  /// Imports database collections from a JSON Map
+  Future<void> importCollectionsFromJson(String firmId, Map<String, dynamic> collectionsData) async {
+    if (kIsWeb) {
+      if (_isar is WebMockIsar) {
+        (_isar as WebMockIsar).importCollectionsJson(collectionsData);
+      }
+      return;
+    }
+    try {
+      await isar.writeTxn(() async {
+        if (collectionsData.containsKey('partys') && collectionsData['partys'] is List) {
+          await isar.partys.importJson(collectionsData['partys'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('items') && collectionsData['items'] is List) {
+          await isar.items.importJson(collectionsData['items'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('invoices') && collectionsData['invoices'] is List) {
+          await isar.invoices.importJson(collectionsData['invoices'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('invoiceItems') && collectionsData['invoiceItems'] is List) {
+          await isar.invoiceItems.importJson(collectionsData['invoiceItems'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('purchases') && collectionsData['purchases'] is List) {
+          await isar.purchases.importJson(collectionsData['purchases'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('purchaseItems') && collectionsData['purchaseItems'] is List) {
+          await isar.purchaseItems.importJson(collectionsData['purchaseItems'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('orders') && collectionsData['orders'] is List) {
+          await isar.orders.importJson(collectionsData['orders'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('orderItems') && collectionsData['orderItems'] is List) {
+          await isar.orderItems.importJson(collectionsData['orderItems'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('expenses') && collectionsData['expenses'] is List) {
+          await isar.expenses.importJson(collectionsData['expenses'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('transactions') && collectionsData['transactions'] is List) {
+          await isar.transactions.importJson(collectionsData['transactions'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('categorys') && collectionsData['categorys'] is List) {
+          await isar.categorys.importJson(collectionsData['categorys'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('brands') && collectionsData['brands'] is List) {
+          await isar.brands.importJson(collectionsData['brands'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('units') && collectionsData['units'] is List) {
+          await isar.units.importJson(collectionsData['units'] as List<Map<String, dynamic>>);
+        }
+        if (collectionsData.containsKey('bankAccounts') && collectionsData['bankAccounts'] is List) {
+          await isar.bankAccounts.importJson(collectionsData['bankAccounts'] as List<Map<String, dynamic>>);
+        }
+      });
+    } catch (e) {
+      logger.error('Failed to import collections from JSON', e);
+      rethrow;
+    }
+  }
+
   /// Switch active firm database
   Future<void> switchFirm(String newFirmId, SharedPreferences prefs) async {
     await close();

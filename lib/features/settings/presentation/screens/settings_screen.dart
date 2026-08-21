@@ -664,6 +664,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     );
                   },
                 ),
+            const SizedBox(height: 20),
+
+            // Consolidated Snapshot Backup & Restore Center (.sahaj) Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.sd_storage_rounded, color: Colors.indigo, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Full Database Snapshot (.sahaj)',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    const Text(
+                      'Export and restore full database binary snapshots (`.sahaj` archives) with 100% data preservation and cross-platform compatibility between Web and Mobile.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: const Text('Open Snapshot Backup & Restore Center', style: TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: () => context.go('/backup'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),

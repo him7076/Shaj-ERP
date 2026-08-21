@@ -10,7 +10,13 @@ import 'package:business_sahaj_erp/core/services/storage_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/core/services/snapshot_backup_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+
+// Snapshot Backup Service Provider
+final snapshotBackupServiceProvider = Provider<SnapshotBackupService>((ref) {
+  return SnapshotBackupService();
+});
 
 // Repositories
 import 'package:business_sahaj_erp/domain/repositories/sync_queue_repository.dart';

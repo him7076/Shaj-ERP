@@ -42,6 +42,38 @@ class WebMockIsar implements Isar {
     _dbs.clear();
   }
 
+  Map<String, dynamic> exportCollectionsJson() {
+    final Map<String, dynamic> exportedMap = {};
+    _db.forEach((collectionName, list) {
+      exportedMap[collectionName] = list.map((item) {
+        try {
+          return (item as dynamic).toJson();
+        } catch (_) {
+          return item;
+        }
+      }).toList();
+    });
+    return exportedMap;
+  }
+
+  void importCollectionsJson(Map<String, dynamic> jsonMap) {
+    _db.clear();
+    jsonMap.forEach((collectionName, list) {
+      if (list is List) {
+        _db[collectionName] = List<dynamic>.from(list);
+      }
+    });
+  }
+
+  Future<void> saveToPrefs(SharedPreferences p) async {
+    try {
+      final jsonStr = jsonEncode(exportCollectionsJson());
+      await p.setString('web_db_dump_$firmId', jsonStr);
+    } catch (e) {
+      print('WebMockIsar saveToPrefs failed: $e');
+    }
+  }
+
   Future<void> autoSave() async {
     try {
       final p = prefs ?? await SharedPreferences.getInstance();
