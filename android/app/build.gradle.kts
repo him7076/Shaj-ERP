@@ -17,7 +17,6 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.example.business_sahaj_erp"
     compileSdk = 34
-    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -45,13 +44,8 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            ndk {
-                debugSymbolLevel = "NONE"
-            }
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
