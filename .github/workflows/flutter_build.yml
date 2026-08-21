@@ -57,15 +57,23 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Patch isar_flutter_libs manifest for AGP 8.7+ compatibility
+      - name: Patch isar_flutter_libs for AGP 8.7+ compatibility
         run: |
-          ISAR_MANIFEST=$(find $HOME/.pub-cache -path "*/isar_flutter_libs-*/android/src/main/AndroidManifest.xml" 2>/dev/null | head -1)
-          if [ -n "$ISAR_MANIFEST" ]; then
-            echo "Patching $ISAR_MANIFEST"
-            sed -i 's/package="dev.isar.isar_flutter_libs"//g' "$ISAR_MANIFEST"
-            cat "$ISAR_MANIFEST"
+          ISAR_DIR=$(find $HOME/.pub-cache -path "*/isar_flutter_libs-*/android" -type d 2>/dev/null | head -1)
+          if [ -n "$ISAR_DIR" ]; then
+            echo "Patching isar_flutter_libs at $ISAR_DIR"
+            # Remove package attribute from AndroidManifest.xml
+            sed -i 's/package="dev.isar.isar_flutter_libs"//g' "$ISAR_DIR/src/main/AndroidManifest.xml"
+            cat "$ISAR_DIR/src/main/AndroidManifest.xml"
+            # Fix compileSdk in build.gradle
+            if [ -f "$ISAR_DIR/build.gradle" ]; then
+              sed -i 's/compileSdkVersion .*/compileSdkVersion 35/g' "$ISAR_DIR/build.gradle"
+              sed -i 's/compileSdk .*/compileSdk = 35/g' "$ISAR_DIR/build.gradle"
+              echo "--- patched build.gradle ---"
+              cat "$ISAR_DIR/build.gradle"
+            fi
           else
-            echo "isar_flutter_libs manifest not found, skipping patch"
+            echo "isar_flutter_libs not found, skipping patch"
           fi
 
       - name: Build Release APK 
