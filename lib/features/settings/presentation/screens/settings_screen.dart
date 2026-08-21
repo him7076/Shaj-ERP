@@ -1147,14 +1147,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             
                             await ref.read(databaseServiceProvider).repairLegacyData();
                             
-                            if (context.mounted) Navigator.pop(context); // close loader
+                            if (context.mounted) Navigator.of(context, rootNavigator: true).pop(); // close loader
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Data repair completed successfully!'), backgroundColor: Colors.green),
                               );
                             }
                           } catch (e) {
-                            if (context.mounted) Navigator.pop(context); // close loader
+                            if (context.mounted) Navigator.of(context, rootNavigator: true).pop(); // close loader
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Failed to repair data: $e'), backgroundColor: Colors.red),
