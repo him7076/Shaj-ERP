@@ -45,7 +45,7 @@ android {
             } else if (rootProject.file("android/app/release.keystore").exists()) {
                 rootProject.file("android/app/release.keystore")
             } else {
-                signingConfigs.getByName("debug").storeFile
+                file("release.keystore")
             }
             storePassword = (keystoreProperties["storePassword"] as String?) ?: "sahajerppassword"
         }
@@ -53,7 +53,12 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            val relConfig = signingConfigs.findByName("release")
+            if (relConfig != null && relConfig.storeFile != null && relConfig.storeFile!.exists()) {
+                signingConfig = relConfig
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
