@@ -40,6 +40,7 @@ android {
         targetSdk = 34
         versionCode = flutterVersionCode
         versionName = flutterVersionName
+        multiDexEnabled = true
     }
 
     signingConfigs {
@@ -74,4 +75,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("androidx.multidex:multidex:2.0.1")
 }
