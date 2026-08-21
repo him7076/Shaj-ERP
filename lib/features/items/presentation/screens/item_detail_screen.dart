@@ -187,7 +187,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ? oi.unit!
                   : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? oi.unit ?? 'PCS'),
               rate: oi.rate ?? 0.0,
-              totalAmount: oi.taxableAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0) - (oi.discount ?? 0.0),
+              totalAmount: oi.taxableAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0) - (oi.discountAmount ?? 0.0),
               targetUuid: ord.uuid ?? ord.id.toString(),
             ));
           }
