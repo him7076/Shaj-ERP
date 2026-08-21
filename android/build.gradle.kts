@@ -22,7 +22,8 @@ subprojects {
     plugins.withType<com.android.build.gradle.api.AndroidBasePlugin> {
         val android = extensions.findByName("android") as? com.android.build.gradle.BaseExtension
         if (android != null) {
-            if (android.namespace == null || android.namespace.isEmpty()) {
+            val ns = android.namespace
+            if (ns == null || ns.isEmpty()) {
                 android.namespace = "com.example." + project.name.replace("-", ".").replace("_", "")
             }
             android.compileSdkVersion(34)
