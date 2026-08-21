@@ -14,6 +14,15 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// Load local properties for version code and name
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 11
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.8"
+
 android {
     namespace = "com.example.business_sahaj_erp"
     compileSdk = 34
@@ -28,8 +37,8 @@ android {
         applicationId = "com.sahaj.business_sahaj_erp"
         minSdk = 21
         targetSdk = 34
-        versionCode = (flutter.versionCode as Int?) ?: 11
-        versionName = (flutter.versionName as String?) ?: "1.0.8"
+        versionCode = flutterVersionCode
+        versionName = flutterVersionName
     }
 
     signingConfigs {
