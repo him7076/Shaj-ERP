@@ -36,22 +36,20 @@ android {
         getByName("debug") {
             // Default AGP debug configuration
         }
-        create("release") {
-            keyAlias = (keystoreProperties["keyAlias"] as String?) ?: "sahajkey"
-            keyPassword = (keystoreProperties["keyPassword"] as String?) ?: "sahajerppassword"
-            storeFile = file("release.keystore")
-            storePassword = (keystoreProperties["storePassword"] as String?) ?: "sahajerppassword"
+        val keystoreFile = file("release.keystore")
+        if (keystoreFile.exists()) {
+            create("release") {
+                keyAlias = (keystoreProperties["keyAlias"] as String?) ?: "sahajkey"
+                keyPassword = (keystoreProperties["keyPassword"] as String?) ?: "sahajerppassword"
+                storeFile = keystoreFile
+                storePassword = (keystoreProperties["storePassword"] as String?) ?: "sahajerppassword"
+            }
         }
     }
 
     buildTypes {
         release {
-            val keystoreFile = file("release.keystore")
-            signingConfig = if (keystoreFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
             isMinifyEnabled = false
             isShrinkResources = false
         }
