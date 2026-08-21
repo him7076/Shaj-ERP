@@ -1345,138 +1345,145 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     ),
                                     const SizedBox(height: 8),
 
-                                    // Unit Dropdown, Qty, Rate, Tax Mode, Subtotal Row
-                                    Row(
+                                    // Qty, Rate, Unit, Tax, Subtotal Responsive Layout
+                                    Column(
                                       children: [
-                                        // Unit Dropdown
-                                        Builder(
-                                          builder: (context) {
-                                            final availableUnits = <String>[
-                                              item?.primaryUnitName ?? 'Carton',
-                                              item?.secondaryUnit ?? 'Bundle',
-                                              'PCS',
-                                            ].where((u) => u.trim().isNotEmpty).toSet().toList();
-
-                                            if (!availableUnits.contains(row.unitName)) {
-                                              row.unitName = availableUnits.first;
-                                            }
-
-                                            return Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.blue.withOpacity(0.08),
-                                                borderRadius: BorderRadius.circular(8),
-                                                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-                                              ),
-                                              child: DropdownButtonHideUnderline(
-                                                child: DropdownButton<String>(
-                                                  value: row.unitName,
-                                                  isDense: true,
-                                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue),
-                                                  items: availableUnits
-                                                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                                                      .toList(),
-                                                  onChanged: item == null
-                                                      ? null
-                                                      : (newUnit) {
-                                                          if (newUnit == null) return;
-                                                          setState(() {
-                                                            row.updateRateForUnit(newUnit);
-                                                          });
-                                                        },
+                                        Row(
+                                          children: [
+                                            // Qty Input (Persistent Controller)
+                                            Expanded(
+                                              child: SizedBox(
+                                                height: 38,
+                                                child: TextField(
+                                                  controller: row.qtyController,
+                                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                  style: const TextStyle(fontSize: 12),
+                                                  decoration: const InputDecoration(
+                                                    labelText: 'Qty',
+                                                    border: OutlineInputBorder(),
+                                                    isDense: true,
+                                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                  ),
+                                                  onChanged: (val) {
+                                                    row.quantity = double.tryParse(val) ?? 0.0;
+                                                    setState(() {});
+                                                  },
                                                 ),
                                               ),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-
-                                        // Qty Input (Persistent Controller)
-                                        Expanded(
-                                          child: SizedBox(
-                                            height: 38,
-                                            child: TextField(
-                                              controller: row.qtyController,
-                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                              style: const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                labelText: 'Qty',
-                                                border: OutlineInputBorder(),
-                                                isDense: true,
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                              ),
-                                              onChanged: (val) {
-                                                row.quantity = double.tryParse(val) ?? 0.0;
-                                                setState(() {});
-                                              },
                                             ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
+                                            const SizedBox(width: 8),
 
-                                        // Rate Input (Persistent Controller)
-                                        Expanded(
-                                          child: SizedBox(
-                                            height: 38,
-                                            child: TextField(
-                                              controller: row.rateController,
-                                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                              style: const TextStyle(fontSize: 12),
-                                              decoration: const InputDecoration(
-                                                labelText: 'Rate (₹)',
-                                                border: OutlineInputBorder(),
-                                                isDense: true,
-                                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                            // Rate Input (Persistent Controller)
+                                            Expanded(
+                                              child: SizedBox(
+                                                height: 38,
+                                                child: TextField(
+                                                  controller: row.rateController,
+                                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                  style: const TextStyle(fontSize: 12),
+                                                  decoration: const InputDecoration(
+                                                    labelText: 'Rate (₹)',
+                                                    border: OutlineInputBorder(),
+                                                    isDense: true,
+                                                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                  ),
+                                                  onChanged: (val) {
+                                                    row.rate = double.tryParse(val) ?? 0.0;
+                                                    setState(() {});
+                                                  },
+                                                ),
                                               ),
-                                              onChanged: (val) {
-                                                row.rate = double.tryParse(val) ?? 0.0;
-                                                setState(() {});
-                                              },
                                             ),
-                                          ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 8),
-
-                                        // Tax Mode Selector (With Tax vs Without Tax)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                                          decoration: BoxDecoration(
-                                            color: row.isTaxInclusive ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(8),
-                                            border: Border.all(color: row.isTaxInclusive ? Colors.orange : Colors.teal),
-                                          ),
-                                          child: DropdownButtonHideUnderline(
-                                            child: DropdownButton<bool>(
-                                              value: row.isTaxInclusive,
-                                              isDense: true,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: row.isTaxInclusive ? Colors.orange.shade900 : Colors.teal.shade900,
-                                              ),
-                                              items: const [
-                                                DropdownMenuItem(value: false, child: Text('+Excl Tax')),
-                                                DropdownMenuItem(value: true, child: Text('Incl Tax')),
-                                              ],
-                                              onChanged: (val) {
-                                                if (val != null) setState(() => row.isTaxInclusive = val);
-                                              },
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-
-                                        // Subtotal
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                        const SizedBox(height: 8),
+                                        Row(
                                           children: [
-                                            Text(
-                                              row.isTaxInclusive ? 'Incl GST' : 'Excl GST',
-                                              style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                            // Unit Dropdown
+                                            Builder(
+                                              builder: (context) {
+                                                final availableUnits = <String>[
+                                                  item?.primaryUnitName ?? 'Carton',
+                                                  item?.secondaryUnit ?? 'Bundle',
+                                                  'PCS',
+                                                ].where((u) => u.trim().isNotEmpty).toSet().toList();
+
+                                                if (!availableUnits.contains(row.unitName)) {
+                                                  row.unitName = availableUnits.first;
+                                                }
+
+                                                return Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue.withOpacity(0.08),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                                                  ),
+                                                  child: DropdownButtonHideUnderline(
+                                                    child: DropdownButton<String>(
+                                                      value: row.unitName,
+                                                      isDense: true,
+                                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue),
+                                                      items: availableUnits
+                                                          .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                                          .toList(),
+                                                      onChanged: item == null
+                                                          ? null
+                                                          : (newUnit) {
+                                                              if (newUnit == null) return;
+                                                              setState(() {
+                                                                row.updateRateForUnit(newUnit);
+                                                              });
+                                                            },
+                                                    ),
+                                                  ),
+                                                );
+                                              },
                                             ),
-                                            Text(
-                                              currencyFormat.format(row.subtotal),
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+                                            const SizedBox(width: 8),
+
+                                            // Tax Mode Selector (With Tax vs Without Tax)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                                              decoration: BoxDecoration(
+                                                color: row.isTaxInclusive ? Colors.orange.withOpacity(0.1) : Colors.teal.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(color: row.isTaxInclusive ? Colors.orange : Colors.teal),
+                                              ),
+                                              child: DropdownButtonHideUnderline(
+                                                child: DropdownButton<bool>(
+                                                  value: row.isTaxInclusive,
+                                                  isDense: true,
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: row.isTaxInclusive ? Colors.orange.shade900 : Colors.teal.shade900,
+                                                  ),
+                                                  items: const [
+                                                    DropdownMenuItem(value: false, child: Text('+Excl Tax')),
+                                                    DropdownMenuItem(value: true, child: Text('Incl Tax')),
+                                                  ],
+                                                  onChanged: (val) {
+                                                    if (val != null) setState(() => row.isTaxInclusive = val);
+                                                  },
+                                                ),
+                                              ),
+                                            ),
+                                            const Spacer(),
+
+                                            // Subtotal
+                                            Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Text(
+                                                  row.isTaxInclusive ? 'Incl GST' : 'Excl GST',
+                                                  style: const TextStyle(fontSize: 9, color: Colors.grey),
+                                                ),
+                                                Text(
+                                                  currencyFormat.format(row.subtotal),
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),

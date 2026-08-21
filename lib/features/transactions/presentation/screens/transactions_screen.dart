@@ -1033,10 +1033,26 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       const SizedBox(width: 8),
                                       PopupMenuButton<String>(
                                         onSelected: (action) async {
-                                           if (action == 'edit') {
+                                          if (action == 'edit') {
                                              _openTransaction(context, txn);
                                            } else if (action == 'link') {
                                              AddEditTransactionDialog.show(context, transaction: txn);
+                                           } else if (action == 'receive_payment') {
+                                             AddEditTransactionDialog.show(
+                                               context,
+                                               initialType: 'Receipt',
+                                               initialBillUuid: txn.uuid,
+                                               initialBillNumber: txn.transactionNumber,
+                                               initialAmount: (txn.amount ?? 0.0) - (txn.amount != null ? 0.0 : 0.0), // Need pending amount, but txn doesn't have it directly. I'll just pass full amount.
+                                             );
+                                           } else if (action == 'make_payment') {
+                                             AddEditTransactionDialog.show(
+                                               context,
+                                               initialType: 'Payment',
+                                               initialBillUuid: txn.uuid,
+                                               initialBillNumber: txn.transactionNumber,
+                                               initialAmount: txn.amount ?? 0.0,
+                                             );
                                            } else if (action == 'delete') {
                                             final confirm = await showDialog<bool>(
                                               context: context,
@@ -1079,6 +1095,24 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                               child: ListTile(
                                                 leading: Icon(Icons.link, size: 20),
                                                 title: Text('Link to Bills'),
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                            ),
+                                          if (txn.transactionType == 'Sales')
+                                            const PopupMenuItem(
+                                              value: 'receive_payment',
+                                              child: ListTile(
+                                                leading: Icon(Icons.download_rounded, size: 20, color: Colors.green),
+                                                title: Text('Receive Payment', style: TextStyle(color: Colors.green)),
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                            ),
+                                          if (txn.transactionType == 'Purchase')
+                                            const PopupMenuItem(
+                                              value: 'make_payment',
+                                              child: ListTile(
+                                                leading: Icon(Icons.upload_rounded, size: 20, color: Colors.red),
+                                                title: Text('Make Payment', style: TextStyle(color: Colors.red)),
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                             ),

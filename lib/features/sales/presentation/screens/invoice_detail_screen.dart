@@ -61,28 +61,25 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         final targetId = fetched.id;
         final targetUuid = fetched.uuid;
 
-        List<InvoiceItem> items = [];
-        try {
-          await fetched.invoiceItems.load();
-          items = fetched.invoiceItems.where((i) => !i.isDeleted).toList();
-        } catch (_) {}
+        // 1. Query items by parent invoice ID or parent invoice UUID first
+        List<InvoiceItem> items = await isar.invoiceItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) {
+              var builder = q.parentInvoiceIdEqualTo(targetId);
+              if (targetUuid != null && targetUuid.isNotEmpty) {
+                builder = builder.or().parentInvoiceUuidEqualTo(targetUuid);
+              }
+              return builder;
+            })
+            .findAll();
 
         if (items.isEmpty) {
-          final targetId = fetched.id;
-          final targetUuid = fetched.uuid;
-
-          // Safe fallback for items without Isar links (Excel imported)
-          final allItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-          items = allItems.where((i) {
-            if (i.parentInvoiceId == targetId) return true;
-            if (targetUuid != null && targetUuid.isNotEmpty) {
-              if (i.parentInvoiceUuid == targetUuid) return true;
-              try {
-                if (i.invoice.value?.uuid == targetUuid) return true;
-              } catch (_) {}
-            }
-            return false;
-          }).toList();
+          try {
+            await fetched.invoiceItems.load();
+            items = fetched.invoiceItems.where((i) => !i.isDeleted).toList();
+          } catch (_) {}
         }
 
         // Self-heal parent invoice IDs and UUIDs if missing
@@ -663,9 +660,10 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                           children: [
                             () {
                               final catalogName = item.item.value?.itemName;
+                              final localName = item.itemName;
                               final displayName = (catalogName != null && catalogName.trim().isNotEmpty)
                                   ? catalogName
-                                  : (item.itemName ?? 'Unnamed Item');
+                                  : ((localName != null && localName.trim().isNotEmpty) ? localName : 'Unnamed Item');
                               return Text(
                                 displayName,
                                 style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),

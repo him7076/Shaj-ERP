@@ -237,18 +237,16 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         }
 
         if (party != null) {
-          List<InvoiceItem> itemsList = [];
-          try { await invoice.invoiceItems.load(); } catch (_) {}
-          try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
+          List<InvoiceItem> itemsList = await db.invoiceItems
+              .filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q.parentInvoiceIdEqualTo(invoice.id).or().parentInvoiceUuidEqualTo(invoice.uuid))
+              .findAll();
           
           if (itemsList.isEmpty) {
-            final allItems = await db.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-            itemsList = allItems.where((i) {
-              if (i.parentInvoiceId == invoice.id) return true;
-              if (invoice.uuid != null && invoice.uuid!.isNotEmpty && i.parentInvoiceUuid == invoice.uuid) return true;
-              try { if (i.invoice.value?.uuid == invoice.uuid) return true; } catch (_) {}
-              return false;
-            }).toList();
+            try { await invoice.invoiceItems.load(); } catch (_) {}
+            try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
           }
 
           final List<CartItemState> cartItems = [];
@@ -587,8 +585,13 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..sourceOrderNumber = _sourceOrder!.orderNumber;
       }
 
-      await Future.delayed(Duration.zero);
-      await repo.saveInvoice(invoice, invoiceItems);
+      await Future.delayed(const Duration(milliseconds: 100)); // Yield event loop to let loader render
+      
+      // Safety timeout to prevent infinite UI freeze if Isar transaction deadlocks
+      await repo.saveInvoice(invoice, invoiceItems).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw Exception('Database operation timed out. Please try again.'),
+      );
 
       if (_sourceOrder != null) {
         final isar = ref.read(databaseServiceProvider).isar;

@@ -393,7 +393,12 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
         txn.linkedBillNumber = null;
       }
 
-      await repo.saveTransaction(txn);
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await repo.saveTransaction(txn).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw Exception('Database operation timed out. Please try again.'),
+      );
       
       // Quiet background sync for newly saved transaction
       Future.microtask(() {

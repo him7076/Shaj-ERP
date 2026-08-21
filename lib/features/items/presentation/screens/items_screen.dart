@@ -861,7 +861,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         if (matchUuid || matchName || matchId) {
           final q = pi.quantity ?? 0.0;
           final r = pi.rate ?? 0.0;
-          final lineAmt = (pi.totalAmount != null && pi.totalAmount! > 0) ? pi.totalAmount! : (q * r);
+          final lineAmt = (pi.taxableAmount != null && pi.taxableAmount! > 0) ? pi.taxableAmount! : (q * r);
           if (lineAmt > 0 || q > 0) {
             totalInflowValue += lineAmt;
             hasPurchases = true;
@@ -905,7 +905,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         if (matchUuid || matchName || matchId) {
           final q = ii.quantity ?? 0.0;
           final r = ii.rate ?? 0.0;
-          final lineAmt = (ii.totalAmount != null && ii.totalAmount! > 0) ? ii.totalAmount! : (q * r);
+          final lineAmt = (ii.taxableAmount != null && ii.taxableAmount! > 0) ? ii.taxableAmount! : (q * r);
           salesValue += lineAmt;
         }
       }

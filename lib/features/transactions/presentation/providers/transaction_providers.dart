@@ -103,7 +103,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
         ..transactionNumber = inv.invoiceNumber ?? 'INV-01'
         ..transactionType = 'Sales'
         ..transactionDate = inv.invoiceDate ?? inv.createdAt ?? DateTime.now()
-        ..amount = inv.grandTotal ?? 0.0
+        ..amount = (inv.taxableAmount != null && inv.taxableAmount! > 0) ? inv.taxableAmount! : (inv.subtotal != null && inv.subtotal! > 0 ? inv.subtotal! : (inv.grandTotal ?? 0.0))
         ..partyName = inv.partyName ?? 'Party'
         ..partyUuid = pUuid ?? (inv.partyId != null ? inv.partyId.toString() : null)
         ..paymentMode = pMode
@@ -132,7 +132,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
         ..transactionNumber = ord.orderNumber ?? 'SO-01'
         ..transactionType = 'Sales Order'
         ..transactionDate = ord.orderDate ?? ord.createdAt ?? DateTime.now()
-        ..amount = ord.grandTotal ?? 0.0
+        ..amount = (ord.subtotal != null && ord.subtotal! > 0) ? ord.subtotal! - (ord.discountAmount ?? 0.0) : (ord.grandTotal ?? 0.0)
         ..partyName = ord.partyName ?? 'Party'
         ..partyUuid = pUuid ?? (ord.partyId != null ? ord.partyId.toString() : null)
         ..paymentMode = 'Order'
@@ -170,7 +170,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
         ..transactionNumber = pur.purchaseNumber ?? 'PUR-01'
         ..transactionType = 'Purchase'
         ..transactionDate = pur.purchaseDate ?? pur.createdAt ?? DateTime.now()
-        ..amount = pur.grandTotal ?? 0.0
+        ..amount = (pur.taxableAmount != null && pur.taxableAmount! > 0) ? pur.taxableAmount! : (pur.subtotal != null && pur.subtotal! > 0 ? pur.subtotal! : (pur.grandTotal ?? 0.0))
         ..partyName = pur.partyName ?? 'Supplier'
         ..partyUuid = pUuid ?? (pur.partyId != null ? pur.partyId.toString() : null)
         ..paymentMode = 'Bill'

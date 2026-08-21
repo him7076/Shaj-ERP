@@ -116,7 +116,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ? ii.unit!
                   : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? ii.unit ?? 'PCS'),
               rate: ii.rate ?? 0.0,
-              totalAmount: ii.totalAmount ?? (ii.quantity ?? 1.0) * (ii.rate ?? 0.0),
+              totalAmount: ii.taxableAmount ?? (ii.quantity ?? 1.0) * (ii.rate ?? 0.0) - (ii.discount ?? 0.0),
               targetUuid: inv.uuid ?? inv.id.toString(),
             ));
           }
@@ -152,7 +152,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ? pi.unit!
                   : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? pi.unit ?? 'PCS'),
               rate: pi.rate ?? 0.0,
-              totalAmount: pi.totalAmount ?? (pi.quantity ?? 1.0) * (pi.rate ?? 0.0),
+              totalAmount: pi.taxableAmount ?? (pi.quantity ?? 1.0) * (pi.rate ?? 0.0) - (pi.discount ?? 0.0),
               targetUuid: pur.uuid ?? pur.id.toString(),
             ));
           }
@@ -187,7 +187,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   ? oi.unit!
                   : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? oi.unit ?? 'PCS'),
               rate: oi.rate ?? 0.0,
-              totalAmount: oi.totalAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0),
+              totalAmount: oi.taxableAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0) - (oi.discount ?? 0.0),
               targetUuid: ord.uuid ?? ord.id.toString(),
             ));
           }
