@@ -19,6 +19,7 @@ subprojects {
 
 
 subprojects {
+    // Early: inject namespace as soon as Android plugin is applied (before AGP manifest validation)
     plugins.withType<com.android.build.gradle.api.AndroidBasePlugin> {
         val android = extensions.findByName("android") as? com.android.build.gradle.BaseExtension
         if (android != null) {
@@ -26,6 +27,12 @@ subprojects {
             if (ns == null || ns.isEmpty()) {
                 android.namespace = "com.example." + project.name.replace("-", ".").replace("_", "")
             }
+        }
+    }
+    // Late: override compileSdk AFTER each module's own build.gradle has run
+    afterEvaluate {
+        val android = extensions.findByName("android") as? com.android.build.gradle.BaseExtension
+        if (android != null) {
             android.compileSdkVersion(35)
         }
     }
