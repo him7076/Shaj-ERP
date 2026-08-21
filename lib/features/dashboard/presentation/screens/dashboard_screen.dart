@@ -738,16 +738,18 @@ class DashboardScreen extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              value,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-                fontSize: isMobile ? 13.5 : 20,
-                color: theme.colorScheme.onSurface,
-                letterSpacing: -0.5,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  fontSize: isMobile ? 13.5 : 20,
+                  color: theme.colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
             if (!isMobile) ...[
               const SizedBox(height: 8),

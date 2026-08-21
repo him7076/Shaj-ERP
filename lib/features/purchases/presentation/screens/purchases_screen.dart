@@ -579,28 +579,28 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                           backgroundColor: statusColor.withOpacity(0.08),
                                           child: Icon(statusIcon, color: statusColor, size: 20),
                                         ),
-                                        title: Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                purchase.partyName ?? 'Unknown Supplier',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                          title: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  purchase.partyName ?? 'Unknown Supplier',
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              currencyFormat.format(purchase.grandTotal ?? 0.0),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: theme.colorScheme.primary,
-                                                fontSize: 14,
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                currencyFormat.format(purchase.grandTotal ?? 0.0),
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w900,
+                                                  color: theme.colorScheme.primary,
+                                                  fontSize: 13,
+                                                ),
                                               ),
-                                            ),
-                                          ],
-                                        ),
+                                            ],
+                                          ),
                                         subtitle: Padding(
                                           padding: const EdgeInsets.only(top: 6.0),
                                           child: Wrap(

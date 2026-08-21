@@ -542,7 +542,9 @@ class SalesExcelImportService {
                   ..itemName = itemName
                   ..hsnCode = hsn
                   ..sellRate = rate
-                  ..buyRate = rate > 0 ? (rate * 0.7) : 0.0
+                  ..gstApplicable = gstRatePercent > 0
+                  ..gstRate = gstRatePercent > 0 ? gstRatePercent : null
+                  ..buyRate = rate > 0 ? (rate / (1.0 + (gstRatePercent / 100.0))) : 0.0
                   ..currentStock = 0.0
                   ..openingStock = 0.0
                   ..primaryUnitName = unit.isNotEmpty ? unit : 'PCS'

@@ -733,17 +733,23 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    invoice.invoiceNumber ?? 'N/A',
-                                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  Expanded(
+                                    child: Text(
+                                      invoice.invoiceNumber ?? 'N/A',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                    ),
                                   ),
+                                  const SizedBox(width: 6),
                                   Text(
                                     '₹${invoice.grandTotal?.toStringAsFixed(2) ?? "0.00"}',
                                     style: theme.textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w900,
                                       color: theme.colorScheme.primary,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ],
@@ -809,10 +815,15 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                               ).then((_) => ref.invalidate(filteredInvoicesProvider));
                             } else if (val == 'receipt') {
                               try { await invoice.party.load(); } catch (_) {}
+                              Party? targetParty = invoice.party.value;
+                              if (targetParty == null && invoice.partyId != null) {
+                                targetParty = await isar.partys.get(invoice.partyId!);
+                              }
+                              
                               AddEditTransactionDialog.show(
                                 context,
                                 initialType: 'Receipt',
-                                initialParty: invoice.party.value,
+                                initialParty: targetParty,
                                 initialBillUuid: invoice.uuid,
                                 initialBillNumber: invoice.invoiceNumber,
                                 initialAmount: invoice.pendingAmount ?? invoice.grandTotal ?? 0.0,

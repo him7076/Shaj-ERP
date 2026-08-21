@@ -539,9 +539,9 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildTypeToggleChip('Receipt', 'Payment In', Icons.arrow_downward_rounded, Colors.green),
+                      _buildTypeToggleChip('Receipt', 'Received Payment', Icons.arrow_downward_rounded, Colors.green),
                       const SizedBox(width: 8),
-                      _buildTypeToggleChip('Payment', 'Payment Out', Icons.arrow_upward_rounded, Colors.red),
+                      _buildTypeToggleChip('Payment', 'Made Payment', Icons.arrow_upward_rounded, Colors.red),
                       const SizedBox(width: 8),
                       _buildTypeToggleChip('Credit Note', 'Sales Return', Icons.assignment_return_rounded, Colors.orange),
                       const SizedBox(width: 8),

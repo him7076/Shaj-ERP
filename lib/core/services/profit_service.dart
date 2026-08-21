@@ -61,10 +61,13 @@ class ProfitService {
         }
 
         if (originalItem != null) {
-          if (originalItem.buyRate != null && originalItem.buyRate! > 0) {
+          final isBuggyImport = (originalItem.buyRate != null && originalItem.sellRate != null && 
+                                 (originalItem.buyRate! - (originalItem.sellRate! * 0.7)).abs() < 0.01);
+                                 
+          if (originalItem.buyRate != null && originalItem.buyRate! > 0 && !isBuggyImport) {
             buyRate = originalItem.buyRate!;
           } else if (originalItem.sellRate != null && originalItem.sellRate! > 0) {
-            final double gstPct = originalItem.gstApplicable ? (originalItem.gstRate ?? 0.0) : 0.0;
+            final double gstPct = originalItem.gstApplicable ? (originalItem.gstRate ?? invoiceItem.gstRate ?? 0.0) : 0.0;
             buyRate = originalItem.sellRate! / (1.0 + (gstPct / 100.0));
           }
         }

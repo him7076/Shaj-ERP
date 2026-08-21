@@ -686,19 +686,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 child: DropdownButton<String>(
                                   isExpanded: true,
                                   value: filter.transactionType,
-                                  items: const [
-                                    DropdownMenuItem(value: 'All', child: Text('All Types')),
-                                    DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
-                                    DropdownMenuItem(value: 'Sales Order', child: Text('Sales Order')),
-                                    DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
-                                    DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                                    DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
-                                    DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                                    DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
-                                    DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                                    DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
-                                    DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
-                                  ],
+                                    items: const [
+                                      DropdownMenuItem(value: 'All', child: Text('All Types')),
+                                      DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                                      DropdownMenuItem(value: 'Sales Order', child: Text('Sales Order')),
+                                      DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                                      DropdownMenuItem(value: 'Expense', child: Text('Expense')),
+                                      DropdownMenuItem(value: 'Receipt', child: Text('Received Payment (Receipt)')),
+                                      DropdownMenuItem(value: 'Payment', child: Text('Made Payment (Payment)')),
+                                      DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
+                                      DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
+                                      DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                      DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
+                                    ],
                                   onChanged: (val) {
                                     if (val != null) {
                                       ref.read(transactionSearchFilterProvider.notifier).state =
@@ -736,18 +736,19 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   value: filter.transactionType,
-                                  items: const [
-                                    DropdownMenuItem(value: 'All', child: Text('All Types')),
-                                    DropdownMenuItem(value: 'Receipt', child: Text('Receipt (Payment In)')),
-                                    DropdownMenuItem(value: 'Payment', child: Text('Payment (Payment Out)')),
-                                    DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
-                                    DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
-                                    DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
-                                    DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                                    DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                                    DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
-                                    DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
-                                  ],
+                                    items: const [
+                                      DropdownMenuItem(value: 'All', child: Text('All Types')),
+                                      DropdownMenuItem(value: 'Receipt', child: Text('Received Payment (Receipt)')),
+                                      DropdownMenuItem(value: 'Payment', child: Text('Made Payment (Payment)')),
+                                      DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
+                                      DropdownMenuItem(value: 'Sales Order', child: Text('Sales Order')),
+                                      DropdownMenuItem(value: 'Purchase', child: Text('Purchase Bill')),
+                                      DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
+                                      DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
+                                      DropdownMenuItem(value: 'Expense', child: Text('Expense')),
+                                      DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                      DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
+                                    ],
                                   onChanged: (val) {
                                     if (val != null) {
                                       ref.read(transactionSearchFilterProvider.notifier).state =

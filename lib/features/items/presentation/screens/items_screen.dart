@@ -790,7 +790,10 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                       () {
                         double costRate = buyRateCache[item.itemName?.trim().toLowerCase() ?? ''] ?? 0.0;
                         if (costRate <= 0) {
-                          if (item.buyRate != null && item.buyRate! > 0) {
+                          final isBuggyImport = (item.buyRate != null && item.sellRate != null && 
+                                                 (item.buyRate! - (item.sellRate! * 0.7)).abs() < 0.01);
+                                                 
+                          if (item.buyRate != null && item.buyRate! > 0 && !isBuggyImport) {
                             costRate = item.buyRate!;
                           } else if (item.sellRate != null && item.sellRate! > 0) {
                             final double gstPct = item.gstApplicable ? (item.gstRate ?? 0.0) : 0.0;
