@@ -159,7 +159,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
       });
 
       logger.info('Order #${order.orderNumber} saved successfully. Reserve stock: $reserveStock');
-      SyncManager.triggerUpload(); // Instant Firebase upload
+      Future.microtask(() => SyncManager.triggerUpload()); // Non-blocking background upload
     } catch (e) {
       throw DatabaseException('Failed to transaction-save order: $e');
     }

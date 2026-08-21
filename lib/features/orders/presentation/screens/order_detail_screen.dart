@@ -20,6 +20,8 @@ import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_pro
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderUuid;
@@ -33,6 +35,7 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   bool _isLoading = false;
   Order? _order;
+  Invoice? _linkedInvoice;
   List<OrderItem> _orderItems = [];
 
   @override
@@ -70,9 +73,20 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           }).toList();
         }
 
+        Invoice? linked;
+        if (fetched.status == 'Converted To Sale' || fetched.status == 'Converted') {
+          linked = await isar.invoices
+              .filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q.sourceOrderIdEqualTo(fetched.id).or().sourceOrderNumberEqualTo(fetched.orderNumber))
+              .findFirst();
+        }
+
         setState(() {
           _order = fetched;
           _orderItems = items;
+          _linkedInvoice = linked;
         });
       }
     } catch (e) {
@@ -463,6 +477,33 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               ),
             ],
           ),
+          if (_linkedInvoice != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.receipt_long_rounded, size: 18),
+                label: Text(
+                  'View Invoice (#${_linkedInvoice!.invoiceNumber ?? "N/A"})',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => InvoiceDetailScreen(invoiceUuid: _linkedInvoice!.uuid!),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );

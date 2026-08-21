@@ -232,7 +232,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       });
 
       logger.info('Invoice #${invoice.invoiceNumber} saved successfully.');
-      SyncManager.triggerUpload(); // Instant Firebase upload
+      Future.microtask(() => SyncManager.triggerUpload()); // Non-blocking background upload
     } catch (e) {
       throw DatabaseException('Failed to transaction-save invoice: $e');
     }
@@ -521,7 +521,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       });
 
       logger.info('Converted Order #${order.orderNumber} to Invoice #${invoice.invoiceNumber}.');
-      SyncManager.triggerUpload(); // Instant Firebase upload
+      Future.microtask(() => SyncManager.triggerUpload()); // Non-blocking background upload
       return invoice;
     } catch (e) {
       throw DatabaseException('Failed to convert order to invoice: $e');

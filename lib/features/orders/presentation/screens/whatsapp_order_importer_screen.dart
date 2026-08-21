@@ -13,6 +13,8 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_mappings_screen.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 
@@ -494,6 +496,33 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     child: Text('WhatsApp Line: ${row.rawParsedItem.rawLine}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                   const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('SEARCH ERP PRODUCT', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
+                      TextButton.icon(
+                        icon: const Icon(Icons.add_box_rounded, size: 16, color: Color(0xFF10B981)),
+                        label: const Text('+ Create New Product', style: TextStyle(fontSize: 12, color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                        onPressed: () async {
+                          final newItem = await AddItemSheet.show(ctx, initialName: row.rawParsedItem.itemDescription);
+                          if (newItem != null) {
+                            final isar = ref.read(isarProvider);
+                            final updatedItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+                            setModalState(() {
+                              _allItems = updatedItems;
+                              selectedItem = newItem;
+                              if (newItem.sellRate != null) rateCtrl.text = newItem.sellRate!.toStringAsFixed(2);
+                              if (newItem.conversionFactor != null) cartonCtrl.text = newItem.conversionFactor!.toStringAsFixed(0);
+                            });
+                            setState(() {
+                              _allItems = updatedItems;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Autocomplete<Item>(
                     initialValue: TextEditingValue(text: selectedItem?.itemName ?? ''),
                     displayStringForOption: (Item i) => '${i.itemName ?? "Item"} (ERP Rate: ₹${i.sellRate ?? 0})',
@@ -646,73 +675,30 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
     );
   }
 
-  void _showCreatePartyDialog() {
-    final nameCtrl = TextEditingController(text: _parsedOrder?.shopName ?? '');
-    final mobCtrl = TextEditingController(text: _parsedOrder?.mobileNumber ?? '');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.person_add_rounded, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Create Customer Party', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ],
+  Future<void> _showCreatePartyDialog() async {
+    final newParty = await Navigator.push<Party>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEditPartyScreen(
+          initialName: _parsedOrder?.shopName,
+          initialMobile: _parsedOrder?.mobileNumber,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Party / Shop Name', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: mobCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Mobile Number', border: OutlineInputBorder()),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              if (name.isEmpty) return;
-
-              final isar = ref.read(isarProvider);
-              final newParty = Party()
-                ..uuid = const Uuid().v4()
-                ..partyName = name
-                ..mobileNumber = mobCtrl.text.trim()
-                ..partyType = 'Customer'
-                ..createdAt = DateTime.now()
-                ..updatedAt = DateTime.now();
-
-              await isar.writeTxn(() async {
-                await isar.partys.put(newParty);
-              });
-
-              Navigator.pop(ctx);
-              final updatedList = await isar.partys.filter().isDeletedEqualTo(false).findAll();
-              setState(() {
-                _allParties = updatedList;
-                _selectedParty = newParty;
-              });
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Party "$name" created successfully!')),
-              );
-            },
-            child: const Text('Create Party'),
-          ),
-        ],
       ),
     );
+
+    final isar = ref.read(isarProvider);
+    final updatedList = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+    setState(() {
+      _allParties = updatedList;
+      if (newParty != null) {
+        _selectedParty = newParty;
+      } else if (_parsedOrder?.shopName != null && _parsedOrder!.shopName!.isNotEmpty) {
+        // Try matching newly added party by name if user pressed back
+        final match = updatedList.where((p) =>
+            (p.partyName ?? '').toLowerCase().contains(_parsedOrder!.shopName!.toLowerCase())).firstOrNull;
+        if (match != null) _selectedParty = match;
+      }
+    });
   }
 
   Future<void> _approveAndCreateOrder() async {
@@ -907,8 +893,10 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            runSpacing: 4,
                             children: [
                               const Text(
                                 'PASTE RAW WHATSAPP ORDER MESSAGE',
@@ -1023,10 +1011,14 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 6,
                               children: [
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Text('MAPPED CUSTOMER PARTY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                                     const SizedBox(width: 8),
@@ -1034,18 +1026,18 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(color: Colors.orange.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-                                        child: const Text('Unmapped - Select Below', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
+                                        child: const Text('Unmapped', style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.bold)),
                                       ),
                                   ],
                                 ),
-                                Row(
+                                Wrap(
+                                  spacing: 4,
                                   children: [
                                     TextButton.icon(
                                       icon: const Icon(Icons.bookmark_add_rounded, size: 16, color: Colors.blue),
                                       label: const Text('Quick Mapping', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
                                       onPressed: _showPartyQuickMappingModal,
                                     ),
-                                    const SizedBox(width: 4),
                                     TextButton.icon(
                                       icon: const Icon(Icons.add_rounded, size: 18),
                                       label: const Text('+ Create Party', style: TextStyle(fontSize: 12)),
@@ -1101,10 +1093,14 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 4,
                               children: [
                                 Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Text('ASSIGN SALESMAN / EXECUTIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
                                     if (_parsedOrder?.salesRep != null && _parsedOrder!.salesRep!.isNotEmpty) ...[
@@ -1234,6 +1230,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                               itemBuilder: (context, index) {
                                 final row = _mappedRows[index];
                                 final item = row.selectedItem;
+                                final bool isMappedRule = row.mappingRule != null;
 
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1245,12 +1242,12 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: item == null ? Colors.amber.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
+                                              color: !isMappedRule ? Colors.amber.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(6),
                                             ),
                                             child: Text(
                                               'Line #${index + 1}: ${row.rawParsedItem.rawLine}',
-                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: item == null ? Colors.amber.shade900 : null),
+                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: !isMappedRule ? Colors.amber.shade900 : null),
                                             ),
                                           ),
                                         ),
@@ -1261,16 +1258,16 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                           child: Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             decoration: BoxDecoration(
-                                              color: item == null ? Colors.red : Colors.blue.withOpacity(0.1),
+                                              color: !isMappedRule ? Colors.red : Colors.blue.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(6),
                                             ),
                                             child: Row(
                                               children: [
-                                                Icon(item == null ? Icons.warning_rounded : Icons.tune_rounded, size: 12, color: item == null ? Colors.white : Colors.blue),
+                                                Icon(!isMappedRule ? Icons.warning_rounded : Icons.tune_rounded, size: 12, color: !isMappedRule ? Colors.white : Colors.blue),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  item == null ? 'Unmapped - Tap to Map' : 'Quick Rules',
-                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: item == null ? Colors.white : Colors.blue),
+                                                  !isMappedRule ? 'Unmapped - Tap to Map' : 'Quick Rules',
+                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: !isMappedRule ? Colors.white : Colors.blue),
                                                 ),
                                               ],
                                             ),

@@ -14,11 +14,13 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 class AddEditPartyScreen extends ConsumerStatefulWidget {
   final Party? party;
   final String? initialName;
+  final String? initialMobile;
 
   const AddEditPartyScreen({
     Key? key,
     this.party,
     this.initialName,
+    this.initialMobile,
   }) : super(key: key);
 
   @override
@@ -114,6 +116,10 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       _autoGenerateCode();
       if (widget.initialName != null && widget.initialName!.trim().isNotEmpty) {
         _nameController.text = widget.initialName!.trim();
+      }
+      if (widget.initialMobile != null && widget.initialMobile!.trim().isNotEmpty) {
+        _mobileController.text = widget.initialMobile!.trim();
+        _whatsappController.text = widget.initialMobile!.trim();
       }
     }
   }
@@ -496,7 +502,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       } catch (_) {}
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, party);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Party profile saved successfully.')),
         );

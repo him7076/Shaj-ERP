@@ -859,26 +859,19 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             children: [
               Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-             ConstrainedBox(
-               constraints: const BoxConstraints(maxHeight: 450),
-               child: Scrollbar(
-                 thumbVisibility: true,
-                 controller: _itemsScrollController,
-                 child: ListView.separated(
-                   controller: _itemsScrollController,
-                   shrinkWrap: true,
-                   itemCount: cart.items.length,
-                   separatorBuilder: (context, index) => const Divider(height: 24),
-                   itemBuilder: (context, index) {
-                     final cartItem = cart.items[index];
-                      return OrderCartItemRow(
-                        index: index,
-                        cartItem: cartItem,
-                        isGstInclusive: cart.isGstInclusive,
-                      );
-                   },
-                 ),
-               ),
+             ListView.separated(
+               shrinkWrap: true,
+               physics: const NeverScrollableScrollPhysics(),
+               itemCount: cart.items.length,
+               separatorBuilder: (context, index) => const Divider(height: 24),
+               itemBuilder: (context, index) {
+                 final cartItem = cart.items[index];
+                 return OrderCartItemRow(
+                   index: index,
+                   cartItem: cartItem,
+                   isGstInclusive: cart.isGstInclusive,
+                 );
+               },
              ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
