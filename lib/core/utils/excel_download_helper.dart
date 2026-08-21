@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:business_sahaj_erp/core/utils/web_download_stub.dart'
@@ -7,7 +8,7 @@ import 'package:business_sahaj_erp/core/utils/web_download_stub.dart'
 class ExcelDownloadHelper {
   static Future<String?> downloadExcel(List<int> bytes, String filename) async {
     if (kIsWeb) {
-      downloadWebFile(bytes, filename);
+      triggerWebDownload(Uint8List.fromList(bytes), filename);
       return filename;
     } else {
       try {
