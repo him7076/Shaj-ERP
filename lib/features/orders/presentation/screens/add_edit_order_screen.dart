@@ -1216,9 +1216,10 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               ),
               const SizedBox(height: 10),
 
-              // Rate & Discount Inputs
+              // Rate Input with Tax Mode & Unit Dropdowns
               Row(
                 children: [
+                  // Rate Input Box
                   Expanded(
                     flex: 3,
                     child: TextFormField(
@@ -1227,6 +1228,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                       decoration: InputDecoration(
                         labelText: widget.isGstInclusive ? 'Rate Incl (₹)' : 'Rate Excl (₹)',
                         isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                         border: const OutlineInputBorder(),
                       ),
                       onChanged: (val) {
@@ -1237,21 +1239,55 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
+
+                  // Dropdown 1: Tax Mode (With Tax / Without Tax)
                   Expanded(
-                    flex: 2,
-                    child: TextFormField(
-                      controller: _discPercentController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    flex: 3,
+                    child: DropdownButtonFormField<bool>(
+                      isExpanded: true,
+                      value: widget.isGstInclusive,
                       decoration: const InputDecoration(
-                        labelText: 'Disc %',
+                        labelText: 'Tax Mode',
                         isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
                         border: OutlineInputBorder(),
                       ),
+                      items: const [
+                        DropdownMenuItem(value: false, child: Text('Excl Tax', style: TextStyle(fontSize: 11))),
+                        DropdownMenuItem(value: true, child: Text('Incl Tax', style: TextStyle(fontSize: 11))),
+                      ],
                       onChanged: (val) {
-                        final double? pct = double.tryParse(val);
-                        if (pct != null) {
-                          ref.read(cartProvider.notifier).updateItemAt(widget.index, discountPercent: pct);
+                        if (val != null) {
+                          ref.read(cartProvider.notifier).toggleGstInclusive(val);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+
+                  // Dropdown 2: Unit Dropdown (auto-updates rate)
+                  Expanded(
+                    flex: 3,
+                    child: DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                      decoration: const InputDecoration(
+                        labelText: 'Rate Unit',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11)))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          final convFactor = item.item.conversionFactor ?? 1.0;
+                          final baseRate = item.item.sellRate ?? item.rate;
+                          double newRate = baseRate;
+                          if (val == secondaryUnit && convFactor > 1) {
+                            newRate = baseRate / convFactor;
+                          }
+                          ref.read(cartProvider.notifier).updateItemAt(widget.index, unit: val, rate: newRate);
                         }
                       },
                     ),

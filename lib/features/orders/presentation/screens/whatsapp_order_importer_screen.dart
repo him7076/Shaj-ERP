@@ -55,6 +55,51 @@ class _MappedRowState {
     }
   }
 
+  void updateRateForUnit(String newUnit) {
+    unitName = newUnit;
+    if (selectedItem == null) return;
+
+    final item = selectedItem!;
+    final primaryUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? 'Carton';
+    final secondaryUnit = item.secondaryUnit ?? 'Bundle';
+    final double convFactor = (item.conversionFactor != null && item.conversionFactor! > 0) ? item.conversionFactor! : 1.0;
+
+    final double pcsPerCarton = (mappingRule != null && mappingRule!.pcsPerCarton > 0)
+        ? mappingRule!.pcsPerCarton
+        : convFactor;
+    final double pcsPerBundle = (mappingRule != null && mappingRule!.pcsPerBundle > 0)
+        ? mappingRule!.pcsPerBundle
+        : 1.0;
+
+    final double baseCartonRate = (mappingRule != null && mappingRule!.customRate > 0)
+        ? mappingRule!.customRate
+        : (item.sellRate ?? 0.0);
+
+    if (newUnit == primaryUnit) {
+      isSecondaryUnit = false;
+      rate = baseCartonRate;
+    } else if (newUnit == secondaryUnit) {
+      isSecondaryUnit = true;
+      if (pcsPerCarton > 0 && pcsPerBundle > 0) {
+        rate = (baseCartonRate / pcsPerCarton) * pcsPerBundle;
+      } else {
+        rate = baseCartonRate;
+      }
+    } else if (newUnit == 'PCS' || newUnit == 'Pcs' || newUnit == 'Pcs.') {
+      isSecondaryUnit = true;
+      if (pcsPerCarton > 0) {
+        rate = baseCartonRate / pcsPerCarton;
+      } else {
+        rate = baseCartonRate;
+      }
+    } else {
+      isSecondaryUnit = false;
+      rate = baseCartonRate;
+    }
+
+    syncControllers();
+  }
+
   void dispose() {
     qtyController.dispose();
     rateController.dispose();
@@ -289,6 +334,113 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
     }
   }
 
+  void _showPartyQuickMappingModal() {
+    final shopName = _parsedOrder?.shopName ?? '';
+    if (shopName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No WhatsApp shop name found in parsed message to map.')),
+      );
+      return;
+    }
+
+    Party? localSelectedParty = _selectedParty;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 16, right: 16, top: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Party Quick Mapping Rule', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                  child: Text('WhatsApp Shop Name: "$shopName"', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue)),
+                ),
+                const SizedBox(height: 16),
+                Autocomplete<Party>(
+                  initialValue: TextEditingValue(text: localSelectedParty?.partyName ?? ''),
+                  displayStringForOption: (Party p) => '${p.partyName ?? "Party"} (${p.mobileNumber ?? "No Mob"})',
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) return _allParties;
+                    final q = textEditingValue.text.toLowerCase();
+                    return _allParties.where((p) =>
+                        (p.partyName ?? '').toLowerCase().contains(q) ||
+                        (p.mobileNumber ?? '').contains(q));
+                  },
+                  onSelected: (Party selection) {
+                    setModalState(() => localSelectedParty = selection);
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Select Target ERP Customer Party',
+                        hintText: 'Type party name or mobile...',
+                        border: OutlineInputBorder(),
+                        suffixIcon: Icon(Icons.search_rounded),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.check_circle_rounded),
+                    label: const Text('Save Party Mapping Rule', style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () async {
+                      if (localSelectedParty == null || localSelectedParty!.uuid == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please select an ERP customer party.')),
+                        );
+                        return;
+                      }
+
+                      final mappingService = ref.read(whatsappMappingServiceProvider);
+                      await mappingService.savePartyMapping(shopName, localSelectedParty!.uuid!);
+
+                      setState(() {
+                        _selectedParty = localSelectedParty;
+                      });
+
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Party mapping saved! Future WhatsApp orders from "$shopName" will auto-map to "${localSelectedParty?.partyName}".'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showInlineItemMappingModal(_MappedRowState row) {
     final bundleCtrl = TextEditingController(text: (row.mappingRule?.pcsPerBundle ?? 1.0).toStringAsFixed(0));
     final cartonCtrl = TextEditingController(text: (row.mappingRule?.pcsPerCarton ?? row.selectedItem?.conversionFactor ?? 1.0).toStringAsFixed(0));
@@ -466,6 +618,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                           row.quantity = convResult.convertedQuantity;
                           row.rate = double.tryParse(rateCtrl.text) ?? convResult.effectiveRate;
                           row.isTaxInclusive = isTaxInclusive;
+                          row.syncControllers();
                         });
 
                         Navigator.pop(ctx);
@@ -869,10 +1022,20 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                       ),
                                   ],
                                 ),
-                                TextButton.icon(
-                                  icon: const Icon(Icons.add_rounded, size: 18),
-                                  label: const Text('+ Create New Party', style: TextStyle(fontSize: 12)),
-                                  onPressed: _showCreatePartyDialog,
+                                Row(
+                                  children: [
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.bookmark_add_rounded, size: 16, color: Colors.blue),
+                                      label: const Text('Quick Mapping', style: TextStyle(fontSize: 12, color: Colors.blue, fontWeight: FontWeight.bold)),
+                                      onPressed: _showPartyQuickMappingModal,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.add_rounded, size: 18),
+                                      label: const Text('+ Create Party', style: TextStyle(fontSize: 12)),
+                                      onPressed: _showCreatePartyDialog,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -1176,18 +1339,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                       : (newUnit) {
                                                           if (newUnit == null) return;
                                                           setState(() {
-                                                            row.unitName = newUnit;
-                                                            final secondary = item.secondaryUnit ?? 'Bundle';
-                                                            final factor = item.conversionFactor ?? 1.0;
-
-                                                            if (newUnit == secondary && factor > 1) {
-                                                              row.isSecondaryUnit = true;
-                                                              row.rate = (item.sellRate ?? 0.0) / factor;
-                                                            } else {
-                                                              row.isSecondaryUnit = false;
-                                                              row.rate = item.sellRate ?? 0.0;
-                                                            }
-                                                            row.syncControllers();
+                                                            row.updateRateForUnit(newUnit);
                                                           });
                                                         },
                                                 ),
