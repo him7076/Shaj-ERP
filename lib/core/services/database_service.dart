@@ -465,8 +465,13 @@ class DatabaseService {
     if (partyUuid.isEmpty || newPartyName.trim().isEmpty) return;
     try {
       final name = newPartyName.trim();
+      final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
+      if (party == null) return;
+      final partyId = party.id;
+      final oldPartyName = party.partyName ?? '';
+
       await isar.writeTxn(() async {
-        final invoices = await isar.invoices.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
+        final invoices = await isar.invoices.filter().partyIdEqualTo(partyId).or().partyNameEqualTo(oldPartyName).findAll();
         for (var inv in invoices) {
           inv.partyName = name;
           inv.isSynced = false;
@@ -474,7 +479,7 @@ class DatabaseService {
           await isar.invoices.put(inv);
         }
 
-        final purchases = await isar.purchases.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
+        final purchases = await isar.purchases.filter().partyIdEqualTo(partyId).or().partyNameEqualTo(oldPartyName).findAll();
         for (var pur in purchases) {
           pur.partyName = name;
           pur.isSynced = false;
@@ -482,7 +487,7 @@ class DatabaseService {
           await isar.purchases.put(pur);
         }
 
-        final orders = await isar.orders.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
+        final orders = await isar.orders.filter().partyIdEqualTo(partyId).or().partyNameEqualTo(oldPartyName).findAll();
         for (var ord in orders) {
           ord.partyName = name;
           ord.isSynced = false;
@@ -490,7 +495,7 @@ class DatabaseService {
           await isar.orders.put(ord);
         }
 
-        final txns = await isar.transactions.filter().partyUuidEqualTo(partyUuid).findAll();
+        final txns = await isar.transactions.filter().partyUuidEqualTo(partyUuid).or().partyNameEqualTo(oldPartyName).findAll();
         for (var t in txns) {
           t.partyName = name;
           t.isSynced = false;
@@ -498,7 +503,7 @@ class DatabaseService {
           await isar.transactions.put(t);
         }
 
-        final creditNotes = await isar.creditNotes.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
+        final creditNotes = await isar.creditNotes.filter().partyIdEqualTo(partyId).or().partyNameEqualTo(oldPartyName).findAll();
         for (var cn in creditNotes) {
           cn.partyName = name;
           cn.isSynced = false;
@@ -506,7 +511,7 @@ class DatabaseService {
           await isar.creditNotes.put(cn);
         }
 
-        final debitNotes = await isar.debitNotes.filter().party((p) => p.uuidEqualTo(partyUuid)).findAll();
+        final debitNotes = await isar.debitNotes.filter().partyIdEqualTo(partyId).or().partyNameEqualTo(oldPartyName).findAll();
         for (var dn in debitNotes) {
           dn.partyName = name;
           dn.isSynced = false;
@@ -525,43 +530,48 @@ class DatabaseService {
     if (itemUuid.isEmpty || newItemName.trim().isEmpty) return;
     try {
       final name = newItemName.trim();
+      final item = await isar.items.filter().uuidEqualTo(itemUuid).findFirst();
+      if (item == null) return;
+      final itemId = item.id;
+      final oldItemName = item.itemName ?? '';
+
       await isar.writeTxn(() async {
-        final invItems = await isar.invoiceItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
+        final invItems = await isar.invoiceItems.filter().itemIdEqualTo(itemId).or().itemNameEqualTo(oldItemName).findAll();
         for (var ii in invItems) {
           ii.itemName = name;
           ii.isSynced = false;
           await isar.invoiceItems.put(ii);
         }
 
-        final purItems = await isar.purchaseItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
+        final purItems = await isar.purchaseItems.filter().itemIdEqualTo(itemId).or().itemNameEqualTo(oldItemName).findAll();
         for (var pi in purItems) {
           pi.itemName = name;
           pi.isSynced = false;
           await isar.purchaseItems.put(pi);
         }
 
-        final ordItems = await isar.orderItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
+        final ordItems = await isar.orderItems.filter().itemIdEqualTo(itemId).or().itemNameEqualTo(oldItemName).findAll();
         for (var oi in ordItems) {
           oi.itemName = name;
           oi.isSynced = false;
           await isar.orderItems.put(oi);
         }
 
-        final cniItems = await isar.creditNoteItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
+        final cniItems = await isar.creditNoteItems.filter().itemIdEqualTo(itemId).or().itemNameEqualTo(oldItemName).findAll();
         for (var cni in cniItems) {
           cni.itemName = name;
           cni.isSynced = false;
           await isar.creditNoteItems.put(cni);
         }
 
-        final dniItems = await isar.debitNoteItems.filter().item((i) => i.uuidEqualTo(itemUuid)).findAll();
+        final dniItems = await isar.debitNoteItems.filter().itemIdEqualTo(itemId).or().itemNameEqualTo(oldItemName).findAll();
         for (var dni in dniItems) {
           dni.itemName = name;
           dni.isSynced = false;
           await isar.debitNoteItems.put(dni);
         }
 
-        final adjs = await isar.collection<StockAdjustment>().filter().itemUuidEqualTo(itemUuid).findAll();
+        final adjs = await isar.collection<StockAdjustment>().filter().itemUuidEqualTo(itemUuid).or().itemNameEqualTo(oldItemName).findAll();
         for (var adj in adjs) {
           adj.itemName = name;
           adj.isSynced = false;
@@ -660,6 +670,83 @@ class DatabaseService {
       logger.info('Cascaded bank account rename from "$oldName" to "$newName"');
     } catch (e) {
       logger.error('Failed to cascade rename bank account', e);
+    }
+  }
+
+  /// Utility to repair missing parent links and item links in imported data
+  Future<void> repairLegacyData() async {
+    try {
+      logger.info('Starting legacy data repair...');
+      await isar.writeTxn(() async {
+        // Actually, let's fix Items first
+        final allItems = await isar.items.findAll();
+        
+        final invItems = await isar.invoiceItems.findAll();
+        for (var ii in invItems) {
+          bool changed = false;
+          // Fix item link
+          if (ii.itemId == null && ii.itemName != null) {
+            final match = allItems.where((i) => i.itemName == ii.itemName).firstOrNull;
+            if (match != null) {
+              ii.itemId = match.id;
+              changed = true;
+            }
+          }
+          // Fix parent link
+          if (ii.parentInvoiceId == null && ii.invoice.value != null) {
+             ii.parentInvoiceId = ii.invoice.value!.id;
+             ii.parentInvoiceUuid = ii.invoice.value!.uuid;
+             changed = true;
+          }
+          if (changed) {
+            await isar.invoiceItems.put(ii);
+          }
+        }
+        
+        final ordItems = await isar.orderItems.findAll();
+        for (var oi in ordItems) {
+          bool changed = false;
+          if (oi.itemId == null && oi.itemName != null) {
+            final match = allItems.where((i) => i.itemName == oi.itemName).firstOrNull;
+            if (match != null) {
+              oi.itemId = match.id;
+              changed = true;
+            }
+          }
+          if (oi.orderId == null && oi.order.value != null) {
+             oi.orderId = oi.order.value!.id;
+             oi.orderUuid = oi.order.value!.uuid;
+             changed = true;
+          }
+          if (changed) {
+            await isar.orderItems.put(oi);
+          }
+        }
+        
+        final purItems = await isar.purchaseItems.findAll();
+        for (var pi in purItems) {
+          bool changed = false;
+          if (pi.itemId == null && pi.itemName != null) {
+            final match = allItems.where((i) => i.itemName == pi.itemName).firstOrNull;
+            if (match != null) {
+              pi.itemId = match.id;
+              changed = true;
+            }
+          }
+          if (pi.purchaseId == null && pi.purchase.value != null) {
+             pi.purchaseId = pi.purchase.value!.id;
+             pi.purchaseUuid = pi.purchase.value!.uuid;
+             changed = true;
+          }
+          if (changed) {
+            await isar.purchaseItems.put(pi);
+          }
+        }
+      });
+      logger.info('Legacy data repair completed.');
+    } catch (e) {
+      logger.error('Failed to repair legacy data', e);
+      rethrow;
     }
   }
 

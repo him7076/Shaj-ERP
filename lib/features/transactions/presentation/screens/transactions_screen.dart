@@ -1041,6 +1041,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                              AddEditTransactionDialog.show(
                                                context,
                                                initialType: 'Receipt',
+                                               initialPartyName: txn.partyName,
+                                               initialPartyUuid: txn.partyUuid,
                                                initialBillUuid: txn.uuid,
                                                initialBillNumber: txn.transactionNumber,
                                                initialAmount: (txn.amount ?? 0.0) - (txn.amount != null ? 0.0 : 0.0), // Need pending amount, but txn doesn't have it directly. I'll just pass full amount.
@@ -1049,6 +1051,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                              AddEditTransactionDialog.show(
                                                context,
                                                initialType: 'Payment',
+                                               initialPartyName: txn.partyName,
+                                               initialPartyUuid: txn.partyUuid,
                                                initialBillUuid: txn.uuid,
                                                initialBillNumber: txn.transactionNumber,
                                                initialAmount: txn.amount ?? 0.0,

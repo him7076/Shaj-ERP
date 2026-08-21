@@ -19,15 +19,18 @@ class AddEditTransactionDialog extends ConsumerStatefulWidget {
   final Transaction? transaction;
   final String? initialType;
   final Party? initialParty;
+  final String? initialPartyName;
+  final String? initialPartyUuid;
   final String? initialBillUuid;
   final String? initialBillNumber;
   final double? initialAmount;
 
-  const AddEditTransactionDialog({
     Key? key,
     this.transaction,
     this.initialType,
     this.initialParty,
+    this.initialPartyName,
+    this.initialPartyUuid,
     this.initialBillUuid,
     this.initialBillNumber,
     this.initialAmount,
@@ -38,6 +41,8 @@ class AddEditTransactionDialog extends ConsumerStatefulWidget {
     Transaction? transaction,
     String? initialType,
     Party? initialParty,
+    String? initialPartyName,
+    String? initialPartyUuid,
     String? initialBillUuid,
     String? initialBillNumber,
     double? initialAmount,
@@ -49,6 +54,8 @@ class AddEditTransactionDialog extends ConsumerStatefulWidget {
         transaction: transaction,
         initialType: initialType,
         initialParty: initialParty,
+        initialPartyName: initialPartyName,
+        initialPartyUuid: initialPartyUuid,
         initialBillUuid: initialBillUuid,
         initialBillNumber: initialBillNumber,
         initialAmount: initialAmount,
@@ -134,6 +141,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       }
     } else if (widget.initialParty != null) {
       _selectedParty = widget.initialParty;
+    } else if (widget.initialPartyName != null) {
+      _selectedParty = Party()
+        ..uuid = widget.initialPartyUuid ?? ''
+        ..partyName = widget.initialPartyName;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
