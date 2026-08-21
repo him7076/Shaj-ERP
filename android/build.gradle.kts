@@ -17,6 +17,10 @@ subprojects {
 }
 
 subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+subprojects {
     val configureSubproject = {
         val android = extensions.findByName("android") as? com.android.build.api.dsl.CommonExtension<*, *, *, *, *, *>
         if (android != null) {
