@@ -25,6 +25,7 @@ class AddEditTransactionDialog extends ConsumerStatefulWidget {
   final String? initialBillNumber;
   final double? initialAmount;
 
+  const AddEditTransactionDialog({
     Key? key,
     this.transaction,
     this.initialType,
