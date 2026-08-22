@@ -117,6 +117,11 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       String? pUuid;
       if (inv.partyId != null && inv.partyId == targetPartyId) {
         pUuid = filter.partyUuid;
+      } else if (inv.partyId != null) {
+        // Fallback for when not filtering by party but we need the UUID
+        try {
+          pUuid = isar.partys.getSync(inv.partyId!)?.uuid;
+        } catch (_) {}
       }
 
       return Transaction()
@@ -150,6 +155,10 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       String? pUuid;
       if (ord.partyId != null && ord.partyId == targetPartyId) {
         pUuid = filter.partyUuid;
+      } else if (ord.partyId != null) {
+        try {
+          pUuid = isar.partys.getSync(ord.partyId!)?.uuid;
+        } catch (_) {}
       }
 
       return Transaction()
@@ -192,6 +201,10 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       String? pUuid;
       if (pur.partyId != null && pur.partyId == targetPartyId) {
         pUuid = filter.partyUuid;
+      } else if (pur.partyId != null) {
+        try {
+          pUuid = isar.partys.getSync(pur.partyId!)?.uuid;
+        } catch (_) {}
       }
 
       return Transaction()

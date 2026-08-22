@@ -150,18 +150,18 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             })
             .findAll();
 
-        final purIds = matchedPurItems.map((pi) => pi.parentPurchaseId).where((id) => id != null).cast<int>().toSet().toList();
+        final purIds = matchedPurItems.map((pi) => pi.purchaseId).where((id) => id != null).cast<int>().toSet().toList();
         final purchasesBatch = await isar.collection<Purchase>().getAll(purIds);
         final purchasesMap = { for (var pur in purchasesBatch) if (pur != null) pur.id: pur };
 
-        final purUuids = matchedPurItems.map((pi) => pi.parentPurchaseUuid).where((u) => u != null && u.isNotEmpty).cast<String>().toSet().toList();
+        final purUuids = matchedPurItems.map((pi) => pi.purchaseUuid).where((u) => u != null && u.isNotEmpty).cast<String>().toSet().toList();
         final purchasesByUuidBatch = purUuids.isNotEmpty ? await isar.collection<Purchase>().filter().anyOf(purUuids, (q, String u) => q.uuidEqualTo(u)).findAll() : <Purchase>[];
         final purchasesUuidMap = { for (var pur in purchasesByUuidBatch) if (pur.uuid != null) pur.uuid!: pur };
 
         for (var pi in matchedPurItems) {
           Purchase? pur;
-          if (pi.parentPurchaseId != null) pur = purchasesMap[pi.parentPurchaseId];
-          if (pur == null && pi.parentPurchaseUuid != null) pur = purchasesUuidMap[pi.parentPurchaseUuid];
+          if (pi.purchaseId != null) pur = purchasesMap[pi.purchaseId];
+          if (pur == null && pi.purchaseUuid != null) pur = purchasesUuidMap[pi.purchaseUuid];
 
           if (pur == null) {
             try {

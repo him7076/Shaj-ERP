@@ -128,7 +128,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       await processCollection('Categories', isar.categorys, (record) async {
         final cat = record as Category;
         bool needsFix = false;
-        if (cat.name == null) { cat.name = 'Unknown'; needsFix = true; }
+        if (cat.categoryName == null) { cat.categoryName = 'Unknown'; needsFix = true; }
         if (cat.uuid == null || cat.uuid!.isEmpty) { cat.uuid = DateTime.now().millisecondsSinceEpoch.toString(); needsFix = true; }
         await isar.categorys.put(cat);
         if (needsFix) _fixedRecords++;
@@ -172,7 +172,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = false;
         if (inv.uuid == null || inv.uuid!.isEmpty) { inv.uuid = DateTime.now().millisecondsSinceEpoch.toString(); needsFix = true; }
         if (inv.grandTotal == null) { inv.grandTotal = 0.0; needsFix = true; }
-        if (inv.balanceAmount == null) { inv.balanceAmount = inv.grandTotal; needsFix = true; }
+        if (inv.pendingAmount == null) { inv.pendingAmount = inv.grandTotal; needsFix = true; }
         if (inv.partyId != null && (inv.partyName == null || inv.partyName!.isEmpty)) {
           final p = await isar.partys.get(inv.partyId!);
           if (p != null) { inv.partyName = p.partyName; needsFix = true; }
@@ -187,7 +187,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = false;
         if (pur.uuid == null || pur.uuid!.isEmpty) { pur.uuid = DateTime.now().millisecondsSinceEpoch.toString(); needsFix = true; }
         if (pur.grandTotal == null) { pur.grandTotal = 0.0; needsFix = true; }
-        if (pur.balanceAmount == null) { pur.balanceAmount = pur.grandTotal; needsFix = true; }
+        if (pur.pendingAmount == null) { pur.pendingAmount = pur.grandTotal; needsFix = true; }
         if (pur.partyId != null && (pur.partyName == null || pur.partyName!.isEmpty)) {
           final p = await isar.partys.get(pur.partyId!);
           if (p != null) { pur.partyName = p.partyName; needsFix = true; }
@@ -212,8 +212,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = false;
         if (txn.uuid == null || txn.uuid!.isEmpty) { txn.uuid = DateTime.now().millisecondsSinceEpoch.toString(); needsFix = true; }
         if (txn.amount == null) { txn.amount = 0.0; needsFix = true; }
-        if (txn.partyId != null && (txn.partyName == null || txn.partyName!.isEmpty)) {
-          final p = await isar.partys.get(txn.partyId!);
+        if (txn.partyUuid != null && txn.partyUuid!.isNotEmpty && (txn.partyName == null || txn.partyName!.isEmpty)) {
+          final p = await isar.partys.filter().uuidEqualTo(txn.partyUuid!).findFirst();
           if (p != null) { txn.partyName = p.partyName; needsFix = true; }
         }
         await isar.transactions.put(txn);
