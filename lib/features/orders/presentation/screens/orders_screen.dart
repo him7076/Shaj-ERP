@@ -27,6 +27,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(orderSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
+    });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.push(
@@ -181,7 +184,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 }
 
                 final visibleList = orders.take(_displayLimit).toList();
-                final hasMore = orders.length > _displayLimit;
+                final hasMore = orders.length >= _displayLimit;
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -196,6 +199,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                               setState(() {
                                 _displayLimit += 50;
                               });
+                              ref.read(orderSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
                             },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

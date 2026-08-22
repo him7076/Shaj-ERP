@@ -58,6 +58,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           AddEditTransactionDialog.show(context, initialType: widget.lockedType);
         }
       }
+      
+      // Ensure initial limit matches
+      ref.read(transactionSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
     });
   }
 
@@ -409,8 +412,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final transactionsAsync = ref.watch(filteredTransactionsProvider);
     final filter = ref.watch(transactionSearchFilterProvider);
+    final transactionsAsync = ref.watch(filteredTransactionsProvider);
+    final totalsAsync = ref.watch(transactionTotalsProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
     final isMobile = ResponsiveLayout.isMobile(context);
 
@@ -507,10 +511,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Summary Metrics Row
-          transactionsAsync.when(
-            data: (list) {
+          totalsAsync.when(
+            data: (totals) {
               if (widget.lockedType != null) {
-                final totalAmount = list.fold(0.0, (sum, t) => sum + (t.amount ?? 0.0));
                 Color typeColor = Colors.grey;
                 IconData typeIcon = Icons.info_outline;
                 String metricTitle = '';
@@ -539,6 +542,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   typeColor = Colors.blue;
                   typeIcon = Icons.monetization_on;
                   metricTitle = 'Total Other Income';
+                } else if (widget.lockedType == 'Sales Order') {
+                  typeColor = Colors.purple;
+                  typeIcon = Icons.shopping_cart;
+                  metricTitle = 'Total Order Amount';
                 }
 
                 return Padding(
@@ -546,24 +553,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   child: _buildMetricCard(
                     theme: theme,
                     title: metricTitle,
-                    value: currencyFormat.format(totalAmount),
+                    value: currencyFormat.format(totals.totalAmount),
                     icon: typeIcon,
                     color: typeColor,
                   ),
                 );
-              }
-
-              double totalIn = 0.0;
-              double totalOut = 0.0;
-
-              for (var t in list) {
-                final amt = t.amount ?? 0.0;
-                final type = t.transactionType;
-                if (type == 'Receipt' || type == 'Sales' || type == 'Other Income') {
-                  totalIn += amt;
-                } else if (type == 'Payment' || type == 'Purchase' || type == 'Expense') {
-                  totalOut += amt;
-                }
               }
 
               return Padding(
@@ -578,7 +572,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             child: _buildMetricCard(
                               theme: theme,
                               title: 'Inflow',
-                              value: currencyFormat.format(totalIn),
+                              value: currencyFormat.format(totals.totalIn),
                               icon: Icons.arrow_downward,
                               color: Colors.green,
                               isMobile: true,
@@ -589,7 +583,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             child: _buildMetricCard(
                               theme: theme,
                               title: 'Outflow',
-                              value: currencyFormat.format(totalOut),
+                              value: currencyFormat.format(totals.totalOut),
                               icon: Icons.arrow_upward,
                               color: Colors.red,
                               isMobile: true,
@@ -600,9 +594,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             child: _buildMetricCard(
                               theme: theme,
                               title: 'Net Flow',
-                              value: currencyFormat.format(totalIn - totalOut),
-                              icon: Icons.swap_vert,
-                              color: (totalIn - totalOut) >= 0 ? Colors.blue : Colors.orange,
+                              value: currencyFormat.format((totals.totalIn - totals.totalOut).abs()),
+                              icon: Icons.account_balance_wallet,
+                              color: (totals.totalIn - totals.totalOut) >= 0 ? Colors.blue : Colors.orange,
                               isMobile: true,
                             ),
                           ),
@@ -616,7 +610,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           child: _buildMetricCard(
                             theme: theme,
                             title: 'Total Inflow (Receipts & Sales)',
-                            value: currencyFormat.format(totalIn),
+                            value: currencyFormat.format(totals.totalIn),
                             icon: Icons.arrow_downward,
                             color: Colors.green,
                           ),
@@ -626,7 +620,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           child: _buildMetricCard(
                             theme: theme,
                             title: 'Total Outflow (Payments & Expenses)',
-                            value: currencyFormat.format(totalOut),
+                            value: currencyFormat.format(totals.totalOut),
                             icon: Icons.arrow_upward,
                             color: Colors.red,
                           ),
@@ -636,9 +630,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           child: _buildMetricCard(
                             theme: theme,
                             title: 'Net Cash Flow',
-                            value: currencyFormat.format(totalIn - totalOut),
-                            icon: Icons.swap_vert,
-                            color: (totalIn - totalOut) >= 0 ? Colors.blue : Colors.orange,
+                            value: currencyFormat.format((totals.totalIn - totals.totalOut).abs()),
+                            icon: Icons.account_balance_wallet,
+                            color: (totals.totalIn - totals.totalOut) >= 0 ? Colors.blue : Colors.orange,
                           ),
                         ),
                       ],
@@ -647,7 +641,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 ),
               );
             },
-            loading: () => const SizedBox.shrink(),
+            loading: () => const LinearProgressIndicator(),
             error: (_, __) => const SizedBox.shrink(),
           ),
 
@@ -830,7 +824,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 }
 
                 final visibleList = list.take(_displayLimit).toList();
-                final hasMore = list.length > _displayLimit;
+                final hasMore = list.length >= _displayLimit;
 
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
@@ -846,6 +840,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               setState(() {
                                 _displayLimit += 50;
                               });
+                              ref.read(transactionSearchFilterProvider.notifier).update(
+                                    (state) => state.copyWith(limit: _displayLimit),
+                                  );
                             },
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

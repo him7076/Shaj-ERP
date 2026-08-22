@@ -30,38 +30,38 @@ class ReportService {
     final startBoundary = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
     final endBoundary = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
 
-    final rawInvoices = await isar.invoices
+    var query = isar.invoices
         .filter()
         .isDeletedEqualTo(false)
-        .findAll();
-
-    var list = rawInvoices.where((inv) {
-      if (inv.paymentStatus == 'Cancelled') return false;
-      final date = inv.invoiceDate ?? inv.createdAt;
-      return (date.isAfter(startBoundary) || date.isAtSameMomentAs(startBoundary)) &&
-             (date.isBefore(endBoundary) || date.isAtSameMomentAs(endBoundary));
-    }).toList();
+        .and()
+        .not().paymentStatusEqualTo('Cancelled')
+        .and()
+        .group((q) => q
+            .invoiceDateBetween(startBoundary, endBoundary)
+            .or()
+            .group((q2) => q2.invoiceDateIsNull().and().createdAtBetween(startBoundary, endBoundary))
+        );
 
     if (partyUuid != null && partyUuid.isNotEmpty) {
       final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
       if (party != null) {
-        final pNameKey = party.partyName?.trim().toLowerCase();
-        list = list.where((inv) {
-          final matchId = inv.partyId == party.id;
-          final matchUuid = inv.party.value?.uuid == partyUuid;
-          final matchName = pNameKey != null && pNameKey.isNotEmpty && (inv.partyName?.trim().toLowerCase() == pNameKey);
-          return matchId || matchUuid || matchName;
-        }).toList();
+        query = query.and().group((q) => q
+            .partyIdEqualTo(party.id)
+            .or()
+            .party((p) => p.uuidEqualTo(partyUuid))
+            .or()
+            .partyNameEqualTo(party.partyName ?? '', caseSensitive: false)
+        );
       } else {
-        list = [];
+        query = query.and().idEqualTo(-1); // return empty
       }
     }
 
     if (paymentStatus != null && paymentStatus.isNotEmpty && paymentStatus != 'All') {
-      list = list.where((inv) => inv.paymentStatus == paymentStatus).toList();
+      query = query.and().paymentStatusEqualTo(paymentStatus);
     }
 
-    final allMatches = list;
+    final allMatches = await query.findAll();
 
     double totalSales = 0.0;
     double totalGST = 0.0;
@@ -146,16 +146,16 @@ class ReportService {
     final startBoundary = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
     final endBoundary = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
 
-    final allInvoices = await isar.invoices
+    final invoices = await isar.invoices
         .filter()
         .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .invoiceDateBetween(startBoundary, endBoundary)
+            .or()
+            .group((q2) => q2.invoiceDateIsNull().and().createdAtBetween(startBoundary, endBoundary))
+        )
         .findAll();
-
-    final invoices = allInvoices.where((inv) {
-      final date = inv.invoiceDate ?? inv.createdAt;
-      return (date.isAfter(startBoundary) || date.isAtSameMomentAs(startBoundary)) &&
-             (date.isBefore(endBoundary) || date.isAtSameMomentAs(endBoundary));
-    }).toList();
 
     double taxableAmount = 0.0;
     double cgstAmount = 0.0;
@@ -171,16 +171,62 @@ class ReportService {
     double b2cGst = 0.0;
     int b2cCount = 0;
 
-    // HSN aggregation map
     final Map<String, _HsnAggregate> hsnMap = {};
+    
+    // Batch fetch invoice items to avoid O(N*M) DB query
+    List<InvoiceItem> allItems;
+    if (kIsWeb) {
+      final validInvoiceIds = invoices.map((i) => i.id).toSet();
+      final validInvoiceUuids = invoices.map((i) => i.uuid).whereType<String>().toSet();
+      final fetchedAllItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      allItems = fetchedAllItems.where((item) => 
+        (item.parentInvoiceId != null && validInvoiceIds.contains(item.parentInvoiceId)) || 
+        (item.parentInvoiceUuid != null && validInvoiceUuids.contains(item.parentInvoiceUuid))
+      ).toList();
+    } else {
+      allItems = await isar.invoiceItems
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoice((q) => q
+              .isDeletedEqualTo(false)
+              .and()
+              .invoiceStatusEqualTo('Active')
+              .and()
+              .group((q2) => q2
+                  .invoiceDateBetween(startBoundary, endBoundary)
+                  .or()
+                  .group((q3) => q3.invoiceDateIsNull().and().createdAtBetween(startBoundary, endBoundary))
+              )
+          )
+          .findAll();
+    }
+    
+    // Create items map grouped by invoice ID/UUID for O(1) lookup
+    final Map<int, List<InvoiceItem>> itemsByInvoiceId = {};
+    final Map<String, List<InvoiceItem>> itemsByInvoiceUuid = {};
+    for (var item in allItems) {
+      if (item.parentInvoiceId != null) {
+        itemsByInvoiceId.putIfAbsent(item.parentInvoiceId!, () => []).add(item);
+      }
+      if (item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) {
+        itemsByInvoiceUuid.putIfAbsent(item.parentInvoiceUuid!, () => []).add(item);
+      }
+    }
+
+    // Batch fetch parties to avoid N+1 load() calls
+    final uniquePartyIds = invoices.map((i) => i.partyId).whereType<int>().toSet().toList();
+    final fetchedParties = await isar.partys.getAll(uniquePartyIds);
+    final partyMap = {
+      for (int i = 0; i < uniquePartyIds.length; i++)
+        if (fetchedParties[i] != null) uniquePartyIds[i]: fetchedParties[i]!
+    };
 
     for (var inv in invoices) {
       if (inv.paymentStatus == 'Cancelled') continue;
 
       // Aggregating HSN details and item totals from invoice items
-      final items = (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
-          .where((item) => item.parentInvoiceId == inv.id || (inv.uuid != null && inv.uuid!.isNotEmpty && item.parentInvoiceUuid == inv.uuid))
-          .toList();
+      final items = (itemsByInvoiceId[inv.id] ?? itemsByInvoiceUuid[inv.uuid] ?? []);
 
       double calculatedItemTaxable = 0.0;
       double calculatedItemGst = 0.0;
@@ -231,9 +277,9 @@ class ReportService {
         sgstAmount += invGst / 2.0;
       }
 
-      try { await inv.party.load(); } catch (_) {}
-      final gstin = (inv.party.value?.gstNumber?.trim().isNotEmpty == true)
-          ? inv.party.value!.gstNumber!.trim()
+      final linkedParty = inv.partyId != null ? partyMap[inv.partyId] : null;
+      final gstin = (linkedParty?.gstNumber?.trim().isNotEmpty == true)
+          ? linkedParty!.gstNumber!.trim()
           : (inv.gstNumber?.trim() ?? '');
 
       if (gstin.length >= 15) {
@@ -282,17 +328,18 @@ class ReportService {
     final startBoundary = DateTime(start.year, start.month, start.day, 0, 0, 0, 0);
     final endBoundary = DateTime(end.year, end.month, end.day, 23, 59, 59, 999);
 
-    final rawPurchases = await isar.purchases
+    final purchases = await isar.purchases
         .filter()
         .isDeletedEqualTo(false)
+        .and()
+        .not().paymentStatusEqualTo('Cancelled')
+        .and()
+        .group((q) => q
+            .purchaseDateBetween(startBoundary, endBoundary)
+            .or()
+            .group((q2) => q2.purchaseDateIsNull().and().createdAtBetween(startBoundary, endBoundary))
+        )
         .findAll();
-
-    final purchases = rawPurchases.where((pur) {
-      if (pur.paymentStatus == 'Cancelled') return false;
-      final date = pur.purchaseDate ?? pur.createdAt;
-      return (date.isAfter(startBoundary) || date.isAtSameMomentAs(startBoundary)) &&
-             (date.isBefore(endBoundary) || date.isAtSameMomentAs(endBoundary));
-    }).toList();
 
     double totalTaxable = 0.0;
     double totalCGST = 0.0;
@@ -471,27 +518,29 @@ class ReportService {
 
     if (kIsWeb) {
       final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
-      final targetPartyId = party?.id;
+      final targetPartyId = party?.id ?? -1;
 
-      final allPreInvoices = await isar.invoices
+      preInvoices = await isar.invoices
           .filter()
           .isDeletedEqualTo(false)
           .and()
           .invoiceStatusEqualTo('Active')
           .and()
           .invoiceDateLessThan(start)
+          .and()
+          .partyIdEqualTo(targetPartyId)
           .findAll();
-      preInvoices = allPreInvoices.where((inv) => inv.partyId == targetPartyId).toList();
 
-      final allRangeInvoices = await isar.invoices
+      rangeInvoices = await isar.invoices
           .filter()
           .isDeletedEqualTo(false)
           .and()
           .invoiceStatusEqualTo('Active')
           .and()
           .invoiceDateBetween(start, end)
+          .and()
+          .partyIdEqualTo(targetPartyId)
           .findAll();
-      rangeInvoices = allRangeInvoices.where((inv) => inv.partyId == targetPartyId).toList();
     } else {
       preInvoices = await isar.invoices
           .filter()
@@ -599,6 +648,11 @@ class ReportService {
     // Map item ID / UUID / Name -> (totalAmt, totalQty) for Weighted Average Purchase Rate calculation
     final Map<String, double> itemPurTotalAmt = {};
     final Map<String, double> itemPurTotalQty = {};
+    
+    final Map<int, String> itemIdToUuid = {
+      for (var i in items)
+        if (i.id != null && i.uuid != null) i.id!: i.uuid!
+    };
 
     for (var pi in allPurItems) {
       final isValidParent = (pi.purchaseId != null && validPurIds.contains(pi.purchaseId)) ||
@@ -606,8 +660,7 @@ class ReportService {
           pi.purchase.value != null;
       if (!isValidParent) continue;
 
-      try { pi.item.loadSync(); } catch (_) {}
-      final linkedUuid = pi.item.value?.uuid;
+      final linkedUuid = pi.itemId != null ? itemIdToUuid[pi.itemId!] : null;
       final itemIdStr = pi.itemId?.toString();
       final itemNameKey = pi.itemName?.trim().toLowerCase();
 

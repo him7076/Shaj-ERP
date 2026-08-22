@@ -70,26 +70,36 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
 
         double totalPending = 0.0;
         if (item.partyType == 'Supplier') {
-          final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+          final purchases = await isar.purchases.filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q
+                  .partyIdEqualTo(partyId)
+                  .or()
+                  .partyNameEqualTo(item!.partyName ?? '', caseSensitive: false)
+                  .or()
+                  .party((p) => p.uuidEqualTo(partyUuid ?? ''))
+              )
+              .findAll();
           for (var pur in purchases) {
-            try { await pur.party.load(); } catch (_) {}
-            final purUuid = pur.party.value?.uuid;
-            final matchUuid = partyUuid != null && partyUuid.isNotEmpty && purUuid == partyUuid;
-            final matchName = partyNameLower != null && partyNameLower.isNotEmpty && pur.partyName?.trim().toLowerCase() == partyNameLower;
-
-            if ((matchUuid || matchName) && pur.paymentStatus != 'Cancelled') {
+            if (pur.paymentStatus != 'Cancelled') {
               totalPending += (pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0)));
             }
           }
         } else {
-          final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+          final invoices = await isar.invoices.filter()
+              .isDeletedEqualTo(false)
+              .and()
+              .group((q) => q
+                  .partyIdEqualTo(partyId)
+                  .or()
+                  .partyNameEqualTo(item!.partyName ?? '', caseSensitive: false)
+                  .or()
+                  .party((p) => p.uuidEqualTo(partyUuid ?? ''))
+              )
+              .findAll();
           for (var inv in invoices) {
-            try { await inv.party.load(); } catch (_) {}
-            final invUuid = inv.party.value?.uuid;
-            final matchUuid = partyUuid != null && partyUuid.isNotEmpty && invUuid == partyUuid;
-            final matchName = partyNameLower != null && partyNameLower.isNotEmpty && inv.partyName?.trim().toLowerCase() == partyNameLower;
-
-            if ((matchUuid || matchName) && inv.paymentStatus != 'Cancelled') {
+            if (inv.paymentStatus != 'Cancelled') {
               totalPending += (inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0)));
             }
           }
@@ -497,27 +507,20 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
     final List<_PartyActivityItem> list = [];
 
-    // Helper matchers with strict UUID priority guard
-    bool matchParty(String? docPartyUuid, int? docPartyId, String? docPartyName, String? linkPartyUuid, int? linkPartyId) {
-      final docUuid = (docPartyUuid != null && docPartyUuid.isNotEmpty) ? docPartyUuid : linkPartyUuid;
-      if (partyUuid != null && partyUuid.isNotEmpty && docUuid != null && docUuid.isNotEmpty) {
-        return docUuid == partyUuid;
-      }
-      if (partyNameLower != null && partyNameLower.isNotEmpty && docPartyName != null && docPartyName.trim().isNotEmpty) {
-        return docPartyName.trim().toLowerCase() == partyNameLower;
-      }
-      if (partyId > 0 && docPartyId != null && docPartyId > 0) {
-        return docPartyId == partyId || linkPartyId == partyId;
-      }
-      return false;
-    }
-
     // 1. Invoices
-    final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    final invoices = await isar.invoices.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .partyIdEqualTo(partyId)
+            .or()
+            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
+            .or()
+            .party((p) => p.uuidEqualTo(partyUuid ?? ''))
+        )
+        .findAll();
     for (var inv in invoices) {
-      try { await inv.party.load(); } catch (_) {}
-      final isMatch = matchParty(inv.party.value?.uuid, inv.partyId, inv.partyName, inv.party.value?.uuid, inv.party.value?.id);
-      if (isMatch && inv.paymentStatus != 'Cancelled') {
+      if (inv.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
           id: inv.id,
           uuid: inv.uuid,
@@ -533,11 +536,19 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     }
 
     // 2. Purchases
-    final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    final purchases = await isar.purchases.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .partyIdEqualTo(partyId)
+            .or()
+            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
+            .or()
+            .party((p) => p.uuidEqualTo(partyUuid ?? ''))
+        )
+        .findAll();
     for (var pur in purchases) {
-      try { await pur.party.load(); } catch (_) {}
-      final isMatch = matchParty(pur.party.value?.uuid, pur.partyId, pur.partyName, pur.party.value?.uuid, pur.party.value?.id);
-      if (isMatch && pur.paymentStatus != 'Cancelled') {
+      if (pur.paymentStatus != 'Cancelled') {
         list.add(_PartyActivityItem(
           id: pur.id,
           uuid: pur.uuid,
@@ -553,24 +564,30 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     }
 
     // 3. Transactions (Receipts, Payments, etc.)
-    final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+    final txns = await isar.transactions.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .partyUuidEqualTo(partyUuid ?? '')
+            .or()
+            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
+            .or()
+            .party((p) => p.uuidEqualTo(partyUuid ?? ''))
+        )
+        .findAll();
     for (var t in txns) {
-      try { await t.party.load(); } catch (_) {}
-      final isMatch = matchParty(t.partyUuid, null, t.partyName, t.party.value?.uuid, t.party.value?.id);
-      if (isMatch) {
-        list.add(_PartyActivityItem(
-          id: t.id,
-          uuid: t.uuid,
-          number: t.transactionNumber ?? 'TXN-${t.id}',
-          type: t.transactionType ?? 'Transaction',
-          amount: t.amount ?? 0.0,
-          pendingAmount: 0.0,
-          status: t.paymentStatus ?? (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED'),
-          mode: t.paymentMode ?? 'Cash',
-          date: t.transactionDate ?? t.createdAt,
-          rawTxn: t,
-        ));
-      }
+      list.add(_PartyActivityItem(
+        id: t.id,
+        uuid: t.uuid,
+        number: t.transactionNumber ?? 'TXN-${t.id}',
+        type: t.transactionType ?? 'Transaction',
+        amount: t.amount ?? 0.0,
+        pendingAmount: 0.0,
+        status: t.paymentStatus ?? (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED'),
+        mode: t.paymentMode ?? 'Cash',
+        date: t.transactionDate ?? t.createdAt,
+        rawTxn: t,
+      ));
     }
 
     // Sort by date descending

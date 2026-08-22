@@ -43,6 +43,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     // Stock recalculation REMOVED from initState — it was loading 8 full DB collections
     // and running O(N*M) nested loops on every screen open (3-10s freeze).
     // Stock is now only recalculated after backup restore, Excel import, or cloud sync.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
+    });
   }
 
   @override
@@ -445,7 +448,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 }
 
                 final visibleList = list.take(_displayLimit).toList();
-                final hasMore = list.length > _displayLimit;
+                final hasMore = list.length >= _displayLimit;
 
                 return Column(
                   children: [
@@ -473,6 +476,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                             setState(() {
                               _displayLimit += 50;
                             });
+                            ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
                           },
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
@@ -853,7 +857,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       bool hasPurchases = false;
 
       for (var pi in purchaseItems) {
-        try { await pi.item.load(); } catch (_) {}
         final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && pi.item.value?.uuid == item.uuid;
         final matchName = pi.itemName != null && item.itemName != null && pi.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
         final matchId = pi.itemId != null && pi.itemId! > 0 && pi.itemId == item.id;
@@ -897,7 +900,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       double salesValue = 0.0;
 
       for (var ii in invoiceItems) {
-        try { await ii.item.load(); } catch (_) {}
         final matchUuid = item.uuid != null && item.uuid!.isNotEmpty && ii.item.value?.uuid == item.uuid;
         final matchName = ii.itemName != null && item.itemName != null && ii.itemName!.trim().toLowerCase() == item.itemName!.trim().toLowerCase();
         final matchId = ii.itemId != null && ii.itemId! > 0 && ii.itemId == item.id;

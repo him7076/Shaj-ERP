@@ -35,6 +35,9 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(purchaseSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
+    });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.push(
@@ -272,6 +275,8 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final purchasesAsync = ref.watch(purchaseListProvider);
+    final filter = ref.watch(purchaseSearchFilterProvider);
+    final totalsAsync = ref.watch(purchaseTotalsProvider);
     final notifierState = ref.watch(purchaseNotifierProvider);
     final isMobile = ResponsiveLayout.isMobile(context);
 
@@ -290,7 +295,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                   isDense: true,
                 ),
                 onChanged: (val) {
-                  ref.read(purchaseSearchQueryProvider.notifier).state = val;
+                  ref.read(purchaseSearchFilterProvider.notifier).update((state) => state.copyWith(query: val));
                 },
               )
             : Text(
@@ -310,7 +315,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                 _showSearch = !_showSearch;
                 if (!_showSearch) {
                   _searchController.clear();
-                  ref.read(purchaseSearchQueryProvider.notifier).state = '';
+                  ref.read(purchaseSearchFilterProvider.notifier).update((state) => state.copyWith(query: ''));
                 }
               });
             },
@@ -420,21 +425,19 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                   );
                 }
 
-                // Calculate Totals
-                final double totalAmt = list.fold(0.0, (sum, p) => sum + (p.grandTotal ?? 0.0));
-                final double totalTax = list.fold(0.0, (sum, p) => sum + (p.totalGST ?? 0.0));
                 final visibleList = list.take(_displayLimit).toList();
-                final hasMore = list.length > _displayLimit;
+                final hasMore = list.length >= _displayLimit;
 
                 return Column(
                   children: [
-                    // Summary Banner Card
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Container(
-                        padding: const EdgeInsets.all(16.0),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.06),
+                    totalsAsync.when(
+                      data: (totals) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(0.06),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: theme.colorScheme.primary.withOpacity(0.12)),
                         ),
@@ -453,7 +456,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  currencyFormat.format(totalAmt),
+                                  currencyFormat.format(totals.totalAmt),
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -475,7 +478,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  currencyFormat.format(totalTax),
+                                  currencyFormat.format(totals.totalTax),
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -487,7 +490,11 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                           ],
                         ),
                       ),
-                    ),
+                    );
+                  },
+                  loading: () => const LinearProgressIndicator(),
+                  error: (_, __) => const SizedBox(),
+                ),
 
                     // List of purchases
                     Expanded(
@@ -504,6 +511,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                     setState(() {
                                       _displayLimit += 50;
                                     });
+                                    ref.read(purchaseSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
                                   },
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

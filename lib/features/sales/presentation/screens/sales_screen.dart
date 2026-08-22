@@ -40,6 +40,9 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
+    });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.push(
@@ -292,6 +295,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     final theme = Theme.of(context);
     final filter = ref.watch(invoiceSearchFilterProvider);
     final invoicesAsync = ref.watch(filteredInvoicesProvider);
+    final totalsAsync = ref.watch(invoiceTotalsProvider);
     final partiesAsync = ref.watch(partiesListProvider);
     final isMobile = ResponsiveLayout.isMobile(context);
 
@@ -468,19 +472,19 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   );
                 }
 
-                final totalCount = list.length;
-                final totalSales = list.fold<double>(0.0, (sum, inv) => sum + (inv.grandTotal ?? 0.0));
-                final totalBalanceDue = list.fold<double>(0.0, (sum, inv) => sum + (inv.pendingAmount ?? 0.0));
-
                 final visibleList = list.take(_displayLimit).toList();
-                final hasMore = list.length > _displayLimit;
+                final hasMore = list.length >= _displayLimit;
 
                 return Column(
                   children: [
-                    _buildSummaryBanner(theme, totalCount, totalSales, totalBalanceDue),
+                    totalsAsync.when(
+                      data: (totals) => _buildSummaryBanner(theme, totals.count, totals.totalSales, totals.totalBalanceDue),
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) => const SizedBox(),
+                    ),
                     Expanded(
                       child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                         itemCount: visibleList.length + (hasMore ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index == visibleList.length) {
@@ -492,6 +496,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                     setState(() {
                                       _displayLimit += 50;
                                     });
+                                    ref.read(invoiceSearchFilterProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
                                   },
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

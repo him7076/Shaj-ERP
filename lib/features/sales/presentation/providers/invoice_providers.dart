@@ -319,6 +319,7 @@ class InvoiceSearchFilter {
   final int? partyId;
   final String invoiceType; // 'All', 'Tax Invoice', 'Retail Invoice', 'Cash Invoice', 'Credit Invoice'
   final String sortBy; // 'Date', 'Amount High-Low', 'Amount Low-High', 'Due Date'
+  final int limit;
 
   const InvoiceSearchFilter({
     this.query = '',
@@ -327,6 +328,7 @@ class InvoiceSearchFilter {
     this.partyId,
     this.invoiceType = 'All',
     this.sortBy = 'Date',
+    this.limit = 50,
   });
 
   InvoiceSearchFilter copyWith({
@@ -336,6 +338,7 @@ class InvoiceSearchFilter {
     int? partyId,
     String? invoiceType,
     String? sortBy,
+    int? limit,
   }) {
     return InvoiceSearchFilter(
       query: query ?? this.query,
@@ -344,65 +347,92 @@ class InvoiceSearchFilter {
       partyId: partyId ?? this.partyId,
       invoiceType: invoiceType ?? this.invoiceType,
       sortBy: sortBy ?? this.sortBy,
+      limit: limit ?? this.limit,
     );
   }
 }
 
 final invoiceSearchFilterProvider = StateProvider<InvoiceSearchFilter>((ref) => const InvoiceSearchFilter());
 
-// Filtered Invoices Provider
-final filteredInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
-  final filter = ref.watch(invoiceSearchFilterProvider);
-  final repo = ref.watch(invoiceRepositoryProvider);
-
-  var list = await repo.searchInvoices(filter.query);
-
-  // Note: Removed N+1 loops for party and invoiceItems here. 
-  // Party name is cached in invoice.partyName. Detail screen loads items as needed.
-
-  // Filter Payment Status
+// Helper to build the base query for both list and totals
+QueryBuilder<Invoice, Invoice, QAfterSortBy> _buildInvoiceQuery(Isar isar, InvoiceSearchFilter filter) {
+  var qb = isar.invoices.filter().isDeletedEqualTo(false);
+  
+  if (filter.query.trim().isNotEmpty) {
+    final q = filter.query.trim().toLowerCase();
+    qb = qb.and().group((q2) => q2
+      .invoiceNumberContains(q, caseSensitive: false)
+      .or()
+      .partyNameContains(q, caseSensitive: false)
+      .or()
+      .remarksContains(q, caseSensitive: false)
+    );
+  }
+  
   if (filter.paymentStatus != 'All') {
-    list = list.where((i) => i.paymentStatus == filter.paymentStatus).toList();
+    qb = qb.paymentStatusEqualTo(filter.paymentStatus);
   }
-
-  // Filter Invoice Type
+  
   if (filter.invoiceType != 'All') {
-    list = list.where((i) => i.invoiceType == filter.invoiceType).toList();
+    qb = qb.invoiceTypeEqualTo(filter.invoiceType);
   }
-
-  // Filter Party
+  
   if (filter.partyId != null) {
-    list = list.where((i) => (kIsWeb ? i.partyId : i.party.value?.id) == filter.partyId).toList();
+    qb = qb.partyIdEqualTo(filter.partyId);
   }
-
-  // Filter Date Range
+  
   if (filter.dateRange != null) {
-    list = list.where((i) {
-      if (i.invoiceDate == null) return false;
-      return i.invoiceDate!.isAfter(filter.dateRange!.start.subtract(const Duration(days: 1))) &&
-          i.invoiceDate!.isBefore(filter.dateRange!.end.add(const Duration(days: 1)));
-    }).toList();
+    qb = qb.and().invoiceDateBetween(
+      filter.dateRange!.start.subtract(const Duration(days: 1)),
+      filter.dateRange!.end.add(const Duration(days: 1))
+    );
   }
 
   // Sort
   switch (filter.sortBy) {
     case 'Date':
-      list.sort((a, b) => (b.invoiceDate ?? DateTime.now()).compareTo(a.invoiceDate ?? DateTime.now()));
-      break;
+      return qb.sortByInvoiceDateDesc();
     case 'Amount High-Low':
-      list.sort((a, b) => (b.grandTotal ?? 0.0).compareTo(a.grandTotal ?? 0.0));
-      break;
+      return qb.sortByGrandTotalDesc();
     case 'Amount Low-High':
-      list.sort((a, b) => (a.grandTotal ?? 0.0).compareTo(b.grandTotal ?? 0.0));
-      break;
+      return qb.sortByGrandTotal();
     case 'Due Date':
-      list.sort((a, b) {
-        if (a.dueDate == null) return 1;
-        if (b.dueDate == null) return -1;
-        return a.dueDate!.compareTo(b.dueDate!);
-      });
-      break;
+      return qb.sortByDueDateDesc();
+    default:
+      return qb.sortByInvoiceDateDesc();
   }
+}
 
-  return list;
+// Filtered Invoices Provider (Paginated for UI)
+final filteredInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
+  final filter = ref.watch(invoiceSearchFilterProvider);
+  final isar = ref.watch(isarProvider);
+  
+  final qb = _buildInvoiceQuery(isar, filter);
+  return await qb.limit(filter.limit).findAll();
+});
+
+class InvoiceTotals {
+  final int count;
+  final double totalSales;
+  final double totalBalanceDue;
+  const InvoiceTotals(this.count, this.totalSales, this.totalBalanceDue);
+}
+
+// Provider for accurate totals without loading full DB objects into RAM
+final invoiceTotalsProvider = FutureProvider<InvoiceTotals>((ref) async {
+  final filter = ref.watch(invoiceSearchFilterProvider);
+  final isar = ref.watch(isarProvider);
+  
+  final qb = _buildInvoiceQuery(isar, filter);
+  
+  // Isar property fetching is highly optimized and avoids deserializing full objects
+  final count = await qb.count();
+  final grandTotals = await qb.grandTotalProperty().findAll();
+  final pendingAmounts = await qb.pendingAmountProperty().findAll();
+  
+  final totalSales = grandTotals.whereType<double>().fold(0.0, (sum, val) => sum + val);
+  final totalBalanceDue = pendingAmounts.whereType<double>().fold(0.0, (sum, val) => sum + val);
+  
+  return InvoiceTotals(count, totalSales, totalBalanceDue);
 });

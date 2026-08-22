@@ -36,7 +36,13 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
         data: (allParties) {
           final isar = ref.read(databaseServiceProvider).isar;
           return FutureBuilder<List<Invoice>>(
-            future: isar.invoices.filter().isDeletedEqualTo(false).findAll(),
+            future: isar.invoices.filter()
+                .isDeletedEqualTo(false)
+                .and()
+                .not().paymentStatusEqualTo('Cancelled')
+                .and()
+                .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+                .findAll(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -45,13 +51,17 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
               final Map<String, double> partyUuidDues = {};
               final Map<String, double> partyNameDues = {};
 
+              final Map<int, String> partyIdToUuid = {
+                for (var p in allParties)
+                  if (p.id != null && p.uuid != null) p.id!: p.uuid!
+              };
+
               for (var inv in invoices) {
                 if (inv.paymentStatus == 'Cancelled') continue;
                 final pending = inv.pendingAmount ?? 
                     ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
                 if (pending > 0) {
-                  try { inv.party.loadSync(); } catch (_) {}
-                  final pUuid = inv.party.value?.uuid;
+                  final pUuid = inv.partyId != null ? partyIdToUuid[inv.partyId!] : null;
                   if (pUuid != null && pUuid.isNotEmpty) {
                     partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
                   }

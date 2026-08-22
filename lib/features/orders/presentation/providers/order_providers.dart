@@ -326,6 +326,7 @@ class OrderSearchFilter {
   final DateTimeRange? dateRange;
   final int? partyId;
   final String sortBy; // 'Recent', 'Amount High-Low', 'Amount Low-High'
+  final int limit;
 
   const OrderSearchFilter({
     this.query = '',
@@ -333,6 +334,7 @@ class OrderSearchFilter {
     this.dateRange,
     this.partyId,
     this.sortBy = 'Recent',
+    this.limit = 50,
   });
 
   OrderSearchFilter copyWith({
@@ -341,6 +343,7 @@ class OrderSearchFilter {
     DateTimeRange? dateRange,
     int? partyId,
     String? sortBy,
+    int? limit,
   }) {
     return OrderSearchFilter(
       query: query ?? this.query,
@@ -348,6 +351,7 @@ class OrderSearchFilter {
       dateRange: dateRange ?? this.dateRange,
       partyId: partyId ?? this.partyId,
       sortBy: sortBy ?? this.sortBy,
+      limit: limit ?? this.limit,
     );
   }
 }
@@ -357,44 +361,47 @@ final orderSearchFilterProvider = StateProvider<OrderSearchFilter>((ref) => cons
 // Filtered Orders Provider
 final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
   final filter = ref.watch(orderSearchFilterProvider);
-  final repo = ref.watch(orderRepositoryProvider);
-
-  var list = await repo.searchOrders(filter.query);
-
-  // Note: Removed N+1 loops for party and orderItems here.
-  // Party name is cached in order.partyName. Detail screen loads items as needed.
-
-  // Filter Status
+  final isar = ref.watch(isarProvider);
+  
+  var qb = isar.orders.filter().isDeletedEqualTo(false);
+  
+  if (filter.query.trim().isNotEmpty) {
+    final q = filter.query.trim().toLowerCase();
+    qb = qb.and().group((q2) => q2
+      .orderNumberContains(q, caseSensitive: false)
+      .or()
+      .partyNameContains(q, caseSensitive: false)
+      .or()
+      .remarksContains(q, caseSensitive: false)
+    );
+  }
+  
   if (filter.status != 'All') {
-    list = list.where((o) => o.status == filter.status).toList();
+    qb = qb.statusEqualTo(filter.status);
   }
-
-  // Filter Party
+  
   if (filter.partyId != null) {
-    list = list.where((o) => (kIsWeb ? o.partyId : o.party.value?.id) == filter.partyId).toList();
+    qb = qb.partyIdEqualTo(filter.partyId);
   }
-
-  // Filter Date Range
+  
   if (filter.dateRange != null) {
-    list = list.where((o) {
-      if (o.orderDate == null) return false;
-      return o.orderDate!.isAfter(filter.dateRange!.start.subtract(const Duration(days: 1))) &&
-          o.orderDate!.isBefore(filter.dateRange!.end.add(const Duration(days: 1)));
-    }).toList();
+    qb = qb.and().orderDateBetween(
+      filter.dateRange!.start.subtract(const Duration(days: 1)),
+      filter.dateRange!.end.add(const Duration(days: 1))
+    );
   }
-
-  // Sort
+  
   switch (filter.sortBy) {
     case 'Recent':
-      list.sort((a, b) => (b.orderDate ?? DateTime.now()).compareTo(a.orderDate ?? DateTime.now()));
+      qb = qb.sortByOrderDateDesc();
       break;
     case 'Amount High-Low':
-      list.sort((a, b) => (b.grandTotal ?? 0.0).compareTo(a.grandTotal ?? 0.0));
+      qb = qb.sortByGrandTotalDesc();
       break;
     case 'Amount Low-High':
-      list.sort((a, b) => (a.grandTotal ?? 0.0).compareTo(b.grandTotal ?? 0.0));
+      qb = qb.sortByGrandTotal();
       break;
   }
-
-  return list;
+  
+  return await qb.limit(filter.limit).findAll();
 });

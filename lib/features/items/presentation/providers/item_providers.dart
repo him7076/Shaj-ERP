@@ -83,6 +83,7 @@ class ItemSearchFilter {
   final String stockStatus; // 'All', 'In Stock', 'Low Stock', 'Out of Stock'
   final double? gstRate;
   final String sortBy; // 'Name A-Z', 'Name Z-A', 'Price L-H', 'Price H-L', 'Stock L-H', 'Stock H-L'
+  final int limit;
 
   const ItemSearchFilter({
     this.query = '',
@@ -91,6 +92,7 @@ class ItemSearchFilter {
     this.stockStatus = 'All',
     this.gstRate,
     this.sortBy = 'Name A-Z',
+    this.limit = 50,
   });
 
   ItemSearchFilter copyWith({
@@ -100,6 +102,7 @@ class ItemSearchFilter {
     String? stockStatus,
     double? gstRate,
     String? sortBy,
+    int? limit,
   }) {
     return ItemSearchFilter(
       query: query ?? this.query,
@@ -108,6 +111,7 @@ class ItemSearchFilter {
       stockStatus: stockStatus ?? this.stockStatus,
       gstRate: gstRate ?? this.gstRate,
       sortBy: sortBy ?? this.sortBy,
+      limit: limit ?? this.limit,
     );
   }
 }
@@ -148,16 +152,42 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
   if (filter.brandId != null) {
       queryBuilder = queryBuilder.and().brand((q) => q.idEqualTo(filter.brandId!));
   }
-
-  var items = await queryBuilder.findAll();
-
-  // Filter GST
+  
   if (filter.gstRate != null) {
-    items = items.where((item) => item.gstRate == filter.gstRate).toList();
+      queryBuilder = queryBuilder.and().gstRateEqualTo(filter.gstRate);
+  }
+  
+  // Sort
+  switch (filter.sortBy) {
+    case 'Name A-Z':
+      queryBuilder = queryBuilder.sortByItemName();
+      break;
+    case 'Name Z-A':
+      queryBuilder = queryBuilder.sortByItemNameDesc();
+      break;
+    case 'Price L-H':
+      queryBuilder = queryBuilder.sortBySellRate();
+      break;
+    case 'Price H-L':
+      queryBuilder = queryBuilder.sortBySellRateDesc();
+      break;
+    case 'Stock L-H':
+      queryBuilder = queryBuilder.sortByCurrentStock();
+      break;
+    case 'Stock H-L':
+      queryBuilder = queryBuilder.sortByCurrentStockDesc();
+      break;
   }
 
-  // Filter Stock Status
-  if (filter.stockStatus != 'All') {
+  // If there's no dart-side filtering, push pagination to DB
+  var items = <Item>[];
+  if (filter.stockStatus == 'All') {
+    items = await queryBuilder.limit(filter.limit).findAll();
+  } else {
+    // Cannot push limit to DB because dart-side filtering will drop items, breaking pagination sizes
+    items = await queryBuilder.findAll();
+    
+    // Filter Stock Status in Dart
     switch (filter.stockStatus) {
       case 'In Stock':
         items = items.where((item) => (item.currentStock ?? 0.0) > (item.reorderLevel ?? 0.0)).toList();
@@ -169,28 +199,11 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
         items = items.where((item) => stockService.isOutOfStock(item)).toList();
         break;
     }
-  }
-
-  // Sort
-  switch (filter.sortBy) {
-    case 'Name A-Z':
-      items.sort((a, b) => (a.itemName ?? '').compareTo(b.itemName ?? ''));
-      break;
-    case 'Name Z-A':
-      items.sort((a, b) => (b.itemName ?? '').compareTo(a.itemName ?? ''));
-      break;
-    case 'Price L-H':
-      items.sort((a, b) => (a.sellRate ?? 0.0).compareTo(b.sellRate ?? 0.0));
-      break;
-    case 'Price H-L':
-      items.sort((a, b) => (b.sellRate ?? 0.0).compareTo(a.sellRate ?? 0.0));
-      break;
-    case 'Stock L-H':
-      items.sort((a, b) => (a.currentStock ?? 0.0).compareTo(b.currentStock ?? 0.0));
-      break;
-    case 'Stock H-L':
-      items.sort((a, b) => (b.currentStock ?? 0.0).compareTo(a.currentStock ?? 0.0));
-      break;
+    
+    // Apply limit after filtering
+    if (items.length > filter.limit) {
+      items = items.sublist(0, filter.limit);
+    }
   }
 
   return items;

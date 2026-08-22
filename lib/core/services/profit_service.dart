@@ -16,15 +16,46 @@ class ProfitService {
   Future<ProfitSummary> calculateProfitReport(DateTime start, DateTime end) async {
     final isar = _dbService.isar;
 
-    // Fetch active invoices within date bounds
-    final invoices = await isar.invoices
-        .filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceStatusEqualTo('Active')
-        .and()
-        .invoiceDateBetween(start, end)
-        .findAll();
+    List<InvoiceItem> invoiceItems;
+
+    if (kIsWeb) {
+      final invoices = await isar.invoices
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoiceStatusEqualTo('Active')
+          .and()
+          .invoiceDateBetween(start, end)
+          .findAll();
+
+      final validInvoiceIds = invoices.map((i) => i.id).toSet();
+      final validInvoiceUuids = invoices.map((i) => i.uuid).whereType<String>().toSet();
+
+      final allItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      invoiceItems = allItems.where((item) {
+        return (item.parentInvoiceId != null && validInvoiceIds.contains(item.parentInvoiceId)) || 
+               (item.parentInvoiceUuid != null && validInvoiceUuids.contains(item.parentInvoiceUuid));
+      }).toList();
+    } else {
+      invoiceItems = await isar.invoiceItems
+          .filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .invoice((q) => q
+              .isDeletedEqualTo(false)
+              .and()
+              .invoiceStatusEqualTo('Active')
+              .and()
+              .invoiceDateBetween(start, end))
+          .findAll();
+    }
+
+    final uniqueItemIds = invoiceItems.map((e) => e.itemId).whereType<int>().toSet().toList();
+    final fetchedItems = await isar.items.getAll(uniqueItemIds);
+    final itemMap = {
+      for (int i = 0; i < uniqueItemIds.length; i++)
+        if (fetchedItems[i] != null) uniqueItemIds[i]: fetchedItems[i]!
+    };
 
     double totalRevenue = 0.0;
     double totalCost = 0.0;
@@ -32,62 +63,48 @@ class ProfitService {
     // Map to aggregate metrics per product
     final Map<String, _ProductProfitAggregate> productAggregates = {};
 
-    for (var invoice in invoices) {
-      // Fetch associated invoice items
-      final invoiceItems = kIsWeb
-          ? (await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll())
-              .where((item) => item.parentInvoiceId == invoice.id)
-              .toList()
-          : await isar.invoiceItems
-              .filter()
-              .invoice((q) => q.idEqualTo(invoice.id))
-              .and()
-              .isDeletedEqualTo(false)
-              .findAll();
+    for (var invoiceItem in invoiceItems) {
+      final itemName = invoiceItem.itemName ?? 'Unknown Product';
+      final qty = (invoiceItem.quantity ?? 0.0) + (invoiceItem.freeQuantity ?? 0.0);
+      
+      final revenue = invoiceItem.taxableAmount ?? 0.0; // Profit is evaluated against Taxable value (excluding GST)
 
-      for (var invoiceItem in invoiceItems) {
-        final itemName = invoiceItem.itemName ?? 'Unknown Product';
-        final qty = (invoiceItem.quantity ?? 0.0) + (invoiceItem.freeQuantity ?? 0.0);
-        
-        final revenue = invoiceItem.taxableAmount ?? 0.0; // Profit is evaluated against Taxable value (excluding GST)
+      // Fetch buyRate of item. Fallback to 0.0 if not configured.
+      double buyRate = 0.0;
+      Item? originalItem;
+      if (invoiceItem.itemId != null) {
+        originalItem = itemMap[invoiceItem.itemId!];
+      } else if (!kIsWeb && invoiceItem.item.value != null) {
+        originalItem = invoiceItem.item.value;
+      }
 
-        // Fetch buyRate of item. Fallback to 0.0 if not configured.
-        double buyRate = 0.0;
-        Item? originalItem;
-        if (invoiceItem.itemId != null) {
-          originalItem = await isar.items.get(invoiceItem.itemId!);
-        } else if (!kIsWeb && invoiceItem.item.value != null) {
-          originalItem = invoiceItem.item.value;
+      if (originalItem != null) {
+        final isBuggyImport = (originalItem.buyRate != null && originalItem.sellRate != null && 
+                               (originalItem.buyRate! - (originalItem.sellRate! * 0.7)).abs() < 0.01);
+                               
+        if (originalItem.buyRate != null && originalItem.buyRate! > 0 && !isBuggyImport) {
+          buyRate = originalItem.buyRate!;
+        } else if (originalItem.sellRate != null && originalItem.sellRate! > 0) {
+          final double gstPct = originalItem.gstApplicable ? (originalItem.gstRate ?? invoiceItem.gstRate ?? 0.0) : 0.0;
+          buyRate = originalItem.sellRate! / (1.0 + (gstPct / 100.0));
         }
+      }
 
-        if (originalItem != null) {
-          final isBuggyImport = (originalItem.buyRate != null && originalItem.sellRate != null && 
-                                 (originalItem.buyRate! - (originalItem.sellRate! * 0.7)).abs() < 0.01);
-                                 
-          if (originalItem.buyRate != null && originalItem.buyRate! > 0 && !isBuggyImport) {
-            buyRate = originalItem.buyRate!;
-          } else if (originalItem.sellRate != null && originalItem.sellRate! > 0) {
-            final double gstPct = originalItem.gstApplicable ? (originalItem.gstRate ?? invoiceItem.gstRate ?? 0.0) : 0.0;
-            buyRate = originalItem.sellRate! / (1.0 + (gstPct / 100.0));
-          }
-        }
+      final cost = buyRate * qty;
+      final profit = revenue - cost;
 
-        final cost = buyRate * qty;
-        final profit = revenue - cost;
+      totalRevenue += revenue;
+      totalCost += cost;
 
-        totalRevenue += revenue;
-        totalCost += cost;
-
-        if (productAggregates.containsKey(itemName)) {
-          productAggregates[itemName]!.add(qty, revenue, cost);
-        } else {
-          productAggregates[itemName] = _ProductProfitAggregate(
-            itemName: itemName,
-            qtySold: qty,
-            revenue: revenue,
-            cost: cost,
-          );
-        }
+      if (productAggregates.containsKey(itemName)) {
+        productAggregates[itemName]!.add(qty, revenue, cost);
+      } else {
+        productAggregates[itemName] = _ProductProfitAggregate(
+          itemName: itemName,
+          qtySold: qty,
+          revenue: revenue,
+          cost: cost,
+        );
       }
     }
 

@@ -1579,10 +1579,10 @@ class SyncService {
       final allDebitNoteItems = await isar.debitNoteItems.filter().isDeletedEqualTo(false).findAll();
 
       // Load item links for accuracy with non-blocking async yielding
-      for (int i = 0; i < allInvItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allInvItems[i].item.load(); } catch (_) {} }
-      for (int i = 0; i < allPurItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allPurItems[i].item.load(); } catch (_) {} }
-      for (int i = 0; i < allCreditNoteItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allCreditNoteItems[i].item.load(); } catch (_) {} }
-      for (int i = 0; i < allDebitNoteItems.length; i++) { if (i % 20 == 0) await Future.delayed(Duration.zero); try { await allDebitNoteItems[i].item.load(); } catch (_) {} }
+      final Map<int, String> itemIdToUuid = {
+        for (var item in allItems)
+          if (item.id != null && item.uuid != null) item.id!: item.uuid!
+      };
 
       // Filter out deleted parent invoices/purchases
       final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
@@ -1623,7 +1623,7 @@ class SyncService {
               ii.invoice.value != null;
           if (!isValidParent) continue;
 
-          final linkedUuid = ii.item.value?.uuid;
+          final linkedUuid = ii.itemId != null ? itemIdToUuid[ii.itemId!] : ii.item.value?.uuid;
           final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
               (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
 
@@ -1640,7 +1640,7 @@ class SyncService {
               pi.purchase.value != null;
           if (!isValidParent) continue;
 
-          final linkedUuid = pi.item.value?.uuid;
+          final linkedUuid = pi.itemId != null ? itemIdToUuid[pi.itemId!] : pi.item.value?.uuid;
           final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
               (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
 
@@ -1652,7 +1652,7 @@ class SyncService {
         // 3. Sales Returns / Credit Notes (Stock In)
         double totalSalesReturns = 0.0;
         for (var cni in allCreditNoteItems) {
-          final linkedUuid = cni.item.value?.uuid;
+          final linkedUuid = cni.itemId != null ? itemIdToUuid[cni.itemId!] : cni.item.value?.uuid;
           final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
               (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
           if (isMatch) {
@@ -1663,7 +1663,7 @@ class SyncService {
         // 4. Purchase Returns / Debit Notes (Stock Out)
         double totalPurchaseReturns = 0.0;
         for (var dni in allDebitNoteItems) {
-          final linkedUuid = dni.item.value?.uuid;
+          final linkedUuid = dni.itemId != null ? itemIdToUuid[dni.itemId!] : dni.item.value?.uuid;
           final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
               (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
           if (isMatch) {
