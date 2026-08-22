@@ -680,9 +680,25 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       filter.copyWith(query: val);
                                 },
                               ),
-                            if (_showFilter && widget.lockedType == null) ...[
+                            if (_showFilter) ...[
                               if (_showSearch) const Divider(height: 1),
-                              DropdownButtonHideUnderline(
+                              
+                              // Show All History Toggle
+                              SwitchListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: const Text('Show All History (All Time)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                subtitle: const Text('Default is 90 days for speed', style: TextStyle(fontSize: 11)),
+                                value: filter.showAllHistory,
+                                dense: true,
+                                onChanged: (val) {
+                                  ref.read(transactionSearchFilterProvider.notifier).state =
+                                      filter.copyWith(showAllHistory: val);
+                                },
+                              ),
+
+                              if (widget.lockedType == null) ...[
+                                const Divider(height: 1),
+                                DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(
                                   isExpanded: true,
                                   value: filter.transactionType,
@@ -727,11 +743,29 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               },
                             ),
                           ),
-                          if (widget.lockedType == null) ...[
+                          if (_showFilter || widget.lockedType == null) ...[
                             const VerticalDivider(),
                             
-                            // Transaction Type filter
-                            Expanded(
+                            if (_showFilter)
+                              Expanded(
+                                flex: 2,
+                                child: CheckboxListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('All Time History', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                  value: filter.showAllHistory,
+                                  dense: true,
+                                  onChanged: (val) {
+                                    ref.read(transactionSearchFilterProvider.notifier).state =
+                                        filter.copyWith(showAllHistory: val ?? false);
+                                  },
+                                ),
+                              ),
+                              
+                            if (widget.lockedType == null) ...[
+                              const VerticalDivider(),
+                              
+                              // Transaction Type filter
+                              Expanded(
                               flex: 2,
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<String>(

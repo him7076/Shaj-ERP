@@ -86,7 +86,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final itemName = fetchedItem.itemName?.trim().toLowerCase() ?? '';
         final itemUuid = fetchedItem.uuid;
 
-        // 1. Indexed query for Sales Invoices
+        // 1. Indexed query for Sales Invoices (with fallback for legacy records)
         final matchedInvItems = await isar.invoiceItems
             .filter()
             .isDeletedEqualTo(false)
@@ -104,9 +104,21 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final invoicesBatch = await isar.invoices.getAll(invIds);
         final invoicesMap = { for (var inv in invoicesBatch) if (inv != null) inv.id: inv };
 
+        final invUuids = matchedInvItems.map((ii) => ii.parentInvoiceUuid).where((u) => u != null && u.isNotEmpty).cast<String>().toSet().toList();
+        final invoicesByUuidBatch = invUuids.isNotEmpty ? await isar.invoices.filter().anyOf(invUuids, (q, String u) => q.uuidEqualTo(u)).findAll() : <Invoice>[];
+        final invoicesUuidMap = { for (var inv in invoicesByUuidBatch) if (inv.uuid != null) inv.uuid!: inv };
+
         for (var ii in matchedInvItems) {
-          Invoice? inv = ii.parentInvoiceId != null ? invoicesMap[ii.parentInvoiceId] : null;
-          if (inv == null && ii.invoice.value != null) inv = ii.invoice.value;
+          Invoice? inv;
+          if (ii.parentInvoiceId != null) inv = invoicesMap[ii.parentInvoiceId];
+          if (inv == null && ii.parentInvoiceUuid != null) inv = invoicesUuidMap[ii.parentInvoiceUuid];
+          
+          if (inv == null) {
+            try { 
+              await ii.invoice.load();
+              inv = ii.invoice.value; 
+            } catch (_) {}
+          }
 
           if (inv != null && !inv.isDeleted) {
             txs.add(_ItemTransaction(
@@ -138,14 +150,25 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             })
             .findAll();
 
-        // Batch fetch parent Purchases
-        final purIds = matchedPurItems.map((pi) => pi.purchaseId).where((id) => id != null).cast<int>().toSet().toList();
-        final purchasesBatch = await isar.purchases.getAll(purIds);
+        final purIds = matchedPurItems.map((pi) => pi.parentPurchaseId).where((id) => id != null).cast<int>().toSet().toList();
+        final purchasesBatch = await isar.collection<Purchase>().getAll(purIds);
         final purchasesMap = { for (var pur in purchasesBatch) if (pur != null) pur.id: pur };
 
+        final purUuids = matchedPurItems.map((pi) => pi.parentPurchaseUuid).where((u) => u != null && u.isNotEmpty).cast<String>().toSet().toList();
+        final purchasesByUuidBatch = purUuids.isNotEmpty ? await isar.collection<Purchase>().filter().anyOf(purUuids, (q, String u) => q.uuidEqualTo(u)).findAll() : <Purchase>[];
+        final purchasesUuidMap = { for (var pur in purchasesByUuidBatch) if (pur.uuid != null) pur.uuid!: pur };
+
         for (var pi in matchedPurItems) {
-          Purchase? pur = pi.purchaseId != null ? purchasesMap[pi.purchaseId] : null;
-          if (pur == null && pi.purchase.value != null) pur = pi.purchase.value;
+          Purchase? pur;
+          if (pi.parentPurchaseId != null) pur = purchasesMap[pi.parentPurchaseId];
+          if (pur == null && pi.parentPurchaseUuid != null) pur = purchasesUuidMap[pi.parentPurchaseUuid];
+
+          if (pur == null) {
+            try {
+              await pi.purchase.load();
+              pur = pi.purchase.value;
+            } catch (_) {}
+          }
 
           if (pur != null && !pur.isDeleted) {
             txs.add(_ItemTransaction(

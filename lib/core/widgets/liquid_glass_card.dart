@@ -67,7 +67,13 @@ class LiquidGlassCard extends StatelessWidget {
       margin: margin,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
+        boxShadow: lightweight ? [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.15 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ] : [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.35 : 0.08),
             blurRadius: 20,

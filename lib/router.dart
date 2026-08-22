@@ -19,6 +19,7 @@ import 'package:business_sahaj_erp/features/settings/presentation/screens/manage
 import 'package:business_sahaj_erp/features/bank/presentation/screens/manage_cash_and_bank_screen.dart';
 import 'package:business_sahaj_erp/features/sync/presentation/screens/sync_center_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/snapshot_backup_screen.dart';
+import 'package:business_sahaj_erp/features/backup/presentation/screens/data_repair_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
@@ -156,6 +157,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/backup',
             name: 'backup',
             builder: (context, state) => const SnapshotBackupScreen(),
+          ),
+          GoRoute(
+            path: '/data-repair',
+            name: 'data-repair',
+            builder: (context, state) => const DataRepairScreen(),
           ),
           GoRoute(
             path: '/settings',

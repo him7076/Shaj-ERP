@@ -31,11 +31,12 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
       final date30DaysAgo = now.subtract(const Duration(days: 30));
       
+      // FIX: rangeEnd calculation was breaking queries if it evaluated to before endOfToday in the same month.
       final earliestDate = rangeStart.isBefore(date30DaysAgo) ? rangeStart : date30DaysAgo;
       final latestDate = rangeEnd.isAfter(endOfToday) ? rangeEnd : endOfToday;
 
       final queryStart = earliestDate.subtract(const Duration(days: 1));
-      final queryEnd = latestDate.add(const Duration(days: 1));
+      final queryEnd = latestDate.add(const Duration(days: 31)); // Provide ample buffer for timezone & end of month bugs
 
       // 1. Fetch ONLY relevant Invoices using DB-level date filtering
       final periodInvoices = await isar.invoices.filter()

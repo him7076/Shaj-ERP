@@ -20,12 +20,14 @@ class TransactionSearchFilter {
   final String transactionType; // 'All', 'Receipt', 'Payment', 'Sales', 'Sales Order', 'Purchase', 'Credit Note', 'Debit Note', 'Expense', 'Transfer', 'Other Income'
   final DateTimeRange? dateRange;
   final String? partyUuid;
+  final bool showAllHistory;
 
   const TransactionSearchFilter({
     this.query = '',
     this.transactionType = 'All',
     this.dateRange,
     this.partyUuid,
+    this.showAllHistory = false,
   });
 
   TransactionSearchFilter copyWith({
@@ -33,12 +35,14 @@ class TransactionSearchFilter {
     String? transactionType,
     DateTimeRange? dateRange,
     String? partyUuid,
+    bool? showAllHistory,
   }) {
     return TransactionSearchFilter(
       query: query ?? this.query,
       transactionType: transactionType ?? this.transactionType,
       dateRange: dateRange ?? this.dateRange,
       partyUuid: partyUuid ?? this.partyUuid,
+      showAllHistory: showAllHistory ?? this.showAllHistory,
     );
   }
 }
@@ -50,21 +54,23 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   final isar = ref.watch(isarProvider);
   final repo = ref.watch(transactionRepositoryProvider);
 
-  // 0. Build Party ID/UUID lookup map to avoid unattached IsarLink dereference crashes
-  final Map<int, String> partyIdToUuidMap = {};
-  try {
-    final allParties = await isar.partys.where().findAll();
-    for (var p in allParties) {
-      if (p.uuid != null && p.uuid!.isNotEmpty) {
-        partyIdToUuidMap[p.id] = p.uuid!;
-      }
-    }
-  } catch (_) {}
+  // 0. Resolve filter party ID to avoid filtering blindly
+  int? targetPartyId;
+  if (filter.partyUuid != null) {
+    try {
+      final p = await isar.partys.filter().uuidEqualTo(filter.partyUuid!).findFirst();
+      if (p != null) targetPartyId = p.id;
+    } catch (_) {}
+  }
 
-  // Date bounds for fetching: use provided filter or default to last 90 days
+  // Date bounds for fetching: use provided filter or default to last 90 days if showAllHistory is false
   final now = DateTime.now();
-  final queryStart = filter.dateRange?.start.subtract(const Duration(days: 1)) ?? now.subtract(const Duration(days: 90));
-  final queryEnd = filter.dateRange?.end.add(const Duration(days: 1)) ?? now.add(const Duration(days: 1));
+  final queryStart = filter.showAllHistory 
+      ? DateTime(2000, 1, 1) 
+      : filter.dateRange?.start.subtract(const Duration(days: 1)) ?? now.subtract(const Duration(days: 90));
+  final queryEnd = filter.showAllHistory 
+      ? DateTime(2100, 1, 1) 
+      : filter.dateRange?.end.add(const Duration(days: 1)) ?? now.add(const Duration(days: 1));
 
   // 1. Fetch Transactions
   List<Transaction> rawTransactions = [];
@@ -109,11 +115,8 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       }
 
       String? pUuid;
-      if (inv.partyId != null) {
-        pUuid = partyIdToUuidMap[inv.partyId!];
-      }
-      if (pUuid == null) {
-        try { pUuid = inv.party.value?.uuid; } catch (_) {}
+      if (inv.partyId != null && inv.partyId == targetPartyId) {
+        pUuid = filter.partyUuid;
       }
 
       return Transaction()
@@ -145,11 +148,8 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
         .findAll();
     orderTransactions = rawOrders.map((ord) {
       String? pUuid;
-      if (ord.partyId != null) {
-        pUuid = partyIdToUuidMap[ord.partyId!];
-      }
-      if (pUuid == null) {
-        try { pUuid = ord.party.value?.uuid; } catch (_) {}
+      if (ord.partyId != null && ord.partyId == targetPartyId) {
+        pUuid = filter.partyUuid;
       }
 
       return Transaction()
@@ -190,11 +190,8 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       }
 
       String? pUuid;
-      if (pur.partyId != null) {
-        pUuid = partyIdToUuidMap[pur.partyId!];
-      }
-      if (pUuid == null) {
-        try { pUuid = pur.party.value?.uuid; } catch (_) {}
+      if (pur.partyId != null && pur.partyId == targetPartyId) {
+        pUuid = filter.partyUuid;
       }
 
       return Transaction()

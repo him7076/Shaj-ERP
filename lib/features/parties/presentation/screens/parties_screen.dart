@@ -721,21 +721,23 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       ),
     );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: isMobile
-          ? LiquidGlassCard(
-              onTap: handleTap,
-              accentGlowColor: glowColor,
-              padding: EdgeInsets.zero,
-              lightweight: true, // Skip BackdropFilter for smooth 60fps scroll
-              child: cardContent,
-            )
-          : AnimatedHoverCard(
-              glowColor: glowColor,
-              onTap: handleTap,
-              child: cardContent,
-            ),
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: isMobile
+            ? LiquidGlassCard(
+                onTap: handleTap,
+                accentGlowColor: glowColor,
+                padding: EdgeInsets.zero,
+                lightweight: true, // Skip BackdropFilter for smooth 60fps scroll
+                child: cardContent,
+              )
+            : AnimatedHoverCard(
+                glowColor: glowColor,
+                onTap: handleTap,
+                child: cardContent,
+              ),
+      ),
     );
   }
 }
