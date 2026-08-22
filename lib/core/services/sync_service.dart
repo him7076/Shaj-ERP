@@ -269,14 +269,16 @@ class SyncService {
   /// Batches multiple rapid saves into a single background upload cycle,
   /// preventing browser freezes, event-loop starvation, and Isar DB lock contention.
   void syncPendingChangesQuietly({Duration delay = const Duration(seconds: 2)}) {
+    // Early abort to save CPU and event loop if sync is entirely off
+    if (!_firebaseService.isSyncConfigured) return;
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) return;
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) return;
+
     _quietSyncDebounceTimer?.cancel();
     _quietSyncDebounceTimer = Timer(delay, () async {
-      if (!_firebaseService.isSyncConfigured) return;
-      final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
-      if (!cloudSyncEnabled) return;
-      final activeFirmId = _dbService.activeFirmId;
-      final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
-      if (!isFirmSyncEnabled) return;
       if (_currentState.status == SyncStatus.syncing) return;
 
       _isUploadingQuietly = true;
@@ -952,11 +954,11 @@ class SyncService {
   Future<void> _uploadLocalChanges() async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
-    await _enqueueAllLocalRecordsForUpload(forceAll: false);
+    // REMOVED: await _enqueueAllLocalRecordsForUpload(forceAll: false); // Redundant sweep causing UI freeze
     await _queueService.resetAllRetries();
-    final queueItems = await _queueService.getPendingQueue();
+    final allQueueItems = await _queueService.getPendingQueue();
 
-    if (queueItems.isEmpty) {
+    if (allQueueItems.isEmpty) {
       logger.info('No pending changes to upload.');
       return;
     }
@@ -965,12 +967,38 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
+    // Deduplicate queue items to minimize Firebase Writes
+    final uniqueItemsToProcess = <String, SyncQueue>{};
+    for (var q in allQueueItems) {
+      if (q.retryCount >= 5) continue;
+      
+      final key = '${q.entityType}_${q.entityUuid}';
+      if (q.operation == 'Delete') {
+        if (uniqueItemsToProcess.containsKey(key)) {
+          completedQueueIds.add(uniqueItemsToProcess[key]!.id); // Mark old duplicate for deletion
+        }
+        uniqueItemsToProcess[key] = q;
+      } else {
+        if (uniqueItemsToProcess.containsKey(key)) {
+          if (uniqueItemsToProcess[key]!.operation == 'Delete') {
+             completedQueueIds.add(q.id); // Ignore updates after a delete
+          } else {
+             completedQueueIds.add(uniqueItemsToProcess[key]!.id); // Keep newest, mark old for deletion
+             uniqueItemsToProcess[key] = q;
+          }
+        } else {
+          uniqueItemsToProcess[key] = q;
+        }
+      }
+    }
+
+    final queueItems = uniqueItemsToProcess.values.toList();
+
     WriteBatch currentBatch = _firebaseService.firestore.batch();
     int batchOpsCount = 0;
 
     for (int i = 0; i < queueItems.length; i++) {
       final queueItem = queueItems[i];
-      if (queueItem.retryCount >= 5) continue;
 
       // Yield event loop every 10 items for 60 FPS UI responsiveness & to prevent Vercel 95% hang
       if (i % 10 == 0) {
