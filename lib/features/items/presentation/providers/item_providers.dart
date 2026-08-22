@@ -126,7 +126,7 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
 
   final isar = ref.watch(isarProvider);
 
-  var queryBuilder = isar.items.filter().isDeletedEqualTo(false);
+  dynamic queryBuilder = isar.items.filter().isDeletedEqualTo(false);
   
   if (filter.query.trim().isNotEmpty) {
       final cleanQuery = filter.query.trim();

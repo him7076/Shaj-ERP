@@ -4,6 +4,7 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_item_collecti
 import 'package:business_sahaj_erp/domain/repositories/purchase_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/purchase_repository_impl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 
 final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {

@@ -363,7 +363,7 @@ final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
   final filter = ref.watch(orderSearchFilterProvider);
   final isar = ref.watch(isarProvider);
   
-  var qb = isar.orders.filter().isDeletedEqualTo(false);
+  dynamic qb = isar.orders.filter().isDeletedEqualTo(false);
   
   if (filter.query.trim().isNotEmpty) {
     final q = filter.query.trim().toLowerCase();
