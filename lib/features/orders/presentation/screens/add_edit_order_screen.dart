@@ -168,12 +168,10 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
         if (orderItemsList.isEmpty) {
           final targetUuid = order.uuid;
           final targetId = order.id;
-          final allItems = await db.orderItems.filter().isDeletedEqualTo(false).findAll();
-          orderItemsList = allItems.where((i) {
-            if (targetUuid != null && targetUuid.isNotEmpty && i.orderUuid == targetUuid) return true;
-            if (targetId > 0 && (i.orderId == targetId || i.order.value?.id == targetId)) return true;
-            return false;
-          }).toList();
+          orderItemsList = await db.orderItems.filter().isDeletedEqualTo(false)
+              .and()
+              .group((q) => q.orderUuidEqualTo(targetUuid ?? '').or().orderIdEqualTo(targetId))
+              .findAll();
         }
 
         for (var orderItem in orderItemsList) {

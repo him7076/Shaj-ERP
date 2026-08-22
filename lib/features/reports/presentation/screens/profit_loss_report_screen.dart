@@ -122,8 +122,17 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       final isar = ref.read(databaseServiceProvider).isar;
 
       // 1. Fetch Sales Invoices & Transactions
-      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
-      final transactions = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+      final invoices = await isar.invoices.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q.invoiceDateBetween(_fromDate, _toDate).or().invoiceDateIsNull())
+          .findAll();
+          
+      final transactions = await isar.transactions.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q.transactionDateBetween(_fromDate, _toDate).or().transactionDateIsNull())
+          .findAll();
 
       double totalSales = 0.0;
       double totalGstOutput = 0.0;
@@ -156,7 +165,11 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       }
 
       // 2. Fetch Purchases
-      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final purchases = await isar.purchases.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q.purchaseDateBetween(_fromDate, _toDate).or().purchaseDateIsNull())
+          .findAll();
       double totalPurchases = 0.0;
       double totalGstInput = 0.0;
       for (var pur in purchases) {
@@ -183,7 +196,11 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       }
 
       // 3. Fetch Credit & Debit Notes
-      final creditNotes = await isar.creditNotes.filter().isDeletedEqualTo(false).findAll();
+      final creditNotes = await isar.creditNotes.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q.creditNoteDateBetween(_fromDate, _toDate).or().creditNoteDateIsNull())
+          .findAll();
       double totalCrNote = 0.0;
       for (var cn in creditNotes) {
         if (_isInDateRange(cn.creditNoteDate)) {
@@ -191,7 +208,11 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      final debitNotes = await isar.debitNotes.filter().isDeletedEqualTo(false).findAll();
+      final debitNotes = await isar.debitNotes.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q.debitNoteDateBetween(_fromDate, _toDate).or().debitNoteDateIsNull())
+          .findAll();
       double totalDrNote = 0.0;
       for (var dn in debitNotes) {
         if (_isInDateRange(dn.debitNoteDate)) {
@@ -200,7 +221,11 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
       }
 
       // 4. Fetch Expenses
-      final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+      final expenses = await isar.expenses.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q.expenseDateBetween(_fromDate, _toDate).or().expenseDateIsNull())
+          .findAll();
       double directExp = 0.0;
       double indirectExp = 0.0;
       double interestExp = 0.0;

@@ -249,16 +249,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
           }
 
-          if (itemsList.isEmpty) {
-            final allItems = await db.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-            itemsList = allItems.where((i) {
-              try {
-                if (i.invoice.value?.uuid == invoice.uuid || i.invoice.value?.id == invoice.id) return true;
-              } catch (_) {}
-              return false;
-            }).toList();
-          }
-
           final List<CartItemState> cartItems = [];
           for (var item in itemsList) {
             Item? dbItem;
@@ -351,12 +341,10 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           if (orderItemsList.isEmpty) {
             final targetUuid = order.uuid;
             final targetId = order.id;
-            final allItems = await db.orderItems.filter().isDeletedEqualTo(false).findAll();
-            orderItemsList = allItems.where((i) {
-              if (targetUuid != null && targetUuid.isNotEmpty && i.orderUuid == targetUuid) return true;
-              if (targetId > 0 && (i.orderId == targetId || i.order.value?.id == targetId)) return true;
-              return false;
-            }).toList();
+            orderItemsList = await db.orderItems.filter().isDeletedEqualTo(false)
+                .and()
+                .group((q) => q.orderUuidEqualTo(targetUuid ?? '').or().orderIdEqualTo(targetId))
+                .findAll();
           }
 
           final List<CartItemState> cartItems = [];

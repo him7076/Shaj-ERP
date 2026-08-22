@@ -120,25 +120,36 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
   final itemRepo = ref.watch(itemRepositoryProvider);
   final stockService = ref.watch(stockServiceProvider);
 
-  // Search items in DB
-  var items = await itemRepo.searchItems(filter.query);
+  final isar = ref.watch(isarProvider);
 
-  // Load links asynchronously for UI display
-  for (var item in items) {
-    try { await item.category.load(); } catch (_) {}
-    try { await item.brand.load(); } catch (_) {}
-    try { await item.unit.load(); } catch (_) {}
+  var queryBuilder = isar.items.filter().isDeletedEqualTo(false);
+  
+  if (filter.query.trim().isNotEmpty) {
+      final cleanQuery = filter.query.trim();
+      queryBuilder = queryBuilder.and().group((q) => q
+          .itemNameContains(cleanQuery, caseSensitive: false)
+          .or()
+          .itemCodeContains(cleanQuery, caseSensitive: false)
+          .or()
+          .hsnCodeContains(cleanQuery, caseSensitive: false)
+          .or()
+          .barcodeContains(cleanQuery, caseSensitive: false)
+          .or()
+          .skuContains(cleanQuery, caseSensitive: false)
+          .or()
+          .skuCodeContains(cleanQuery, caseSensitive: false)
+      );
   }
 
-  // Filter Category
   if (filter.categoryId != null) {
-    items = items.where((item) => item.category.value?.id == filter.categoryId).toList();
+      queryBuilder = queryBuilder.and().category((q) => q.idEqualTo(filter.categoryId!));
   }
 
-  // Filter Brand
   if (filter.brandId != null) {
-    items = items.where((item) => item.brand.value?.id == filter.brandId).toList();
+      queryBuilder = queryBuilder.and().brand((q) => q.idEqualTo(filter.brandId!));
   }
+
+  var items = await queryBuilder.findAll();
 
   // Filter GST
   if (filter.gstRate != null) {

@@ -44,9 +44,15 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
   Future<List<_DayBookVoucher>> _loadDayVouchers() async {
     final isar = ref.read(databaseServiceProvider).isar;
     final List<_DayBookVoucher> vouchers = [];
+    final startOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final endOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 23, 59, 59);
 
     // 1. Sales Invoices
-    final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    final invoices = await isar.invoices.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q.invoiceDateBetween(startOfDay, endOfDay).or().invoiceDateIsNull())
+        .findAll();
     for (var inv in invoices) {
       if (_isSameDay(inv.invoiceDate, _selectedDate)) {
         final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
@@ -64,7 +70,11 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     }
 
     // 2. Purchase Invoices
-    final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    final purchases = await isar.purchases.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q.purchaseDateBetween(startOfDay, endOfDay).or().purchaseDateIsNull())
+        .findAll();
     for (var pur in purchases) {
       if (_isSameDay(pur.purchaseDate, _selectedDate)) {
         final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
@@ -82,7 +92,11 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     }
 
     // 3. Transactions (Receipts, Payments, Transfers, Other Income)
-    final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+    final txns = await isar.transactions.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q.transactionDateBetween(startOfDay, endOfDay).or().transactionDateIsNull())
+        .findAll();
     for (var t in txns) {
       if (_isSameDay(t.transactionDate, _selectedDate)) {
         final amt = t.amount ?? 0.0;
@@ -104,7 +118,11 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     }
 
     // 4. Expenses
-    final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+    final expenses = await isar.expenses.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q.expenseDateBetween(startOfDay, endOfDay).or().expenseDateIsNull())
+        .findAll();
     for (var exp in expenses) {
       if (_isSameDay(exp.expenseDate, _selectedDate)) {
         vouchers.add(_DayBookVoucher(
@@ -121,7 +139,11 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     }
 
     // 5. Credit Notes
-    final creditNotes = await isar.creditNotes.filter().isDeletedEqualTo(false).findAll();
+    final creditNotes = await isar.creditNotes.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q.creditNoteDateBetween(startOfDay, endOfDay).or().creditNoteDateIsNull())
+        .findAll();
     for (var cn in creditNotes) {
       if (_isSameDay(cn.creditNoteDate, _selectedDate)) {
         vouchers.add(_DayBookVoucher(
@@ -138,7 +160,11 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     }
 
     // 6. Debit Notes
-    final debitNotes = await isar.debitNotes.filter().isDeletedEqualTo(false).findAll();
+    final debitNotes = await isar.debitNotes.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q.debitNoteDateBetween(startOfDay, endOfDay).or().debitNoteDateIsNull())
+        .findAll();
     for (var dn in debitNotes) {
       if (_isSameDay(dn.debitNoteDate, _selectedDate)) {
         vouchers.add(_DayBookVoucher(

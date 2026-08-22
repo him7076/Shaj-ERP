@@ -82,15 +82,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           } catch (_) {}
         }
 
-        // 2. Foolproof fallback for legacy Excel imported items missing parent IDs and backlinks
+        // 2. Fallback using Isar Link query directly instead of fetching everything
         if (items.isEmpty) {
-          final allItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-          items = allItems.where((i) {
-            try {
-              if (i.invoice.value?.uuid == targetUuid || i.invoice.value?.id == targetId) return true;
-            } catch (_) {}
-            return false;
-          }).toList();
+          if (targetId > 0) {
+            items = await isar.invoiceItems.filter().isDeletedEqualTo(false)
+                .and()
+                .invoice((q) => q.idEqualTo(targetId))
+                .findAll();
+          }
         }
 
         // Self-heal parent invoice IDs and UUIDs if missing
