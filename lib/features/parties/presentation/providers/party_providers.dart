@@ -156,10 +156,14 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
 
   final Map<String, double> balanceMap = {};
 
-  // Customer receivables from invoices (single pass)
-  final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+  // Customer receivables from invoices (fetch ONLY unpaid/partially paid to avoid full scan)
+  final invoices = await isar.invoices.filter()
+      .isDeletedEqualTo(false)
+      .and()
+      .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+      .findAll();
+      
   for (var inv in invoices) {
-    if (inv.paymentStatus == 'Cancelled') continue;
     final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
     if (pending > 0 && inv.partyName != null && inv.partyName!.trim().isNotEmpty) {
       final key = inv.partyName!.trim().toLowerCase();
@@ -167,10 +171,14 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
     }
   }
 
-  // Supplier payables from purchases (single pass, separate key prefix)
-  final purchases = await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll();
+  // Supplier payables from purchases (fetch ONLY unpaid/partially paid)
+  final purchases = await isar.collection<Purchase>().filter()
+      .isDeletedEqualTo(false)
+      .and()
+      .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+      .findAll();
+      
   for (var pur in purchases) {
-    if (pur.paymentStatus == 'Cancelled') continue;
     final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
     if (pending > 0 && pur.partyName != null && pur.partyName!.trim().isNotEmpty) {
       final key = 'supp_${pur.partyName!.trim().toLowerCase()}';

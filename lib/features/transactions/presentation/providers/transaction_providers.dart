@@ -61,16 +61,35 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
     }
   } catch (_) {}
 
+  // Date bounds for fetching: use provided filter or default to last 90 days
+  final now = DateTime.now();
+  final queryStart = filter.dateRange?.start.subtract(const Duration(days: 1)) ?? now.subtract(const Duration(days: 90));
+  final queryEnd = filter.dateRange?.end.add(const Duration(days: 1)) ?? now.add(const Duration(days: 1));
+
   // 1. Fetch Transactions
   List<Transaction> rawTransactions = [];
   try {
-    rawTransactions = await repo.searchTransactions('');
+    rawTransactions = await isar.transactions.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .transactionDateBetween(queryStart, queryEnd)
+            .or()
+            .group((q2) => q2.transactionDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
+        .findAll();
   } catch (_) {}
 
   // 2. Fetch Invoices (Sales)
   List<Transaction> invoiceTransactions = [];
   try {
-    final rawInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    final rawInvoices = await isar.invoices.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .invoiceDateBetween(queryStart, queryEnd)
+            .or()
+            .group((q2) => q2.invoiceDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
+        .findAll();
     invoiceTransactions = rawInvoices.map((inv) {
       String pMode = 'Credit';
       if (inv.remarks != null && inv.remarks!.contains('[Paid via ')) {
@@ -116,7 +135,14 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   // 3. Fetch Orders (Sales Orders)
   List<Transaction> orderTransactions = [];
   try {
-    final rawOrders = await isar.orders.filter().isDeletedEqualTo(false).findAll();
+    final rawOrders = await isar.orders.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .orderDateBetween(queryStart, queryEnd)
+            .or()
+            .group((q2) => q2.orderDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
+        .findAll();
     orderTransactions = rawOrders.map((ord) {
       String? pUuid;
       if (ord.partyId != null) {
@@ -145,7 +171,14 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   // 4. Fetch Purchases (Purchase Bills)
   List<Transaction> purchaseTransactions = [];
   try {
-    final rawPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    final rawPurchases = await isar.purchases.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .group((q) => q
+            .purchaseDateBetween(queryStart, queryEnd)
+            .or()
+            .group((q2) => q2.purchaseDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
+        .findAll();
     purchaseTransactions = rawPurchases.map((pur) {
       String pStatus = pur.paymentStatus ?? 'Unpaid';
       final paid = pur.paidAmount ?? 0.0;
@@ -221,7 +254,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
     list = list.where((t) => t.partyUuid == filter.partyUuid).toList();
   }
 
-  // Filter Date Range
+  // Filter Date Range (redundant if default dates handled above, but useful for strict boundaries)
   if (filter.dateRange != null) {
     list = list.where((t) {
       if (t.transactionDate == null) return false;

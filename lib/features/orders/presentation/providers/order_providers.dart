@@ -361,11 +361,8 @@ final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
 
   var list = await repo.searchOrders(filter.query);
 
-  // Load party links
-  for (var order in list) {
-    try { await order.party.load(); } catch (_) {}
-    try { await order.orderItems.load(); } catch (_) {}
-  }
+  // Note: Removed N+1 loops for party and orderItems here.
+  // Party name is cached in order.partyName. Detail screen loads items as needed.
 
   // Filter Status
   if (filter.status != 'All') {

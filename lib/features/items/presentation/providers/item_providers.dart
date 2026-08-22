@@ -238,8 +238,15 @@ final itemCartNotifierProvider = StateNotifierProvider<ItemCartNotifier, Map<Str
 // Eliminates per-card FutureBuilder N+1 full-table-scan queries
 final itemBuyRateCacheProvider = FutureProvider<Map<String, double>>((ref) async {
   final isar = ref.watch(isarProvider);
+  
+  final sixMonthsAgo = DateTime.now().subtract(const Duration(days: 180));
 
-  final purchaseItems = await isar.collection<PurchaseItem>().filter().isDeletedEqualTo(false).findAll();
+  // Limit to last 6 months to avoid scanning the entire historical table
+  final purchaseItems = await isar.collection<PurchaseItem>().filter()
+      .isDeletedEqualTo(false)
+      .and()
+      .createdAtGreaterThan(sixMonthsAgo)
+      .findAll();
 
   final Map<String, double> totalAmtMap = {};
   final Map<String, double> totalQtyMap = {};

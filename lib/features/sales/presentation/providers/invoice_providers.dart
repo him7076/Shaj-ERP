@@ -357,11 +357,8 @@ final filteredInvoicesProvider = FutureProvider<List<Invoice>>((ref) async {
 
   var list = await repo.searchInvoices(filter.query);
 
-  // Load party links
-  for (var invoice in list) {
-    try { await invoice.party.load(); } catch (_) {}
-    try { await invoice.invoiceItems.load(); } catch (_) {}
-  }
+  // Note: Removed N+1 loops for party and invoiceItems here. 
+  // Party name is cached in invoice.partyName. Detail screen loads items as needed.
 
   // Filter Payment Status
   if (filter.paymentStatus != 'All') {
