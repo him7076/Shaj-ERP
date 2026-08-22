@@ -363,7 +363,7 @@ final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
   final filter = ref.watch(orderSearchFilterProvider);
   final isar = ref.watch(isarProvider);
   
-  dynamic qb = isar.orders.filter().isDeletedEqualTo(false);
+  var qb = isar.orders.filter().isDeletedEqualTo(false);
   
   if (filter.query.trim().isNotEmpty) {
     final q = filter.query.trim().toLowerCase();
@@ -393,15 +393,12 @@ final filteredOrdersProvider = FutureProvider<List<Order>>((ref) async {
   
   switch (filter.sortBy) {
     case 'Recent':
-      qb = qb.sortByOrderDateDesc();
-      break;
+      return await qb.sortByOrderDateDesc().limit(filter.limit).findAll();
     case 'Amount High-Low':
-      qb = qb.sortByGrandTotalDesc();
-      break;
+      return await qb.sortByGrandTotalDesc().limit(filter.limit).findAll();
     case 'Amount Low-High':
-      qb = qb.sortByGrandTotal();
-      break;
+      return await qb.sortByGrandTotal().limit(filter.limit).findAll();
+    default:
+      return await qb.limit(filter.limit).findAll();
   }
-  
-  return await qb.limit(filter.limit).findAll();
 });

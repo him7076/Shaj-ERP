@@ -126,7 +126,7 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
 
   final isar = ref.watch(isarProvider);
 
-  dynamic queryBuilder = isar.items.filter().isDeletedEqualTo(false);
+  var queryBuilder = isar.items.filter().isDeletedEqualTo(false);
   
   if (filter.query.trim().isNotEmpty) {
       final cleanQuery = filter.query.trim();
@@ -157,35 +157,55 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
       queryBuilder = queryBuilder.and().gstRateEqualTo(filter.gstRate);
   }
   
-  // Sort
-  switch (filter.sortBy) {
-    case 'Name A-Z':
-      queryBuilder = queryBuilder.sortByItemName();
-      break;
-    case 'Name Z-A':
-      queryBuilder = queryBuilder.sortByItemNameDesc();
-      break;
-    case 'Price L-H':
-      queryBuilder = queryBuilder.sortBySellRate();
-      break;
-    case 'Price H-L':
-      queryBuilder = queryBuilder.sortBySellRateDesc();
-      break;
-    case 'Stock L-H':
-      queryBuilder = queryBuilder.sortByCurrentStock();
-      break;
-    case 'Stock H-L':
-      queryBuilder = queryBuilder.sortByCurrentStockDesc();
-      break;
-  }
-
   // If there's no dart-side filtering, push pagination to DB
   var items = <Item>[];
   if (filter.stockStatus == 'All') {
-    items = await queryBuilder.limit(filter.limit).findAll();
+    switch (filter.sortBy) {
+      case 'Name A-Z':
+        items = await queryBuilder.sortByItemName().limit(filter.limit).findAll();
+        break;
+      case 'Name Z-A':
+        items = await queryBuilder.sortByItemNameDesc().limit(filter.limit).findAll();
+        break;
+      case 'Price L-H':
+        items = await queryBuilder.sortBySellRate().limit(filter.limit).findAll();
+        break;
+      case 'Price H-L':
+        items = await queryBuilder.sortBySellRateDesc().limit(filter.limit).findAll();
+        break;
+      case 'Stock L-H':
+        items = await queryBuilder.sortByCurrentStock().limit(filter.limit).findAll();
+        break;
+      case 'Stock H-L':
+        items = await queryBuilder.sortByCurrentStockDesc().limit(filter.limit).findAll();
+        break;
+      default:
+        items = await queryBuilder.limit(filter.limit).findAll();
+    }
   } else {
     // Cannot push limit to DB because dart-side filtering will drop items, breaking pagination sizes
-    items = await queryBuilder.findAll();
+    switch (filter.sortBy) {
+      case 'Name A-Z':
+        items = await queryBuilder.sortByItemName().findAll();
+        break;
+      case 'Name Z-A':
+        items = await queryBuilder.sortByItemNameDesc().findAll();
+        break;
+      case 'Price L-H':
+        items = await queryBuilder.sortBySellRate().findAll();
+        break;
+      case 'Price H-L':
+        items = await queryBuilder.sortBySellRateDesc().findAll();
+        break;
+      case 'Stock L-H':
+        items = await queryBuilder.sortByCurrentStock().findAll();
+        break;
+      case 'Stock H-L':
+        items = await queryBuilder.sortByCurrentStockDesc().findAll();
+        break;
+      default:
+        items = await queryBuilder.findAll();
+    }
     
     // Filter Stock Status in Dart
     switch (filter.stockStatus) {
