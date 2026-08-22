@@ -28,10 +28,46 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       final rangeStart = startDate ?? DateTime(now.year, now.month, 1);
       final rangeEnd = endDate ?? DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
-      // Fetch all non-deleted Invoices, Purchases, and Transactions
-      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
-      final allPurchases = await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll();
-      final allTransactions = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+      final date30DaysAgo = now.subtract(const Duration(days: 30));
+      
+      final earliestDate = rangeStart.isBefore(date30DaysAgo) ? rangeStart : date30DaysAgo;
+      final latestDate = rangeEnd.isAfter(endOfToday) ? rangeEnd : endOfToday;
+
+      final queryStart = earliestDate.subtract(const Duration(days: 1));
+      final queryEnd = latestDate.add(const Duration(days: 1));
+
+      // 1. Fetch ONLY relevant Invoices using DB-level date filtering
+      final periodInvoices = await isar.invoices.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q
+              .invoiceDateBetween(queryStart, queryEnd)
+              .or()
+              .group((q) => q.invoiceDateIsNull().and().createdAtBetween(queryStart, queryEnd))
+          )
+          .findAll();
+
+      // 2. Fetch ONLY relevant Purchases
+      final periodPurchases = await isar.collection<Purchase>().filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q
+              .purchaseDateBetween(queryStart, queryEnd)
+              .or()
+              .group((q) => q.purchaseDateIsNull().and().createdAtBetween(queryStart, queryEnd))
+          )
+          .findAll();
+
+      // 3. Fetch ONLY relevant Transactions
+      final periodTransactions = await isar.transactions.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .group((q) => q
+              .transactionDateBetween(queryStart, queryEnd)
+              .or()
+              .group((q) => q.transactionDateIsNull().and().createdAtBetween(queryStart, queryEnd))
+          )
+          .findAll();
 
       bool isWithin(DateTime? dt, DateTime s, DateTime e) {
         if (dt == null) return false;
@@ -39,46 +75,46 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
                 dt.isBefore(e.add(const Duration(seconds: 1))));
       }
 
-      // 1. Today's Sales
+      // Calculate Today's Sales
       double todaySales = 0.0;
-      for (var inv in allInvoices) {
+      for (var inv in periodInvoices) {
         if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, startOfToday, endOfToday)) {
           todaySales += (inv.grandTotal ?? 0.0);
         }
       }
-      for (var txn in allTransactions) {
+      for (var txn in periodTransactions) {
         if (txn.transactionType == 'Sales' && isWithin(txn.transactionDate ?? txn.createdAt, startOfToday, endOfToday)) {
-          if (!allInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
+          if (!periodInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
             todaySales += (txn.amount ?? 0.0);
           }
         }
       }
 
-      // 2. Period Sales (Invoices + Standalone Sales Transactions only)
+      // Calculate Period Sales
       double monthlySales = 0.0;
-      for (var inv in allInvoices) {
+      for (var inv in periodInvoices) {
         if (inv.paymentStatus != 'Cancelled' && isWithin(inv.invoiceDate ?? inv.createdAt, rangeStart, rangeEnd)) {
           monthlySales += (inv.grandTotal ?? 0.0);
         }
       }
-      for (var txn in allTransactions) {
+      for (var txn in periodTransactions) {
         if (txn.transactionType == 'Sales' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
-          if (!allInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
+          if (!periodInvoices.any((i) => i.uuid == txn.uuid || i.invoiceNumber == txn.transactionNumber)) {
             monthlySales += (txn.amount ?? 0.0);
           }
         }
       }
 
-      // 3. Period Purchases (Purchase Bills + Standalone Purchase Transactions only)
+      // Calculate Period Purchases
       double monthlyPurchases = 0.0;
-      for (var pur in allPurchases) {
+      for (var pur in periodPurchases) {
         if (pur.paymentStatus != 'Cancelled' && isWithin(pur.purchaseDate ?? pur.createdAt, rangeStart, rangeEnd)) {
           monthlyPurchases += (pur.grandTotal ?? 0.0);
         }
       }
-      for (var txn in allTransactions) {
+      for (var txn in periodTransactions) {
         if (txn.transactionType == 'Purchase' && isWithin(txn.transactionDate ?? txn.createdAt, rangeStart, rangeEnd)) {
-          if (!allPurchases.any((p) => p.uuid == txn.uuid || p.purchaseNumber == txn.transactionNumber)) {
+          if (!periodPurchases.any((p) => p.uuid == txn.uuid || p.purchaseNumber == txn.transactionNumber)) {
             monthlyPurchases += (txn.amount ?? 0.0);
           }
         }
@@ -126,13 +162,10 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     }
 
     // 6. Top Customers (last 30 days)
-    final date30DaysAgo = now.subtract(const Duration(days: 30));
-    final recentInvoices = (await isar.invoices
-        .filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .invoiceDateBetween(date30DaysAgo, now)
-        .findAll()).where((i) => i.paymentStatus != 'Cancelled').toList();
+    final recentInvoices = periodInvoices.where((i) {
+      final dt = i.invoiceDate ?? i.createdAt;
+      return i.paymentStatus != 'Cancelled' && isWithin(dt, date30DaysAgo, endOfToday);
+    }).toList();
 
     final Map<String, _CustomerAggregate> customerMap = {};
     for (var inv in recentInvoices) {
@@ -162,15 +195,24 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     }).toList();
     topCustomers.sort((a, b) => b.revenue.compareTo(a.revenue));
 
-    // 7. Top Products (last 30 days) — single bulk query instead of per-invoice N+1
-    final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-    final recentInvIds = recentInvoices.map((i) => i.id).toSet();
+    // 7. Top Products (last 30 days) — query only required items via chunking
+    final recentInvIds = recentInvoices.map((i) => i.id).toSet().toList();
+    final List<InvoiceItem> relevantInvItems = [];
+    
+    // Chunk queries to avoid Isar anyOf limits
+    const chunkSize = 500;
+    for (var i = 0; i < recentInvIds.length; i += chunkSize) {
+      final chunk = recentInvIds.sublist(i, min(i + chunkSize, recentInvIds.length));
+      final chunkItems = await isar.invoiceItems.filter()
+          .isDeletedEqualTo(false)
+          .and()
+          .anyOf(chunk, (q, int id) => q.parentInvoiceIdEqualTo(id))
+          .findAll();
+      relevantInvItems.addAll(chunkItems);
+    }
     
     final Map<String, _ProductAggregate> productMap = {};
-    for (var item in allInvItems) {
-      // Only include items belonging to recent invoices
-      if (item.parentInvoiceId == null || !recentInvIds.contains(item.parentInvoiceId)) continue;
-      
+    for (var item in relevantInvItems) {
       final name = item.itemName ?? 'Unknown Product';
       final qty = (item.quantity ?? 0.0) + (item.freeQuantity ?? 0.0);
       final revenue = item.totalAmount ?? 0.0;
@@ -192,10 +234,10 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     }).toList();
     topProducts.sort((a, b) => b.revenue.compareTo(a.revenue));
 
-    // 8. Daily Sales Points (last 30 days) - In-memory calculation for instant response
+    // 8. Daily Sales Points (last 30 days) - Reuse already fetched periodInvoices
     final List<DailySalesPoint> dailySalesPoints = [];
     final date30DaysStart = now.subtract(const Duration(days: 30));
-    final invoices30Days = allInvoices.where((i) {
+    final invoices30Days = periodInvoices.where((i) {
       final dt = i.invoiceDate ?? i.createdAt;
       return dt != null && dt.isAfter(date30DaysStart) && i.paymentStatus != 'Cancelled';
     }).toList();
