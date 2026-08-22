@@ -87,7 +87,6 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final itemUuid = fetchedItem.uuid;
 
         // 1. Indexed query for Sales Invoices
-        final itemName = fetchedItem.itemName ?? '';
         final matchedInvItems = await isar.invoiceItems
             .filter()
             .isDeletedEqualTo(false)
