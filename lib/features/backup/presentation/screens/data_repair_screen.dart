@@ -161,7 +161,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (item.uuid == null || item.uuid!.isEmpty) { item.uuid = DateTime.now().millisecondsSinceEpoch.toString(); needsFix = true; }
         if (item.itemName == null) { item.itemName = 'Unknown Item'; needsFix = true; }
         if (item.currentStock == null) { item.currentStock = 0.0; needsFix = true; }
-        if (item.salesPrice == null) { item.salesPrice = 0.0; needsFix = true; }
+        if (item.sellRate == null) { item.sellRate = 0.0; needsFix = true; }
         await isar.items.put(item);
         if (needsFix) _fixedRecords++;
       });

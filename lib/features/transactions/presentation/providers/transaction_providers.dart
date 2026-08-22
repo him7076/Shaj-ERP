@@ -96,6 +96,21 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .or()
             .group((q2) => q2.invoiceDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
         .findAll();
+
+    // Batch fetch parties to avoid N+1 queries during mapping
+    final Set<int> allPartyIds = {};
+    for (var i in rawInvoices) { if (i.partyId != null) allPartyIds.add(i.partyId!); }
+    
+    final Map<int, String> partyUuidMap = {};
+    if (allPartyIds.isNotEmpty) {
+      try {
+        final parties = await isar.partys.getAll(allPartyIds.toList());
+        for (var p in parties) {
+          if (p != null && p.uuid != null) partyUuidMap[p.id] = p.uuid!;
+        }
+      } catch (_) {}
+    }
+
     invoiceTransactions = rawInvoices.map((inv) {
       String pMode = 'Credit';
       if (inv.remarks != null && inv.remarks!.contains('[Paid via ')) {
@@ -118,10 +133,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       if (inv.partyId != null && inv.partyId == targetPartyId) {
         pUuid = filter.partyUuid;
       } else if (inv.partyId != null) {
-        // Fallback for when not filtering by party but we need the UUID
-        try {
-          pUuid = isar.partys.getSync(inv.partyId!)?.uuid;
-        } catch (_) {}
+        pUuid = partyUuidMap[inv.partyId!];
       }
 
       return Transaction()
@@ -151,14 +163,26 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .or()
             .group((q2) => q2.orderDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
         .findAll();
+
+    final Set<int> orderPartyIds = {};
+    for (var o in rawOrders) { if (o.partyId != null) orderPartyIds.add(o.partyId!); }
+    
+    final Map<int, String> orderPartyUuidMap = {};
+    if (orderPartyIds.isNotEmpty) {
+      try {
+        final parties = await isar.partys.getAll(orderPartyIds.toList());
+        for (var p in parties) {
+          if (p != null && p.uuid != null) orderPartyUuidMap[p.id] = p.uuid!;
+        }
+      } catch (_) {}
+    }
+
     orderTransactions = rawOrders.map((ord) {
       String? pUuid;
       if (ord.partyId != null && ord.partyId == targetPartyId) {
         pUuid = filter.partyUuid;
       } else if (ord.partyId != null) {
-        try {
-          pUuid = isar.partys.getSync(ord.partyId!)?.uuid;
-        } catch (_) {}
+        pUuid = orderPartyUuidMap[ord.partyId!];
       }
 
       return Transaction()
@@ -188,6 +212,20 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .or()
             .group((q2) => q2.purchaseDateIsNull().and().createdAtBetween(queryStart, queryEnd)))
         .findAll();
+
+    final Set<int> purPartyIds = {};
+    for (var p in rawPurchases) { if (p.partyId != null) purPartyIds.add(p.partyId!); }
+    
+    final Map<int, String> purPartyUuidMap = {};
+    if (purPartyIds.isNotEmpty) {
+      try {
+        final parties = await isar.partys.getAll(purPartyIds.toList());
+        for (var p in parties) {
+          if (p != null && p.uuid != null) purPartyUuidMap[p.id] = p.uuid!;
+        }
+      } catch (_) {}
+    }
+
     purchaseTransactions = rawPurchases.map((pur) {
       String pStatus = pur.paymentStatus ?? 'Unpaid';
       final paid = pur.paidAmount ?? 0.0;
@@ -202,9 +240,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       if (pur.partyId != null && pur.partyId == targetPartyId) {
         pUuid = filter.partyUuid;
       } else if (pur.partyId != null) {
-        try {
-          pUuid = isar.partys.getSync(pur.partyId!)?.uuid;
-        } catch (_) {}
+        pUuid = purPartyUuidMap[pur.partyId!];
       }
 
       return Transaction()
