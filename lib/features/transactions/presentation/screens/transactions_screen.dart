@@ -723,6 +723,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                   },
                                 ),
                               ),
+                              ],
                             ],
                           ],
                         )
@@ -792,6 +793,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 ),
                               ),
                             ),
+                            ],
                           ],
                         ],
                       ),
