@@ -87,23 +87,27 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final itemUuid = fetchedItem.uuid;
 
         // 1. Indexed query for Sales Invoices
+        final itemName = fetchedItem.itemName ?? '';
         final matchedInvItems = await isar.invoiceItems
             .filter()
             .isDeletedEqualTo(false)
             .and()
             .group((q) {
-              var builder = q.itemIdEqualTo(fetchedItem.id);
-              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
-                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              if (itemName.isNotEmpty) {
+                return q.itemIdEqualTo(fetchedItem.id).or().itemNameMatches('*$itemName*', caseSensitive: false);
               }
-              return builder;
+              return q.itemIdEqualTo(fetchedItem.id);
             })
             .findAll();
 
+        // Batch fetch parent Invoices to fix N+1 query freeze
+        final invIds = matchedInvItems.map((ii) => ii.parentInvoiceId).where((id) => id != null).cast<int>().toSet().toList();
+        final invoicesBatch = await isar.invoices.getAll(invIds);
+        final invoicesMap = { for (var inv in invoicesBatch) if (inv != null) inv.id: inv };
+
         for (var ii in matchedInvItems) {
-          Invoice? inv;
-          try { await ii.invoice.load(); inv = ii.invoice.value; } catch (_) {}
-          inv ??= ii.parentInvoiceId != null ? await isar.invoices.get(ii.parentInvoiceId!) : null;
+          Invoice? inv = ii.parentInvoiceId != null ? invoicesMap[ii.parentInvoiceId] : null;
+          if (inv == null && ii.invoice.value != null) inv = ii.invoice.value;
 
           if (inv != null && !inv.isDeleted) {
             txs.add(_ItemTransaction(
@@ -128,18 +132,21 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .isDeletedEqualTo(false)
             .and()
             .group((q) {
-              var builder = q.itemIdEqualTo(fetchedItem.id);
-              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
-                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              if (itemName.isNotEmpty) {
+                return q.itemIdEqualTo(fetchedItem.id).or().itemNameMatches('*$itemName*', caseSensitive: false);
               }
-              return builder;
+              return q.itemIdEqualTo(fetchedItem.id);
             })
             .findAll();
 
+        // Batch fetch parent Purchases
+        final purIds = matchedPurItems.map((pi) => pi.purchaseId).where((id) => id != null).cast<int>().toSet().toList();
+        final purchasesBatch = await isar.purchases.getAll(purIds);
+        final purchasesMap = { for (var pur in purchasesBatch) if (pur != null) pur.id: pur };
+
         for (var pi in matchedPurItems) {
-          Purchase? pur;
-          try { await pi.purchase.load(); pur = pi.purchase.value; } catch (_) {}
-          pur ??= pi.purchaseId != null ? await isar.purchases.get(pi.purchaseId!) : null;
+          Purchase? pur = pi.purchaseId != null ? purchasesMap[pi.purchaseId] : null;
+          if (pur == null && pi.purchase.value != null) pur = pi.purchase.value;
 
           if (pur != null && !pur.isDeleted) {
             txs.add(_ItemTransaction(
@@ -164,17 +171,21 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .isDeletedEqualTo(false)
             .and()
             .group((q) {
-              var builder = q.itemIdEqualTo(fetchedItem.id);
-              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
-                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              if (itemName.isNotEmpty) {
+                return q.itemIdEqualTo(fetchedItem.id).or().itemNameMatches('*$itemName*', caseSensitive: false);
               }
-              return builder;
+              return q.itemIdEqualTo(fetchedItem.id);
             })
             .findAll();
 
+        // Batch fetch parent Orders
+        final ordIds = matchedOrdItems.map((oi) => oi.orderId).where((id) => id != null).cast<int>().toSet().toList();
+        final ordersBatch = await isar.orders.getAll(ordIds);
+        final ordersMap = { for (var ord in ordersBatch) if (ord != null) ord.id: ord };
+
         for (var oi in matchedOrdItems) {
-          Order? ord;
-          try { await oi.order.load(); ord = oi.order.value; } catch (_) {}
+          Order? ord = oi.orderId != null ? ordersMap[oi.orderId] : null;
+          if (ord == null && oi.order.value != null) ord = oi.order.value;
 
           if (ord != null && !ord.isDeleted) {
             txs.add(_ItemTransaction(
@@ -203,8 +214,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               if (itemUuid != null && itemUuid.isNotEmpty) {
                 builder = builder.or().itemUuidEqualTo(itemUuid);
               }
-              if (fetchedItem.itemName != null && fetchedItem.itemName!.isNotEmpty) {
-                builder = builder.or().itemNameEqualTo(fetchedItem.itemName!);
+              if (itemName.isNotEmpty) {
+                builder = builder.or().itemNameMatches('*$itemName*', caseSensitive: false);
               }
               return builder;
             })
@@ -233,8 +244,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         txs.sort((a, b) => b.date.compareTo(a.date));
 
         setState(() {
-          _item = fetchedItem;
-          _itemTransactions = txs;
+           _item = fetchedItem;
+           _itemTransactions = txs;
         });
       }
     } catch (e) {
