@@ -677,73 +677,70 @@ class DatabaseService {
   Future<void> repairLegacyData() async {
     try {
       logger.info('Starting legacy data repair...');
-      await isar.writeTxn(() async {
-        // Actually, let's fix Items first
-        final allItems = await isar.items.where().findAll();
-        
-        final invItems = await isar.invoiceItems.where().findAll();
-        for (var ii in invItems) {
-          bool changed = false;
-          // Fix item link
-          if (ii.itemId == null && ii.itemName != null) {
-            final match = allItems.where((i) => i.itemName == ii.itemName).firstOrNull;
-            if (match != null) {
-              ii.itemId = match.id;
-              changed = true;
-            }
-          }
-          // Fix parent link
-          if (ii.parentInvoiceId == null && ii.invoice.value != null) {
-             ii.parentInvoiceId = ii.invoice.value!.id;
-             ii.parentInvoiceUuid = ii.invoice.value!.uuid;
-             changed = true;
-          }
-          if (changed) {
-            await isar.invoiceItems.put(ii);
+
+      // Step 1: READ all data OUTSIDE the write transaction
+      final allItems = await isar.items.where().findAll();
+      final invItems = await isar.invoiceItems.where().findAll();
+      final ordItems = await isar.orderItems.where().findAll();
+      final purItems = await isar.purchaseItems.where().findAll();
+
+      // Build a name-to-item map for fast lookup
+      final Map<String, Item> itemByName = {
+        for (var i in allItems) if (i.itemName != null) i.itemName!: i,
+      };
+
+      // Step 2: Identify what needs to change (outside transaction)
+      final List<InvoiceItem> invToUpdate = [];
+      for (var ii in invItems) {
+        bool changed = false;
+        if ((ii.itemId == null || ii.itemId == 0) && ii.itemName != null) {
+          final match = itemByName[ii.itemName!];
+          if (match != null) {
+            ii.itemId = match.id;
+            changed = true;
           }
         }
-        
-        final ordItems = await isar.orderItems.where().findAll();
-        for (var oi in ordItems) {
-          bool changed = false;
-          if (oi.itemId == null && oi.itemName != null) {
-            final match = allItems.where((i) => i.itemName == oi.itemName).firstOrNull;
-            if (match != null) {
-              oi.itemId = match.id;
-              changed = true;
-            }
-          }
-          if (oi.orderId == null && oi.order.value != null) {
-             oi.orderId = oi.order.value!.id;
-             oi.orderUuid = oi.order.value!.uuid;
-             changed = true;
-          }
-          if (changed) {
-            await isar.orderItems.put(oi);
+        if (changed) invToUpdate.add(ii);
+      }
+
+      final List<OrderItem> ordToUpdate = [];
+      for (var oi in ordItems) {
+        bool changed = false;
+        if ((oi.itemId == null || oi.itemId == 0) && oi.itemName != null) {
+          final match = itemByName[oi.itemName!];
+          if (match != null) {
+            oi.itemId = match.id;
+            changed = true;
           }
         }
-        
-        final purItems = await isar.purchaseItems.where().findAll();
-        for (var pi in purItems) {
-          bool changed = false;
-          if (pi.itemId == null && pi.itemName != null) {
-            final match = allItems.where((i) => i.itemName == pi.itemName).firstOrNull;
-            if (match != null) {
-              pi.itemId = match.id;
-              changed = true;
-            }
-          }
-          if (pi.purchaseId == null && pi.purchase.value != null) {
-             pi.purchaseId = pi.purchase.value!.id;
-             pi.purchaseUuid = pi.purchase.value!.uuid;
-             changed = true;
-          }
-          if (changed) {
-            await isar.purchaseItems.put(pi);
+        if (changed) ordToUpdate.add(oi);
+      }
+
+      final List<PurchaseItem> purToUpdate = [];
+      for (var pi in purItems) {
+        bool changed = false;
+        if ((pi.itemId == null || pi.itemId == 0) && pi.itemName != null) {
+          final match = itemByName[pi.itemName!];
+          if (match != null) {
+            pi.itemId = match.id;
+            changed = true;
           }
         }
-      });
-      logger.info('Legacy data repair completed.');
+        if (changed) purToUpdate.add(pi);
+      }
+
+      logger.info('Repair: ${invToUpdate.length} invoice items, ${ordToUpdate.length} order items, ${purToUpdate.length} purchase items to fix.');
+
+      // Step 3: WRITE in a single batch transaction
+      if (invToUpdate.isNotEmpty || ordToUpdate.isNotEmpty || purToUpdate.isNotEmpty) {
+        await isar.writeTxn(() async {
+          if (invToUpdate.isNotEmpty) await isar.invoiceItems.putAll(invToUpdate);
+          if (ordToUpdate.isNotEmpty) await isar.orderItems.putAll(ordToUpdate);
+          if (purToUpdate.isNotEmpty) await isar.purchaseItems.putAll(purToUpdate);
+        });
+      }
+
+      logger.info('Legacy data repair completed. Fixed ${invToUpdate.length + ordToUpdate.length + purToUpdate.length} records.');
     } catch (e) {
       logger.error('Failed to repair legacy data', e);
       rethrow;

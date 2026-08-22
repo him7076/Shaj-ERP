@@ -118,13 +118,24 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
         // 3. Clear old items if editing
         if (!isNew) {
-          final oldItems = await isar.invoiceItems
+          // Use only direct field filters - avoid IsarLink filters inside write txn (causes deadlock on legacy data)
+          final oldByParentId = await isar.invoiceItems
               .filter()
               .parentInvoiceIdEqualTo(invoiceId)
-              .or()
-              .invoice((q) => q.idEqualTo(invoiceId))
               .findAll();
-          
+          final oldByParentUuid = invoice.uuid != null
+              ? await isar.invoiceItems
+                  .filter()
+                  .parentInvoiceUuidEqualTo(invoice.uuid)
+                  .findAll()
+              : <InvoiceItem>[];
+          // Merge, dedup by id
+          final allOldIds = <int>{};
+          final oldItems = <InvoiceItem>[];
+          for (var oi in [...oldByParentId, ...oldByParentUuid]) {
+            if (allOldIds.add(oi.id)) oldItems.add(oi);
+          }
+
           for (var oldItem in oldItems) {
             oldItem.isDeleted = true;
             oldItem.isSynced = false;
@@ -134,14 +145,14 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             // Restore stock back before applying new ones (converting secondary unit if applicable)
             final dbItem = kIsWeb
                 ? (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null)
-                : oldItem.item.value;
+                : (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null);
             if (dbItem != null) {
               double restoredQty = oldItem.quantity ?? 0.0;
               final convFactor = dbItem.conversionFactor ?? 1.0;
               if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
                 final uName = (oldItem.unit ?? '').trim().toLowerCase();
                 final sName = dbItem.secondaryUnit!.trim().toLowerCase();
-                final pName = (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? '').trim().toLowerCase();
+                final pName = (dbItem.primaryUnitName ?? '').trim().toLowerCase();
                 if (uName == sName && uName != pName) {
                   restoredQty = restoredQty / convFactor;
                 }

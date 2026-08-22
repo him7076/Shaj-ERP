@@ -72,10 +72,22 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
 
         // 2. Clear old items if editing to replace them
         if (!isNew) {
-          final oldItems = await isar.orderItems
+          // Avoid IsarLink filters inside write txn - use direct field filters only
+          final oldByOrderId = await isar.orderItems
               .filter()
-              .order((q) => q.idEqualTo(orderId))
+              .orderIdEqualTo(orderId)
               .findAll();
+          final oldByOrderUuid = order.uuid != null
+              ? await isar.orderItems
+                  .filter()
+                  .orderUuidEqualTo(order.uuid)
+                  .findAll()
+              : <OrderItem>[];
+          final allOldIds = <int>{};
+          final oldItems = <OrderItem>[];
+          for (var oi in [...oldByOrderId, ...oldByOrderUuid]) {
+            if (allOldIds.add(oi.id)) oldItems.add(oi);
+          }
           
           for (var oldItem in oldItems) {
             oldItem.isDeleted = true;
@@ -84,9 +96,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
             await isar.orderItems.put(oldItem);
 
             // If stock was reserved, release/restore it before applying new reservation
-            final dbItem = kIsWeb
-                ? (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null)
-                : oldItem.item.value;
+            final dbItem = oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null;
             if (reserveStock && dbItem != null) {
               dbItem.currentStock = (dbItem.currentStock ?? 0.0) + (oldItem.quantity ?? 0.0);
               await isar.items.put(dbItem);

@@ -110,14 +110,22 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
         // 3. Clear old items if editing
         if (!isNew) {
-          final oldItems = await isar.collection<PurchaseItem>()
+          // Avoid IsarLink filters inside write txn - use direct field filters only
+          final oldByPurchaseId = await isar.collection<PurchaseItem>()
               .filter()
-              .purchaseUuidEqualTo(purchase.uuid)
-              .or()
               .purchaseIdEqualTo(purchaseId)
-              .or()
-              .purchase((q) => q.idEqualTo(purchaseId))
               .findAll();
+          final oldByPurchaseUuid = purchase.uuid != null
+              ? await isar.collection<PurchaseItem>()
+                  .filter()
+                  .purchaseUuidEqualTo(purchase.uuid)
+                  .findAll()
+              : <PurchaseItem>[];
+          final allOldIds = <int>{};
+          final oldItems = <PurchaseItem>[];
+          for (var oi in [...oldByPurchaseId, ...oldByPurchaseUuid]) {
+            if (allOldIds.add(oi.id)) oldItems.add(oi);
+          }
 
           // Restore stock levels before deletion (converting secondary unit if applicable)
           for (var oldItem in oldItems) {
@@ -128,7 +136,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
               if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
                 final uName = (oldItem.unit ?? '').trim().toLowerCase();
                 final sName = targetItem.secondaryUnit!.trim().toLowerCase();
-                final pName = (targetItem.primaryUnitName ?? targetItem.unit.value?.shortName ?? '').trim().toLowerCase();
+                final pName = (targetItem.primaryUnitName ?? '').trim().toLowerCase();
                 if (uName == sName && uName != pName) {
                   restoredQty = restoredQty / convFactor;
                 }
