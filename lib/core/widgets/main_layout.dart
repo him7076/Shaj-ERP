@@ -186,7 +186,6 @@ class MainLayout extends StatelessWidget {
               ),
             ),
           ),
-        ),
       );
     }
   }
