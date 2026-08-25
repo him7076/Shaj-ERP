@@ -50,7 +50,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           MaterialPageRoute(
             builder: (context) => const AddEditInvoiceScreen(),
           ),
-        ).then((_) => ref.invalidate(filteredInvoicesProvider));
+        ).then((changed) { if (changed == true) ref.invalidate(filteredInvoicesProvider); });
       });
     }
   }
@@ -464,7 +464,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                               MaterialPageRoute(
                                 builder: (context) => const AddEditInvoiceScreen(),
                               ),
-                            ).then((_) => ref.invalidate(filteredInvoicesProvider));
+                            ).then((changed) { if (changed == true) ref.invalidate(filteredInvoicesProvider); });
                           },
                         ),
                       ],
@@ -537,7 +537,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             MaterialPageRoute(
               builder: (context) => const AddEditInvoiceScreen(),
             ),
-          ).then((_) => ref.invalidate(filteredInvoicesProvider));
+          ).then((changed) { if (changed == true) ref.invalidate(filteredInvoicesProvider); });
         },
       ),
     );
@@ -721,7 +721,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                       MaterialPageRoute(
                         builder: (context) => InvoiceDetailScreen(invoiceUuid: invoice.uuid!),
                       ),
-                    ).then((_) => ref.invalidate(filteredInvoicesProvider));
+                    ).then((changed) { if (changed == true) ref.invalidate(filteredInvoicesProvider); });
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -817,7 +817,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                 MaterialPageRoute(
                                   builder: (context) => AddEditInvoiceScreen(invoiceUuid: invoice.uuid),
                                 ),
-                              ).then((_) => ref.invalidate(filteredInvoicesProvider));
+                              ).then((changed) { if (changed == true) ref.invalidate(filteredInvoicesProvider); });
                             } else if (val == 'receipt') {
                               try { await invoice.party.load(); } catch (_) {}
                               Party? targetParty = invoice.party.value;

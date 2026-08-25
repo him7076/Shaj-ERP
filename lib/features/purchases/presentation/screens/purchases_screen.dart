@@ -581,7 +581,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                             MaterialPageRoute(
                                               builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
                                             ),
-                                          ).then((_) => ref.invalidate(purchaseListProvider));
+                                          ).then((changed) { if (changed == true) ref.invalidate(purchaseListProvider); });
                                         },
                                         leading: CircleAvatar(
                                           radius: 20,
@@ -676,7 +676,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                                     MaterialPageRoute(
                                                       builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
                                                     ),
-                                                  ).then((_) => ref.invalidate(purchaseListProvider));
+                                                  ).then((changed) { if (changed == true) ref.invalidate(purchaseListProvider); });
                                                 } else if (val == 'payment') {
                                                   try { await purchase.party.load(); } catch (_) {}
                                                   AddEditTransactionDialog.show(

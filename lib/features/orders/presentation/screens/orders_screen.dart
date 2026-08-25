@@ -37,7 +37,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           MaterialPageRoute(
             builder: (context) => const AddEditOrderScreen(),
           ),
-        ).then((_) => ref.invalidate(filteredOrdersProvider));
+        ).then((changed) { if (changed == true) ref.invalidate(filteredOrdersProvider); });
       });
     }
   }
@@ -122,7 +122,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 MaterialPageRoute(
                   builder: (context) => const WhatsappOrderImporterScreen(),
                 ),
-              ).then((_) => ref.invalidate(filteredOrdersProvider));
+              ).then((changed) { if (changed == true) ref.invalidate(filteredOrdersProvider); });
             },
           ),
 
@@ -175,7 +175,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                               MaterialPageRoute(
                                 builder: (context) => const AddEditOrderScreen(),
                               ),
-                            ).then((_) => ref.invalidate(filteredOrdersProvider));
+                            ).then((changed) { if (changed == true) ref.invalidate(filteredOrdersProvider); });
                           },
                         ),
                       ],
@@ -237,7 +237,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             MaterialPageRoute(
               builder: (context) => const AddEditOrderScreen(),
             ),
-          ).then((_) => ref.invalidate(filteredOrdersProvider));
+          ).then((changed) { if (changed == true) ref.invalidate(filteredOrdersProvider); });
         },
       ),
     );
@@ -400,7 +400,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             MaterialPageRoute(
               builder: (context) => OrderDetailScreen(orderUuid: order.uuid!),
             ),
-          ).then((_) => ref.invalidate(filteredOrdersProvider));
+          ).then((changed) { if (changed == true) ref.invalidate(filteredOrdersProvider); });
         },
         borderRadius: BorderRadius.circular(16),
         child: Padding(
@@ -461,7 +461,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                       MaterialPageRoute(
                         builder: (context) => AddEditOrderScreen(orderUuid: order.uuid),
                       ),
-                    ).then((_) => ref.invalidate(filteredOrdersProvider));
+                    ).then((changed) { if (changed == true) ref.invalidate(filteredOrdersProvider); });
                   } else if (val == 'cancel') {
                     final newStatus = order.status == 'Cancelled' ? 'Pending' : 'Cancelled';
                     await isar.writeTxn(() async {

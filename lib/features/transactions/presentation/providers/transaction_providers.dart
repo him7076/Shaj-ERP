@@ -28,7 +28,7 @@ class TransactionSearchFilter {
     this.transactionType = 'All',
     this.dateRange,
     this.partyUuid,
-    this.showAllHistory = false,
+    this.showAllHistory = true,
     this.limit = 50,
   });
 

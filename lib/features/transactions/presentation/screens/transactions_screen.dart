@@ -74,30 +74,40 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   void _openTransaction(BuildContext context, Transaction txn) {
     if (txn.transactionType == 'Sales') {
-      Navigator.push(
+      Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: txn.uuid ?? txn.id.toString())),
-      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
     } else if (txn.transactionType == 'Sales Order') {
-      Navigator.push(
+      Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => OrderDetailScreen(orderUuid: txn.uuid ?? txn.id.toString())),
-      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
     } else if (txn.transactionType == 'Purchase') {
-      Navigator.push(
+      Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: txn.uuid)),
-      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
     } else if (txn.transactionType == 'Credit Note') {
-      Navigator.push(
+      Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
-      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
     } else if (txn.transactionType == 'Debit Note') {
-      Navigator.push(
+      Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
-      ).then((_) => ref.invalidate(filteredTransactionsProvider));
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
     } else if (txn.transactionType == 'Receipt' || txn.transactionType == 'Payment' || txn.transactionType == 'Other Income') {
       _showReceiptDetailModal(context, txn);
     } else {

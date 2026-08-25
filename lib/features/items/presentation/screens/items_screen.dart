@@ -722,7 +722,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             MaterialPageRoute(
               builder: (context) => ItemDetailScreen(itemUuid: item.uuid!),
             ),
-          ).then((_) => ref.invalidate(filteredItemsProvider));
+          ).then((changed) { if (changed == true) ref.invalidate(filteredItemsProvider); });
         },
         borderRadius: BorderRadius.circular(14),
         child: Padding(
