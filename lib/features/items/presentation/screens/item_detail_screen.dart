@@ -21,6 +21,7 @@ import 'package:business_sahaj_erp/features/orders/presentation/screens/order_de
 import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/features/items/presentation/widgets/stock_adjustment_dialog.dart';
 
 class _ItemTransaction {
   final String type; // 'Sale', 'Purchase', 'Order', 'Adjustment'
