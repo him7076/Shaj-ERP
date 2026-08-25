@@ -198,7 +198,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: const Color(0xFF10B981),
                       icon: Icons.point_of_sale_rounded,
                       iconColor: const Color(0xFF10B981),
-                      onTap: () => context.go('/sales'),
+                      onTap: () => context.push('/sales'),
                     ),
                     _buildStatCard(
                       context: context,
@@ -208,7 +208,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: const Color(0xFF6366F1),
                       icon: Icons.shopping_bag_rounded,
                       iconColor: const Color(0xFF6366F1),
-                      onTap: () => context.go('/purchases'),
+                      onTap: () => context.push('/purchases'),
                     ),
                     _buildStatCard(
                       context: context,
@@ -218,7 +218,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: const Color(0xFFF59E0B),
                       icon: Icons.arrow_circle_down_rounded,
                       iconColor: const Color(0xFF8B5CF6),
-                      onTap: () => context.go('/reports/receivables'),
+                      onTap: () => context.push('/reports/receivables'),
                     ),
                     _buildStatCard(
                       context: context,
@@ -228,7 +228,7 @@ class DashboardScreen extends ConsumerWidget {
                       trendColor: const Color(0xFFF43F5E),
                       icon: Icons.arrow_circle_up_rounded,
                       iconColor: const Color(0xFFF43F5E),
-                      onTap: () => context.go('/reports/payables'),
+                      onTap: () => context.push('/reports/payables'),
                     ),
                   ],
                 ),
@@ -269,7 +269,7 @@ class DashboardScreen extends ConsumerWidget {
                                 ],
                               ),
                               TextButton.icon(
-                                onPressed: () => context.go('/transactions'),
+                                onPressed: () => context.push('/transactions'),
                                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                                 label: const Text('View All'),
                               ),
@@ -579,7 +579,7 @@ class DashboardScreen extends ConsumerWidget {
           final act = actions[idx];
           final Color col = act['color'] as Color;
           return InkWell(
-            onTap: () => context.go(act['path'] as String),
+            onTap: () => context.push(act['path'] as String),
             borderRadius: BorderRadius.circular(16),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -636,7 +636,7 @@ class DashboardScreen extends ConsumerWidget {
         final Color col = act['color'] as Color;
         return AnimatedHoverCard(
           glowColor: col,
-          onTap: () => context.go(act['path'] as String),
+          onTap: () => context.push(act['path'] as String),
           padding: const EdgeInsets.all(14.0),
           child: Row(
             children: [

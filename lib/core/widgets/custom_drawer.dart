@@ -597,7 +597,7 @@ class CustomDrawer extends ConsumerWidget {
               Navigator.of(context).pop();
             }
             if (!isActive) {
-              context.go(routePath);
+              context.push(routePath);
             }
           },
         ),
