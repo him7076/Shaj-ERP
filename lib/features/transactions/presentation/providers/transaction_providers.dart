@@ -115,8 +115,12 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .linkedBillNumberContains(cleanQuery, caseSensitive: false));
       }
       
-      rawTransactions = await qb.sortByTransactionDateDesc().limit(queryLimit).findAll();
-    } catch (_) {}
+      var results = await qb.findAll();
+      results.sort((a, b) => (b.transactionDate ?? b.createdAt).compareTo(a.transactionDate ?? a.createdAt));
+      rawTransactions = results.take(queryLimit).toList();
+    } catch (e, stack) {
+      debugPrint('Error fetching rawTransactions: $e\n$stack');
+    }
   }
 
   // 2. Fetch Invoices (Sales)
@@ -143,7 +147,9 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .remarksContains(cleanQuery, caseSensitive: false));
       }
       
-      final rawInvoices = await qb.sortByInvoiceDateDesc().limit(queryLimit).findAll();
+      var results = await qb.findAll();
+      results.sort((a, b) => (b.invoiceDate ?? b.createdAt ?? DateTime.now()).compareTo(a.invoiceDate ?? a.createdAt ?? DateTime.now()));
+      final rawInvoices = results.take(queryLimit).toList();
 
       // Batch fetch parties
       final Set<int> allPartyIds = {};
@@ -225,7 +231,9 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .remarksContains(cleanQuery, caseSensitive: false));
       }
       
-      final rawOrders = await qb.sortByOrderDateDesc().limit(queryLimit).findAll();
+      var results = await qb.findAll();
+      results.sort((a, b) => (b.orderDate ?? b.createdAt ?? DateTime.now()).compareTo(a.orderDate ?? a.createdAt ?? DateTime.now()));
+      final rawOrders = results.take(queryLimit).toList();
 
       final Set<int> orderPartyIds = {};
       for (var o in rawOrders) { if (o.partyId != null) orderPartyIds.add(o.partyId!); }
@@ -262,7 +270,9 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
           ..remarks = ord.remarks
           ..createdAt = ord.createdAt ?? DateTime.now();
       }).toList();
-    } catch (_) {}
+    } catch (e, stack) {
+      debugPrint('Error fetching orderTransactions: $e\n$stack');
+    }
   }
 
   // 4. Fetch Purchases (Purchase Bills)
@@ -289,7 +299,9 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
             .remarksContains(cleanQuery, caseSensitive: false));
       }
       
-      final rawPurchases = await qb.sortByPurchaseDateDesc().limit(queryLimit).findAll();
+      var results = await qb.findAll();
+      results.sort((a, b) => (b.purchaseDate ?? b.createdAt ?? DateTime.now()).compareTo(a.purchaseDate ?? a.createdAt ?? DateTime.now()));
+      final rawPurchases = results.take(queryLimit).toList();
 
       final Set<int> purPartyIds = {};
       for (var p in rawPurchases) { if (p.partyId != null) purPartyIds.add(p.partyId!); }
@@ -335,7 +347,9 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
           ..remarks = pur.remarks
           ..createdAt = pur.createdAt ?? DateTime.now();
       }).toList();
-    } catch (_) {}
+    } catch (e, stack) {
+      debugPrint('Error fetching purchaseTransactions: $e\n$stack');
+    }
   }
 
   // Combine all lists
