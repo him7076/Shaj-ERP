@@ -1682,9 +1682,28 @@ class WebMockCollection<T> extends IsarCollection<T> {
       } else if (typeStr == 'endsWith') {
         return matchStr.endsWith(targetStr);
       } else if (typeStr == 'gt' || typeStr == 'greaterThan') {
+        if (itemValue is DateTime && val is DateTime) return itemValue.isAfter(val);
         return (itemValue as num) > (val as num);
+      } else if (typeStr == 'gte' || typeStr == 'greaterThanOrEqualTo') {
+        if (itemValue is DateTime && val is DateTime) return !itemValue.isBefore(val);
+        return (itemValue as num) >= (val as num);
       } else if (typeStr == 'lt' || typeStr == 'lessThan') {
+        if (itemValue is DateTime && val is DateTime) return itemValue.isBefore(val);
         return (itemValue as num) < (val as num);
+      } else if (typeStr == 'lte' || typeStr == 'lessThanOrEqualTo') {
+        if (itemValue is DateTime && val is DateTime) return !itemValue.isAfter(val);
+        return (itemValue as num) <= (val as num);
+      } else if (typeStr == 'between') {
+        final val2 = filter.value2;
+        if (itemValue is DateTime) {
+          final lower = val is DateTime ? val : DateTime(2000);
+          final upper = val2 is DateTime ? val2 : DateTime(2100);
+          return !itemValue.isBefore(lower) && !itemValue.isAfter(upper);
+        }
+        if (itemValue is num && val is num && val2 is num) {
+          return itemValue >= val && itemValue <= val2;
+        }
+        return true;
       } else if (typeStr == 'isNotNull') {
         return true;
       } else if (typeStr == 'isNull') {
@@ -1698,10 +1717,14 @@ class WebMockCollection<T> extends IsarCollection<T> {
   dynamic _getPropertyValue(dynamic item, String propName) {
     final prop = propName.toLowerCase();
     
+    // Common properties for all IsarModel types
     if (prop == 'uuid') return item.uuid;
     if (prop == 'id') return item.id;
     if (prop == 'isdeleted') return item.isDeleted;
     if (prop == 'issynced') return item.isSynced;
+    if (prop == 'createdat') return item.createdAt;
+    if (prop == 'updatedat') return item.updatedAt;
+    if (prop == 'version') return item.version;
     
     if (item is Item) {
       if (prop == 'itemname') return item.itemName;
@@ -1710,21 +1733,41 @@ class WebMockCollection<T> extends IsarCollection<T> {
       if (prop == 'hsncode') return item.hsnCode;
       if (prop == 'sku') return item.sku;
       if (prop == 'skucode') return item.skuCode;
+      if (prop == 'currentstock') return item.currentStock;
+      if (prop == 'sellrate') return item.sellRate;
+      if (prop == 'buyrate') return item.buyRate;
+      if (prop == 'gstrate') return item.gstRate;
     }
     if (item is Party) {
       if (prop == 'partyname') return item.partyName;
       if (prop == 'partycode') return item.partyCode;
       if (prop == 'mobilenumber') return item.mobileNumber;
       if (prop == 'partytype') return item.partyType;
+      if (prop == 'email') return item.email;
+      if (prop == 'gstnumber') return item.gstNumber;
+      if (prop == 'outstandingbalance') return item.outstandingBalance;
     }
     if (item is Order) {
       if (prop == 'ordernumber') return item.orderNumber;
+      if (prop == 'orderdate') return item.orderDate;
       if (prop == 'status') return item.status;
+      if (prop == 'partyid') return item.partyId;
+      if (prop == 'partyname') return item.partyName;
+      if (prop == 'grandtotal') return item.grandTotal;
+      if (prop == 'remarks') return item.remarks;
     }
     if (item is Invoice) {
       if (prop == 'invoicenumber') return item.invoiceNumber;
+      if (prop == 'invoicedate') return item.invoiceDate;
+      if (prop == 'invoicetype') return item.invoiceType;
+      if (prop == 'invoicestatus') return item.invoiceStatus;
       if (prop == 'paymentstatus') return item.paymentStatus;
       if (prop == 'partyid') return item.partyId;
+      if (prop == 'partyname') return item.partyName;
+      if (prop == 'grandtotal') return item.grandTotal;
+      if (prop == 'paidamount') return item.paidAmount;
+      if (prop == 'pendingamount') return item.pendingAmount;
+      if (prop == 'remarks') return item.remarks;
     }
     if (item is Category) {
       if (prop == 'categoryname') return item.categoryName;
@@ -1739,9 +1782,13 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (item is Purchase) {
       if (prop == 'purchasenumber') return item.purchaseNumber;
       if (prop == 'supplierinvoicenumber') return item.supplierInvoiceNumber;
+      if (prop == 'purchasedate') return item.purchaseDate;
       if (prop == 'partyname') return item.partyName;
       if (prop == 'partyid') return item.partyId;
       if (prop == 'paymentstatus') return item.paymentStatus;
+      if (prop == 'grandtotal') return item.grandTotal;
+      if (prop == 'paidamount') return item.paidAmount;
+      if (prop == 'remarks') return item.remarks;
     }
     if (item is PurchaseItem) {
       if (prop == 'purchaseid') return item.purchaseId;
@@ -1755,24 +1802,52 @@ class WebMockCollection<T> extends IsarCollection<T> {
     }
     if (item is InvoiceItem) {
       if (prop == 'parentinvoiceid') return item.parentInvoiceId;
+      if (prop == 'parentinvoiceuuid') return item.parentInvoiceUuid;
+      if (prop == 'itemid') return item.itemId;
+      if (prop == 'itemname') return item.itemName;
     }
     if (item is CreditNote) {
       if (prop == 'partyid') return item.partyId;
+      if (prop == 'partyname') return item.partyName;
+      if (prop == 'creditnotenumber') return item.creditNoteNumber;
+      if (prop == 'creditnotedate') return item.creditNoteDate;
     }
     if (item is DebitNote) {
       if (prop == 'partyid') return item.partyId;
+      if (prop == 'partyname') return item.partyName;
+      if (prop == 'debitnotenumber') return item.debitNoteNumber;
+      if (prop == 'debitnotedate') return item.debitNoteDate;
     }
     if (item is Expense) {
       if (prop == 'category') return item.category;
       if (prop == 'amount') return item.amount;
+      if (prop == 'expensedate') return item.expenseDate;
+      if (prop == 'paymentmode') return item.paymentMode;
+      if (prop == 'remarks') return item.remarks;
     }
     if (item is Transaction) {
       if (prop == 'transactionnumber') return item.transactionNumber;
+      if (prop == 'transactiondate') return item.transactionDate;
       if (prop == 'transactiontype') return item.transactionType;
       if (prop == 'partyuuid') return item.partyUuid;
+      if (prop == 'partyname') return item.partyName;
       if (prop == 'targetpartyuuid') return item.targetPartyUuid;
+      if (prop == 'targetpartyname') return item.targetPartyName;
       if (prop == 'linkedbilluuid') return item.linkedBillUuid;
+      if (prop == 'linkedbillnumber') return item.linkedBillNumber;
       if (prop == 'amount') return item.amount;
+      if (prop == 'paymentmode') return item.paymentMode;
+      if (prop == 'paymentstatus') return item.paymentStatus;
+      if (prop == 'referencenumber') return item.referenceNumber;
+      if (prop == 'remarks') return item.remarks;
+    }
+    if (item is BankAccount) {
+      if (prop == 'accountname') return item.accountName;
+      if (prop == 'bankname') return item.bankName;
+    }
+    if (item is StockAdjustment) {
+      if (prop == 'itemuuid') return item.itemUuid;
+      if (prop == 'itemname') return item.itemName;
     }
     
     return null;
