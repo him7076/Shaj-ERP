@@ -135,7 +135,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Manage Cash & Bank Accounts', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
@@ -705,7 +705,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
     final double totalOutflow = txns.where((t) => !t.isCredit).fold(0.0, (s, t) => s + t.amount);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(widget.accountName, style: const TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
@@ -1119,7 +1119,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
     final totalOpenAmt = openCheques.fold(0.0, (sum, t) => sum + (t.amount ?? 0.0));
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Cheques & Uncleared Drafts', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: _isLoading

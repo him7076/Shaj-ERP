@@ -564,7 +564,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(
           widget.purchaseUuid != null
               ? 'Edit Purchase Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'

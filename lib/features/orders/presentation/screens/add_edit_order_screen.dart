@@ -488,7 +488,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(widget.orderUuid != null ? 'Edit Sales Order' : 'Record Sales Order'),
       ),
       body: SingleChildScrollView(

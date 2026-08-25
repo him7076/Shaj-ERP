@@ -300,7 +300,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: isMobile ? 44 : 52,
         title: _showSearch
             ? TextField(

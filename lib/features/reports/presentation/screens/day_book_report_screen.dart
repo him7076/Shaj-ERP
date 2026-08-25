@@ -246,7 +246,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Day Book Journal'),
         actions: [
           IconButton(

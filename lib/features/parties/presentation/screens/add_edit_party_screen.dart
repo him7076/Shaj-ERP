@@ -521,7 +521,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
     final initials = partyName.isNotEmpty ? partyName.substring(0, 1).toUpperCase() : 'P';
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(_isEditMode ? 'Edit Party Profile' : 'New Party Registration', style: const TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),

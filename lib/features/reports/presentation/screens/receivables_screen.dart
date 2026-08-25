@@ -27,7 +27,7 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
     final partiesAsync = ref.watch(partiesListProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: 44,
         title: const Text('Accounts Receivable (Customer Dues)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         elevation: 0,

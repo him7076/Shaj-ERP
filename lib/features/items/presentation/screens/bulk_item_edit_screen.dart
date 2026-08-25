@@ -236,7 +236,7 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
     final unitsList = unitsAsync.asData?.value ?? [];
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Bulk Item Editor'),
         actions: [
           if (_editedItemsMap.isNotEmpty)

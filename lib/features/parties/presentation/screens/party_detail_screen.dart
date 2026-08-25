@@ -201,7 +201,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
     if (_party == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Party Not Found')),
+        appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, title: const Text('Party Not Found')),
         body: const Center(child: Text('Requested party record does not exist or was deleted.')),
       );
     }
@@ -214,7 +214,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: isMobile ? 44 : 56,
         title: Text(
           isMobile ? 'Party Details' : (_party!.partyName ?? 'Party Dashboard'),

@@ -94,7 +94,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
         : null;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Inventory Valuation & Stock Ledger'),
         bottom: TabBar(
           controller: _tabController,

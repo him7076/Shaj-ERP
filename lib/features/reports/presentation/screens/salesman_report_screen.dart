@@ -111,7 +111,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Salesman Wise Performance Report'),
         actions: [
           IconButton(

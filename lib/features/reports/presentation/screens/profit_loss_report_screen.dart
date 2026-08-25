@@ -411,7 +411,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A), // Dark Executive Slate Theme
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         backgroundColor: const Color(0xFF1E293B),
         elevation: 0,
         title: Row(

@@ -247,7 +247,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 52,
         title: _showSearch
             ? TextField(

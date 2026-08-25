@@ -103,7 +103,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
         : null;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Customer Ledger Account'),
         actions: [
           if (ledgerAsync != null)

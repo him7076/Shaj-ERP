@@ -146,7 +146,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
     final reportAsync = ref.watch(gstReportProvider(args));
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('GST Filings & HSN Summary'),
         actions: [
           reportAsync.when(

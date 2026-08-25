@@ -359,7 +359,10 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _adjustStockDialog({StockAdjustment? existingAdjustment}) async {
     final success = await showDialog<bool>(
       context: context,
-      builder: (context) => AddEditStockAdjustmentDialog(existingAdjustment: existingAdjustment),
+      builder: (context) => AddEditStockAdjustmentDialog(
+        existingAdjustment: existingAdjustment,
+        prefilledItem: existingAdjustment == null ? _item : null,
+      ),
     );
 
     if (success == true) {
@@ -504,7 +507,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
     if (_item == null) {
       return Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, ),
         body: const Center(child: Text('Product not found.')),
       );
     }
@@ -528,7 +531,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(item.itemName ?? 'Product Details'),
         actions: [
           IconButton(

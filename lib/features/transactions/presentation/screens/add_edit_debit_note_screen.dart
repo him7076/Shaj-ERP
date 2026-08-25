@@ -249,7 +249,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('New Debit Note (Purchase Return)'),
         actions: [
           if (_isSaving)

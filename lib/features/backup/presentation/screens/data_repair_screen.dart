@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -193,9 +193,9 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         _fixedRecords += collectionFixed;
       }
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ═══════════════════════════════════════════════════════════════
       // Phase 2: Repair ALL Collections
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ═══════════════════════════════════════════════════════════════
 
       // 1. Categories
       await processCollection('Categories', isar.categorys, (record) {
@@ -249,7 +249,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 6. Invoices â€” with paymentStatus recalculation + partyName resolution
+      // 6. Invoices — with paymentStatus recalculation + partyName resolution
       await processCollection('Invoices', isar.invoices, (record) {
         final inv = record as Invoice;
         bool needsFix = false;
@@ -308,7 +308,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 8. Purchases â€” with paymentStatus recalculation + partyName resolution
+      // 8. Purchases — with paymentStatus recalculation + partyName resolution
       await processCollection('Purchases', isar.collection<Purchase>(), (record) {
         final pur = record as Purchase;
         bool needsFix = false;
@@ -366,7 +366,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 10. Orders â€” with partyName resolution + status default
+      // 10. Orders — with partyName resolution + status default
       await processCollection('Orders', isar.orders, (record) {
         final ord = record as Order;
         bool needsFix = false;
@@ -397,7 +397,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 12. Transactions â€” with partyName resolution + defaults
+      // 12. Transactions — with partyName resolution + defaults
       await processCollection('Transactions', isar.transactions, (record) {
         final txn = record as Transaction;
         bool needsFix = false;
@@ -433,7 +433,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 15. Credit Notes â€” with partyName resolution
+      // 15. Credit Notes — with partyName resolution
       await processCollection('Credit Notes', isar.collection<CreditNote>(), (record) {
         final cn = record as CreditNote;
         bool needsFix = false;
@@ -463,7 +463,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 17. Debit Notes â€” with partyName resolution
+      // 17. Debit Notes — with partyName resolution
       await processCollection('Debit Notes', isar.collection<DebitNote>(), (record) {
         final dn = record as DebitNote;
         bool needsFix = false;
@@ -504,7 +504,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // 20. Stock Adjustments â€” with itemName resolution
+      // 20. Stock Adjustments — with itemName resolution
       await processCollection('Stock Adjustments', isar.collection<StockAdjustment>(), (record) {
         final sa = record as StockAdjustment;
         bool needsFix = false;
@@ -524,9 +524,9 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         return true;
       });
 
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ═══════════════════════════════════════════════════════════════
       // Phase 3: Complete
-      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      // ═══════════════════════════════════════════════════════════════
 
       _timer?.cancel();
       setState(() {
@@ -577,7 +577,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
                   if (_repairLog.isEmpty) ...[
                     const SizedBox(height: 12),
                     const Text(
-                      'âœ… All records are already in perfect condition! No fixes needed.',
+                      '✅ All records are already in perfect condition! No fixes needed.',
                       style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -609,7 +609,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
     final percent = (_progress * 100).toStringAsFixed(1);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Database Repair & Re-Write'),
       ),
       body: Center(

@@ -417,7 +417,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
     }).toList();
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('WhatsApp Mapping Master', style: TextStyle(fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tabController,

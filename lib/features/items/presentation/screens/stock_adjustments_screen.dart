@@ -128,7 +128,9 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
           ref.read(syncServiceProvider).syncPendingChangesQuietly();
         } catch (_) {}
 
-        await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
+        // Run recalculation in the background to prevent UI freeze
+        Future.microtask(() => ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions());
+        
         ref.invalidate(filteredItemsProvider);
         ref.invalidate(lowStockAlertProvider);
         await _loadAdjustments();
@@ -290,7 +292,7 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
 
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Stock Adjustments', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
@@ -543,8 +545,9 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
 
 class AddEditStockAdjustmentDialog extends ConsumerStatefulWidget {
   final StockAdjustment? existingAdjustment;
+  final Item? prefilledItem;
 
-  const AddEditStockAdjustmentDialog({Key? key, this.existingAdjustment}) : super(key: key);
+  const AddEditStockAdjustmentDialog({Key? key, this.existingAdjustment, this.prefilledItem}) : super(key: key);
 
   @override
   ConsumerState<AddEditStockAdjustmentDialog> createState() => _AddEditStockAdjustmentDialogState();
@@ -575,6 +578,11 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
       _reasonController.text = adj.reason ?? '';
       _selectedUnit = adj.unit ?? 'PCS';
       _adjustmentDate = adj.adjustmentDate ?? DateTime.now();
+    } else if (widget.prefilledItem != null) {
+      _selectedItem = widget.prefilledItem;
+      final buyRate = _selectedItem!.buyRate ?? 0.0;
+      _rateController.text = buyRate > 0 ? buyRate.toString() : '';
+      _selectedUnit = _selectedItem!.primaryUnitName ?? _selectedItem!.unit.value?.shortName ?? 'PCS';
     }
   }
 
@@ -626,23 +634,27 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                       (i) => i.uuid == adjItemUuid || i.id == widget.existingAdjustment!.itemId,
                       orElse: () => itemsList.first,
                     );
+                  } else if (_selectedItem == null && widget.prefilledItem != null) {
+                    _selectedItem = itemsList.firstWhere(
+                      (i) => i.uuid == widget.prefilledItem!.uuid || i.id == widget.prefilledItem!.id,
+                      orElse: () => itemsList.first,
+                    );
                   }
 
-                  return DropdownButtonFormField<Item>(
-                    value: _selectedItem,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Select Product *',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.inventory_2_outlined),
-                    ),
-                    items: itemsList.map((item) {
-                      return DropdownMenuItem<Item>(
+                  return DropdownMenu<Item>(
+                    initialSelection: _selectedItem,
+                    label: const Text('Select Product *'),
+                    leadingIcon: const Icon(Icons.inventory_2_outlined),
+                    expandedInsets: EdgeInsets.zero, // Take full width
+                    enableFilter: true,
+                    enableSearch: true,
+                    dropdownMenuEntries: itemsList.map((item) {
+                      return DropdownMenuEntry<Item>(
                         value: item,
-                        child: Text('${item.itemName ?? "Unnamed"} (Code: ${item.itemCode ?? "N/A"})'),
+                        label: '${item.itemName ?? "Unnamed"} (Code: ${item.itemCode ?? "N/A"})',
                       );
                     }).toList(),
-                    onChanged: (item) {
+                    onSelected: (item) {
                       if (item != null) {
                         setState(() {
                           _selectedItem = item;
@@ -652,7 +664,6 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                         });
                       }
                     },
-                    validator: (v) => v == null ? 'Please select a product' : null,
                   );
                 },
                 loading: () => const LinearProgressIndicator(),
@@ -876,7 +887,9 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
         ref.read(syncServiceProvider).syncPendingChangesQuietly();
       } catch (_) {}
 
-      await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
+      // Run recalculation in the background to prevent UI freeze
+      Future.microtask(() => ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions());
+      
       ref.invalidate(filteredItemsProvider);
       ref.invalidate(lowStockAlertProvider);
 

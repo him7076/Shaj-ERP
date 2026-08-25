@@ -853,7 +853,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
     final bool isVerifiedMatch = whatsappTotal <= 0 || (whatsappTotal - computedErpTotal).abs() < 1.0;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Row(
           children: [
             Icon(Icons.chat_rounded, color: Color(0xFF25D366)),

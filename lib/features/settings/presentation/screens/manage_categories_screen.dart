@@ -210,7 +210,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Manage Categories & Masters', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
@@ -412,7 +412,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
         builder: (ctx) => StatefulBuilder(
           builder: (context, setSubState) {
             return Scaffold(
-              appBar: AppBar(
+              appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
                 title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
               floatingActionButton: FloatingActionButton.extended(
@@ -486,7 +486,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
         builder: (ctx) => StatefulBuilder(
           builder: (context, setSubState) {
             return Scaffold(
-              appBar: AppBar(
+              appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
                 title: const Text('Manage Salesmen', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
               floatingActionButton: FloatingActionButton.extended(
@@ -567,7 +567,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
         builder: (ctx) => StatefulBuilder(
           builder: (context, setSubState) {
             return Scaffold(
-              appBar: AppBar(
+              appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
                 title: const Text('Manage Measurement Units', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
               floatingActionButton: FloatingActionButton.extended(
@@ -910,7 +910,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
         builder: (ctx) => StatefulBuilder(
           builder: (context, setSubState) {
             return Scaffold(
-              appBar: AppBar(
+              appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
                 title: const Text('Manage Expense Categories', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
               floatingActionButton: FloatingActionButton.extended(

@@ -149,7 +149,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
     final reportAsync = ref.watch(salesReportProvider(args));
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Sales Register Report'),
         actions: [
           reportAsync.when(

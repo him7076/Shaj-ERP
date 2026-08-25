@@ -259,7 +259,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
     if (_order == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Sales Order')),
+        appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, title: const Text('Sales Order')),
         body: const Center(child: Text('Sales order not found.')),
       );
     }
@@ -268,7 +268,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final isLocked = order.status == 'Cancelled' || order.status == 'Converted To Sale';
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text('Order #${order.orderNumber}'),
         centerTitle: false,
         actions: [

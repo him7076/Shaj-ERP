@@ -34,7 +34,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final analyticsAsync = ref.watch(dashboardAnalyticsProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Reports & Business Intelligence', style: TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(

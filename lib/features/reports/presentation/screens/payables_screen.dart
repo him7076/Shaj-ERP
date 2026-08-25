@@ -27,7 +27,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
     final partiesAsync = ref.watch(partiesListProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Accounts Payable (Supplier Dues)'),
         elevation: 0,
       ),

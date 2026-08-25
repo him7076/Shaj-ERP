@@ -28,7 +28,7 @@ class _SnapshotBackupScreenState extends ConsumerState<SnapshotBackupScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Database Snapshot Backup & Restore'),
         elevation: 0,
       ),

@@ -184,7 +184,7 @@ class _BatchReportScreenState extends ConsumerState<BatchReportScreen> {
     final reportAsync = ref.watch(batchReportProvider);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: const Text('Batch Tracking & Expiry Report', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(

@@ -281,7 +281,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
     if (_invoice == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Sales Invoice')),
+        appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, title: const Text('Sales Invoice')),
         body: const Center(child: Text('Sales invoice not found.')),
       );
     }
@@ -290,7 +290,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     final isCancelled = invoice.paymentStatus == 'Cancelled';
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text('Invoice #${invoice.invoiceNumber}'),
         centerTitle: false,
         actions: [

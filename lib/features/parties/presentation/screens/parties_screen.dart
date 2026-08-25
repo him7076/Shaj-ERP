@@ -268,7 +268,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 52,
         title: _showSearch
             ? TextField(
