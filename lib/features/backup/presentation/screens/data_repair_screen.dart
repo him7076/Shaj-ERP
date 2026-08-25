@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -193,9 +193,9 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         _fixedRecords += collectionFixed;
       }
 
-      // ═══════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       // Phase 2: Repair ALL Collections
-      // ═══════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
       // 1. Categories
       await processCollection('Categories', isar.categorys, (record) {
@@ -203,15 +203,14 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = false;
         if (cat.categoryName == null || cat.categoryName!.trim().isEmpty) { cat.categoryName = 'Unknown'; needsFix = true; }
         if (cat.uuid == null || cat.uuid!.isEmpty) { cat.uuid = _generateUuid(cat.id); needsFix = true; }
-        return needsFix;
+        return true;
       });
 
       // 2. Units
       await processCollection('Units', isar.units, (record) {
         final unit = record as Unit;
         bool needsFix = false;
-        if (unit.uuid == null || unit.uuid!.isEmpty) { unit.uuid = _generateUuid(unit.id); needsFix = true; }
-        return needsFix;
+        return true; // Force save to initialize missing Isar default booleans like isDeleted
       });
 
       // 3. Brands
@@ -220,7 +219,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = false;
         if (brand.uuid == null || brand.uuid!.isEmpty) { brand.uuid = _generateUuid(brand.id); needsFix = true; }
         if (brand.brandName == null || brand.brandName!.trim().isEmpty) { brand.brandName = 'Unknown Brand'; needsFix = true; }
-        return needsFix;
+        return true;
       });
 
       // 4. Parties
@@ -232,7 +231,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (p.partyType == null || p.partyType!.trim().isEmpty) { p.partyType = 'Customer'; needsFix = true; }
         if (p.outstandingBalance == null) { p.outstandingBalance = 0.0; needsFix = true; }
         if (p.openingBalance == null) { p.openingBalance = 0.0; needsFix = true; }
-        return needsFix;
+        return true;
       });
 
       // 5. Items
@@ -247,10 +246,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (item.gstRate == null) { item.gstRate = 0.0; needsFix = true; }
         if (item.openingStock == null) { item.openingStock = 0.0; needsFix = true; }
         if (item.reorderLevel == null) { item.reorderLevel = 0.0; needsFix = true; }
-        return needsFix;
+        return true;
       });
 
-      // 6. Invoices — with paymentStatus recalculation + partyName resolution
+      // 6. Invoices â€” with paymentStatus recalculation + partyName resolution
       await processCollection('Invoices', isar.invoices, (record) {
         final inv = record as Invoice;
         bool needsFix = false;
@@ -290,7 +289,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           needsFix = true;
         }
         
-        return needsFix;
+        return true;
       });
 
       // 7. Invoice Items
@@ -306,10 +305,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[ii.itemId!];
           if (item != null) { ii.itemName = item.itemName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
-      // 8. Purchases — with paymentStatus recalculation + partyName resolution
+      // 8. Purchases â€” with paymentStatus recalculation + partyName resolution
       await processCollection('Purchases', isar.collection<Purchase>(), (record) {
         final pur = record as Purchase;
         bool needsFix = false;
@@ -348,7 +347,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           needsFix = true;
         }
         
-        return needsFix;
+        return true;
       });
 
       // 9. Purchase Items
@@ -364,10 +363,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[pi.itemId!];
           if (item != null) { pi.itemName = item.itemName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
-      // 10. Orders — with partyName resolution + status default
+      // 10. Orders â€” with partyName resolution + status default
       await processCollection('Orders', isar.orders, (record) {
         final ord = record as Order;
         bool needsFix = false;
@@ -379,7 +378,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final p = partyByIdMap[ord.partyId!];
           if (p != null) { ord.partyName = p.partyName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
       // 11. Order Items
@@ -395,10 +394,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[oi.itemId!];
           if (item != null) { oi.itemName = item.itemName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
-      // 12. Transactions — with partyName resolution + defaults
+      // 12. Transactions â€” with partyName resolution + defaults
       await processCollection('Transactions', isar.transactions, (record) {
         final txn = record as Transaction;
         bool needsFix = false;
@@ -411,7 +410,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final p = partyByUuidMap[txn.partyUuid!];
           if (p != null) { txn.partyName = p.partyName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
       // 13. Expenses
@@ -422,7 +421,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (exp.amount == null) { exp.amount = 0.0; needsFix = true; }
         if (exp.category == null || exp.category!.trim().isEmpty) { exp.category = 'Other'; needsFix = true; }
         if (exp.paymentMode == null || exp.paymentMode!.trim().isEmpty) { exp.paymentMode = 'Cash'; needsFix = true; }
-        return needsFix;
+        return true;
       });
 
       // 14. Expense Items (master list)
@@ -431,10 +430,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = false;
         if (ei.uuid == null || ei.uuid!.isEmpty) { ei.uuid = _generateUuid(ei.id); needsFix = true; }
         if (ei.itemName == null || ei.itemName!.trim().isEmpty) { ei.itemName = 'Unknown Expense'; needsFix = true; }
-        return needsFix;
+        return true;
       });
 
-      // 15. Credit Notes — with partyName resolution
+      // 15. Credit Notes â€” with partyName resolution
       await processCollection('Credit Notes', isar.collection<CreditNote>(), (record) {
         final cn = record as CreditNote;
         bool needsFix = false;
@@ -446,7 +445,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final p = partyByIdMap[cn.partyId!];
           if (p != null) { cn.partyName = p.partyName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
       // 16. Credit Note Items
@@ -461,10 +460,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[cni.itemId!];
           if (item != null) { cni.itemName = item.itemName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
-      // 17. Debit Notes — with partyName resolution
+      // 17. Debit Notes â€” with partyName resolution
       await processCollection('Debit Notes', isar.collection<DebitNote>(), (record) {
         final dn = record as DebitNote;
         bool needsFix = false;
@@ -476,7 +475,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final p = partyByIdMap[dn.partyId!];
           if (p != null) { dn.partyName = p.partyName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
       // 18. Debit Note Items
@@ -491,7 +490,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[dni.itemId!];
           if (item != null) { dni.itemName = item.itemName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
       // 19. Bank Accounts
@@ -502,10 +501,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (ba.accountName == null || ba.accountName!.trim().isEmpty) { ba.accountName = 'Unknown Account'; needsFix = true; }
         if (ba.openingBalance == null) { ba.openingBalance = 0.0; needsFix = true; }
         if (ba.currentBalance == null) { ba.currentBalance = ba.openingBalance ?? 0.0; needsFix = true; }
-        return needsFix;
+        return true;
       });
 
-      // 20. Stock Adjustments — with itemName resolution
+      // 20. Stock Adjustments â€” with itemName resolution
       await processCollection('Stock Adjustments', isar.collection<StockAdjustment>(), (record) {
         final sa = record as StockAdjustment;
         bool needsFix = false;
@@ -522,12 +521,12 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[sa.itemId!];
           if (item != null) { sa.itemName = item.itemName; needsFix = true; }
         }
-        return needsFix;
+        return true;
       });
 
-      // ═══════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
       // Phase 3: Complete
-      // ═══════════════════════════════════════════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
       _timer?.cancel();
       setState(() {
@@ -578,7 +577,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
                   if (_repairLog.isEmpty) ...[
                     const SizedBox(height: 12),
                     const Text(
-                      '✅ All records are already in perfect condition! No fixes needed.',
+                      'âœ… All records are already in perfect condition! No fixes needed.',
                       style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
                     ),
                   ],
