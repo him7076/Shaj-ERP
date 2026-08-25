@@ -63,8 +63,8 @@ class SyncManager {
       _syncService.syncPendingChangesQuietly();
     });
 
-    // 4. Retry Backoff Poller (Every 60 seconds)
-    _retryTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+    // 4. Retry Backoff Poller (Every 5 minutes — reduced from 60s to avoid competing with UI thread)
+    _retryTimer = Timer.periodic(const Duration(seconds: 300), (timer) {
       _checkAndTriggerRetries();
     });
   }
@@ -93,6 +93,9 @@ class SyncManager {
 
   /// Iterates through failed queue items, checking backoff schedules
   Future<void> _checkAndTriggerRetries() async {
+    // Skip DB query entirely if a sync is already running to avoid lock contention
+    if (_syncService.currentState.status == SyncStatus.syncing) return;
+
     final queueItems = await _queueService.getPendingQueue();
     if (queueItems.isEmpty) return;
 

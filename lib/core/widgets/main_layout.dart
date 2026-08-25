@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
@@ -125,29 +124,17 @@ class MainLayout extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
-                  gradient: isDark
-                      ? LinearGradient(
-                          colors: [
-                            const Color(0xFF1E293B).withOpacity(0.85),
-                            const Color(0xFF0F172A).withOpacity(0.70),
-                          ],
-                        )
-                      : LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.90),
-                            Colors.white.withOpacity(0.75),
-                          ],
-                        ),
-                  border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.14) : Colors.white.withOpacity(0.65),
-                    width: 1.2,
-                  ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                color: isDark
+                    ? const Color(0xFF1E293B).withOpacity(0.95)
+                    : Colors.white.withOpacity(0.97),
+                border: Border.all(
+                  color: isDark ? Colors.white.withOpacity(0.14) : Colors.white.withOpacity(0.65),
+                  width: 1.2,
                 ),
+              ),
                 child: BottomAppBar(
                   height: 64,
                   elevation: 0,

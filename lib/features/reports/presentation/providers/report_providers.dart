@@ -119,8 +119,8 @@ final dashboardDateFilterProvider = StateProvider<DashboardDateFilter>((ref) {
   return DashboardDateFilter.fromPreset(DashboardPeriodPreset.monthly);
 });
 
-// 1. Dashboard Analytics Summary
-final dashboardAnalyticsProvider = FutureProvider.autoDispose<DashboardAnalyticsSummary>((ref) async {
+// 1. Dashboard Analytics Summary (cached — no autoDispose; invalidated explicitly after sync/writes)
+final dashboardAnalyticsProvider = FutureProvider<DashboardAnalyticsSummary>((ref) async {
   final dateFilter = ref.watch(dashboardDateFilterProvider);
   final repository = ref.watch(analyticsRepositoryProvider);
   return await repository.getDashboardAnalytics(

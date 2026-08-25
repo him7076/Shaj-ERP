@@ -39,10 +39,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.lockedType != null) {
-        ref.read(transactionSearchFilterProvider.notifier).state =
-            ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType);
-      }
+      ref.read(transactionSearchFilterProvider.notifier).state =
+          ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType ?? 'All');
+      
       if (widget.createImmediately) {
         if (widget.lockedType == 'Credit Note') {
           Navigator.push(
@@ -67,9 +66,9 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
   @override
   void didUpdateWidget(covariant TransactionsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.lockedType != oldWidget.lockedType && widget.lockedType != null) {
+    if (widget.lockedType != oldWidget.lockedType) {
       ref.read(transactionSearchFilterProvider.notifier).state =
-          ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType);
+          ref.read(transactionSearchFilterProvider).copyWith(transactionType: widget.lockedType ?? 'All');
     }
   }
 
