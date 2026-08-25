@@ -12,6 +12,7 @@ class SyncManager {
   Timer? _retryTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _wasOffline = false;
+  bool? _lastIsOnline;
 
   // Static singleton so repositories can trigger upload from anywhere without DI
   static SyncManager? _instance;
@@ -40,6 +41,11 @@ class SyncManager {
     // 2. Monitor Internet connectivity changes to trigger FULL bidirectional sync on reconnect
     _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       final isOnline = results.any((result) => result != ConnectivityResult.none);
+      
+      // Prevent rapid fire loops from connectivity_plus bug causing UI starvation
+      if (_lastIsOnline == isOnline) return;
+      _lastIsOnline = isOnline;
+      
       logger.info('Connectivity changed. Device is ${isOnline ? "Online" : "Offline"}');
       
       if (!isOnline) {

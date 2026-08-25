@@ -27,6 +27,7 @@ class SyncCenterScreen extends ConsumerStatefulWidget {
 class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
   List<SyncQueue> _queueItems = [];
   bool _isLoadingQueue = false;
+  int _queueDisplayLimit = 20;
 
   @override
   void initState() {
@@ -329,104 +330,6 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               ),
               const SizedBox(height: 32),
 
-              // Queue List
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Sync Queue Logs',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: _refreshQueue,
-                  ),
-                ],
-              ),
-              const Divider(),
-
-              _isLoadingQueue
-                  ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator()))
-                  : _queueItems.isEmpty
-                      ? Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(32.0),
-                            child: Center(
-                              child: Column(
-                                children: [
-                                  Icon(Icons.check_circle_outline_rounded, size: 48, color: Colors.green[600]),
-                                  const SizedBox(height: 12),
-                                  const Text(
-                                    'Sync Queue is Empty!',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  const Text('All changes are fully uploaded to Firebase.'),
-                                ],
-                              ),
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _queueItems.length,
-                          itemBuilder: (context, index) {
-                            final item = _queueItems[index];
-                            IconData icon;
-                            Color color;
-
-                            switch (item.operation) {
-                              case 'Insert':
-                                icon = Icons.add_circle_outline;
-                                color = Colors.green;
-                                break;
-                              case 'Update':
-                                icon = Icons.edit_outlined;
-                                color = Colors.blue;
-                                break;
-                              case 'Delete':
-                                icon = Icons.delete_outline;
-                                color = Colors.red;
-                                break;
-                              default:
-                                icon = Icons.help_outline;
-                                color = Colors.grey;
-                            }
-
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 6.0),
-                              child: ListTile(
-                                leading: Icon(icon, color: color),
-                                title: Text('${item.entityType} (${item.operation})'),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('UUID: ${item.entityUuid}'),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Retries: ${item.retryCount}/5' +
-                                      (item.lastAttempt != null
-                                          ? ' • Last: ${DateFormat('HH:mm:ss').format(item.lastAttempt!)}'
-                                          : ''),
-                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                    ),
-                                  ],
-                                ),
-                                trailing: item.retryCount >= 5
-                                    ? Tooltip(
-                                        message: 'Upload blocked. Max retries exceeded.',
-                                        child: Icon(Icons.warning_amber_rounded, color: Colors.red[600]),
-                                      )
-                                    : null,
-                              ),
-                            );
-                          },
-                        ),
-              const SizedBox(height: 24),
-
               // Firebase Configuration Setup Card
               Consumer(
                 builder: (context, ref, _) {
@@ -521,6 +424,121 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                   );
                 },
               ),
+              const SizedBox(height: 32),
+
+              // Queue List
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Sync Queue Logs',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _refreshQueue,
+                  ),
+                ],
+              ),
+              const Divider(),
+
+              _isLoadingQueue
+                  ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator()))
+                  : _queueItems.isEmpty
+                      ? Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.check_circle_outline_rounded, size: 48, color: Colors.green[600]),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Sync Queue is Empty!',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text('All changes are fully uploaded to Firebase.'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _queueItems.length > _queueDisplayLimit ? _queueDisplayLimit + 1 : _queueItems.length,
+                          itemBuilder: (context, index) {
+                            if (index == _queueDisplayLimit) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                child: Center(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _queueDisplayLimit += 20;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.expand_more_rounded),
+                                    label: const Text('Load More'),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final item = _queueItems[index];
+                            IconData icon;
+                            Color color;
+
+                            switch (item.operation) {
+                              case 'Insert':
+                                icon = Icons.add_circle_outline;
+                                color = Colors.green;
+                                break;
+                              case 'Update':
+                                icon = Icons.edit_outlined;
+                                color = Colors.blue;
+                                break;
+                              case 'Delete':
+                                icon = Icons.delete_outline;
+                                color = Colors.red;
+                                break;
+                              default:
+                                icon = Icons.help_outline;
+                                color = Colors.grey;
+                            }
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 6.0),
+                              child: ListTile(
+                                leading: Icon(icon, color: color),
+                                title: Text('${item.entityType} (${item.operation})'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('UUID: ${item.entityUuid}'),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Retries: ${item.retryCount}/5' +
+                                      (item.lastAttempt != null
+                                          ? ' • Last: ${DateFormat('HH:mm:ss').format(item.lastAttempt!)}'
+                                          : ''),
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                                trailing: item.retryCount >= 5
+                                    ? Tooltip(
+                                        message: 'Upload blocked. Max retries exceeded.',
+                                        child: Icon(Icons.warning_amber_rounded, color: Colors.red[600]),
+                                      )
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
               const SizedBox(height: 100),
             ],
           ),
