@@ -228,7 +228,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: isMobile ? null : FloatingActionButton.extended(
         icon: const Icon(Icons.add),
         label: const Text('Create Order'),
         onPressed: () {

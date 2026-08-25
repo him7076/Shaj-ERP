@@ -5,6 +5,7 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/whatsapp_mapping_service.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
 class WhatsAppMappingsScreen extends ConsumerStatefulWidget {
@@ -22,6 +23,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
   List<WhatsAppSalesmanMapping> _salesmanMappings = [];
   List<Party> _allParties = [];
   List<Item> _allItems = [];
+  List<User> _allSalesmen = [];
 
   bool _isLoading = true;
   String _searchQuery = '';
@@ -30,6 +32,9 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
     _loadMappingsAndMasters();
   }
 
@@ -47,6 +52,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
 
       _allParties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
       _allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+      _allSalesmen = await isar.users.filter().roleEqualTo('Salesman').isDeletedEqualTo(false).findAll();
 
       _partyMappings = mappingService.getAllPartyMappings();
       _itemMappings = mappingService.getAllItemMappings();
@@ -335,59 +341,82 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
 
   void _showAddEditSalesmanMappingDialog([WhatsAppSalesmanMapping? existing]) {
     final rawSalesmanCtrl = TextEditingController(text: existing?.rawSalesmanName ?? '');
-    final targetSalesmanCtrl = TextEditingController(text: existing?.targetSalesmanName ?? '');
+    
+    User? selectedTarget = existing != null
+        ? _allSalesmen.firstWhereOrNull((u) => u.name?.toLowerCase() == existing.targetSalesmanName.toLowerCase())
+        : null;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(existing == null ? 'Add Salesman Mapping Rule' : 'Edit Salesman Mapping Rule'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: rawSalesmanCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Raw WhatsApp Sales Rep Name',
-                  hintText: 'e.g. Rahul or Rahul Salesman',
-                  border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(existing == null ? 'Add Salesman Mapping Rule' : 'Edit Salesman Mapping Rule'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: rawSalesmanCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Raw WhatsApp Sales Rep Name',
+                    hintText: 'e.g. Rahul or Rahul Salesman',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: targetSalesmanCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Mapped ERP Salesman Name',
-                  hintText: 'e.g. Rahul Sharma',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                const Text('Mapped ERP Salesman:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Autocomplete<User>(
+                  initialValue: TextEditingValue(text: existing?.targetSalesmanName ?? ''),
+                  displayStringForOption: (User u) => u.name ?? "Salesman",
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) return _allSalesmen;
+                    final q = textEditingValue.text.toLowerCase();
+                    return _allSalesmen.where((u) => (u.name ?? '').toLowerCase().contains(q));
+                  },
+                  onSelected: (User selection) {
+                    setModalState(() => selectedTarget = selection);
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: const InputDecoration(
+                        labelText: 'Search ERP Salesman',
+                        hintText: 'Type salesman name to filter...',
+                        suffixIcon: Icon(Icons.search_rounded),
+                        border: OutlineInputBorder(),
+                      ),
+                    );
+                  },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
+              onPressed: () async {
+                final raw = rawSalesmanCtrl.text.trim();
+                final target = selectedTarget?.name?.trim();
+                if (raw.isEmpty || target == null || target.isEmpty) return;
+  
+                final mappingService = ref.read(whatsappMappingServiceProvider);
+                await mappingService.saveSalesmanMapping(raw, target);
+  
+                Navigator.pop(ctx);
+                _loadMappingsAndMasters();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Salesman mapping for "$raw" saved!')),
+                );
+              },
+              child: const Text('Save Mapping'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF25D366), foregroundColor: Colors.white),
-            onPressed: () async {
-              final raw = rawSalesmanCtrl.text.trim();
-              final target = targetSalesmanCtrl.text.trim();
-              if (raw.isEmpty || target.isEmpty) return;
-
-              final mappingService = ref.read(whatsappMappingServiceProvider);
-              await mappingService.saveSalesmanMapping(raw, target);
-
-              Navigator.pop(ctx);
-              _loadMappingsAndMasters();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Salesman mapping for "$raw" saved!')),
-              );
-            },
-            child: const Text('Save Mapping'),
-          ),
-        ],
       ),
     );
   }
@@ -465,24 +494,27 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF25D366),
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(_tabController.index == 0
-            ? 'Add Party Rule'
-            : _tabController.index == 1
-                ? 'Add Item Rule'
-                : 'Add Salesman Rule'),
-        onPressed: () {
-          if (_tabController.index == 0) {
-            _showAddEditPartyMappingDialog();
-          } else if (_tabController.index == 1) {
-            _showAddEditItemMappingDialog();
-          } else {
-            _showAddEditSalesmanMappingDialog();
-          }
-        },
+      floatingActionButton: SizedBox(
+        height: 40,
+        child: FloatingActionButton.extended(
+          backgroundColor: const Color(0xFF25D366),
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add_rounded, size: 20),
+          label: Text(_tabController.index == 0
+              ? 'Add Party Rule'
+              : _tabController.index == 1
+                  ? 'Add Item Rule'
+                  : 'Add Salesman Rule', style: const TextStyle(fontSize: 13)),
+          onPressed: () {
+            if (_tabController.index == 0) {
+              _showAddEditPartyMappingDialog();
+            } else if (_tabController.index == 1) {
+              _showAddEditItemMappingDialog();
+            } else {
+              _showAddEditSalesmanMappingDialog();
+            }
+          },
+        ),
       ),
     );
   }

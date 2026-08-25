@@ -1624,8 +1624,14 @@ class SyncService {
           if (!isValidParent) continue;
 
           final linkedUuid = ii.itemId != null ? itemIdToUuid[ii.itemId!] : ii.item.value?.uuid;
-          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-              (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
+          bool isMatch = false;
+          if (ii.itemId != null) {
+            isMatch = ii.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
+          }
 
           if (isMatch) {
             totalSales += _toPrimaryQty(ii.unit, ii.quantity ?? 0.0);
@@ -1641,8 +1647,14 @@ class SyncService {
           if (!isValidParent) continue;
 
           final linkedUuid = pi.itemId != null ? itemIdToUuid[pi.itemId!] : pi.item.value?.uuid;
-          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-              (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
+          bool isMatch = false;
+          if (pi.itemId != null) {
+            isMatch = pi.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
+          }
 
           if (isMatch) {
             totalPurchases += _toPrimaryQty(pi.unit, pi.quantity ?? 0.0);
@@ -1653,8 +1665,14 @@ class SyncService {
         double totalSalesReturns = 0.0;
         for (var cni in allCreditNoteItems) {
           final linkedUuid = cni.itemId != null ? itemIdToUuid[cni.itemId!] : cni.item.value?.uuid;
-          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-              (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
+          bool isMatch = false;
+          if (cni.itemId != null) {
+            isMatch = cni.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
+          }
           if (isMatch) {
             totalSalesReturns += _toPrimaryQty(cni.unit, cni.quantity ?? 0.0);
           }
@@ -1664,8 +1682,14 @@ class SyncService {
         double totalPurchaseReturns = 0.0;
         for (var dni in allDebitNoteItems) {
           final linkedUuid = dni.itemId != null ? itemIdToUuid[dni.itemId!] : dni.item.value?.uuid;
-          final isMatch = (linkedUuid != null && linkedUuid.isNotEmpty && linkedUuid == itemUuid) ||
-              (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
+          bool isMatch = false;
+          if (dni.itemId != null) {
+            isMatch = dni.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
+          }
           if (isMatch) {
             totalPurchaseReturns += _toPrimaryQty(dni.unit, dni.quantity ?? 0.0);
           }
@@ -1674,9 +1698,14 @@ class SyncService {
         // 5. Manual Stock Adjustments (Stock In / Stock Out)
         double totalAdjustments = 0.0;
         for (var adj in allStockAdjustments) {
-          final isMatch = (adj.itemUuid != null && adj.itemUuid!.isNotEmpty && adj.itemUuid == itemUuid) ||
-              (adj.itemName != null && adj.itemName!.trim().toLowerCase() == itemNameLower) ||
-              (adj.itemId != null && adj.itemId == item.id);
+          bool isMatch = false;
+          if (adj.itemId != null) {
+            isMatch = adj.itemId == item.id;
+          } else if (adj.itemUuid != null && adj.itemUuid!.isNotEmpty) {
+            isMatch = adj.itemUuid == itemUuid;
+          } else {
+            isMatch = (adj.itemName != null && adj.itemName!.trim().toLowerCase() == itemNameLower);
+          }
           if (isMatch) {
             final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
             final qty = _toPrimaryQty(adj.unit, adj.quantity ?? 0.0);

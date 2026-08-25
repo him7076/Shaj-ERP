@@ -93,7 +93,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .and()
             .group((q) {
               if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().itemNameEqualTo(itemName, caseSensitive: false);
+                return q.itemIdEqualTo(fetchedItem.id).or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
               }
               return q.itemIdEqualTo(fetchedItem.id);
             })
@@ -144,7 +144,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .and()
             .group((q) {
               if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().itemNameEqualTo(itemName, caseSensitive: false);
+                return q.itemIdEqualTo(fetchedItem.id).or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
               }
               return q.itemIdEqualTo(fetchedItem.id);
             })
@@ -194,7 +194,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .and()
             .group((q) {
               if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().itemNameEqualTo(itemName, caseSensitive: false);
+                return q.itemIdEqualTo(fetchedItem.id).or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
               }
               return q.itemIdEqualTo(fetchedItem.id);
             })
@@ -237,7 +237,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 builder = builder.or().itemUuidEqualTo(itemUuid);
               }
               if (itemName.isNotEmpty) {
-                builder = builder.or().itemNameEqualTo(itemName, caseSensitive: false);
+                builder = builder.or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
               }
               return builder;
             })
@@ -359,9 +359,9 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
   Future<void> _adjustStockDialog({StockAdjustment? existingAdjustment}) async {
     final success = await showDialog<bool>(
       context: context,
-      builder: (context) => AddEditStockAdjustmentDialog(
+      builder: (context) => StockAdjustmentDialog(
         existingAdjustment: existingAdjustment,
-        prefilledItem: existingAdjustment == null ? _item : null,
+        initialItem: existingAdjustment == null ? _item : null,
       ),
     );
 

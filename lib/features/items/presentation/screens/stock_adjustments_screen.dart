@@ -114,6 +114,23 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
           adj.isSynced = false;
           await isar.collection<StockAdjustment>().put(adj);
 
+          final dbItem = await isar.items.get(adj.itemId!);
+          if (dbItem != null) {
+            final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+            
+            // To convert quantity to primary unit if needed
+            double primaryQty = adj.quantity ?? 0.0;
+            if (adj.unit != null && adj.unit!.isNotEmpty && dbItem.secondaryUnit != null && dbItem.conversionFactor != null && dbItem.conversionFactor! > 0) {
+              if (adj.unit!.toLowerCase() == dbItem.secondaryUnit!.toLowerCase()) {
+                primaryQty = primaryQty / dbItem.conversionFactor!;
+              }
+            }
+            
+            // Reverse the adjustment
+            dbItem.currentStock = (dbItem.currentStock ?? 0.0) - (isAdd ? primaryQty : -primaryQty);
+            await isar.items.put(dbItem);
+          }
+
           await isar.syncQueues.put(SyncQueue()
             ..uuid = const Uuid().v4()
             ..entityType = 'StockAdjustment'
@@ -872,6 +889,34 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
       await isar.writeTxn(() async {
         final id = await isar.collection<StockAdjustment>().put(adj);
         adj.id = id;
+
+        final dbItem = await isar.items.get(_selectedItem!.id);
+        if (dbItem != null) {
+            double oldPrimaryQty = 0.0;
+            if (isEditing) {
+                final oldAdj = widget.existingAdjustment!;
+                final oldIsAdd = oldAdj.adjustmentType == 'Add' || oldAdj.adjustmentType == 'Stock In';
+                double oldQty = oldAdj.quantity ?? 0.0;
+                if (oldAdj.unit != null && oldAdj.unit!.isNotEmpty && dbItem.secondaryUnit != null && dbItem.conversionFactor != null && dbItem.conversionFactor! > 0) {
+                    if (oldAdj.unit!.toLowerCase() == dbItem.secondaryUnit!.toLowerCase()) {
+                        oldQty = oldQty / dbItem.conversionFactor!;
+                    }
+                }
+                oldPrimaryQty = oldIsAdd ? oldQty : -oldQty;
+            }
+
+            final newIsAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+            double newQty = adj.quantity ?? 0.0;
+            if (adj.unit != null && adj.unit!.isNotEmpty && dbItem.secondaryUnit != null && dbItem.conversionFactor != null && dbItem.conversionFactor! > 0) {
+                if (adj.unit!.toLowerCase() == dbItem.secondaryUnit!.toLowerCase()) {
+                    newQty = newQty / dbItem.conversionFactor!;
+                }
+            }
+            final newPrimaryQty = newIsAdd ? newQty : -newQty;
+
+            dbItem.currentStock = (dbItem.currentStock ?? 0.0) - oldPrimaryQty + newPrimaryQty;
+            await isar.items.put(dbItem);
+        }
 
         await isar.syncQueues.put(SyncQueue()
           ..uuid = const Uuid().v4()

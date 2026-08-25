@@ -8,6 +8,8 @@ import 'package:business_sahaj_erp/features/transactions/presentation/providers/
 import 'package:business_sahaj_erp/core/widgets/animated_hover_card.dart';
 import 'package:business_sahaj_erp/core/widgets/liquid_glass_card.dart';
 import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
+import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
+import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -28,6 +30,11 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     return Scaffold(
+      appBar: ResponsiveLayout.isMobile(context)
+          ? CustomAppBar(
+              onMenuPressed: () => MainLayout.scaffoldKey.currentState?.openDrawer(),
+            )
+          : null,
       backgroundColor: theme.colorScheme.background,
       body: analyticsAsync.when(
         loading: () => const Center(

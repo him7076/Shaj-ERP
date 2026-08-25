@@ -7,7 +7,7 @@ import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
 
 class MainLayout extends StatelessWidget {
   final Widget child;
-  static final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  static final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
   const MainLayout({
     Key? key,
@@ -66,8 +66,8 @@ class MainLayout extends StatelessWidget {
       final isDashboard = location == '/' || location == '/dashboard' || location.isEmpty;
 
       return Scaffold(
-        key: _scaffoldKey,
-        appBar: (!isDetailScreen && isDashboard) ? const CustomAppBar() : null,
+        key: scaffoldKey,
+        appBar: null, // CustomAppBar is now handled by DashboardScreen on mobile
         drawer: const CustomDrawer(isPermanent: false),
         backgroundColor: theme.colorScheme.background,
         body: SafeArea(
@@ -177,7 +177,7 @@ class MainLayout extends StatelessWidget {
                         label: 'More',
                         isSelected: selectedIndex == 3,
                         onTap: () {
-                          _scaffoldKey.currentState?.openDrawer();
+                          scaffoldKey.currentState?.openDrawer();
                         },
                       ),
                     ],

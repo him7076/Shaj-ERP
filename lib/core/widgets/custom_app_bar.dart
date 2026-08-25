@@ -15,7 +15,9 @@ import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/widgets/pulsing_dot_widget.dart';
 
 class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const CustomAppBar({Key? key}) : super(key: key);
+  final VoidCallback? onMenuPressed;
+
+  const CustomAppBar({Key? key, this.onMenuPressed}) : super(key: key);
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -60,10 +62,16 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
           child: Row(
           children: [
             // Drawer button for mobile
-            if (Scaffold.of(context).hasDrawer)
+            if (onMenuPressed != null || Scaffold.of(context).hasDrawer)
               IconButton(
                 icon: const Icon(Icons.menu_rounded),
-                onPressed: () => Scaffold.of(context).openDrawer(),
+                onPressed: () {
+                  if (onMenuPressed != null) {
+                    onMenuPressed!();
+                  } else {
+                    Scaffold.of(context).openDrawer();
+                  }
+                },
               ),
 
             // App Brand Logo & Title
