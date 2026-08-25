@@ -93,7 +93,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .and()
             .group((q) {
               if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().itemNameContains(itemName, caseSensitive: false);
+                return q.itemIdEqualTo(fetchedItem.id).or().itemNameEqualTo(itemName, caseSensitive: false);
               }
               return q.itemIdEqualTo(fetchedItem.id);
             })
@@ -144,7 +144,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .and()
             .group((q) {
               if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().itemNameContains(itemName, caseSensitive: false);
+                return q.itemIdEqualTo(fetchedItem.id).or().itemNameEqualTo(itemName, caseSensitive: false);
               }
               return q.itemIdEqualTo(fetchedItem.id);
             })
@@ -194,7 +194,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             .and()
             .group((q) {
               if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().itemNameContains(itemName, caseSensitive: false);
+                return q.itemIdEqualTo(fetchedItem.id).or().itemNameEqualTo(itemName, caseSensitive: false);
               }
               return q.itemIdEqualTo(fetchedItem.id);
             })
@@ -237,7 +237,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                 builder = builder.or().itemUuidEqualTo(itemUuid);
               }
               if (itemName.isNotEmpty) {
-                builder = builder.or().itemNameContains(itemName, caseSensitive: false);
+                builder = builder.or().itemNameEqualTo(itemName, caseSensitive: false);
               }
               return builder;
             })

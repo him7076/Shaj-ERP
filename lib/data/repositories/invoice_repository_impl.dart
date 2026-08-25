@@ -92,13 +92,11 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         final invoiceId = await collection.put(invoice);
         invoice.id = invoiceId;
 
-        // Load Party link
-        if (!kIsWeb) {
-          try { await invoice.party.load(); } catch (_) {}
+        // Load Party by ID to prevent IsarLink deadlocks in writeTxn
+        final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
+        if (!kIsWeb && party != null) {
+          invoice.party.value = party;
         }
-        final party = kIsWeb
-            ? (invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null)
-            : invoice.party.value;
 
         // 2. Adjust Party Outstanding Balance
         if (oldInvoice != null) {
@@ -271,8 +269,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         await collection.put(invoice);
 
         // 1. Rollback Party Outstanding Balance
-        try { await invoice.party.load(); } catch (_) {}
-        final party = invoice.party.value;
+        final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
         if (party != null) {
           final double pendingAmt = invoice.pendingAmount ?? 0.0;
           party.outstandingBalance = (party.outstandingBalance ?? 0.0) - pendingAmt;
@@ -280,11 +277,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         }
 
         // 2. Restore Stock Levels
-        try { await invoice.invoiceItems.load(); } catch (_) {}
-        for (var item in invoice.invoiceItems) {
-          try { await item.item.load(); } catch (_) {}
-          if (item.item.value != null) {
-            final dbItem = item.item.value!;
+        final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
+        for (var item in items) {
+          final dbItem = item.itemId != null ? await isar.items.get(item.itemId!) : null;
+          if (dbItem != null) {
             final double qty = item.quantity ?? 0.0;
             dbItem.currentStock = (dbItem.currentStock ?? 0.0) + qty;
 
@@ -430,21 +426,9 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         await isar.orders.put(order);
 
         // 5. Create InvoiceItems
-        List<OrderItem> sourceItems = [];
-        if (kIsWeb) {
-          final allOrderItems = await isar.orderItems.where().findAll();
-          sourceItems = allOrderItems.where((i) => i.order.value?.id == order.id || i.itemId != null).toList();
-        } else {
-          try { await order.orderItems.load(); } catch (_) {}
-          sourceItems = order.orderItems.toList();
-        }
-        if (sourceItems.isEmpty) {
-          try { await order.orderItems.load(); } catch (_) {}
-          sourceItems = order.orderItems.toList();
-        }
+        List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
 
         for (var orderItem in sourceItems) {
-          try { await orderItem.item.load(); } catch (_) {}
           
           final invItem = InvoiceItem()
             ..uuid = _generateUuid()
