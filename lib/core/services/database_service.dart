@@ -342,80 +342,87 @@ class DatabaseService {
       }
       return;
     }
+    
+    List<Map<String, dynamic>> _getList(String key) {
+      if (collectionsData.containsKey(key) && collectionsData[key] is List) {
+        return (collectionsData[key] as List).map((e) => e as Map<String, dynamic>).toList();
+      }
+      return [];
+    }
+
     try {
       await isar.writeTxn(() async {
-        if (collectionsData.containsKey('partys') && collectionsData['partys'] is List) {
-          await isar.partys.importJson(collectionsData['partys'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('items') && collectionsData['items'] is List) {
-          await isar.items.importJson(collectionsData['items'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('invoices') && collectionsData['invoices'] is List) {
-          await isar.invoices.importJson(collectionsData['invoices'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('invoiceItems') && collectionsData['invoiceItems'] is List) {
-          await isar.invoiceItems.importJson(collectionsData['invoiceItems'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('purchases') && collectionsData['purchases'] is List) {
-          await isar.purchases.importJson(collectionsData['purchases'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('purchaseItems') && collectionsData['purchaseItems'] is List) {
-          await isar.purchaseItems.importJson(collectionsData['purchaseItems'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('orders') && collectionsData['orders'] is List) {
-          await isar.orders.importJson(collectionsData['orders'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('orderItems') && collectionsData['orderItems'] is List) {
-          await isar.orderItems.importJson(collectionsData['orderItems'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('expenses') && collectionsData['expenses'] is List) {
-          await isar.expenses.importJson(collectionsData['expenses'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('expenseItems') && collectionsData['expenseItems'] is List) {
-          await isar.expenseItems.importJson(collectionsData['expenseItems'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('transactions') && collectionsData['transactions'] is List) {
-          await isar.transactions.importJson(collectionsData['transactions'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('categorys') && collectionsData['categorys'] is List) {
-          await isar.categorys.importJson(collectionsData['categorys'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('brands') && collectionsData['brands'] is List) {
-          await isar.brands.importJson(collectionsData['brands'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('units') && collectionsData['units'] is List) {
-          await isar.units.importJson(collectionsData['units'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('bankAccounts') && collectionsData['bankAccounts'] is List) {
-          await isar.bankAccounts.importJson(collectionsData['bankAccounts'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('creditNotes') && collectionsData['creditNotes'] is List) {
-          await isar.creditNotes.importJson(collectionsData['creditNotes'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('creditNoteItems') && collectionsData['creditNoteItems'] is List) {
-          await isar.creditNoteItems.importJson(collectionsData['creditNoteItems'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('debitNotes') && collectionsData['debitNotes'] is List) {
-          await isar.debitNotes.importJson(collectionsData['debitNotes'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('debitNoteItems') && collectionsData['debitNoteItems'] is List) {
-          await isar.debitNoteItems.importJson(collectionsData['debitNoteItems'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('deletedVouchers') && collectionsData['deletedVouchers'] is List) {
-          await isar.deletedVouchers.importJson(collectionsData['deletedVouchers'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('stockAdjustments') && collectionsData['stockAdjustments'] is List) {
-          await isar.stockAdjustments.importJson(collectionsData['stockAdjustments'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('whatsAppMappings') && collectionsData['whatsAppMappings'] is List) {
-          await isar.whatsAppMappings.importJson(collectionsData['whatsAppMappings'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('settings') && collectionsData['settings'] is List) {
-          await isar.settings.importJson(collectionsData['settings'] as List<Map<String, dynamic>>);
-        }
-        if (collectionsData.containsKey('users') && collectionsData['users'] is List) {
-          await isar.users.importJson(collectionsData['users'] as List<Map<String, dynamic>>);
-        }
+        final partys = _getList('partys');
+        if (partys.isNotEmpty) await isar.partys.importJson(partys);
+
+        final items = _getList('items');
+        if (items.isNotEmpty) await isar.items.importJson(items);
+
+        final invoices = _getList('invoices');
+        if (invoices.isNotEmpty) await isar.invoices.importJson(invoices);
+
+        final invoiceItems = _getList('invoiceItems');
+        if (invoiceItems.isNotEmpty) await isar.invoiceItems.importJson(invoiceItems);
+
+        final purchases = _getList('purchases');
+        if (purchases.isNotEmpty) await isar.purchases.importJson(purchases);
+
+        final purchaseItems = _getList('purchaseItems');
+        if (purchaseItems.isNotEmpty) await isar.purchaseItems.importJson(purchaseItems);
+
+        final orders = _getList('orders');
+        if (orders.isNotEmpty) await isar.orders.importJson(orders);
+
+        final orderItems = _getList('orderItems');
+        if (orderItems.isNotEmpty) await isar.orderItems.importJson(orderItems);
+
+        final expenses = _getList('expenses');
+        if (expenses.isNotEmpty) await isar.expenses.importJson(expenses);
+
+        final expenseItems = _getList('expenseItems');
+        if (expenseItems.isNotEmpty) await isar.expenseItems.importJson(expenseItems);
+
+        final transactions = _getList('transactions');
+        if (transactions.isNotEmpty) await isar.transactions.importJson(transactions);
+
+        final categories = _getList('categorys');
+        if (categories.isNotEmpty) await isar.categorys.importJson(categories);
+
+        final brands = _getList('brands');
+        if (brands.isNotEmpty) await isar.brands.importJson(brands);
+
+        final units = _getList('units');
+        if (units.isNotEmpty) await isar.units.importJson(units);
+
+        final bankAccounts = _getList('bankAccounts');
+        if (bankAccounts.isNotEmpty) await isar.bankAccounts.importJson(bankAccounts);
+
+        final creditNotes = _getList('creditNotes');
+        if (creditNotes.isNotEmpty) await isar.creditNotes.importJson(creditNotes);
+
+        final creditNoteItems = _getList('creditNoteItems');
+        if (creditNoteItems.isNotEmpty) await isar.creditNoteItems.importJson(creditNoteItems);
+
+        final debitNotes = _getList('debitNotes');
+        if (debitNotes.isNotEmpty) await isar.debitNotes.importJson(debitNotes);
+
+        final debitNoteItems = _getList('debitNoteItems');
+        if (debitNoteItems.isNotEmpty) await isar.debitNoteItems.importJson(debitNoteItems);
+
+        final deletedVouchers = _getList('deletedVouchers');
+        if (deletedVouchers.isNotEmpty) await isar.deletedVouchers.importJson(deletedVouchers);
+
+        final stockAdjustments = _getList('stockAdjustments');
+        if (stockAdjustments.isNotEmpty) await isar.stockAdjustments.importJson(stockAdjustments);
+
+        final whatsAppMappings = _getList('whatsAppMappings');
+        if (whatsAppMappings.isNotEmpty) await isar.whatsAppMappings.importJson(whatsAppMappings);
+
+        final settings = _getList('settings');
+        if (settings.isNotEmpty) await isar.settings.importJson(settings);
+
+        final users = _getList('users');
+        if (users.isNotEmpty) await isar.users.importJson(users);
       });
     } catch (e) {
       logger.error('Failed to import collections from JSON', e);
