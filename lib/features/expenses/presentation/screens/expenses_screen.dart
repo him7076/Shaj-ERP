@@ -26,6 +26,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
   bool _showSearch = false;
   int _displayLimit = 50;
 
+  bool _isSelectionMode = false;
+  final Set<int> _selectedExpenseIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -137,15 +140,91 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
+  Future<void> _deleteSelectedExpenses() async {
+    if (_selectedExpenseIds.isEmpty) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Selected Expenses?'),
+        content: Text('Are you sure you want to delete ${_selectedExpenseIds.length} expenses?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final notifier = ref.read(expenseNotifierProvider.notifier);
+      for (final id in _selectedExpenseIds) {
+        await notifier.deleteExpense(id);
+      }
+      setState(() {
+        _isSelectionMode = false;
+        _selectedExpenseIds.clear();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selected expenses deleted.')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final expensesAsync = ref.watch(expenseListProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
 
+    List<Expense> displayList = [];
+    expensesAsync.whenData((list) {
+      if (_selectedCategoryFilter != 'All') {
+        displayList = list.where((e) => e.category?.toLowerCase() == _selectedCategoryFilter.toLowerCase()).toList();
+      } else {
+        displayList = list;
+      }
+    });
+
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+      appBar: _isSelectionMode
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _isSelectionMode = false;
+                    _selectedExpenseIds.clear();
+                  });
+                },
+              ),
+              title: Text('${_selectedExpenseIds.length} Selected'),
+              actions: [
+                IconButton(
+                  tooltip: 'Select All',
+                  icon: const Icon(Icons.select_all),
+                  onPressed: () {
+                    setState(() {
+                      if (_selectedExpenseIds.length == displayList.length) {
+                        _selectedExpenseIds.clear();
+                      } else {
+                        _selectedExpenseIds.addAll(displayList.map((e) => e.id));
+                      }
+                    });
+                  },
+                ),
+                if (_selectedExpenseIds.isNotEmpty)
+                  IconButton(
+                    tooltip: 'Delete Selected',
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                    onPressed: _deleteSelectedExpenses,
+                  ),
+              ],
+            )
+          : AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: isMobile ? 44 : 52,
         title: _showSearch
             ? TextField(
@@ -194,6 +273,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 _downloadSampleTemplate();
               } else if (val == 'export_excel') {
                 _exportExpensesExcel();
+              } else if (val == 'select_delete') {
+                setState(() {
+                  _isSelectionMode = true;
+                });
               }
             },
             itemBuilder: (ctx) => [
@@ -224,6 +307,16 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     Icon(Icons.ios_share_rounded, color: Colors.purple, size: 18),
                     SizedBox(width: 8),
                     Text('Export Expenses to Excel'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'select_delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.checklist_rounded, color: Colors.orange, size: 18),
+                    SizedBox(width: 8),
+                    Text('Select and Delete'),
                   ],
                 ),
               ),
@@ -306,14 +399,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           Expanded(
             child: expensesAsync.when(
               data: (list) {
-                // Apply UI category filter
-                var displayList = list;
-                if (_selectedCategoryFilter != 'All') {
-                  displayList = list
-                      .where((e) => e.category?.toLowerCase() == _selectedCategoryFilter.toLowerCase())
-                      .toList();
-                }
-
                 if (displayList.isEmpty) {
                   return Center(
                     child: Column(
@@ -424,13 +509,21 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                           final dateStr = expense.expenseDate != null
                               ? DateFormat('dd MMM yyyy').format(expense.expenseDate!)
                               : 'N/A';
+                          
+                          final isSelected = _selectedExpenseIds.contains(expense.id);
 
                           return Card(
-                            elevation: 0,
+                            elevation: isSelected ? 2 : 0,
                             margin: const EdgeInsets.only(bottom: 12),
+                            color: isSelected ? theme.colorScheme.primaryContainer.withOpacity(0.3) : null,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
-                              side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                                width: isSelected ? 2 : 1,
+                              ),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(16),
@@ -445,10 +538,23 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                     Expanded(
                                       child: ListTile(
                                         contentPadding: const EdgeInsets.all(16),
-                                        leading: CircleAvatar(
-                                          backgroundColor: theme.colorScheme.error.withOpacity(0.08),
-                                          child: Icon(Icons.arrow_outward_rounded, color: theme.colorScheme.error, size: 20),
-                                        ),
+                                        leading: _isSelectionMode
+                                            ? Checkbox(
+                                                value: isSelected,
+                                                onChanged: (val) {
+                                                  setState(() {
+                                                    if (val == true) {
+                                                      _selectedExpenseIds.add(expense.id);
+                                                    } else {
+                                                      _selectedExpenseIds.remove(expense.id);
+                                                    }
+                                                  });
+                                                },
+                                              )
+                                            : CircleAvatar(
+                                                backgroundColor: theme.colorScheme.error.withOpacity(0.08),
+                                                child: Icon(Icons.arrow_outward_rounded, color: theme.colorScheme.error, size: 20),
+                                              ),
                                         title: Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
@@ -493,46 +599,33 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                                           ),
                                         ),
                                         onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => AddEditExpenseScreen(
-                                                expenseUuid: expense.uuid,
+                                          if (_isSelectionMode) {
+                                            setState(() {
+                                              if (isSelected) {
+                                                _selectedExpenseIds.remove(expense.id);
+                                              } else {
+                                                _selectedExpenseIds.add(expense.id);
+                                              }
+                                            });
+                                          } else {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => AddEditExpenseScreen(
+                                                  expenseUuid: expense.uuid,
+                                                ),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                        onLongPress: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Delete Expense Entry?'),
-                                    content: const Text(
-                                      'Are you sure you want to delete this expense record?',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () async {
-                                          Navigator.pop(context);
-                                          final success = await ref
-                                              .read(expenseNotifierProvider.notifier)
-                                              .deleteExpense(expense.id);
-                                          if (success && mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Expense record deleted.')),
                                             );
                                           }
                                         },
-                                        child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
+                                        onLongPress: () {
+                                          if (!_isSelectionMode) {
+                                            setState(() {
+                                              _isSelectionMode = true;
+                                              _selectedExpenseIds.add(expense.id);
+                                            });
+                                          }
+                                        },
                             ),
                           ),
                         ],
