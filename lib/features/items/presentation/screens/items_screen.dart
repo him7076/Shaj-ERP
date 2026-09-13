@@ -20,6 +20,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/item_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/services/item_excel_export_service.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 
@@ -78,6 +79,32 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error generating sample Excel: $e')),
+      );
+    }
+  }
+
+  Future<void> _exportItemsExcel() async {
+    try {
+      final items = await ref.read(itemRepositoryProvider).getAll();
+      for (var item in items) {
+        try { await item.category.load(); } catch (_) {}
+        try { await item.brand.load(); } catch (_) {}
+        try { await item.unit.load(); } catch (_) {}
+      }
+      final bytes = ItemExcelExportService.exportItemsToExcel(items);
+      if (bytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to generate export file.')));
+        return;
+      }
+      final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      await ExcelDownloadHelper.downloadExcel(bytes, 'Items_Export_$dateStr.xlsx');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Items Exported Successfully!'), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error exporting items: $e')),
       );
     }
   }
@@ -321,6 +348,8 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 _downloadItemSampleExcel();
               } else if (value == 'import') {
                 _importItemExcel();
+              } else if (value == 'export') {
+                _exportItemsExcel();
               } else if (value == 'quick_add') {
                 AddItemSheet.show(context);
               }
@@ -353,6 +382,16 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                     Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
                     SizedBox(width: 8),
                     Text('Import Excel Catalog'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    Icon(Icons.download_rounded, size: 18, color: Colors.purple),
+                    SizedBox(width: 8),
+                    Text('Export Items to Excel'),
                   ],
                 ),
               ),
