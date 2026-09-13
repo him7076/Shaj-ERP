@@ -15,8 +15,9 @@ import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
 
 class AddEditItemScreen extends ConsumerStatefulWidget {
   final String? itemUuid;
+  final Item? prefilledItem;
 
-  const AddEditItemScreen({Key? key, this.itemUuid}) : super(key: key);
+  const AddEditItemScreen({Key? key, this.itemUuid, this.prefilledItem}) : super(key: key);
 
   @override
   ConsumerState<AddEditItemScreen> createState() => _AddEditItemScreenState();
@@ -101,6 +102,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
     if (widget.itemUuid != null) {
       _loadItem();
+    } else if (widget.prefilledItem != null) {
+      _loadPrefilledItem(widget.prefilledItem!);
     } else {
       _loadNextCode();
     }
@@ -166,6 +169,43 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       });
     } catch (e) {
       logger.error('Failed to pre-fill item code', e);
+    }
+  }
+
+  Future<void> _loadPrefilledItem(Item item) async {
+    setState(() => _isLoading = true);
+    try {
+      _nameController.text = item.itemName ?? '';
+      _codeController.text = item.itemCode ?? '';
+      _shortNameController.text = item.shortName ?? '';
+      _descController.text = item.description ?? '';
+      _barcodeController.text = item.barcode ?? '';
+      
+      _buyRateController.text = item.buyRate?.toString() ?? '';
+      _mrpController.text = item.mrp?.toString() ?? '';
+      _sellRateController.text = item.sellRate?.toString() ?? '';
+      
+      _hsnController.text = item.hsnCode ?? '';
+      _gstRate = item.gstRate ?? 18.0;
+      _gstApplicable = item.gstApplicable;
+
+      final units = await ref.read(unitRepositoryProvider).getAll();
+      if (item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
+        _selectedUnit = units.where((u) => (u.shortName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase())).firstOrNull;
+        if (_selectedUnit == null) {
+          _selectedUnit = Unit()
+            ..shortName = item.primaryUnitName
+            ..unitName = item.primaryUnitName;
+        }
+      }
+      
+      if (item.itemCode == null || item.itemCode!.isEmpty) {
+        await _loadNextCode();
+      }
+    } catch (e) {
+      logger.error('Failed to load prefilled item', e);
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 

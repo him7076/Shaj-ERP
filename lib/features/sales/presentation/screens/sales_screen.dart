@@ -22,6 +22,8 @@ import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
   final bool createImmediately;
@@ -214,6 +216,131 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         excelDoc,
         dbService,
         duplicateAction: selectedAction,
+        onUnknownItem: (itemData) async {
+          if (!mounted) return null;
+          
+          return await showDialog<Item>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Row(
+                  children: [
+                    Icon(Icons.help_outline, color: Colors.blue, size: 28),
+                    SizedBox(width: 10),
+                    Text('Unknown Item Found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  ],
+                ),
+                content: Text(
+                  'The item "${itemData['itemName']}" was not found in your database. What would you like to do?',
+                  style: const TextStyle(fontSize: 14),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, null),
+                    child: const Text('Skip (Auto Create)', style: TextStyle(color: Colors.grey)),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final items = await ref.read(itemRepositoryProvider).getAll();
+                      if (ctx.mounted) {
+                        Item? picked = await showDialog<Item>(
+                          context: ctx,
+                          builder: (pickerCtx) {
+                            String query = '';
+                            return StatefulBuilder(
+                              builder: (stCtx, setState) {
+                                final filtered = items.where((i) => i.itemName?.toLowerCase().contains(query.toLowerCase()) ?? false).toList();
+                                return AlertDialog(
+                                  title: const Text('Select Existing Item'),
+                                  content: SizedBox(
+                                    width: 400,
+                                    height: 400,
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        TextField(
+                                          autofocus: true,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Search item...',
+                                            prefixIcon: Icon(Icons.search),
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          onChanged: (v) => setState(() => query = v),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: filtered.length,
+                                            itemBuilder: (_, idx) => ListTile(
+                                              title: Text(filtered[idx].itemName ?? ''),
+                                              onTap: () => Navigator.pop(pickerCtx, filtered[idx]),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(pickerCtx, null),
+                                      child: const Text('Cancel'),
+                                    )
+                                  ],
+                                );
+                              }
+                            );
+                          }
+                        );
+                        if (picked != null && ctx.mounted) {
+                          Navigator.pop(ctx, picked);
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.list_alt, size: 18),
+                    label: const Text('Pick Existing'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      double gstPercent = 0.0;
+                      if (itemData['gstStr'] != null) {
+                        final cleaned = itemData['gstStr'].toString().replaceAll(RegExp(r'[^0-9.]'), '');
+                        gstPercent = double.tryParse(cleaned) ?? 0.0;
+                      }
+                      
+                      final rate = itemData['rate'] as double?;
+                      final buyRate = (rate != null && gstPercent > 0) ? (rate / (1 + (gstPercent / 100))) : rate;
+
+                      final prefilled = Item()
+                        ..itemName = itemData['itemName'] as String?
+                        ..itemCode = itemData['itemCode'] as String?
+                        ..hsnCode = itemData['hsnCode'] as String?
+                        ..primaryUnitName = itemData['unit'] as String?
+                        ..sellRate = rate
+                        ..buyRate = buyRate
+                        ..gstApplicable = gstPercent > 0
+                        ..gstRate = gstPercent > 0 ? gstPercent : null;
+
+                      final newItem = await Navigator.push<Item?>(
+                        ctx,
+                        MaterialPageRoute(
+                          builder: (_) => AddEditItemScreen(prefilledItem: prefilled),
+                        ),
+                      );
+
+                      if (newItem != null && ctx.mounted) {
+                        Navigator.pop(ctx, newItem);
+                      }
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Create New'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
         onProgress: (current, total, statusMessage) {
           progressController.add(ImportProgressState(
             current: current,

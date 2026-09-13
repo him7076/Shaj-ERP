@@ -353,9 +353,10 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
                                       cells: [
                                         DataCell(
                                           SizedBox(
-                                            width: 160,
+                                            width: 350,
                                             child: TextFormField(
                                               initialValue: item.itemName ?? '',
+                                              maxLines: null,
                                               decoration: const InputDecoration(isDense: true, border: InputBorder.none),
                                               onChanged: (v) => _onFieldChanged(item, 'itemName', v),
                                             ),

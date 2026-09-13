@@ -27,6 +27,8 @@ class ImportSalesResult {
   });
 }
 
+typedef ItemResolutionCallback = Future<Item?> Function(Map<String, dynamic> itemData);
+
 class SalesExcelImportService {
   static const Uuid _uuidGen = Uuid();
 
@@ -189,6 +191,7 @@ class SalesExcelImportService {
     DatabaseService dbService, {
     DuplicateBillAction duplicateAction = DuplicateBillAction.overwrite,
     ImportProgressCallback? onProgress,
+    ItemResolutionCallback? onUnknownItem,
   }) async {
     final List<String> errors = [];
     int totalInvoicesImported = 0;
@@ -533,32 +536,46 @@ class SalesExcelImportService {
 
             // Find or create Catalog Item
             Item? catalogItem;
+            bool isNewItem = false;
             if (itemName.isNotEmpty) {
               catalogItem = allItems.where((i) => i.itemName?.trim().toLowerCase() == itemName.toLowerCase()).firstOrNull;
               if (catalogItem == null) {
-                catalogItem = Item()
-                  ..uuid = _uuidGen.v4()
-                  ..itemCode = itemCode.isNotEmpty ? itemCode : 'ITM-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
-                  ..itemName = itemName
-                  ..hsnCode = hsn
-                  ..sellRate = rate
-                  ..gstApplicable = gstRatePercent > 0
-                  ..gstRate = gstRatePercent > 0 ? gstRatePercent : null
-                  ..buyRate = rate > 0 ? (rate / (1.0 + (gstRatePercent / 100.0))) : 0.0
-                  ..currentStock = 0.0
-                  ..openingStock = 0.0
-                  ..primaryUnitName = unit.isNotEmpty ? unit : 'PCS'
-                  ..createdAt = DateTime.now()
-                  ..updatedAt = DateTime.now();
+                isNewItem = true;
+                if (onUnknownItem != null) {
+                  catalogItem = await onUnknownItem(itemMap);
+                  if (catalogItem != null) {
+                    if (!allItems.any((i) => i.id == catalogItem!.id)) {
+                      allItems.add(catalogItem);
+                    }
+                    isNewItem = false; // We don't need to auto-bind unit for items resolved from UI
+                  }
+                }
 
-                await isar.writeTxn(() async {
-                  catalogItem!.id = await isar.items.put(catalogItem!);
-                });
-                allItems.add(catalogItem!);
+                if (catalogItem == null) {
+                  catalogItem = Item()
+                    ..uuid = _uuidGen.v4()
+                    ..itemCode = itemCode.isNotEmpty ? itemCode : 'ITM-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}'
+                    ..itemName = itemName
+                    ..hsnCode = hsn
+                    ..sellRate = rate
+                    ..gstApplicable = gstRatePercent > 0
+                    ..gstRate = gstRatePercent > 0 ? gstRatePercent : null
+                    ..buyRate = rate > 0 ? (rate / (1.0 + (gstRatePercent / 100.0))) : 0.0
+                    ..currentStock = 0.0
+                    ..openingStock = 0.0
+                    ..primaryUnitName = unit.isNotEmpty ? unit : 'PCS'
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now();
+
+                  await isar.writeTxn(() async {
+                    catalogItem!.id = await isar.items.put(catalogItem!);
+                  });
+                  allItems.add(catalogItem!);
+                }
               }
 
-              // Bind exact Unit collection entity to catalog item
-              if (unit.isNotEmpty) {
+              // Bind exact Unit collection entity to catalog item ONLY for newly auto-created items
+              if (isNewItem && unit.isNotEmpty) {
                 final allUnits = await isar.units.filter().isDeletedEqualTo(false).findAll();
                 Unit? matchedUnit = allUnits.where((u) => u.shortName?.trim().toLowerCase() == unit.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == unit.trim().toLowerCase()).firstOrNull;
                 if (matchedUnit == null) {
@@ -572,7 +589,7 @@ class SalesExcelImportService {
                     matchedUnit!.id = await isar.units.put(matchedUnit!);
                   });
                 }
-                catalogItem.unit.value = matchedUnit;
+                catalogItem!.unit.value = matchedUnit;
                 catalogItem.primaryUnitName = matchedUnit.shortName ?? unit;
                 await isar.writeTxn(() async {
                   await isar.items.put(catalogItem!);
