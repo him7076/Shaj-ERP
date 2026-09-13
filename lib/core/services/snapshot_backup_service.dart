@@ -315,6 +315,9 @@ class SnapshotBackupService {
             // Fallback: Restore from JSON collection dump
             final jsonStr = utf8.decode(jsonFile.content as List<int>);
             final collectionsData = jsonDecode(jsonStr) as Map<String, dynamic>;
+            // Must init DB first since we closed it above for binary restore
+            await prefs.setString('active_firm_id', firmId);
+            await dbService.init(prefs);
             await dbService.importCollectionsFromJson(firmId, collectionsData);
           }
         }

@@ -336,12 +336,11 @@ class DatabaseService {
 
   /// Imports database collections from a JSON Map
   Future<void> importCollectionsFromJson(String firmId, Map<String, dynamic> collectionsData) async {
-    if (kIsWeb) {
-      if (_isar is WebMockIsar) {
-        (_isar as WebMockIsar).importCollectionsJson(collectionsData);
-      }
+    if (_isar is WebMockIsar) {
+      (_isar as WebMockIsar).importCollectionsJson(collectionsData);
       return;
     }
+
     
     List<Map<String, dynamic>> _getList(String key) {
       if (collectionsData.containsKey(key) && collectionsData[key] is List) {
