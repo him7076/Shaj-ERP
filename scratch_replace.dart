@@ -1,0 +1,1 @@
+import 'dart:io'; void main() { var f = File('lib/core/services/web_mock_isar.dart'); var content = f.readAsStringSync(); var newContent = content.replaceAll(RegExp(r'\.\.(\w+)\s*=\s*map\[''([^'']+)''\] as double\?'), '..\ = (map[''\''] as num?)?.toDouble()'); f.writeAsStringSync(newContent); print('Replaced successfully.'); }

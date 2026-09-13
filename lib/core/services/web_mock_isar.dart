@@ -100,7 +100,8 @@ class WebMockIsar implements Isar {
             try {
               final parsed = _mapToEntity(item, expectedType);
               return parsed ?? item;
-            } catch (_) {
+            } catch (e, stack) {
+              print('WebMockIsar _mapToEntity failed for $expectedType: $e\n$stack');
               return item;
             }
           }
@@ -322,7 +323,10 @@ class WebMockIsar implements Isar {
             _db[colName] = listData.map((itemMap) {
                try {
                  return _mapToEntity(itemMap as Map<String, dynamic>, expectedType) ?? itemMap;
-               } catch (_) { return itemMap; }
+               } catch (e, stack) { 
+                 print('WebMockIsar load from prefs failed for $expectedType: $e\n$stack');
+                 return itemMap; 
+               }
             }).toList();
             loadedAnyCollection = true;
           } catch (_) {}
@@ -340,7 +344,10 @@ class WebMockIsar implements Isar {
             _db[collectionName] = list.map((itemMap) {
               try {
                 return _mapToEntity(itemMap as Map<String, dynamic>, expectedType) ?? itemMap;
-              } catch (_) { return itemMap; }
+              } catch (e, stack) { 
+                print('WebMockIsar initial data load failed for $expectedType: $e\n$stack');
+                return itemMap; 
+              }
             }).toList();
           });
         }
@@ -1033,14 +1040,14 @@ class WebMockIsar implements Isar {
           ..city = map['city'] as String?
           ..state = map['state'] as String?
           ..pincode = map['pincode'] as String?
-          ..latitude = map['latitude'] as double?
-          ..longitude = map['longitude'] as double?
+          ..latitude = (map['latitude'] as num?)?.toDouble()
+          ..longitude = (map['longitude'] as num?)?.toDouble()
           ..locationAddress = map['locationAddress'] as String?
           ..googleMapUrl = map['googleMapUrl'] as String?
-          ..openingBalance = map['openingBalance'] as double?
+          ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
           ..balanceType = map['balanceType'] as String?
-          ..creditLimit = map['creditLimit'] as double?
-          ..outstandingBalance = map['outstandingBalance'] as double?
+          ..creditLimit = (map['creditLimit'] as num?)?.toDouble()
+          ..outstandingBalance = (map['outstandingBalance'] as num?)?.toDouble()
           ..paymentTerms = map['paymentTerms'] as String?
           ..dueDays = map['dueDays'] as int?
           ..contactPerson = map['contactPerson'] as String?
@@ -1063,13 +1070,13 @@ class WebMockIsar implements Isar {
           ..description = map['description'] as String?
           ..hsnCode = map['hsnCode'] as String?
           ..gstApplicable = map['gstApplicable'] as bool
-          ..gstRate = map['gstRate'] as double?
-          ..cessRate = map['cessRate'] as double?
-          ..buyRate = map['buyRate'] as double?
-          ..mrp = map['mrp'] as double?
-          ..sellRate = map['sellRate'] as double?
-          ..wholesaleRate = map['wholesaleRate'] as double?
-          ..minimumSellingPrice = map['minimumSellingPrice'] as double?
+          ..gstRate = (map['gstRate'] as num?)?.toDouble()
+          ..cessRate = (map['cessRate'] as num?)?.toDouble()
+          ..buyRate = (map['buyRate'] as num?)?.toDouble()
+          ..mrp = (map['mrp'] as num?)?.toDouble()
+          ..sellRate = (map['sellRate'] as num?)?.toDouble()
+          ..wholesaleRate = (map['wholesaleRate'] as num?)?.toDouble()
+          ..minimumSellingPrice = (map['minimumSellingPrice'] as num?)?.toDouble()
           ..openingStock = (map['openingStock'] as num?)?.toDouble()
           ..currentStock = (() {
             final c = (map['currentStock'] as num?)?.toDouble() ?? 0.0;
@@ -1080,11 +1087,11 @@ class WebMockIsar implements Isar {
             if (o > 0.0) return o;
             return c;
           })()
-          ..reorderLevel = map['reorderLevel'] as double?
-          ..minimumStock = map['minimumStock'] as double?
+          ..reorderLevel = (map['reorderLevel'] as num?)?.toDouble()
+          ..minimumStock = (map['minimumStock'] as num?)?.toDouble()
           ..secondaryUnit = map['secondaryUnit'] as String?
           ..primaryUnitName = map['primaryUnitName'] as String?
-          ..conversionFactor = map['conversionFactor'] as double?
+          ..conversionFactor = (map['conversionFactor'] as num?)?.toDouble()
           ..barcode = map['barcode'] as String?
           ..sku = map['sku'] as String?
           ..skuCode = map['skuCode'] as String?
@@ -1103,16 +1110,16 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
-          ..quantity = map['quantity'] as double?
-          ..freeQuantity = map['freeQuantity'] as double?
+          ..quantity = (map['quantity'] as num?)?.toDouble()
+          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
-          ..rate = map['rate'] as double?
-          ..discountPercent = map['discountPercent'] as double?
-          ..discountAmount = map['discountAmount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..gstPercent = map['gstPercent'] as double?
-          ..gstAmount = map['gstAmount'] as double?
-          ..totalAmount = map['totalAmount'] as double?
+          ..rate = (map['rate'] as num?)?.toDouble()
+          ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
+          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..gstPercent = (map['gstPercent'] as num?)?.toDouble()
+          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
@@ -1129,15 +1136,15 @@ class WebMockIsar implements Isar {
           ..partyName = map['partyName'] as String?
           ..mobileNumber = map['mobileNumber'] as String?
           ..gstNumber = map['gstNumber'] as String?
-          ..latitude = map['latitude'] as double?
-          ..longitude = map['longitude'] as double?
+          ..latitude = (map['latitude'] as num?)?.toDouble()
+          ..longitude = (map['longitude'] as num?)?.toDouble()
           ..locationAddress = map['locationAddress'] as String?
-          ..subtotal = map['subtotal'] as double?
-          ..discountAmount = map['discountAmount'] as double?
-          ..discountPercent = map['discountPercent'] as double?
-          ..totalGST = map['totalGST'] as double?
-          ..roundOff = map['roundOff'] as double?
-          ..grandTotal = map['grandTotal'] as double?
+          ..subtotal = (map['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+          ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
+          ..totalGST = (map['totalGST'] as num?)?.toDouble()
+          ..roundOff = (map['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..internalNotes = map['internalNotes'] as String?
           ..cancelledBy = map['cancelledBy'] as String?
@@ -1160,15 +1167,15 @@ class WebMockIsar implements Isar {
           ..hsnCode = map['hsnCode'] as String?
           ..parentInvoiceId = map['parentInvoiceId'] as int?
           ..parentInvoiceUuid = map['parentInvoiceUuid'] as String?
-          ..quantity = map['quantity'] as double?
-          ..freeQuantity = map['freeQuantity'] as double?
+          ..quantity = (map['quantity'] as num?)?.toDouble()
+          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
-          ..rate = map['rate'] as double?
-          ..discount = map['discount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..gstRate = map['gstRate'] as double?
-          ..gstAmount = map['gstAmount'] as double?
-          ..totalAmount = map['totalAmount'] as double?
+          ..rate = (map['rate'] as num?)?.toDouble()
+          ..discount = (map['discount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (map['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
@@ -1191,18 +1198,18 @@ class WebMockIsar implements Isar {
           ..partyName = map['partyName'] as String?
           ..gstNumber = map['gstNumber'] as String?
           ..address = map['address'] as String?
-          ..subtotal = map['subtotal'] as double?
-          ..discountAmount = map['discountAmount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..cgstAmount = map['cgstAmount'] as double?
-          ..sgstAmount = map['sgstAmount'] as double?
-          ..igstAmount = map['igstAmount'] as double?
-          ..totalGST = map['totalGST'] as double?
-          ..roundOff = map['roundOff'] as double?
-          ..grandTotal = map['grandTotal'] as double?
+          ..subtotal = (map['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (map['totalGST'] as num?)?.toDouble()
+          ..roundOff = (map['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..paymentStatus = map['paymentStatus'] as String?
-          ..paidAmount = map['paidAmount'] as double?
-          ..pendingAmount = map['pendingAmount'] as double?
+          ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
+          ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
           ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
           ..remarks = map['remarks'] as String?
           ..termsAndConditions = map['termsAndConditions'] as String?
@@ -1272,18 +1279,18 @@ class WebMockIsar implements Isar {
           ..partyName = map['partyName'] as String?
           ..gstNumber = map['gstNumber'] as String?
           ..address = map['address'] as String?
-          ..subtotal = map['subtotal'] as double?
-          ..discountAmount = map['discountAmount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..cgstAmount = map['cgstAmount'] as double?
-          ..sgstAmount = map['sgstAmount'] as double?
-          ..igstAmount = map['igstAmount'] as double?
-          ..totalGST = map['totalGST'] as double?
-          ..roundOff = map['roundOff'] as double?
-          ..grandTotal = map['grandTotal'] as double?
+          ..subtotal = (map['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (map['totalGST'] as num?)?.toDouble()
+          ..roundOff = (map['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..paymentStatus = map['paymentStatus'] as String?
-          ..paidAmount = map['paidAmount'] as double?
-          ..pendingAmount = map['pendingAmount'] as double?
+          ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
+          ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
@@ -1299,14 +1306,14 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
-          ..quantity = map['quantity'] as double?
+          ..quantity = (map['quantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
-          ..rate = map['rate'] as double?
-          ..discount = map['discount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..gstRate = map['gstRate'] as double?
-          ..gstAmount = map['gstAmount'] as double?
-          ..totalAmount = map['totalAmount'] as double?
+          ..rate = (map['rate'] as num?)?.toDouble()
+          ..discount = (map['discount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (map['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
@@ -1320,7 +1327,7 @@ class WebMockIsar implements Isar {
           ..id = map['id'] as int
           ..uuid = map['uuid'] as String?
           ..category = map['category'] as String?
-          ..amount = map['amount'] as double?
+          ..amount = (map['amount'] as num?)?.toDouble()
           ..expenseDate = map['expenseDate'] != null ? DateTime.parse(map['expenseDate'] as String) : null
           ..paymentMode = map['paymentMode'] as String?
           ..remarks = map['remarks'] as String?
@@ -1338,7 +1345,7 @@ class WebMockIsar implements Isar {
           ..partyUuid = map['partyUuid'] as String?
           ..partyName = map['partyName'] as String?
           ..transactionType = map['transactionType'] as String?
-          ..amount = map['amount'] as double?
+          ..amount = (map['amount'] as num?)?.toDouble()
           ..paymentMode = map['paymentMode'] as String?
           ..referenceNumber = map['referenceNumber'] as String?
           ..remarks = map['remarks'] as String?
@@ -1360,8 +1367,8 @@ class WebMockIsar implements Isar {
           ..accountNumber = map['accountNumber'] as String?
           ..ifscCode = map['ifscCode'] as String?
           ..branchName = map['branchName'] as String?
-          ..openingBalance = map['openingBalance'] as double?
-          ..currentBalance = map['currentBalance'] as double?
+          ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
+          ..currentBalance = (map['currentBalance'] as num?)?.toDouble()
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
@@ -1379,15 +1386,15 @@ class WebMockIsar implements Isar {
           ..partyName = map['partyName'] as String?
           ..gstNumber = map['gstNumber'] as String?
           ..address = map['address'] as String?
-          ..subtotal = map['subtotal'] as double?
-          ..discountAmount = map['discountAmount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..cgstAmount = map['cgstAmount'] as double?
-          ..sgstAmount = map['sgstAmount'] as double?
-          ..igstAmount = map['igstAmount'] as double?
-          ..totalGST = map['totalGST'] as double?
-          ..roundOff = map['roundOff'] as double?
-          ..grandTotal = map['grandTotal'] as double?
+          ..subtotal = (map['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (map['totalGST'] as num?)?.toDouble()
+          ..roundOff = (map['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..createdBy = map['createdBy'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
@@ -1403,15 +1410,15 @@ class WebMockIsar implements Isar {
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
           ..parentCreditNoteId = map['parentCreditNoteId'] as int?
-          ..quantity = map['quantity'] as double?
-          ..freeQuantity = map['freeQuantity'] as double?
+          ..quantity = (map['quantity'] as num?)?.toDouble()
+          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
-          ..rate = map['rate'] as double?
-          ..discount = map['discount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..gstRate = map['gstRate'] as double?
-          ..gstAmount = map['gstAmount'] as double?
-          ..totalAmount = map['totalAmount'] as double?
+          ..rate = (map['rate'] as num?)?.toDouble()
+          ..discount = (map['discount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (map['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
@@ -1432,15 +1439,15 @@ class WebMockIsar implements Isar {
           ..partyName = map['partyName'] as String?
           ..gstNumber = map['gstNumber'] as String?
           ..address = map['address'] as String?
-          ..subtotal = map['subtotal'] as double?
-          ..discountAmount = map['discountAmount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..cgstAmount = map['cgstAmount'] as double?
-          ..sgstAmount = map['sgstAmount'] as double?
-          ..igstAmount = map['igstAmount'] as double?
-          ..totalGST = map['totalGST'] as double?
-          ..roundOff = map['roundOff'] as double?
-          ..grandTotal = map['grandTotal'] as double?
+          ..subtotal = (map['subtotal'] as num?)?.toDouble()
+          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
+          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
+          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
+          ..totalGST = (map['totalGST'] as num?)?.toDouble()
+          ..roundOff = (map['roundOff'] as num?)?.toDouble()
+          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..createdBy = map['createdBy'] as String?
           ..createdAt = DateTime.parse(map['createdAt'] as String)
@@ -1456,15 +1463,15 @@ class WebMockIsar implements Isar {
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
           ..parentDebitNoteId = map['parentDebitNoteId'] as int?
-          ..quantity = map['quantity'] as double?
-          ..freeQuantity = map['freeQuantity'] as double?
+          ..quantity = (map['quantity'] as num?)?.toDouble()
+          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
-          ..rate = map['rate'] as double?
-          ..discount = map['discount'] as double?
-          ..taxableAmount = map['taxableAmount'] as double?
-          ..gstRate = map['gstRate'] as double?
-          ..gstAmount = map['gstAmount'] as double?
-          ..totalAmount = map['totalAmount'] as double?
+          ..rate = (map['rate'] as num?)?.toDouble()
+          ..discount = (map['discount'] as num?)?.toDouble()
+          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
+          ..gstRate = (map['gstRate'] as num?)?.toDouble()
+          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
+          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
@@ -1480,7 +1487,7 @@ class WebMockIsar implements Isar {
           ..voucherType = map['voucherType'] as String?
           ..voucherNumber = map['voucherNumber'] as String?
           ..partyName = map['partyName'] as String?
-          ..amount = map['amount'] as double?
+          ..amount = (map['amount'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..deletedAt = map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null
           ..createdAt = DateTime.parse(map['createdAt'] as String)
@@ -1974,3 +1981,4 @@ class WebMockQuery<T> extends Query<T> {
     return super.noSuchMethod(invocation);
   }
 }
+
