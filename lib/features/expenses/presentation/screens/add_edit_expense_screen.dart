@@ -505,6 +505,31 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         title: Text(_existingExpense == null ? 'New Expense Voucher' : 'Edit Expense Voucher'),
         elevation: 0,
         actions: [
+          if (_existingExpense != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete Expense?'),
+                    content: const Text('Are you sure you want to delete this expense record?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                      TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  final success = await ref.read(expenseNotifierProvider.notifier).deleteExpense(_existingExpense!.id);
+                  if (success && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Expense deleted successfully.')));
+                    Navigator.pop(context);
+                  }
+                }
+              },
+              tooltip: 'Delete Expense',
+            ),
           IconButton(
             icon: _isSaving
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))

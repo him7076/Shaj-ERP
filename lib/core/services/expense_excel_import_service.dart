@@ -178,6 +178,8 @@ class ExpenseExcelImportService {
       final colRef = _findCol(colMap, ['reference no', 'ref no', 'voucher no', 'bill no'], 6);
       final colRemarks = _findCol(colMap, ['remarks / notes', 'remarks', 'notes', 'description'], 7);
 
+      final existingExpensesList = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+
       for (int r = 1; r < sheet.rows.length; r++) {
         final row = sheet.rows[r];
         if (row.isEmpty) continue;
@@ -230,8 +232,20 @@ class ExpenseExcelImportService {
           itemsJsonStr = jsonEncode(expenseItems);
         }
 
-        final expense = Expense()
-          ..uuid = const Uuid().v4()
+        Expense? existingExpense;
+        if (refNo.isNotEmpty) {
+           existingExpense = existingExpensesList.where((e) {
+              if (e.voucherNo != null && e.voucherNo == refNo) return true;
+              if (e.remarks != null && e.remarks!.contains('Ref: $refNo')) return true;
+              return false;
+           }).firstOrNull;
+        }
+
+        final expense = existingExpense ?? Expense()
+          ..uuid = existingExpense?.uuid ?? const Uuid().v4()
+          ..createdAt = existingExpense?.createdAt ?? DateTime.now();
+
+        expense
           ..category = effectiveCategory
           ..partyName = payeeStr.isNotEmpty ? payeeStr : null
           ..amount = rawAmount
@@ -239,7 +253,6 @@ class ExpenseExcelImportService {
           ..paymentMode = effectiveMode
           ..remarks = combinedRemarks
           ..itemsJson = itemsJsonStr
-          ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now()
           ..isDeleted = false
           ..isSynced = false;
