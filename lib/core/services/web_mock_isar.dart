@@ -62,12 +62,44 @@ class WebMockIsar implements Isar {
 
   void importCollectionsJson(Map<String, dynamic> jsonMap) {
     _db.clear();
+    
+    String _getTypeForCol(String col) {
+      if (col == 'categorys') return 'Category';
+      if (col == 'units') return 'Unit';
+      if (col == 'brands') return 'Brand';
+      if (col == 'partys') return 'Party';
+      if (col == 'items') return 'Item';
+      if (col == 'orderItems') return 'OrderItem';
+      if (col == 'orders') return 'Order';
+      if (col == 'invoiceItems') return 'InvoiceItem';
+      if (col == 'invoices') return 'Invoice';
+      if (col == 'settings') return 'Settings';
+      if (col == 'users') return 'User';
+      if (col == 'syncQueues') return 'SyncQueue';
+      if (col == 'purchases') return 'Purchase';
+      if (col == 'purchaseItems') return 'PurchaseItem';
+      if (col == 'expenses') return 'Expense';
+      if (col == 'expenseItems') return 'ExpenseItem';
+      if (col == 'transactions') return 'Transaction';
+      if (col == 'bankAccounts') return 'BankAccount';
+      if (col == 'creditNotes') return 'CreditNote';
+      if (col == 'creditNoteItems') return 'CreditNoteItem';
+      if (col == 'debitNotes') return 'DebitNote';
+      if (col == 'debitNoteItems') return 'DebitNoteItem';
+      if (col == 'deletedVouchers') return 'DeletedVoucher';
+      if (col == 'stockAdjustments') return 'StockAdjustment';
+      if (col == 'whatsAppMappings') return 'WhatsAppMapping';
+      return '';
+    }
+
     jsonMap.forEach((collectionName, list) {
       if (list is List) {
+        final expectedType = _getTypeForCol(collectionName);
         _db[collectionName] = list.map((item) {
           if (item is Map<String, dynamic>) {
             try {
-              return _mapToEntity(item);
+              final parsed = _mapToEntity(item, expectedType);
+              return parsed ?? item;
             } catch (_) {
               return item;
             }
@@ -286,7 +318,12 @@ class WebMockIsar implements Isar {
         if (colJson != null && colJson.isNotEmpty) {
           try {
             final listData = jsonDecode(colJson) as List<dynamic>;
-            _db[colName] = listData.map((itemMap) => _mapToEntity(itemMap as Map<String, dynamic>)).toList();
+            final expectedType = _getTypeForCol(colName);
+            _db[colName] = listData.map((itemMap) {
+               try {
+                 return _mapToEntity(itemMap as Map<String, dynamic>, expectedType) ?? itemMap;
+               } catch (_) { return itemMap; }
+            }).toList();
             loadedAnyCollection = true;
           } catch (_) {}
         }
@@ -299,13 +336,47 @@ class WebMockIsar implements Isar {
           final data = jsonDecode(jsonStr) as Map<String, dynamic>;
           data.forEach((collectionName, listData) {
             final list = listData as List<dynamic>;
-            _db[collectionName] = list.map((itemMap) => _mapToEntity(itemMap as Map<String, dynamic>)).toList();
+            final expectedType = _getTypeForCol(collectionName);
+            _db[collectionName] = list.map((itemMap) {
+              try {
+                return _mapToEntity(itemMap as Map<String, dynamic>, expectedType) ?? itemMap;
+              } catch (_) { return itemMap; }
+            }).toList();
           });
         }
       }
     } catch (e) {
       print('Error loading web mock DB from SharedPreferences: $e');
     }
+  }
+
+  String _getTypeForCol(String col) {
+    if (col == 'categorys') return 'Category';
+    if (col == 'units') return 'Unit';
+    if (col == 'brands') return 'Brand';
+    if (col == 'partys') return 'Party';
+    if (col == 'items') return 'Item';
+    if (col == 'orderItems') return 'OrderItem';
+    if (col == 'orders') return 'Order';
+    if (col == 'invoiceItems') return 'InvoiceItem';
+    if (col == 'invoices') return 'Invoice';
+    if (col == 'settings') return 'Settings';
+    if (col == 'users') return 'User';
+    if (col == 'syncQueues') return 'SyncQueue';
+    if (col == 'purchases') return 'Purchase';
+    if (col == 'purchaseItems') return 'PurchaseItem';
+    if (col == 'expenses') return 'Expense';
+    if (col == 'expenseItems') return 'ExpenseItem';
+    if (col == 'transactions') return 'Transaction';
+    if (col == 'bankAccounts') return 'BankAccount';
+    if (col == 'creditNotes') return 'CreditNote';
+    if (col == 'creditNoteItems') return 'CreditNoteItem';
+    if (col == 'debitNotes') return 'DebitNote';
+    if (col == 'debitNoteItems') return 'DebitNoteItem';
+    if (col == 'deletedVouchers') return 'DeletedVoucher';
+    if (col == 'stockAdjustments') return 'StockAdjustment';
+    if (col == 'whatsAppMappings') return 'WhatsAppMapping';
+    return '';
   }
 
   Map<String, dynamic> _entityToMap(dynamic entity) {
@@ -894,8 +965,8 @@ class WebMockIsar implements Isar {
   }
 
 
-  dynamic _mapToEntity(Map<String, dynamic> map) {
-    final type = map['type'] as String;
+  dynamic _mapToEntity(Map<String, dynamic> map, [String? defaultType]) {
+    final type = (map['type'] as String?) ?? defaultType ?? '';
     switch (type) {
       case 'Category':
         return Category()
