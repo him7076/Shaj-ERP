@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:excel/excel.dart';
 import 'package:uuid/uuid.dart';
@@ -60,6 +61,35 @@ class ExpenseExcelImportService {
       TextCellValue('Staff daily tea and snacks expense'),
     ]);
 
+    // Sheet 2: Item Details
+    final sheet2 = excel['Sheet2'];
+    sheet2.appendRow([
+      TextCellValue('Reference No'),
+      TextCellValue('Item Name'),
+      TextCellValue('QTY'),
+      TextCellValue('Rate'),
+      TextCellValue('Tax %'),
+      TextCellValue('Amount'),
+    ]);
+
+    sheet2.appendRow([
+      TextCellValue('REF-8802'),
+      TextCellValue('Samosa'),
+      DoubleCellValue(10.0),
+      DoubleCellValue(15.0),
+      DoubleCellValue(0.0),
+      DoubleCellValue(150.0),
+    ]);
+
+    sheet2.appendRow([
+      TextCellValue('REF-8802'),
+      TextCellValue('Tea'),
+      DoubleCellValue(30.0),
+      DoubleCellValue(10.0),
+      DoubleCellValue(0.0),
+      DoubleCellValue(300.0),
+    ]);
+
     return excel.encode();
   }
 
@@ -85,11 +115,55 @@ class ExpenseExcelImportService {
       }
 
       final Sheet? sheet = excel.tables['Sheet1'] ?? excel.tables[sheetKeys.first];
+      Sheet? itemSheet;
+      if (excel.tables.containsKey('Sheet2')) {
+        itemSheet = excel.tables['Sheet2'];
+      } else if (sheetKeys.length > 1) {
+        itemSheet = excel.tables[sheetKeys[1]];
+      }
+
       if (sheet == null || sheet.rows.length <= 1) {
         return ImportExpenseResult(
           totalExpensesImported: 0,
           errors: ['The Excel worksheet contains no data rows.'],
         );
+      }
+
+      // Pre-process items from Sheet2 grouped by Reference No
+      final Map<String, List<Map<String, dynamic>>> itemsByRefNo = {};
+      if (itemSheet != null && itemSheet.rows.length > 1) {
+        final itemColMap = _buildColumnMap(itemSheet.rows[0]);
+        final colIRefNo = _findCol(itemColMap, ['reference no', 'ref no', 'voucher no', 'voucher'], 0);
+        final colIName = _findCol(itemColMap, ['item name', 'name', 'description', 'product'], 1);
+        final colIQty = _findCol(itemColMap, ['qty', 'quantity'], 2);
+        final colIRate = _findCol(itemColMap, ['rate', 'price', 'unit price'], 3);
+        final colITax = _findCol(itemColMap, ['tax %', 'tax', 'gst %', 'gst'], 4);
+        final colIAmt = _findCol(itemColMap, ['amount', 'total'], 5);
+
+        for (int r = 1; r < itemSheet.rows.length; r++) {
+          final row = itemSheet.rows[r];
+          if (row.isEmpty) continue;
+
+          final refNo = _getCellValue(row, colIRefNo).trim();
+          if (refNo.isEmpty) continue;
+
+          final itemName = _getCellValue(row, colIName).trim();
+          if (itemName.isEmpty) continue;
+
+          final qty = _parseDouble(_getCellValue(row, colIQty));
+          final rate = _parseDouble(_getCellValue(row, colIRate));
+          final taxPercent = _parseDouble(_getCellValue(row, colITax));
+          final amt = _parseDouble(_getCellValue(row, colIAmt));
+
+          itemsByRefNo.putIfAbsent(refNo, () => []);
+          itemsByRefNo[refNo]!.add({
+            'name': itemName,
+            'qty': qty,
+            'rate': rate,
+            'taxPercent': taxPercent,
+            'amount': amt > 0 ? amt : (qty * rate),
+          });
+        }
       }
 
       final totalRows = sheet.rows.length - 1;
@@ -149,6 +223,13 @@ class ExpenseExcelImportService {
           if (notesStr.isNotEmpty) notesStr,
         ].join(' | ');
 
+        // Retrieve mapped items
+        final List<Map<String, dynamic>> expenseItems = refNo.isNotEmpty ? (itemsByRefNo[refNo] ?? []) : [];
+        String? itemsJsonStr;
+        if (expenseItems.isNotEmpty) {
+          itemsJsonStr = jsonEncode(expenseItems);
+        }
+
         final expense = Expense()
           ..uuid = const Uuid().v4()
           ..category = effectiveCategory
@@ -157,6 +238,7 @@ class ExpenseExcelImportService {
           ..expenseDate = expDate
           ..paymentMode = effectiveMode
           ..remarks = combinedRemarks
+          ..itemsJson = itemsJsonStr
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now()
           ..isDeleted = false

@@ -6,6 +6,7 @@ import 'package:business_sahaj_erp/data/local/collections/expense_collection.dar
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/add_edit_expense_screen.dart';
 import 'package:business_sahaj_erp/core/services/expense_excel_import_service.dart';
+import 'package:business_sahaj_erp/core/services/expense_excel_export_service.dart';
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -115,6 +116,27 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
     }
   }
 
+  Future<void> _exportExpensesExcel() async {
+    try {
+      final expenses = await ref.read(expenseRepositoryProvider).getAll();
+      final bytes = ExpenseExcelExportService.exportExpensesToExcel(expenses);
+      if (bytes == null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to generate export file.')));
+        return;
+      }
+      final dateStr = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      await ExcelDownloadHelper.downloadExcel(bytes, 'Expenses_Export_$dateStr.xlsx');
+      
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Expenses Exported Successfully!'), backgroundColor: Colors.green),
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error exporting expenses: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -170,6 +192,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 _importFromExcel();
               } else if (val == 'download_template') {
                 _downloadSampleTemplate();
+              } else if (val == 'export_excel') {
+                _exportExpensesExcel();
               }
             },
             itemBuilder: (ctx) => [
@@ -190,6 +214,16 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                     Icon(Icons.download_rounded, color: Colors.blue, size: 18),
                     SizedBox(width: 8),
                     Text('Download Sample Excel Template'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export_excel',
+                child: Row(
+                  children: [
+                    Icon(Icons.ios_share_rounded, color: Colors.purple, size: 18),
+                    SizedBox(width: 8),
+                    Text('Export Expenses to Excel'),
                   ],
                 ),
               ),
