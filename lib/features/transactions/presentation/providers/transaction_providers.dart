@@ -733,11 +733,11 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
       selectedParty: party,
       items: items,
       isGstInclusive: isGstInclusive,
-      discountPercent: creditNote.discountPercent ?? 0.0,
-      discountAmount: creditNote.discountAmount ?? 0.0,
+      discountPercent: 0.0,
+      discountAmount: 0.0,
       date: creditNote.transactionDate ?? DateTime.now(),
       remarks: creditNote.remarks ?? '',
-      customRoundOff: creditNote.roundOff,
+      customRoundOff: null,
       originalInvoiceNumber: creditNote.referenceNumber,
       originalInvoiceUuid: creditNote.linkedBillUuid,
     );
@@ -773,9 +773,9 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
       subtotal += res.taxableAmount;
       totalGst += res.gstAmount;
       totalDiscount += cartItem.discountAmount;
-      cgst += res.cgstAmount;
-      sgst += res.sgstAmount;
-      igst += res.igstAmount;
+      cgst += res.cgst;
+      sgst += res.sgst;
+      igst += res.igst;
     }
 
     // Apply Order Level Discount
@@ -805,3 +805,4 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
 final creditNoteCartProvider = StateNotifierProvider<CreditNoteCartNotifier, CreditNoteCart>((ref) {
   return CreditNoteCartNotifier();
 });
+

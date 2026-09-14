@@ -45,12 +45,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       if (widget.createImmediately) {
         if (widget.lockedType == 'Credit Note') {
           Navigator.of(context, rootNavigator: true).push(
-            context,
             MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else if (widget.lockedType == 'Debit Note') {
           Navigator.of(context, rootNavigator: true).push(
-            context,
             MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else {
@@ -1196,12 +1194,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
               onPressed: () {
                 if (widget.lockedType == 'Credit Note') {
                   Navigator.of(context, rootNavigator: true).push(
-                    context,
                     MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
                   ).then((_) => ref.invalidate(filteredTransactionsProvider));
                 } else if (widget.lockedType == 'Debit Note') {
                   Navigator.of(context, rootNavigator: true).push(
-                    context,
                     MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
                   ).then((_) => ref.invalidate(filteredTransactionsProvider));
                 } else {
@@ -1345,3 +1341,4 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 }
+

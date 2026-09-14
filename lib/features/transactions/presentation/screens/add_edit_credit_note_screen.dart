@@ -171,7 +171,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
 
           ref.read(creditNoteCartProvider.notifier).loadCreditNote(
             party: party,
-            creditNote: Transaction()..transactionDate = _creditNoteDate..remarks = creditNote.remarks..discountAmount = creditNote.discountAmount..discountPercent = discPctVal..roundOff = creditNote.roundOff..referenceNumber = creditNote.originalInvoiceNumber..linkedBillUuid = creditNote.uuid,
+            creditNote: Transaction()..transactionDate = _creditNoteDate..remarks = creditNote.remarks..referenceNumber = creditNote.originalInvoiceNumber..linkedBillUuid = creditNote.uuid,
             items: cartItems,
             isGstInclusive: false,
           );
@@ -206,7 +206,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         _creditNoteDate = picked;
       });
       ref.read(creditNoteCartProvider.notifier).setDate(picked);
-      ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+      ref.read(unsavedChangesProvider.notifier).state = true;
     }
   }
 
@@ -214,7 +214,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     final pct = double.tryParse(_discountPercentController.text);
     final amt = double.tryParse(_discountController.text);
     ref.read(creditNoteCartProvider.notifier).setDiscounts(pct, amt);
-    ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+    ref.read(unsavedChangesProvider.notifier).state = true;
   }
 
   Future<void> _saveCreditNote() async {
@@ -259,7 +259,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         ..roundOff = totals['roundOff']
         ..grandTotal = totals['grandTotal']
         ..remarks = _remarksController.text.trim()
-        ..createdBy = auth.user?.name ?? 'Admin';
+        ..createdBy = auth.email ?? 'Admin';
 
       final List<CreditNoteItem> creditNoteItems = [];
       for (var cartItem in cart.items) {
@@ -304,7 +304,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
 
       await repo.saveCreditNote(creditNote, creditNoteItems);
 
-      ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(false);
+      ref.read(unsavedChangesProvider.notifier).state = false;
       ref.invalidate(filteredTransactionsProvider);
 
       if (mounted) {
@@ -396,7 +396,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                     selectedParty: cartState.selectedParty,
                                     onChanged: (party) {
                                       ref.read(creditNoteCartProvider.notifier).setParty(party);
-                                      ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                                      ref.read(unsavedChangesProvider.notifier).state = true;
                                     },
                                     onAddParty: () {
                                       Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditPartyScreen()));
@@ -423,7 +423,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                       ),
                                       onChanged: (val) {
                                         ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(val, null);
-                                        ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                                        ref.read(unsavedChangesProvider.notifier).state = true;
                                       },
                                     ),
                                   ),
@@ -440,7 +440,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                 ),
                                 onChanged: (val) {
                                   ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(val, null);
-                                  ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                                  ref.read(unsavedChangesProvider.notifier).state = true;
                                 },
                               ),
                           ],
@@ -455,10 +455,9 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: ItemSearchPickerModal(
-                          controller: _productSearchController,
                           onItemSelected: (item) {
                             ref.read(creditNoteCartProvider.notifier).addItem(item, qty: 1);
-                            ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                            ref.read(unsavedChangesProvider.notifier).state = true;
                             _productSearchController.clear();
                           },
                         ),
@@ -500,7 +499,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                     ),
                                     onChanged: (val) {
                                       ref.read(creditNoteCartProvider.notifier).setRemarks(val);
-                                      ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                                      ref.read(unsavedChangesProvider.notifier).state = true;
                                     },
                                   ),
                                 ],
@@ -530,7 +529,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                             decoration: const InputDecoration(labelText: '%', isDense: true, border: OutlineInputBorder()),
                                             onChanged: (val) {
                                               ref.read(creditNoteCartProvider.notifier).setDiscounts(double.tryParse(val), null);
-                                              ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                                              ref.read(unsavedChangesProvider.notifier).state = true;
                                             },
                                           ),
                                         ),
@@ -542,7 +541,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                             decoration: const InputDecoration(labelText: 'Amt', isDense: true, border: OutlineInputBorder()),
                                             onChanged: (val) {
                                               ref.read(creditNoteCartProvider.notifier).setDiscounts(null, double.tryParse(val));
-                                              ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                                              ref.read(unsavedChangesProvider.notifier).state = true;
                                             },
                                           ),
                                         ),
@@ -587,7 +586,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                         ),
                         onChanged: (val) {
                           ref.read(creditNoteCartProvider.notifier).setRemarks(val);
-                          ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                          ref.read(unsavedChangesProvider.notifier).state = true;
                         },
                       ),
                     ],
@@ -613,13 +612,13 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
 
   Widget _buildCartItemTile(BuildContext context, int index, CartItemState itemState) {
     return ExpansionTile(
-      title: Text(itemState.item.itemName, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(itemState.item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text('Qty: ${itemState.quantity} ${itemState.unit} | Rate: ₹${itemState.rate}'),
       trailing: IconButton(
         icon: const Icon(Icons.delete, color: Colors.red),
         onPressed: () {
           ref.read(creditNoteCartProvider.notifier).removeItemAt(index);
-          ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+          ref.read(unsavedChangesProvider.notifier).state = true;
         },
       ),
       childrenPadding: const EdgeInsets.all(16),
@@ -633,7 +632,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                 decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   ref.read(creditNoteCartProvider.notifier).updateItemAt(index, quantity: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                  ref.read(unsavedChangesProvider.notifier).state = true;
                 },
               ),
             ),
@@ -645,7 +644,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                 decoration: const InputDecoration(labelText: 'Rate (₹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   ref.read(creditNoteCartProvider.notifier).updateItemAt(index, rate: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                  ref.read(unsavedChangesProvider.notifier).state = true;
                 },
               ),
             ),
@@ -668,7 +667,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                 decoration: const InputDecoration(labelText: 'Disc %', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   ref.read(creditNoteCartProvider.notifier).updateItemAt(index, discountPercent: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                  ref.read(unsavedChangesProvider.notifier).state = true;
                 },
               ),
             ),
@@ -680,7 +679,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                 decoration: const InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   ref.read(creditNoteCartProvider.notifier).updateItemAt(index, discountAmount: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).setHasUnsavedChanges(true);
+                  ref.read(unsavedChangesProvider.notifier).state = true;
                 },
               ),
             ),
@@ -690,3 +689,5 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     );
   }
 }
+
+
