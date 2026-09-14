@@ -398,9 +398,6 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                       ref.read(creditNoteCartProvider.notifier).setParty(party);
                                       ref.read(unsavedChangesProvider.notifier).state = true;
                                     },
-                                    onAddParty: () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AddEditPartyScreen()));
-                                    },
                                     partyTypeFilter: 'Customer', // Credit notes are usually for customers, but can be any
                                     decoration: InputDecoration(
                                       labelText: 'Party (Customer/Supplier) *',
@@ -454,12 +451,31 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: theme.colorScheme.outlineVariant)),
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: ItemSearchPickerModal(
-                          onItemSelected: (item) {
-                            ref.read(creditNoteCartProvider.notifier).addItem(item, qty: 1);
-                            ref.read(unsavedChangesProvider.notifier).state = true;
-                            _productSearchController.clear();
+                        child: InkWell(
+                          onTap: () async {
+                            final item = await ItemSearchPickerModal.show(context);
+                            if (item != null) {
+                              ref.read(creditNoteCartProvider.notifier).addItem(item, qty: 1);
+                              ref.read(unsavedChangesProvider.notifier).state = true;
+                              _productSearchController.clear();
+                            }
                           },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: theme.colorScheme.outlineVariant),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
+                                const SizedBox(width: 12),
+                                Text('Tap to search and add product...', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
