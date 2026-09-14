@@ -99,7 +99,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
             .filter()
             .isDeletedEqualTo(false)
             .and()
-            .group((q) => q.parentPurchaseIdEqualTo(purchase.id).or().parentPurchaseUuidEqualTo(purchase.uuid))
+            .group((q) => q.purchaseIdEqualTo(purchase.id).or().purchaseUuidEqualTo(purchase.uuid))
             .findAll();
         
         if (itemsList.isEmpty) {
