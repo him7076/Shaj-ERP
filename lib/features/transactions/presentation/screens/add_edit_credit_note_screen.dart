@@ -398,7 +398,6 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                       ref.read(creditNoteCartProvider.notifier).setParty(party);
                                       ref.read(unsavedChangesProvider.notifier).state = true;
                                     },
-                                    partyTypeFilter: 'Customer', // Credit notes are usually for customers, but can be any
                                     decoration: InputDecoration(
                                       labelText: 'Party (Customer/Supplier) *',
                                       hintText: 'Search or select party',
@@ -705,5 +704,6 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     );
   }
 }
+
 
 
