@@ -44,12 +44,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       
       if (widget.createImmediately) {
         if (widget.lockedType == 'Credit Note') {
-          Navigator.push(
+          Navigator.of(context, rootNavigator: true).push(
             context,
             MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else if (widget.lockedType == 'Debit Note') {
-          Navigator.push(
+          Navigator.of(context, rootNavigator: true).push(
             context,
             MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
@@ -1190,37 +1190,39 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (widget.lockedType == 'Credit Note') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
-            ).then((_) => ref.invalidate(filteredTransactionsProvider));
-          } else if (widget.lockedType == 'Debit Note') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
-            ).then((_) => ref.invalidate(filteredTransactionsProvider));
-          } else {
-            AddEditTransactionDialog.show(context, initialType: widget.lockedType);
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: Text(widget.lockedType == 'Receipt'
-            ? 'Record Receipt'
-            : widget.lockedType == 'Payment'
-                ? 'Record Payment'
-                : widget.lockedType == 'Credit Note'
-                    ? 'New Credit Note'
-                    : widget.lockedType == 'Debit Note'
-                        ? 'New Debit Note'
-                        : widget.lockedType == 'Transfer'
-                            ? 'New Transfer'
-                            : widget.lockedType == 'Other Income'
-                                ? 'Record Income'
-                                : 'New Entry'),
-      ),
+      floatingActionButton: widget.lockedType == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () {
+                if (widget.lockedType == 'Credit Note') {
+                  Navigator.of(context, rootNavigator: true).push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
+                  ).then((_) => ref.invalidate(filteredTransactionsProvider));
+                } else if (widget.lockedType == 'Debit Note') {
+                  Navigator.of(context, rootNavigator: true).push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+                  ).then((_) => ref.invalidate(filteredTransactionsProvider));
+                } else {
+                  AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: Text(widget.lockedType == 'Receipt'
+                  ? 'Record Receipt'
+                  : widget.lockedType == 'Payment'
+                      ? 'Record Payment'
+                      : widget.lockedType == 'Credit Note'
+                          ? 'New Credit Note'
+                          : widget.lockedType == 'Debit Note'
+                              ? 'New Debit Note'
+                              : widget.lockedType == 'Transfer'
+                                  ? 'New Transfer'
+                                  : widget.lockedType == 'Other Income'
+                                      ? 'Record Income'
+                                      : 'New Entry'),
+            ),
     );
   }
 

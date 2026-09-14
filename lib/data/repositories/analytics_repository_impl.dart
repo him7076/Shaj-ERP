@@ -130,25 +130,57 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .statusEqualTo('Pending')
         .count();
 
-    // 4. Receivables and Payables — use Party.outstandingBalance directly
-    // OPTIMIZED: Previous code loaded ALL invoices + ALL purchases + ran party.load()
-    // per record in nested loops. Now uses pre-stored balance on Party collection.
+    // 4. Receivables and Payables — Dynamic calculation from Invoices/Purchases
     final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
 
     double totalOutstanding = 0.0;
     double totalPayable = 0.0;
 
+    final unpaidInvoices = await isar.invoices.filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .not().paymentStatusEqualTo('Cancelled')
+        .and()
+        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+        .findAll();
+
+    final Map<int, double> partyInvoiceDues = {};
+    for (var inv in unpaidInvoices) {
+      final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
+      if (pending > 0 && inv.partyId != null) {
+        partyInvoiceDues[inv.partyId!] = (partyInvoiceDues[inv.partyId!] ?? 0.0) + pending;
+      }
+    }
+
+    final unpaidPurchases = await isar.collection<Purchase>().filter()
+        .isDeletedEqualTo(false)
+        .and()
+        .not().paymentStatusEqualTo('Cancelled')
+        .and()
+        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+        .findAll();
+
+    final Map<int, double> partyPurchaseDues = {};
+    for (var pur in unpaidPurchases) {
+      final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+      if (pending > 0 && pur.partyId != null) {
+        partyPurchaseDues[pur.partyId!] = (partyPurchaseDues[pur.partyId!] ?? 0.0) + pending;
+      }
+    }
+
     for (var p in parties) {
-      final bal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
-      if (bal <= 0) continue;
-      
       final pType = (p.partyType ?? '').trim().toLowerCase();
-      final isSupp = pType == 'supplier' || pType == 'vendor' || p.balanceType == 'credit';
+      final bType = (p.balanceType ?? '').trim().toLowerCase();
+      final isSupp = pType == 'supplier' || pType == 'vendor' || bType == 'credit' || bType == 'cr';
+
+      final dbBal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
+      final invDue = p.id != null ? (partyInvoiceDues[p.id!] ?? 0.0) : 0.0;
+      final purDue = p.id != null ? (partyPurchaseDues[p.id!] ?? 0.0) : 0.0;
 
       if (isSupp) {
-        totalPayable += bal;
+        totalPayable += (purDue > 0) ? purDue : (dbBal > 0 ? dbBal : 0.0);
       } else {
-        totalOutstanding += bal;
+        totalOutstanding += (invDue > 0) ? invDue : (dbBal > 0 ? dbBal : 0.0);
       }
     }
 

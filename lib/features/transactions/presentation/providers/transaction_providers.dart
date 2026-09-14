@@ -8,6 +8,9 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 import 'package:business_sahaj_erp/domain/repositories/transaction_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/transaction_repository_impl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
+import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:flutter/material.dart';
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
@@ -524,4 +527,281 @@ final recentTransactionsProvider = FutureProvider<List<Transaction>>((ref) async
       .findAll();
 
   return recent;
+});
+
+class CreditNoteCart {
+  final Party? selectedParty;
+  final List<CartItemState> items;
+  final bool isGstInclusive;
+  final double discountPercent;
+  final double discountAmount;
+  final DateTime date;
+  final String remarks;
+  final double? customRoundOff;
+  final String? originalInvoiceNumber;
+  final String? originalInvoiceUuid;
+
+  CreditNoteCart({
+    this.selectedParty,
+    this.items = const [],
+    this.isGstInclusive = true,
+    this.discountPercent = 0.0,
+    this.discountAmount = 0.0,
+    this.remarks = '',
+    this.customRoundOff,
+    this.originalInvoiceNumber,
+    this.originalInvoiceUuid,
+    DateTime? date,
+  }) : date = date ?? DateTime.now();
+
+  CreditNoteCart copyWith({
+    Party? selectedParty,
+    List<CartItemState>? items,
+    bool? isGstInclusive,
+    double? discountPercent,
+    double? discountAmount,
+    DateTime? date,
+    String? remarks,
+    double? customRoundOff,
+    String? originalInvoiceNumber,
+    String? originalInvoiceUuid,
+  }) {
+    return CreditNoteCart(
+      selectedParty: selectedParty ?? this.selectedParty,
+      items: items ?? this.items,
+      isGstInclusive: isGstInclusive ?? this.isGstInclusive,
+      discountPercent: discountPercent ?? this.discountPercent,
+      discountAmount: discountAmount ?? this.discountAmount,
+      date: date ?? this.date,
+      remarks: remarks ?? this.remarks,
+      customRoundOff: customRoundOff ?? this.customRoundOff,
+      originalInvoiceNumber: originalInvoiceNumber ?? this.originalInvoiceNumber,
+      originalInvoiceUuid: originalInvoiceUuid ?? this.originalInvoiceUuid,
+    );
+  }
+}
+
+class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
+  final GstService _gstService = GstService();
+
+  CreditNoteCartNotifier() : super(CreditNoteCart());
+
+  void setParty(Party? party) {
+    state = state.copyWith(selectedParty: party);
+  }
+
+  void addItem(Item item, {double qty = 1.0}) {
+    final rate = item.sellRate ?? 0.0;
+    final gst = item.gstRate ?? 18.0;
+    final defaultUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+
+    final newItem = CartItemState(
+      item: item,
+      quantity: qty,
+      unit: defaultUnit,
+      rate: rate,
+      gstPercent: gst,
+    );
+
+    state = state.copyWith(items: [...state.items, newItem]);
+  }
+
+  void updateItemAt(
+    int index, {
+    double? quantity,
+    double? freeQuantity,
+    String? unit,
+    double? rate,
+    double? discountPercent,
+    double? discountAmount,
+    String? batchNumber,
+    String? expiryDate,
+    String? mfgDate,
+  }) {
+    if (index < 0 || index >= state.items.length) return;
+
+    final current = state.items[index];
+
+    double finalDiscPercent = discountPercent ?? current.discountPercent;
+    double finalDiscAmount = discountAmount ?? current.discountAmount;
+
+    if (discountPercent != null) {
+      final targetRate = rate ?? current.rate;
+      final targetQty = quantity ?? current.quantity;
+      finalDiscAmount = (targetRate * targetQty) * (discountPercent / 100.0);
+    } else if (discountAmount != null) {
+      final targetRate = rate ?? current.rate;
+      final targetQty = quantity ?? current.quantity;
+      final totalBase = targetRate * targetQty;
+      finalDiscPercent = totalBase > 0 ? (discountAmount / totalBase) * 100.0 : 0.0;
+    }
+
+    final updated = current.copyWith(
+      quantity: quantity,
+      freeQuantity: freeQuantity,
+      unit: unit,
+      rate: rate,
+      discountPercent: finalDiscPercent,
+      discountAmount: finalDiscAmount,
+      batchNumber: batchNumber,
+      expiryDate: expiryDate,
+      mfgDate: mfgDate,
+    );
+
+    final updatedList = List<CartItemState>.from(state.items);
+    updatedList[index] = updated;
+    state = state.copyWith(items: updatedList);
+  }
+  
+  void updateItem(
+    String itemUuid, {
+    double? quantity,
+    double? freeQuantity,
+    String? unit,
+    double? rate,
+    double? discountPercent,
+    double? discountAmount,
+  }) {
+    final index = state.items.indexWhere((element) => element.item.uuid == itemUuid);
+    if (index == -1) return;
+    updateItemAt(
+      index,
+      quantity: quantity,
+      freeQuantity: freeQuantity,
+      unit: unit,
+      rate: rate,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
+    );
+  }
+
+  void removeItemAt(int index) {
+    if (index < 0 || index >= state.items.length) return;
+    final updatedList = List<CartItemState>.from(state.items);
+    updatedList.removeAt(index);
+    state = state.copyWith(items: updatedList);
+  }
+
+  void toggleGstInclusive(bool val) {
+    state = state.copyWith(isGstInclusive: val);
+  }
+
+  void setDate(DateTime date) {
+    state = state.copyWith(date: date);
+  }
+
+  void setRemarks(String remarks) {
+    state = state.copyWith(remarks: remarks);
+  }
+
+  void setCustomRoundOff(double? val) {
+    state = CreditNoteCart(
+      selectedParty: state.selectedParty,
+      items: state.items,
+      isGstInclusive: state.isGstInclusive,
+      discountPercent: state.discountPercent,
+      discountAmount: state.discountAmount,
+      date: state.date,
+      remarks: state.remarks,
+      customRoundOff: val,
+      originalInvoiceNumber: state.originalInvoiceNumber,
+      originalInvoiceUuid: state.originalInvoiceUuid,
+    );
+  }
+
+  void setDiscounts(double? percent, double? amount) {
+    state = state.copyWith(
+      discountPercent: percent ?? state.discountPercent,
+      discountAmount: amount ?? state.discountAmount,
+    );
+  }
+
+  void setOriginalInvoice(String? number, String? uuid) {
+    state = state.copyWith(
+      originalInvoiceNumber: number,
+      originalInvoiceUuid: uuid,
+    );
+  }
+  
+  void loadCreditNote({
+    required Party party,
+    required Transaction creditNote,
+    required List<CartItemState> items,
+    bool isGstInclusive = false,
+  }) {
+    state = CreditNoteCart(
+      selectedParty: party,
+      items: items,
+      isGstInclusive: isGstInclusive,
+      discountPercent: creditNote.discountPercent ?? 0.0,
+      discountAmount: creditNote.discountAmount ?? 0.0,
+      date: creditNote.transactionDate ?? DateTime.now(),
+      remarks: creditNote.remarks ?? '',
+      customRoundOff: creditNote.roundOff,
+      originalInvoiceNumber: creditNote.referenceNumber,
+      originalInvoiceUuid: creditNote.linkedBillUuid,
+    );
+  }
+
+  void clear() {
+    state = CreditNoteCart();
+  }
+
+  Map<String, double> calculateTotals(String? companyGst) {
+    double subtotal = 0.0;
+    double totalGst = 0.0;
+    double totalDiscount = 0.0;
+    double cgst = 0.0;
+    double sgst = 0.0;
+    double igst = 0.0;
+
+    final partyGst = state.selectedParty?.gstNumber;
+    final partyState = state.selectedParty?.state;
+
+    for (var cartItem in state.items) {
+      final res = _gstService.calculateTax(
+        rate: cartItem.rate,
+        quantity: cartItem.quantity,
+        gstRatePercent: cartItem.gstPercent,
+        isInclusive: state.isGstInclusive,
+        itemDiscountAmount: cartItem.discountAmount,
+        companyGst: companyGst,
+        partyGst: partyGst,
+        partyState: partyState,
+      );
+
+      subtotal += res.taxableAmount;
+      totalGst += res.gstAmount;
+      totalDiscount += cartItem.discountAmount;
+      cgst += res.cgstAmount;
+      sgst += res.sgstAmount;
+      igst += res.igstAmount;
+    }
+
+    // Apply Order Level Discount
+    double orderDiscountVal = state.discountAmount;
+    if (state.discountPercent > 0) {
+      orderDiscountVal = (subtotal + totalGst) * (state.discountPercent / 100.0);
+    }
+    totalDiscount += orderDiscountVal;
+
+    final double rawGrandTotal = (subtotal + totalGst) - orderDiscountVal;
+    final double roundOff = state.customRoundOff ?? (rawGrandTotal.roundToDouble() - rawGrandTotal);
+    final double roundedGrandTotal = rawGrandTotal + roundOff;
+
+    return {
+      'subtotal': subtotal,
+      'discountAmount': totalDiscount,
+      'totalGST': totalGst,
+      'cgst': cgst,
+      'sgst': sgst,
+      'igst': igst,
+      'roundOff': roundOff,
+      'grandTotal': roundedGrandTotal < 0 ? 0.0 : roundedGrandTotal,
+    };
+  }
+}
+
+final creditNoteCartProvider = StateNotifierProvider<CreditNoteCartNotifier, CreditNoteCart>((ref) {
+  return CreditNoteCartNotifier();
 });

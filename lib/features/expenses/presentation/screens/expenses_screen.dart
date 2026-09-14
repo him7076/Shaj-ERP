@@ -262,9 +262,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
               });
             },
           ),
-          // 📊 Excel Operations Popup Menu
+          // 3-dot menu
           PopupMenuButton<String>(
-            icon: const Icon(Icons.table_chart_rounded, size: 20),
+            icon: const Icon(Icons.more_vert, size: 20),
             tooltip: 'Excel Options',
             onSelected: (val) {
               if (val == 'import_excel') {
@@ -321,40 +321,6 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 ),
               ),
             ],
-          ),
-          // 🔄 Refresh Button
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-            onPressed: () => ref.invalidate(expenseListProvider),
-            tooltip: 'Refresh Expenses',
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      floatingActionButton: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'import_expenses_excel_fab',
-            backgroundColor: Colors.green.shade700,
-            foregroundColor: Colors.white,
-            onPressed: _importFromExcel,
-            icon: const Icon(Icons.file_upload_rounded),
-            label: const Text('Import Excel'),
-          ),
-          const SizedBox(width: 12),
-          FloatingActionButton.extended(
-            heroTag: 'add_expense_fab',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddEditExpenseScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.add_card_rounded),
-            label: const Text('Record Expense'),
           ),
         ],
       ),
