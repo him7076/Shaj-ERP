@@ -398,12 +398,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                       ref.read(creditNoteCartProvider.notifier).setParty(party);
                                       ref.read(unsavedChangesProvider.notifier).state = true;
                                     },
-                                    decoration: InputDecoration(
-                                      labelText: 'Party (Customer/Supplier) *',
-                                      hintText: 'Search or select party',
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                      prefixIcon: const Icon(Icons.person),
-                                    ),
+                                    labelText: 'Party (Customer/Supplier) *',
                                   ),
                                 ),
                                 if (!isMobile) const SizedBox(width: 16),
@@ -704,6 +699,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     );
   }
 }
+
 
 
 
