@@ -1097,6 +1097,26 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                initialBillNumber: txn.transactionNumber,
                                                initialAmount: txn.amount ?? 0.0,
                                              );
+                                           } else if (action == 'create_credit_note') {
+                                             Navigator.of(context, rootNavigator: true).push(
+                                               MaterialPageRoute(
+                                                 builder: (context) => AddEditCreditNoteScreen(
+                                                   initialPartyUuid: txn.partyUuid,
+                                                   initialInvoiceNumber: txn.transactionNumber,
+                                                   initialInvoiceUuid: txn.uuid,
+                                                 ),
+                                               ),
+                                             ).then((_) => ref.invalidate(filteredTransactionsProvider));
+                                           } else if (action == 'create_debit_note') {
+                                             Navigator.of(context, rootNavigator: true).push(
+                                               MaterialPageRoute(
+                                                 builder: (context) => AddEditDebitNoteScreen(
+                                                   initialPartyUuid: txn.partyUuid,
+                                                   initialInvoiceNumber: txn.transactionNumber,
+                                                   initialInvoiceUuid: txn.uuid,
+                                                 ),
+                                               ),
+                                             ).then((_) => ref.invalidate(filteredTransactionsProvider));
                                            } else if (action == 'delete') {
                                             final confirm = await showDialog<bool>(
                                               context: context,
@@ -1142,7 +1162,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                             ),
-                                          if (txn.transactionType == 'Sales')
+                                          if (txn.transactionType == 'Sales') ...[
                                             const PopupMenuItem(
                                               value: 'receive_payment',
                                               child: ListTile(
@@ -1151,7 +1171,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                             ),
-                                          if (txn.transactionType == 'Purchase')
+                                            const PopupMenuItem(
+                                              value: 'create_credit_note',
+                                              child: ListTile(
+                                                leading: Icon(Icons.keyboard_return_rounded, size: 20, color: Colors.orange),
+                                                title: Text('Create Credit Note', style: TextStyle(color: Colors.orange)),
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                            ),
+                                          ],
+                                          if (txn.transactionType == 'Purchase') ...[
                                             const PopupMenuItem(
                                               value: 'make_payment',
                                               child: ListTile(
@@ -1160,6 +1189,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                 contentPadding: EdgeInsets.zero,
                                               ),
                                             ),
+                                            const PopupMenuItem(
+                                              value: 'create_debit_note',
+                                              child: ListTile(
+                                                leading: Icon(Icons.keyboard_return_rounded, size: 20, color: Colors.orange),
+                                                title: Text('Create Debit Note', style: TextStyle(color: Colors.orange)),
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                            ),
+                                          ],
                                           const PopupMenuItem(
                                             value: 'delete',
                                             child: ListTile(

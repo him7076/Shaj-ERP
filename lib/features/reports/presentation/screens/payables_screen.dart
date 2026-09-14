@@ -40,7 +40,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                 .and()
                 .not().paymentStatusEqualTo('Cancelled')
                 .and()
-                .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+                .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid').or().paymentStatusIsNull())
                 .findAll(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {

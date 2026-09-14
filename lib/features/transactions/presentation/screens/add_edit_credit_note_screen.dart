@@ -25,6 +25,8 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:uuid/uuid.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 
 class AddEditCreditNoteScreen extends ConsumerStatefulWidget {
   final String? creditNoteUuid;
@@ -89,8 +91,158 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
           _originalInvoiceController.text = widget.initialInvoiceNumber!;
           ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(widget.initialInvoiceNumber, widget.initialInvoiceUuid);
         }
+        if (widget.initialInvoiceUuid != null) {
+          await _loadInitialInvoiceData();
+        }
       }
     });
+  }
+
+  Future<void> _loadInitialInvoiceData() async {
+    try {
+      final db = ref.read(databaseServiceProvider).isar;
+      final invoice = await db.invoices.filter().uuidEqualTo(widget.initialInvoiceUuid).findFirst();
+      if (invoice != null) {
+        List<InvoiceItem> itemsList = await db.invoiceItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) => q.parentInvoiceIdEqualTo(invoice.id).or().parentInvoiceUuidEqualTo(invoice.uuid))
+            .findAll();
+        
+        if (itemsList.isEmpty) {
+          try { await invoice.invoiceItems.load(); } catch (_) {}
+          try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
+        }
+
+        final List<CartItemState> cartItems = [];
+        for (var item in itemsList) {
+          Item? dbItem;
+          if (item.itemId != null && item.itemId! > 0) {
+            dbItem = await db.items.get(item.itemId!);
+          }
+          if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
+            dbItem = await db.items.filter().itemNameEqualTo(item.itemName!).findFirst();
+          }
+          if (dbItem == null) {
+            try { await item.item.load(); } catch (_) {}
+            try { dbItem = item.item.value; } catch (_) {}
+          }
+          if (dbItem != null) {
+            final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
+            final discPct = totalBase > 0 ? ((item.discount ?? 0.0) / totalBase) * 100.0 : 0.0;
+
+            cartItems.add(
+              CartItemState(
+                item: dbItem,
+                quantity: item.quantity ?? 1.0,
+                freeQuantity: item.freeQuantity ?? 0.0,
+                unit: (item.unit != null && item.unit!.isNotEmpty && item.unit != 'PCS') 
+                    ? item.unit! 
+                    : (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? item.unit ?? 'PCS'),
+                rate: item.rate ?? 0.0,
+                discountPercent: discPct,
+                discountAmount: item.discount ?? 0.0,
+                gstPercent: item.gstRate ?? 18.0,
+                batchNumber: item.batchNumber,
+                expiryDate: item.expiryDate,
+                mfgDate: item.mfgDate,
+              ),
+            );
+          }
+        }
+        
+        Party? party;
+        if (invoice.partyId != null && invoice.partyId! > 0) {
+          party = await db.partys.get(invoice.partyId!);
+        }
+        if (party == null && invoice.partyName != null && invoice.partyName!.isNotEmpty) {
+          party = await db.partys.filter().partyNameEqualTo(invoice.partyName!).findFirst();
+        }
+        if (party == null) {
+          try { await invoice.party.load(); } catch (_) {}
+          try { party = invoice.party.value; } catch (_) {}
+        }
+
+        if (party != null && cartItems.isNotEmpty) {
+          ref.read(creditNoteCartProvider.notifier).loadCreditNote(
+            party: party,
+            creditNote: Transaction()..transactionDate = _creditNoteDate..remarks = invoice.remarks..referenceNumber = invoice.invoiceNumber..linkedBillUuid = invoice.uuid,
+            items: cartItems,
+            isGstInclusive: false,
+          );
+          if (mounted) {
+            setState(() {});
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading initial invoice data: $e');
+    }
+  }
+
+  Future<void> _showLinkInvoiceDialog() async {
+    final cart = ref.read(creditNoteCartProvider);
+    if (cart.selectedParty == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a party first')));
+      return;
+    }
+
+    final db = ref.read(databaseServiceProvider).isar;
+    final partyId = cart.selectedParty!.id;
+    final partyUuid = cart.selectedParty!.uuid;
+    final pNameLower = cart.selectedParty!.partyName?.trim().toLowerCase();
+
+    final allInvoices = await db.invoices.filter().isDeletedEqualTo(false).findAll();
+    
+    final partyInvoices = allInvoices.where((inv) {
+      return (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
+             (partyId > 0 && inv.partyId == partyId) ||
+             (pNameLower != null && pNameLower.isNotEmpty && inv.partyName?.trim().toLowerCase() == pNameLower);
+    }).toList();
+
+    partyInvoices.sort((a, b) => (b.invoiceDate ?? DateTime.now()).compareTo(a.invoiceDate ?? DateTime.now()));
+
+    if (!mounted) return;
+
+    final selectedInvoice = await showDialog<Invoice>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Invoice to Link'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: partyInvoices.isEmpty 
+              ? const Center(child: Text('No invoices found for this party.'))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: partyInvoices.length,
+                  itemBuilder: (context, index) {
+                    final inv = partyInvoices[index];
+                    return ListTile(
+                      title: Text(inv.invoiceNumber ?? 'Unknown'),
+                      subtitle: Text('Date: ${inv.invoiceDate != null ? DateFormat('dd MMM yyyy').format(inv.invoiceDate!) : '-'} | Amount: ₹${inv.grandTotal?.toStringAsFixed(2) ?? '0.00'}'),
+                      trailing: (inv.uuid == widget.initialInvoiceUuid) 
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : null,
+                      onTap: () => Navigator.pop(context, inv),
+                    );
+                  },
+                ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ],
+        );
+      },
+    );
+
+    if (selectedInvoice != null) {
+      _originalInvoiceController.text = selectedInvoice.invoiceNumber ?? '';
+      ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(selectedInvoice.invoiceNumber, selectedInvoice.uuid);
+      setState(() {});
+    }
   }
 
   Future<void> _loadCompanySettings() async {
@@ -413,6 +565,41 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                 if (!isMobile)
                                   Expanded(
                                     flex: 1,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextFormField(
+                                            controller: _originalInvoiceController,
+                                            decoration: InputDecoration(
+                                              labelText: 'Original Invoice No.',
+                                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                              prefixIcon: const Icon(Icons.receipt_long),
+                                            ),
+                                            onChanged: (val) {
+                                              ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(val, null);
+                                              ref.read(unsavedChangesProvider.notifier).state = true;
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton.icon(
+                                          onPressed: _showLinkInvoiceDialog,
+                                          icon: const Icon(Icons.link, size: 18),
+                                          label: const Text('Link Invoice'),
+                                          style: ElevatedButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            if (isMobile) const SizedBox(height: 16),
+                            if (isMobile)
+                              Row(
+                                children: [
+                                  Expanded(
                                     child: TextFormField(
                                       controller: _originalInvoiceController,
                                       decoration: InputDecoration(
@@ -426,21 +613,16 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                       },
                                     ),
                                   ),
-                              ],
-                            ),
-                            if (isMobile) const SizedBox(height: 16),
-                            if (isMobile)
-                              TextFormField(
-                                controller: _originalInvoiceController,
-                                decoration: InputDecoration(
-                                  labelText: 'Original Invoice No.',
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  prefixIcon: const Icon(Icons.receipt_long),
-                                ),
-                                onChanged: (val) {
-                                  ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(val, null);
-                                  ref.read(unsavedChangesProvider.notifier).state = true;
-                                },
+                                  const SizedBox(width: 8),
+                                  ElevatedButton.icon(
+                                    onPressed: _showLinkInvoiceDialog,
+                                    icon: const Icon(Icons.link, size: 18),
+                                    label: const Text('Link Invoice'),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                    ),
+                                  ),
+                                ],
                               ),
                           ],
                         ),

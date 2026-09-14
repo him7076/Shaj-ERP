@@ -15,9 +15,20 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 
 class AddEditDebitNoteScreen extends ConsumerStatefulWidget {
-  const AddEditDebitNoteScreen({Key? key}) : super(key: key);
+  final String? initialPartyUuid;
+  final String? initialInvoiceNumber;
+  final String? initialInvoiceUuid;
+
+  const AddEditDebitNoteScreen({
+    Key? key,
+    this.initialPartyUuid,
+    this.initialInvoiceNumber,
+    this.initialInvoiceUuid,
+  }) : super(key: key);
 
   @override
   ConsumerState<AddEditDebitNoteScreen> createState() => _AddEditDebitNoteScreenState();
@@ -63,6 +74,148 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       setState(() {
         _previewNumber = num;
         _companyGst = companySettings?.companyGST;
+      });
+    }
+
+    if (widget.initialPartyUuid != null) {
+      final party = await isar.partys.filter().uuidEqualTo(widget.initialPartyUuid).findFirst();
+      if (party != null && mounted) {
+        setState(() => _selectedParty = party);
+      }
+    }
+    if (widget.initialInvoiceNumber != null) {
+      _originalPurchaseController.text = widget.initialInvoiceNumber!;
+    }
+    if (widget.initialInvoiceUuid != null) {
+      await _loadInitialPurchaseData(isar);
+    }
+  }
+
+  Future<void> _loadInitialPurchaseData(Isar db) async {
+    try {
+      final purchase = await db.purchases.filter().uuidEqualTo(widget.initialInvoiceUuid).findFirst();
+      if (purchase != null) {
+        List<PurchaseItem> itemsList = await db.purchaseItems
+            .filter()
+            .isDeletedEqualTo(false)
+            .and()
+            .group((q) => q.parentPurchaseIdEqualTo(purchase.id).or().parentPurchaseUuidEqualTo(purchase.uuid))
+            .findAll();
+        
+        if (itemsList.isEmpty) {
+          try { await purchase.purchaseItems.load(); } catch (_) {}
+          try { itemsList = purchase.purchaseItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
+        }
+
+        final List<DebitNoteItem> debitItems = [];
+        for (var item in itemsList) {
+          Item? dbItem;
+          if (item.itemId != null && item.itemId! > 0) {
+            dbItem = await db.items.get(item.itemId!);
+          }
+          if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
+            dbItem = await db.items.filter().itemNameEqualTo(item.itemName!).findFirst();
+          }
+          if (dbItem == null) {
+            try { await item.item.load(); } catch (_) {}
+            try { dbItem = item.item.value; } catch (_) {}
+          }
+          
+          if (dbItem != null) {
+            final taxable = (item.rate ?? 0.0) * (item.quantity ?? 1.0) - (item.discount ?? 0.0);
+            final gst = taxable * (item.gstRate ?? 18.0) / 100.0;
+
+            final dItem = DebitNoteItem()
+              ..itemId = dbItem.id
+              ..itemName = dbItem.itemName
+              ..hsnCode = dbItem.hsnCode
+              ..quantity = item.quantity ?? 1.0
+              ..rate = item.rate ?? 0.0
+              ..discount = item.discount ?? 0.0
+              ..taxableAmount = taxable
+              ..gstRate = item.gstRate ?? 18.0
+              ..gstAmount = gst
+              ..totalAmount = taxable + gst
+              ..batchNumber = item.batchNumber
+              ..mfgDate = item.mfgDate
+              ..expiryDate = item.expiryDate;
+            
+            if (!kIsWeb) dItem.item.value = dbItem;
+            debitItems.add(dItem);
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _items.clear();
+            _items.addAll(debitItems);
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading initial purchase data: $e');
+    }
+  }
+
+  Future<void> _showLinkPurchaseDialog() async {
+    if (_selectedParty == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a supplier first')));
+      return;
+    }
+
+    final db = ref.read(databaseServiceProvider).isar;
+    final partyId = _selectedParty!.id;
+    final partyUuid = _selectedParty!.uuid;
+    final pNameLower = _selectedParty!.partyName?.trim().toLowerCase();
+
+    final allPurchases = await db.purchases.filter().isDeletedEqualTo(false).findAll();
+    
+    final partyPurchases = allPurchases.where((pur) {
+      return (partyUuid != null && partyUuid.isNotEmpty && pur.party.value?.uuid == partyUuid) ||
+             (partyId > 0 && pur.partyId == partyId) ||
+             (pNameLower != null && pNameLower.isNotEmpty && pur.partyName?.trim().toLowerCase() == pNameLower);
+    }).toList();
+
+    partyPurchases.sort((a, b) => (b.purchaseDate ?? DateTime.now()).compareTo(a.purchaseDate ?? DateTime.now()));
+
+    if (!mounted) return;
+
+    final selectedPurchase = await showDialog<Purchase>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Purchase to Link'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 400,
+            child: partyPurchases.isEmpty 
+              ? const Center(child: Text('No purchases found for this supplier.'))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: partyPurchases.length,
+                  itemBuilder: (context, index) {
+                    final pur = partyPurchases[index];
+                    return ListTile(
+                      title: Text(pur.purchaseNumber ?? 'Unknown'),
+                      subtitle: Text('Date: ${pur.purchaseDate != null ? DateFormat('dd MMM yyyy').format(pur.purchaseDate!) : '-'} | Amount: ₹${pur.grandTotal?.toStringAsFixed(2) ?? '0.00'}'),
+                      trailing: (pur.uuid == widget.initialInvoiceUuid) 
+                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          : null,
+                      onTap: () => Navigator.pop(context, pur),
+                    );
+                  },
+                ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ],
+        );
+      },
+    );
+
+    if (selectedPurchase != null) {
+      setState(() {
+        _originalPurchaseController.text = selectedPurchase.purchaseNumber ?? '';
       });
     }
   }
@@ -678,13 +831,28 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   }
 
   Widget _buildInvoiceRefField() {
-    return TextFormField(
-      controller: _originalPurchaseController,
-      decoration: const InputDecoration(
-        labelText: 'Original Purchase Reference No.',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.receipt_long_outlined),
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _originalPurchaseController,
+            decoration: const InputDecoration(
+              labelText: 'Original Purchase Reference No.',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.receipt_long_outlined),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton.icon(
+          onPressed: _showLinkPurchaseDialog,
+          icon: const Icon(Icons.link, size: 18),
+          label: const Text('Link Bill'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+        ),
+      ],
     );
   }
 

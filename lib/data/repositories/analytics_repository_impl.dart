@@ -141,7 +141,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .and()
         .not().paymentStatusEqualTo('Cancelled')
         .and()
-        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid').or().paymentStatusIsNull())
         .findAll();
 
     final Map<int, double> partyInvoiceDues = {};
@@ -157,7 +157,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
         .and()
         .not().paymentStatusEqualTo('Cancelled')
         .and()
-        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
+        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid').or().paymentStatusIsNull())
         .findAll();
 
     final Map<int, double> partyPurchaseDues = {};
