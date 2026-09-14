@@ -329,6 +329,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
     final cartState = ref.watch(creditNoteCartProvider);
+    final partiesAsync = ref.watch(partiesListProvider);
     final totals = ref.read(creditNoteCartProvider.notifier).calculateTotals(_companyGst);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
 
@@ -392,13 +393,20 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                               children: [
                                 Expanded(
                                   flex: 2,
-                                  child: SearchablePartyDropdown(
-                                    selectedParty: cartState.selectedParty,
-                                    onChanged: (party) {
-                                      ref.read(creditNoteCartProvider.notifier).setParty(party);
-                                      ref.read(unsavedChangesProvider.notifier).state = true;
+                                  child: partiesAsync.when(
+                                    data: (parties) {
+                                      return SearchablePartyDropdown(
+                                        parties: parties,
+                                        selectedParty: cartState.selectedParty,
+                                        onChanged: (party) {
+                                          ref.read(creditNoteCartProvider.notifier).setParty(party);
+                                          ref.read(unsavedChangesProvider.notifier).state = true;
+                                        },
+                                        labelText: 'Party (Customer/Supplier) *',
+                                      );
                                     },
-                                    labelText: 'Party (Customer/Supplier) *',
+                                    loading: () => const Center(child: CircularProgressIndicator()),
+                                    error: (e, st) => Center(child: Text('Error loading parties: $e')),
                                   ),
                                 ),
                                 if (!isMobile) const SizedBox(width: 16),
