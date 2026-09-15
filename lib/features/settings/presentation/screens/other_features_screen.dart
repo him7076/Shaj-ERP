@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
-import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class OtherFeaturesScreen extends ConsumerStatefulWidget {
   const OtherFeaturesScreen({Key? key}) : super(key: key);
@@ -54,8 +54,9 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Other Features',
+      appBar: AppBar(
+        title: const Text('Other Features'),
+        centerTitle: true,
       ),
       backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
       body: ListView(
