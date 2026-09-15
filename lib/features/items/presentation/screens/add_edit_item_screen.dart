@@ -872,6 +872,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             final map = entry.value;
             final cItem = map['item'] as Item;
             final cUnit = map['unit'] as String;
+            final cQty = map['qty'] as double;
             
             // Build unit choices based on item configuration
             final List<String> availableUnits = [];

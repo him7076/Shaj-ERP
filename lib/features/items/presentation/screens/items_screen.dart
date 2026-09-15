@@ -17,6 +17,7 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_
 import 'package:business_sahaj_erp/features/items/presentation/screens/item_detail_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/item_excel_import_service.dart';
@@ -570,7 +571,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           );
           ref.invalidate(filteredItemsProvider);
         },
-      ),
       ),
     );
 

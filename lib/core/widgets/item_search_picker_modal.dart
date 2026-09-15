@@ -4,6 +4,7 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
 class ItemSearchPickerModal extends ConsumerStatefulWidget {
   final bool isPurchase;
