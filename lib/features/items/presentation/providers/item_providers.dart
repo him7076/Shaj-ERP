@@ -162,7 +162,11 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
   }
 
   if (filter.isBundle != null) {
-      queryBuilder = queryBuilder.and().isBundleEqualTo(filter.isBundle!);
+      if (filter.isBundle == true) {
+        queryBuilder = queryBuilder.and().isBundleEqualTo(true);
+      } else {
+        queryBuilder = queryBuilder.and().not().isBundleEqualTo(true);
+      }
   }
   
   // If there's no dart-side filtering, push pagination to DB
