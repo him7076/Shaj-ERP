@@ -82,6 +82,11 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       }
       invoice.invoiceStatus = 'Active';
 
+      final allItems = await isar.items.findAll();
+      final targetItemMap = {for (var i in allItems) i.id: i};
+      final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
+      final modifiedItems = <int, Item>{};
+
       await isar.writeTxn(() async {
         // Fetch old invoice before putting (if editing)
         Invoice? oldInvoice;
@@ -163,10 +168,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                  for (int i = 0; i < uuids.length; i++) {
                    final cuuid = uuids[i];
                    final cqty = qts.length > i ? qts[i] : 1.0;
-                   final cItem = await isar.items.filter().uuidEqualTo(cuuid).findFirst();
+                   final cItem = itemUuidMap[cuuid];
                    if (cItem != null) {
                      cItem.currentStock = (cItem.currentStock ?? 0.0) + (restoredQty * cqty);
-                     await isar.items.put(cItem);
+                     modifiedItems[cItem.id] = cItem;
 
                      final adj = StockAdjustment()
                         ..uuid = _generateUuid()
@@ -185,19 +190,16 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                  }
               } else {
                 dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
-                await isar.items.put(dbItem);
+                modifiedItems[dbItem.id] = dbItem;
               }
             }
           }
         }
 
         // 4. Put new InvoiceItems & Deduct Stock in batch
-        final itemIds = items.map((i) => i.itemId ?? 0).where((id) => id > 0).toSet();
-        final fetchedItems = await isar.items.getAll(itemIds.toList());
-        final Map<int, Item> targetItemMap = {
-          for (var item in fetchedItems)
-            if (item != null) item.id: item
-        };
+        // 4. Put new InvoiceItems & Deduct Stock in batch
+        // We already have targetItemMap and itemUuidMap pre-fetched
+
 
         for (var item in items) {
           item.uuid ??= _generateUuid();
@@ -238,13 +240,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                 final cuuid = uuids[i];
                 final cqty = qts.length > i ? qts[i] : 1.0;
                 
-                Item? cItem = targetItemMap.values.where((it) => it.uuid == cuuid).firstOrNull;
-                if (cItem == null) {
-                  cItem = await isar.items.filter().uuidEqualTo(cuuid).findFirst();
-                  if (cItem != null) {
-                    targetItemMap[cItem.id] = cItem;
-                  }
-                }
+                Item? cItem = itemUuidMap[cuuid];
                 
                 if (cItem != null) {
                   final double compAvailable = cItem.currentStock ?? 0.0;
@@ -257,6 +253,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   cItem.currentStock = compAvailable - compRequested;
                   final log = '[${DateTime.now().toIso8601String().substring(0,19)}] BUNDLE SOLD: -$compRequested | Bal: ${cItem.currentStock} | Invoice #${invoice.invoiceNumber}';
                   cItem.notes = cItem.notes == null || cItem.notes!.isEmpty ? log : '$log\n${cItem.notes}';
+                  modifiedItems[cItem.id] = cItem;
 
                   final adj = StockAdjustment()
                         ..uuid = _generateUuid()
@@ -283,13 +280,14 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               // Log stock movement
               final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
               dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+              modifiedItems[dbItem.id] = dbItem;
             }
           }
         }
 
         await isar.invoiceItems.putAll(items);
-        if (targetItemMap.isNotEmpty) {
-          await isar.items.putAll(targetItemMap.values.toList());
+        if (modifiedItems.isNotEmpty) {
+          await isar.items.putAll(modifiedItems.values.toList());
         }
 
         // 5. Add Sync Queue logs for Invoice
@@ -341,6 +339,12 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       invoice.version += 1;
       invoice.isSynced = false;
 
+      final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
+      final allItems = await isar.items.findAll();
+      final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
+      final targetItemMap = {for (var i in allItems) i.id: i};
+      final modifiedItems = <int, Item>{};
+
       await isar.writeTxn(() async {
         await collection.put(invoice);
 
@@ -353,18 +357,60 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         }
 
         // 2. Restore Stock Levels
-        final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
         for (var item in items) {
-          final dbItem = item.itemId != null ? await isar.items.get(item.itemId!) : null;
+          final dbItem = item.itemId != null ? targetItemMap[item.itemId!] : null;
           if (dbItem != null) {
-            final double qty = item.quantity ?? 0.0;
-            dbItem.currentStock = (dbItem.currentStock ?? 0.0) + qty;
-
-            final log = '[${DateTime.now().toIso8601String().substring(0,19)}] RESTORED: +$qty | Bal: ${dbItem.currentStock} | Cancel Invoice #${invoice.invoiceNumber}';
-            dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+            double restoredQty = item.quantity ?? 0.0;
             
-            await isar.items.put(dbItem);
+            // Reverse Unit Conversion if necessary
+            final convFactor = dbItem.conversionFactor ?? 1.0;
+            if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
+              final itemUnit = (item.unit ?? '').trim().toLowerCase();
+              final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
+              final pName = (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? '').trim().toLowerCase();
+              if (itemUnit == secUnit && itemUnit != pName) {
+                restoredQty = restoredQty / convFactor;
+              }
+            }
+
+            if (item.isBundle || dbItem.isBundle) {
+                 final uuids = item.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
+                 final qts = item.bundleComponentQuantities ?? dbItem.bundleComponentQuantities ?? [];
+                 final units = item.bundleComponentUnits ?? dbItem.bundleComponentUnits ?? [];
+                 for (int i = 0; i < uuids.length; i++) {
+                   final cuuid = uuids[i];
+                   final cqty = qts.length > i ? qts[i] : 1.0;
+                   final cItem = itemUuidMap[cuuid];
+                   if (cItem != null) {
+                     cItem.currentStock = (cItem.currentStock ?? 0.0) + (restoredQty * cqty);
+                     modifiedItems[cItem.id] = cItem;
+
+                     final adj = StockAdjustment()
+                        ..uuid = _generateUuid()
+                        ..itemId = cItem.id
+                        ..itemUuid = cItem.uuid
+                        ..itemName = cItem.itemName
+                        ..adjustmentType = 'Add'
+                        ..quantity = restoredQty * cqty
+                        ..unit = units.length > i ? units[i] : cItem.primaryUnitName ?? 'PCS'
+                        ..ratePerUnit = cItem.buyRate ?? 0.0
+                        ..adjustmentDate = DateTime.now()
+                        ..reason = 'Cancelled Bundle Sale #${invoice.invoiceNumber}'
+                        ..notes = 'Component of ${dbItem.itemName}';
+                     await isar.stockAdjustments.put(adj);
+                   }
+                 }
+            } else {
+              dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
+              final log = '[${DateTime.now().toIso8601String().substring(0,19)}] RESTORED: +$restoredQty | Bal: ${dbItem.currentStock} | Cancel Invoice #${invoice.invoiceNumber}';
+              dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+              modifiedItems[dbItem.id] = dbItem;
+            }
           }
+        }
+        
+        if (modifiedItems.isNotEmpty) {
+          await isar.items.putAll(modifiedItems.values.toList());
         }
 
         // 3. Sync Log
@@ -479,6 +525,11 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final List<InvoiceItem> invoiceItems = [];
       final reserveStockOnOrder = _prefs.getBool('reserve_stock_on_order') ?? false;
 
+      List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
+      final allItems = await isar.items.findAll();
+      final targetItemMap = {for (var i in allItems) i.id: i};
+      final modifiedItems = <int, Item>{};
+
       await isar.writeTxn(() async {
         // 1. Put Invoice
         final invoiceId = await isar.invoices.put(invoice);
@@ -502,7 +553,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         await isar.orders.put(order);
 
         // 5. Create InvoiceItems
-        List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
+        // sourceItems pre-fetched
 
         for (var orderItem in sourceItems) {
           
@@ -532,7 +583,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           }
           
           if (orderItem.item.value != null || orderItem.itemId != null) {
-            final dbItem = orderItem.item.value ?? (orderItem.itemId != null ? await isar.items.get(orderItem.itemId!) : null);
+            final dbItem = orderItem.item.value ?? (orderItem.itemId != null ? targetItemMap[orderItem.itemId!] : null);
             if (dbItem != null) {
               if (!kIsWeb) invItem.item.value = dbItem;
               
@@ -550,11 +601,15 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                 final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Convert Order #${order.orderNumber}';
                 dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
                 
-                await isar.items.put(dbItem);
+                modifiedItems[dbItem.id] = dbItem;
               }
             }
           }
           invoiceItems.add(invItem);
+        }
+
+        if (modifiedItems.isNotEmpty) {
+          await isar.items.putAll(modifiedItems.values.toList());
         }
         // 6. Sync logs for Invoice
         final invoiceQueue = SyncQueue()
