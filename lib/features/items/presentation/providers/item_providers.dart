@@ -84,6 +84,7 @@ class ItemSearchFilter {
   final double? gstRate;
   final String sortBy; // 'Name A-Z', 'Name Z-A', 'Price L-H', 'Price H-L', 'Stock L-H', 'Stock H-L'
   final int limit;
+  final bool? isBundle;
 
   const ItemSearchFilter({
     this.query = '',
@@ -93,6 +94,7 @@ class ItemSearchFilter {
     this.gstRate,
     this.sortBy = 'Name A-Z',
     this.limit = 50,
+    this.isBundle,
   });
 
   ItemSearchFilter copyWith({
@@ -103,6 +105,7 @@ class ItemSearchFilter {
     double? gstRate,
     String? sortBy,
     int? limit,
+    bool? isBundle,
   }) {
     return ItemSearchFilter(
       query: query ?? this.query,
@@ -112,6 +115,7 @@ class ItemSearchFilter {
       gstRate: gstRate ?? this.gstRate,
       sortBy: sortBy ?? this.sortBy,
       limit: limit ?? this.limit,
+      isBundle: isBundle ?? this.isBundle,
     );
   }
 }
@@ -155,6 +159,10 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
   
   if (filter.gstRate != null) {
       queryBuilder = queryBuilder.and().gstRateEqualTo(filter.gstRate);
+  }
+
+  if (filter.isBundle != null) {
+      queryBuilder = queryBuilder.and().isBundleEqualTo(filter.isBundle!);
   }
   
   // If there's no dart-side filtering, push pagination to DB

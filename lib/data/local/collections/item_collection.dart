@@ -73,6 +73,7 @@ class Item implements IsarModel {
   bool isBundle = false;
   List<String>? bundleComponentUuids;
   List<double>? bundleComponentQuantities;
+  List<String>? bundleComponentUnits;
 
   // Isar Links
   final category = IsarLink<Category>();

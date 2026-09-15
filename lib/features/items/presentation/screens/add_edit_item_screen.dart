@@ -18,8 +18,9 @@ import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 class AddEditItemScreen extends ConsumerStatefulWidget {
   final String? itemUuid;
   final Item? prefilledItem;
+  final bool initialIsBundle;
 
-  const AddEditItemScreen({Key? key, this.itemUuid, this.prefilledItem}) : super(key: key);
+  const AddEditItemScreen({Key? key, this.itemUuid, this.prefilledItem, this.initialIsBundle = false}) : super(key: key);
 
   @override
   ConsumerState<AddEditItemScreen> createState() => _AddEditItemScreenState();
@@ -113,6 +114,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       _loadPrefilledItem(widget.prefilledItem!);
     } else {
       _loadNextCode();
+      setState(() {
+        _isBundle = widget.initialIsBundle;
+      });
     }
 
     // Pre-populate HSN suggestions
@@ -249,9 +253,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           for (int i = 0; i < item.bundleComponentUuids!.length; i++) {
              final cuuid = item.bundleComponentUuids![i];
              final cqty = item.bundleComponentQuantities != null && item.bundleComponentQuantities!.length > i ? item.bundleComponentQuantities![i] : 1.0;
+             final cunit = item.bundleComponentUnits != null && item.bundleComponentUnits!.length > i ? item.bundleComponentUnits![i] : 'PCS';
              final citem = itemsList.where((it) => it.uuid == cuuid).firstOrNull;
              if (citem != null) {
-               _bundleComponents.add({'item': citem, 'qty': cqty});
+               _bundleComponents.add({'item': citem, 'qty': cqty, 'unit': cunit});
              }
           }
         }
@@ -615,9 +620,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       if (_isBundle) {
         item.bundleComponentUuids = _bundleComponents.map((c) => (c['item'] as Item).uuid!).toList();
         item.bundleComponentQuantities = _bundleComponents.map((c) => (c['qty'] as double)).toList();
+        item.bundleComponentUnits = _bundleComponents.map((c) => (c['unit'] as String)).toList();
       } else {
         item.bundleComponentUuids = null;
         item.bundleComponentQuantities = null;
+        item.bundleComponentUnits = null;
       }
 
       final conv = double.tryParse(_conversionController.text.trim()) ?? 1.0;
@@ -845,7 +852,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                     final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.id);
                     if (!exists) {
                       setState(() {
-                        _bundleComponents.add({'item': selected, 'qty': 1.0});
+                        _bundleComponents.add({
+                          'item': selected, 
+                          'qty': 1.0, 
+                          'unit': selected.primaryUnitName ?? 'PCS'
+                        });
                       });
                     }
                   }
@@ -860,12 +871,21 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             final idx = entry.key;
             final map = entry.value;
             final cItem = map['item'] as Item;
-            final cQty = map['qty'] as double;
+            final cUnit = map['unit'] as String;
+            
+            // Build unit choices based on item configuration
+            final List<String> availableUnits = [];
+            if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) availableUnits.add(cItem.primaryUnitName!);
+            if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) availableUnits.add(cItem.secondaryUnit!);
+            if (cItem.tertiaryUnit != null && cItem.tertiaryUnit!.isNotEmpty) availableUnits.add(cItem.tertiaryUnit!);
+            if (availableUnits.isEmpty) availableUnits.add('PCS');
+            if (!availableUnits.contains(cUnit)) availableUnits.add(cUnit); // Fallback to avoid dropdown errors
+
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text(cItem.itemName ?? 'Unknown'),
-                subtitle: Text('Unit: ${cItem.primaryUnitName ?? "PCS"}'),
+                subtitle: Text('Default Unit: ${cItem.primaryUnitName ?? "PCS"}'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -879,6 +899,23 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           final parsed = double.tryParse(val);
                           if (parsed != null) {
                             _bundleComponents[idx]['qty'] = parsed;
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 100,
+                      child: DropdownButtonFormField<String>(
+                        value: cUnit,
+                        isExpanded: true,
+                        decoration: const InputDecoration(labelText: 'Unit', isDense: true),
+                        items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _bundleComponents[idx]['unit'] = val;
+                            });
                           }
                         },
                       ),
@@ -983,8 +1020,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                         ),
                         const SizedBox(height: 28),
 
-                        _buildBasicInfoSection(categoriesAsync, brandsAsync),
                         _buildBundleSection(),
+                        _buildBasicInfoSection(categoriesAsync, brandsAsync),
                         _buildIdentificationSection(),
                         _buildPricingSection(),
                         _buildTaxationSection(hsnService),

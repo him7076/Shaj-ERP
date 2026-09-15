@@ -101,6 +101,9 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       unit: defaultUnit,
       rate: rate,
       gstPercent: gst,
+      bundleComponentUuids: item.isBundle ? item.bundleComponentUuids : null,
+      bundleComponentQuantities: item.isBundle ? item.bundleComponentQuantities : null,
+      bundleComponentUnits: item.isBundle ? item.bundleComponentUnits : null,
     );
 
     state = state.copyWith(items: [...state.items, newItem]);
@@ -117,6 +120,9 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     String? batchNumber,
     String? expiryDate,
     String? mfgDate,
+    List<String>? bundleComponentUuids,
+    List<double>? bundleComponentQuantities,
+    List<String>? bundleComponentUnits,
   }) {
     if (index < 0 || index >= state.items.length) return;
 
@@ -146,6 +152,9 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       batchNumber: batchNumber,
       expiryDate: expiryDate,
       mfgDate: mfgDate,
+      bundleComponentUuids: bundleComponentUuids ?? current.bundleComponentUuids,
+      bundleComponentQuantities: bundleComponentQuantities ?? current.bundleComponentQuantities,
+      bundleComponentUnits: bundleComponentUnits ?? current.bundleComponentUnits,
     );
 
 

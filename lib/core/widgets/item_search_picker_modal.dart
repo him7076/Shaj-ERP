@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 
 class ItemSearchPickerModal extends ConsumerStatefulWidget {
   final bool isPurchase;
@@ -125,9 +126,23 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                             ),
                             subtitle: const Text('Not in catalog? Click here to quick create and select it.'),
                             onTap: () async {
-                              final created = await AddItemSheet.show(context, initialName: _searchController.text.trim());
-                              if (created != null && mounted) {
-                                Navigator.pop(context, created);
+                              final created = await Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => AddEditItemScreen(initialIsBundle: widget.onlyBundles, prefilledItem: Item()..itemName = _searchController.text.trim())),
+                              );
+                              if (created == true && mounted) {
+                                // AddEditItemScreen returns true on success, not the item itself. 
+                                // So we just close modal. Or wait, maybe we fetch the last created item?
+                                // Actually, if we just close with null, they can search for it again.
+                                // Or we can find the item by name.
+                                final repo = ref.read(itemRepositoryProvider);
+                                final items = await repo.getAll();
+                                final newItem = items.where((i) => i.itemName == _searchController.text.trim()).lastOrNull;
+                                if (newItem != null && mounted) {
+                                  Navigator.pop(context, newItem);
+                                } else {
+                                  Navigator.pop(context);
+                                }
                               }
                             },
                           ),
@@ -148,9 +163,19 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                 icon: const Icon(Icons.add),
                                 label: Text('Create "${_searchController.text.trim()}"'),
                                 onPressed: () async {
-                                  final created = await AddItemSheet.show(context, initialName: _searchController.text.trim());
-                                  if (created != null && mounted) {
-                                    Navigator.pop(context, created);
+                                  final created = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => AddEditItemScreen(initialIsBundle: widget.onlyBundles, prefilledItem: Item()..itemName = _searchController.text.trim())),
+                                  );
+                                  if (created == true && mounted) {
+                                    final repo = ref.read(itemRepositoryProvider);
+                                    final items = await repo.getAll();
+                                    final newItem = items.where((i) => i.itemName == _searchController.text.trim()).lastOrNull;
+                                    if (newItem != null && mounted) {
+                                      Navigator.pop(context, newItem);
+                                    } else {
+                                      Navigator.pop(context);
+                                    }
                                   }
                                 },
                               ),
@@ -176,9 +201,19 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
                                   onPressed: () async {
-                                    final created = await AddItemSheet.show(context, initialName: _searchController.text.trim());
-                                    if (created != null && mounted) {
-                                      Navigator.pop(context, created);
+                                    final created = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => AddEditItemScreen(initialIsBundle: widget.onlyBundles, prefilledItem: Item()..itemName = _searchController.text.trim())),
+                                    );
+                                    if (created == true && mounted) {
+                                      final repo = ref.read(itemRepositoryProvider);
+                                      final items = await repo.getAll();
+                                      final newItem = items.where((i) => i.itemName == _searchController.text.trim()).lastOrNull;
+                                      if (newItem != null && mounted) {
+                                        Navigator.pop(context, newItem);
+                                      } else {
+                                        Navigator.pop(context);
+                                      }
                                     }
                                   },
                                 ),

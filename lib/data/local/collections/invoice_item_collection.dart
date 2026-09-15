@@ -39,6 +39,12 @@ class InvoiceItem implements IsarModel {
   String? expiryDate;
   String? mfgDate;
 
+  // Bundle Tracking (Customized for this invoice)
+  bool isBundle = false;
+  List<String>? bundleComponentUuids;
+  List<double>? bundleComponentQuantities;
+  List<String>? bundleComponentUnits;
+
   // Isar Links
   final invoice = IsarLink<Invoice>();
   final item = IsarLink<Item>();

@@ -281,6 +281,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   batchNumber: item.batchNumber,
                   expiryDate: item.expiryDate,
                   mfgDate: item.mfgDate,
+                  bundleComponentUuids: item.isBundle ? (item.bundleComponentUuids ?? dbItem.bundleComponentUuids) : null,
+                  bundleComponentQuantities: item.isBundle ? (item.bundleComponentQuantities ?? dbItem.bundleComponentQuantities) : null,
+                  bundleComponentUnits: item.isBundle ? (item.bundleComponentUnits ?? dbItem.bundleComponentUnits) : null,
                 ),
               );
             }
@@ -568,7 +571,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
           ..batchNumber = cartItem.batchNumber
           ..expiryDate = cartItem.expiryDate
-          ..mfgDate = cartItem.mfgDate;
+          ..mfgDate = cartItem.mfgDate
+          ..isBundle = cartItem.item.isBundle
+          ..bundleComponentUuids = cartItem.bundleComponentUuids
+          ..bundleComponentQuantities = cartItem.bundleComponentQuantities
+          ..bundleComponentUnits = cartItem.bundleComponentUnits;
 
 
         if (!kIsWeb) {
@@ -1554,6 +1561,152 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     super.dispose();
   }
 
+  Future<void> _showBundleComponentsDialog() async {
+    final item = widget.cartItem;
+    if (item.bundleComponentUuids == null || item.bundleComponentUuids!.isEmpty) return;
+    
+    // Create local copies of components to edit
+    List<String> uuids = List.from(item.bundleComponentUuids!);
+    List<double> quantities = List.from(item.bundleComponentQuantities ?? []);
+    List<String> units = List.from(item.bundleComponentUnits ?? []);
+    
+    // Ensure lists match length
+    while (quantities.length < uuids.length) quantities.add(1.0);
+    while (units.length < uuids.length) units.add('PCS');
+
+    final itemRepo = ref.read(itemRepositoryProvider);
+    final allItems = await itemRepo.getAll();
+
+    if (!mounted) return;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              child: Container(
+                height: MediaQuery.of(ctx).size.height * 0.7,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Bundle Components: ${item.item.itemName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                      ],
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: uuids.length,
+                        itemBuilder: (context, index) {
+                          final cUuid = uuids[index];
+                          final cItem = allItems.where((i) => i.uuid == cUuid).firstOrNull;
+                          if (cItem == null) return const SizedBox.shrink();
+                          
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              title: Text(cItem.itemName ?? 'Unknown'),
+                              subtitle: Text('Default Unit: ${cItem.primaryUnitName ?? "PCS"}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 80,
+                                    child: TextFormField(
+                                      initialValue: quantities[index].toString(),
+                                      keyboardType: TextInputType.number,
+                                      decoration: const InputDecoration(labelText: 'Qty', isDense: true),
+                                      onChanged: (val) {
+                                        final parsed = double.tryParse(val);
+                                        if (parsed != null) quantities[index] = parsed;
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 100,
+                                    child: DropdownButtonFormField<String>(
+                                      value: units[index],
+                                      isExpanded: true,
+                                      decoration: const InputDecoration(labelText: 'Unit', isDense: true),
+                                      items: [
+                                        if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) cItem.primaryUnitName!,
+                                        if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) cItem.secondaryUnit!,
+                                        if (cItem.tertiaryUnit != null && cItem.tertiaryUnit!.isNotEmpty) cItem.tertiaryUnit!,
+                                        if (cItem.primaryUnitName == null || cItem.primaryUnitName!.isEmpty) 'PCS',
+                                      ].toSet().map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          units[index] = val;
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      setSheetState(() {
+                                        uuids.removeAt(index);
+                                        quantities.removeAt(index);
+                                        units.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add Component to this Bundle'),
+                      onPressed: () async {
+                        final selected = await ItemSearchPickerModal.show(ctx);
+                        if (selected != null && selected.uuid != null) {
+                          if (!uuids.contains(selected.uuid)) {
+                            setSheetState(() {
+                              uuids.add(selected.uuid!);
+                              quantities.add(1.0);
+                              units.add(selected.primaryUnitName ?? 'PCS');
+                            });
+                          }
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      child: const Text('Save Components'),
+                      onPressed: () {
+                        ref.read(invoiceCartProvider.notifier).updateItemAt(
+                          widget.index,
+                          bundleComponentUuids: uuids,
+                          bundleComponentQuantities: quantities,
+                          bundleComponentUnits: units,
+                        );
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -1610,6 +1763,12 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (item.item.isBundle && (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false))
+                    TextButton.icon(
+                      icon: const Icon(Icons.extension, size: 16),
+                      label: const Text('Components'),
+                      onPressed: _showBundleComponentsDialog,
+                    ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
                     onPressed: () {
@@ -1933,6 +2092,12 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
             ),
+            if (item.item.isBundle && (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false))
+              TextButton.icon(
+                icon: const Icon(Icons.extension, size: 16),
+                label: const Text('Components'),
+                onPressed: _showBundleComponentsDialog,
+              ),
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: () {

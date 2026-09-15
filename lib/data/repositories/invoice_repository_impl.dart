@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/data/local/collections/order_item_collection.
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/invoice_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/services/invoice_number_service.dart';
@@ -155,9 +156,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   restoredQty = restoredQty / convFactor;
                 }
               }
-              if (dbItem.isBundle) {
-                 final uuids = dbItem.bundleComponentUuids ?? [];
-                 final qts = dbItem.bundleComponentQuantities ?? [];
+              if (oldItem.isBundle || dbItem.isBundle) {
+                 final uuids = oldItem.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
+                 final qts = oldItem.bundleComponentQuantities ?? dbItem.bundleComponentQuantities ?? [];
+                 final units = oldItem.bundleComponentUnits ?? dbItem.bundleComponentUnits ?? [];
                  for (int i = 0; i < uuids.length; i++) {
                    final cuuid = uuids[i];
                    final cqty = qts.length > i ? qts[i] : 1.0;
@@ -165,6 +167,20 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                    if (cItem != null) {
                      cItem.currentStock = (cItem.currentStock ?? 0.0) + (restoredQty * cqty);
                      await isar.items.put(cItem);
+
+                     final adj = StockAdjustment()
+                        ..uuid = _generateUuid()
+                        ..itemId = cItem.id
+                        ..itemUuid = cItem.uuid
+                        ..itemName = cItem.itemName
+                        ..adjustmentType = 'Add'
+                        ..quantity = restoredQty * cqty
+                        ..unit = units.length > i ? units[i] : cItem.primaryUnitName ?? 'PCS'
+                        ..ratePerUnit = cItem.buyRate ?? 0.0
+                        ..adjustmentDate = DateTime.now()
+                        ..reason = 'Reversed Bundle Sale #${oldInvoice?.invoiceNumber ?? "Editing"}'
+                        ..notes = 'Component of ${dbItem.itemName}';
+                     await isar.stockAdjustments.put(adj);
                    }
                  }
               } else {
@@ -214,9 +230,10 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
             final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
             
-            if (dbItem.isBundle) {
-              final uuids = dbItem.bundleComponentUuids ?? [];
-              final qts = dbItem.bundleComponentQuantities ?? [];
+            if (item.isBundle || dbItem.isBundle) {
+              final uuids = item.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
+              final qts = item.bundleComponentQuantities ?? dbItem.bundleComponentQuantities ?? [];
+              final units = item.bundleComponentUnits ?? dbItem.bundleComponentUnits ?? [];
               for (int i = 0; i < uuids.length; i++) {
                 final cuuid = uuids[i];
                 final cqty = qts.length > i ? qts[i] : 1.0;
@@ -240,6 +257,20 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   cItem.currentStock = compAvailable - compRequested;
                   final log = '[${DateTime.now().toIso8601String().substring(0,19)}] BUNDLE SOLD: -$compRequested | Bal: ${cItem.currentStock} | Invoice #${invoice.invoiceNumber}';
                   cItem.notes = cItem.notes == null || cItem.notes!.isEmpty ? log : '$log\n${cItem.notes}';
+
+                  final adj = StockAdjustment()
+                        ..uuid = _generateUuid()
+                        ..itemId = cItem.id
+                        ..itemUuid = cItem.uuid
+                        ..itemName = cItem.itemName
+                        ..adjustmentType = 'Reduce'
+                        ..quantity = compRequested
+                        ..unit = units.length > i ? units[i] : cItem.primaryUnitName ?? 'PCS'
+                        ..ratePerUnit = cItem.buyRate ?? 0.0
+                        ..adjustmentDate = DateTime.now()
+                        ..reason = 'Sold in Bundle #${invoice.invoiceNumber}'
+                        ..notes = 'Component of ${dbItem.itemName}';
+                  await isar.stockAdjustments.put(adj);
                 }
               }
             } else {

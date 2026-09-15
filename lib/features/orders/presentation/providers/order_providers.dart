@@ -44,6 +44,9 @@ class CartItemState {
   final String? batchNumber;
   final String? expiryDate;
   final String? mfgDate;
+  final List<String>? bundleComponentUuids;
+  final List<double>? bundleComponentQuantities;
+  final List<String>? bundleComponentUnits;
 
   const CartItemState({
     required this.item,
@@ -57,6 +60,9 @@ class CartItemState {
     this.batchNumber,
     this.expiryDate,
     this.mfgDate,
+    this.bundleComponentUuids,
+    this.bundleComponentQuantities,
+    this.bundleComponentUnits,
   });
 
   double calculateItemTotal(bool isGstInclusive) {
@@ -82,6 +88,9 @@ class CartItemState {
     String? batchNumber,
     String? expiryDate,
     String? mfgDate,
+    List<String>? bundleComponentUuids,
+    List<double>? bundleComponentQuantities,
+    List<String>? bundleComponentUnits,
   }) {
     return CartItemState(
       item: item,
@@ -95,6 +104,9 @@ class CartItemState {
       batchNumber: batchNumber ?? this.batchNumber,
       expiryDate: expiryDate ?? this.expiryDate,
       mfgDate: mfgDate ?? this.mfgDate,
+      bundleComponentUuids: bundleComponentUuids ?? this.bundleComponentUuids,
+      bundleComponentQuantities: bundleComponentQuantities ?? this.bundleComponentQuantities,
+      bundleComponentUnits: bundleComponentUnits ?? this.bundleComponentUnits,
     );
   }
 }
@@ -162,6 +174,9 @@ class CartNotifier extends StateNotifier<OrderCart> {
       unit: defaultUnit,
       rate: rate,
       gstPercent: gst,
+      bundleComponentUuids: item.isBundle ? item.bundleComponentUuids : null,
+      bundleComponentQuantities: item.isBundle ? item.bundleComponentQuantities : null,
+      bundleComponentUnits: item.isBundle ? item.bundleComponentUnits : null,
     );
 
     state = state.copyWith(items: [...state.items, newItem]);

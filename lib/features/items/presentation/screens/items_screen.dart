@@ -36,6 +36,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   bool _showFilters = false;
   bool _showSearch = false;
   int _displayLimit = 50;
+  bool _enableBundleManagement = false;
   final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 
   @override
@@ -45,7 +46,11 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     // and running O(N*M) nested loops on every screen open (3-10s freeze).
     // Stock is now only recalculated after backup restore, Excel import, or cloud sync.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit));
+      final prefs = ref.read(sharedPreferencesProvider);
+      setState(() {
+        _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
+      });
+      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit, isBundle: false));
     });
   }
 
@@ -273,8 +278,10 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       }
     }
 
-    return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+    final scaffold = Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, 
+        leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         toolbarHeight: ResponsiveLayout.isMobile(context) ? 44 : 52,
         title: _showSearch
             ? TextField(
@@ -399,6 +406,18 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           ),
           const SizedBox(width: 4),
         ],
+        bottom: _enableBundleManagement 
+            ? TabBar(
+                onTap: (index) {
+                  ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(isBundle: index == 1, limit: 50));
+                  setState(() => _displayLimit = 50);
+                },
+                tabs: const [
+                  Tab(text: 'Products'),
+                  Tab(text: 'Bundles / Combos'),
+                ],
+              )
+            : null,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -552,7 +571,18 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           ref.invalidate(filteredItemsProvider);
         },
       ),
+      ),
     );
+
+    if (_enableBundleManagement) {
+      return DefaultTabController(
+        length: 2,
+        initialIndex: filter.isBundle == true ? 1 : 0,
+        child: scaffold,
+      );
+    }
+    
+    return scaffold;
   }
 
   Widget _buildCategoryChipBar(
