@@ -82,7 +82,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       }
       invoice.invoiceStatus = 'Active';
 
-      final allItems = await isar.items.findAll();
+      final allItems = await isar.items.where().findAll();
       final targetItemMap = {for (var i in allItems) i.id: i};
       final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
       final modifiedItems = <int, Item>{};
@@ -340,7 +340,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       invoice.isSynced = false;
 
       final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
-      final allItems = await isar.items.findAll();
+      final allItems = await isar.items.where().findAll();
       final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
       final targetItemMap = {for (var i in allItems) i.id: i};
       final modifiedItems = <int, Item>{};
@@ -526,7 +526,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final reserveStockOnOrder = _prefs.getBool('reserve_stock_on_order') ?? false;
 
       List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
-      final allItems = await isar.items.findAll();
+      final allItems = await isar.items.where().findAll();
       final targetItemMap = {for (var i in allItems) i.id: i};
       final modifiedItems = <int, Item>{};
 
