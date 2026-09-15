@@ -15,7 +15,7 @@ extension GetWhatsAppMappingCollection on Isar {
 
 const WhatsAppMappingSchema = CollectionSchema(
   name: r'WhatsAppMapping',
-  id: 993156486354416,
+  id: 8233573275319620190,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -37,43 +37,53 @@ const WhatsAppMappingSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'mappingType': PropertySchema(
+    r'isTaxInclusive': PropertySchema(
       id: 4,
+      name: r'isTaxInclusive',
+      type: IsarType.bool,
+    ),
+    r'mappingType': PropertySchema(
+      id: 5,
       name: r'mappingType',
       type: IsarType.string,
     ),
     r'pcsPerBundle': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'pcsPerBundle',
       type: IsarType.double,
     ),
     r'pcsPerCarton': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'pcsPerCarton',
       type: IsarType.double,
     ),
+    r'rateUnit': PropertySchema(
+      id: 8,
+      name: r'rateUnit',
+      type: IsarType.string,
+    ),
     r'rawKey': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'rawKey',
       type: IsarType.string,
     ),
     r'targetUuid': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'targetUuid',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'version',
       type: IsarType.long,
     )
@@ -85,7 +95,7 @@ const WhatsAppMappingSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 8698316308851096,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -98,7 +108,7 @@ const WhatsAppMappingSchema = CollectionSchema(
       ],
     ),
     r'mappingType': IndexSchema(
-      id: 5744194438929462,
+      id: -2761947166389672708,
       name: r'mappingType',
       unique: false,
       replace: false,
@@ -111,7 +121,7 @@ const WhatsAppMappingSchema = CollectionSchema(
       ],
     ),
     r'rawKey': IndexSchema(
-      id: 8118647402318245,
+      id: -4529732673282295727,
       name: r'rawKey',
       unique: false,
       replace: false,
@@ -140,6 +150,12 @@ int _whatsAppMappingEstimateSize(
   var bytesCount = offsets.last;
   {
     final value = object.mappingType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.rateUnit;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -175,14 +191,16 @@ void _whatsAppMappingSerialize(
   writer.writeDouble(offsets[1], object.customRate);
   writer.writeBool(offsets[2], object.isDeleted);
   writer.writeBool(offsets[3], object.isSynced);
-  writer.writeString(offsets[4], object.mappingType);
-  writer.writeDouble(offsets[5], object.pcsPerBundle);
-  writer.writeDouble(offsets[6], object.pcsPerCarton);
-  writer.writeString(offsets[7], object.rawKey);
-  writer.writeString(offsets[8], object.targetUuid);
-  writer.writeDateTime(offsets[9], object.updatedAt);
-  writer.writeString(offsets[10], object.uuid);
-  writer.writeLong(offsets[11], object.version);
+  writer.writeBool(offsets[4], object.isTaxInclusive);
+  writer.writeString(offsets[5], object.mappingType);
+  writer.writeDouble(offsets[6], object.pcsPerBundle);
+  writer.writeDouble(offsets[7], object.pcsPerCarton);
+  writer.writeString(offsets[8], object.rateUnit);
+  writer.writeString(offsets[9], object.rawKey);
+  writer.writeString(offsets[10], object.targetUuid);
+  writer.writeDateTime(offsets[11], object.updatedAt);
+  writer.writeString(offsets[12], object.uuid);
+  writer.writeLong(offsets[13], object.version);
 }
 
 WhatsAppMapping _whatsAppMappingDeserialize(
@@ -197,14 +215,16 @@ WhatsAppMapping _whatsAppMappingDeserialize(
   object.id = id;
   object.isDeleted = reader.readBool(offsets[2]);
   object.isSynced = reader.readBool(offsets[3]);
-  object.mappingType = reader.readStringOrNull(offsets[4]);
-  object.pcsPerBundle = reader.readDoubleOrNull(offsets[5]);
-  object.pcsPerCarton = reader.readDoubleOrNull(offsets[6]);
-  object.rawKey = reader.readStringOrNull(offsets[7]);
-  object.targetUuid = reader.readStringOrNull(offsets[8]);
-  object.updatedAt = reader.readDateTime(offsets[9]);
-  object.uuid = reader.readStringOrNull(offsets[10]);
-  object.version = reader.readLong(offsets[11]);
+  object.isTaxInclusive = reader.readBoolOrNull(offsets[4]);
+  object.mappingType = reader.readStringOrNull(offsets[5]);
+  object.pcsPerBundle = reader.readDoubleOrNull(offsets[6]);
+  object.pcsPerCarton = reader.readDoubleOrNull(offsets[7]);
+  object.rateUnit = reader.readStringOrNull(offsets[8]);
+  object.rawKey = reader.readStringOrNull(offsets[9]);
+  object.targetUuid = reader.readStringOrNull(offsets[10]);
+  object.updatedAt = reader.readDateTime(offsets[11]);
+  object.uuid = reader.readStringOrNull(offsets[12]);
+  object.version = reader.readLong(offsets[13]);
   return object;
 }
 
@@ -224,20 +244,24 @@ P _whatsAppMappingDeserializeProp<P>(
     case 3:
       return (reader.readBool(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset)) as P;
     case 5:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
       return (reader.readDoubleOrNull(offset)) as P;
     case 7:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 8:
       return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 10:
       return (reader.readStringOrNull(offset)) as P;
     case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
+    case 13:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -812,6 +836,34 @@ extension WhatsAppMappingQueryFilter
   }
 
   QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      isTaxInclusiveIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'isTaxInclusive',
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      isTaxInclusiveIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'isTaxInclusive',
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      isTaxInclusiveEqualTo(bool? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isTaxInclusive',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
       mappingTypeIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1129,6 +1181,160 @@ extension WhatsAppMappingQueryFilter
         upper: upper,
         includeUpper: includeUpper,
         epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'rateUnit',
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'rateUnit',
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'rateUnit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'rateUnit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'rateUnit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'rateUnit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'rateUnit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'rateUnit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'rateUnit',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'rateUnit',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'rateUnit',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterFilterCondition>
+      rateUnitIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'rateUnit',
+        value: '',
       ));
     });
   }
@@ -1773,6 +1979,20 @@ extension WhatsAppMappingQuerySortBy
   }
 
   QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      sortByIsTaxInclusive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isTaxInclusive', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      sortByIsTaxInclusiveDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isTaxInclusive', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
       sortByMappingType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mappingType', Sort.asc);
@@ -1811,6 +2031,20 @@ extension WhatsAppMappingQuerySortBy
       sortByPcsPerCartonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'pcsPerCarton', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      sortByRateUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rateUnit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      sortByRateUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rateUnit', Sort.desc);
     });
   }
 
@@ -1953,6 +2187,20 @@ extension WhatsAppMappingQuerySortThenBy
   }
 
   QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      thenByIsTaxInclusive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isTaxInclusive', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      thenByIsTaxInclusiveDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isTaxInclusive', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
       thenByMappingType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'mappingType', Sort.asc);
@@ -1991,6 +2239,20 @@ extension WhatsAppMappingQuerySortThenBy
       thenByPcsPerCartonDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'pcsPerCarton', Sort.desc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      thenByRateUnit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rateUnit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QAfterSortBy>
+      thenByRateUnitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'rateUnit', Sort.desc);
     });
   }
 
@@ -2093,6 +2355,13 @@ extension WhatsAppMappingQueryWhereDistinct
   }
 
   QueryBuilder<WhatsAppMapping, WhatsAppMapping, QDistinct>
+      distinctByIsTaxInclusive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isTaxInclusive');
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QDistinct>
       distinctByMappingType({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'mappingType', caseSensitive: caseSensitive);
@@ -2110,6 +2379,13 @@ extension WhatsAppMappingQueryWhereDistinct
       distinctByPcsPerCarton() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'pcsPerCarton');
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, WhatsAppMapping, QDistinct> distinctByRateUnit(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'rateUnit', caseSensitive: caseSensitive);
     });
   }
 
@@ -2183,6 +2459,13 @@ extension WhatsAppMappingQueryProperty
     });
   }
 
+  QueryBuilder<WhatsAppMapping, bool?, QQueryOperations>
+      isTaxInclusiveProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isTaxInclusive');
+    });
+  }
+
   QueryBuilder<WhatsAppMapping, String?, QQueryOperations>
       mappingTypeProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -2201,6 +2484,12 @@ extension WhatsAppMappingQueryProperty
       pcsPerCartonProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'pcsPerCarton');
+    });
+  }
+
+  QueryBuilder<WhatsAppMapping, String?, QQueryOperations> rateUnitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'rateUnit');
     });
   }
 

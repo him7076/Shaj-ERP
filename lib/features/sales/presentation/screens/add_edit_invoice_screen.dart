@@ -1229,6 +1229,19 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                     }
                   },
                 ),
+                const SizedBox(width: 8),
+                if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false)
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.extension_rounded, color: Colors.orange),
+                    tooltip: 'Add Bundle / Combo',
+                    onPressed: () async {
+                      final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
+                      if (selectedItem != null) {
+                        ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
+                        ref.invalidate(filteredItemsProvider);
+                      }
+                    },
+                  ),
               ],
             ),
           ],

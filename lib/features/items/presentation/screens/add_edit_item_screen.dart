@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/core/services/hsn_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
+import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 
 class AddEditItemScreen extends ConsumerStatefulWidget {
   final String? itemUuid;
@@ -72,6 +73,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   List<HsnModel> _suggestedHsnCodes = [];
   Timer? _debounceTimer;
 
+  bool _enableBundleManagement = false;
+  bool _isBundle = false;
+  List<Map<String, dynamic>> _bundleComponents = [];
+
   static const List<Map<String, String>> _commonUnits = [
     {'name': 'Pieces', 'code': 'PCS'},
     {'name': 'Boxes', 'code': 'BOX'},
@@ -99,6 +104,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     _nameController.addListener(_onItemNameChanged);
     
     _checkAndSeedCommonUnits();
+    _loadSettings();
 
     if (widget.itemUuid != null) {
       _loadItem();
@@ -136,6 +142,13 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     } catch (e) {
       logger.error('Failed to seed common units', e);
     }
+  }
+
+  void _loadSettings() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    setState(() {
+      _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
+    });
   }
 
   void _onItemNameChanged() {
@@ -227,6 +240,20 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         _barcodeController.text = item.barcode ?? '';
         _skuController.text = item.sku ?? '';
         _skuCodeController.text = item.skuCode ?? '';
+
+        _isBundle = item.isBundle;
+        if (_isBundle && item.bundleComponentUuids != null) {
+          final itemsList = await repo.getAll();
+          _bundleComponents = [];
+          for (int i = 0; i < item.bundleComponentUuids!.length; i++) {
+             final cuuid = item.bundleComponentUuids![i];
+             final cqty = item.bundleComponentQuantities != null && item.bundleComponentQuantities!.length > i ? item.bundleComponentQuantities![i] : 1.0;
+             final citem = itemsList.where((it) => it.uuid == cuuid).firstOrNull;
+             if (citem != null) {
+               _bundleComponents.add({'item': citem, 'qty': cqty});
+             }
+          }
+        }
 
         _buyRateController.text = item.buyRate?.toString() ?? '';
         _mrpController.text = item.mrp?.toString() ?? '';
@@ -583,6 +610,15 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.sku = _skuController.text.trim().isEmpty ? null : _skuController.text.trim();
       item.skuCode = _skuCodeController.text.trim().isEmpty ? null : _skuCodeController.text.trim();
 
+      item.isBundle = _isBundle;
+      if (_isBundle) {
+        item.bundleComponentUuids = _bundleComponents.map((c) => (c['item'] as Item).uuid!).toList();
+        item.bundleComponentQuantities = _bundleComponents.map((c) => (c['qty'] as double)).toList();
+      } else {
+        item.bundleComponentUuids = null;
+        item.bundleComponentQuantities = null;
+      }
+
       final conv = double.tryParse(_conversionController.text.trim()) ?? 1.0;
       final isPerSecondary = _rateUnitType == 'Secondary' && conv > 0 && conv != 1.0;
 
@@ -773,6 +809,97 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     );
   }
 
+  Widget _buildBundleSection() {
+    if (!_enableBundleManagement) return const SizedBox.shrink();
+    
+    return _buildSectionCard(
+      context: context,
+      title: 'Bundle / Recipe Configuration',
+      icon: Icons.extension_rounded,
+      color: Colors.orange,
+      children: [
+        SwitchListTile(
+          title: const Text('Is this a Bundle / Combo Item?'),
+          subtitle: const Text('Enable to add sub-components. When sold, the inventory of sub-components will be deducted.'),
+          value: _isBundle,
+          onChanged: (val) {
+            setState(() {
+              _isBundle = val;
+            });
+          },
+        ),
+        if (_isBundle) ...[
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Components', style: TextStyle(fontWeight: FontWeight.bold)),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Add Component'),
+                onPressed: () async {
+                  final selected = await ItemSearchPickerModal.show(context);
+                  if (selected != null) {
+                    final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.id);
+                    if (!exists) {
+                      setState(() {
+                        _bundleComponents.add({'item': selected, 'qty': 1.0});
+                      });
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (_bundleComponents.isEmpty)
+            const Text('No components added yet.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+          ..._bundleComponents.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final map = entry.value;
+            final cItem = map['item'] as Item;
+            final cQty = map['qty'] as double;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                title: Text(cItem.itemName ?? 'Unknown'),
+                subtitle: Text('Unit: ${cItem.primaryUnitName ?? "PCS"}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      child: TextFormField(
+                        initialValue: cQty.toString(),
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'Qty', isDense: true),
+                        onChanged: (val) {
+                          final parsed = double.tryParse(val);
+                          if (parsed != null) {
+                            _bundleComponents[idx]['qty'] = parsed;
+                          }
+                        },
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _bundleComponents.removeAt(idx);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ]
+      ],
+    );
+  }
+
   Widget _buildSectionCard({
     required BuildContext context,
     required String title,
@@ -856,6 +983,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                         const SizedBox(height: 28),
 
                         _buildBasicInfoSection(categoriesAsync, brandsAsync),
+                        _buildBundleSection(),
                         _buildIdentificationSection(),
                         _buildPricingSection(),
                         _buildTaxationSection(hsnService),

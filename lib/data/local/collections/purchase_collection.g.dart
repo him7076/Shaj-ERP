@@ -15,7 +15,7 @@ extension GetPurchaseCollection on Isar {
 
 const PurchaseSchema = CollectionSchema(
   name: r'Purchase',
-  id: 7596457055040928,
+  id: -2376489861051921561,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -155,7 +155,7 @@ const PurchaseSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 8698316308851096,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -168,7 +168,7 @@ const PurchaseSchema = CollectionSchema(
       ],
     ),
     r'purchaseNumber': IndexSchema(
-      id: 6161125700886156,
+      id: 8689101207271201480,
       name: r'purchaseNumber',
       unique: true,
       replace: false,
@@ -181,7 +181,7 @@ const PurchaseSchema = CollectionSchema(
       ],
     ),
     r'paymentStatus': IndexSchema(
-      id: 4372109912502013,
+      id: 7011973130100993011,
       name: r'paymentStatus',
       unique: false,
       replace: false,
@@ -196,13 +196,13 @@ const PurchaseSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 2418324024909604,
+      id: 4001614793129909608,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'purchaseItems': LinkSchema(
-      id: 3478242325632308,
+      id: 3471249955400913843,
       name: r'purchaseItems',
       target: r'PurchaseItem',
       single: false,

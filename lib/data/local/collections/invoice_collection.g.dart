@@ -210,7 +210,7 @@ const InvoiceSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 8698316308851096,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -223,7 +223,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceNumber': IndexSchema(
-      id: 7847076138976417,
+      id: -6231821761165001198,
       name: r'invoiceNumber',
       unique: true,
       replace: false,
@@ -236,7 +236,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceType': IndexSchema(
-      id: 2475401335365237,
+      id: 3218045535277899024,
       name: r'invoiceType',
       unique: false,
       replace: false,
@@ -249,7 +249,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'invoiceStatus': IndexSchema(
-      id: 6084604193210425,
+      id: -1978661240981487454,
       name: r'invoiceStatus',
       unique: false,
       replace: false,
@@ -262,7 +262,7 @@ const InvoiceSchema = CollectionSchema(
       ],
     ),
     r'paymentStatus': IndexSchema(
-      id: 4372109912502013,
+      id: 7011973130100993011,
       name: r'paymentStatus',
       unique: false,
       replace: false,
@@ -277,19 +277,19 @@ const InvoiceSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 2047622627774496,
+      id: -9135347666935139370,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'order': LinkSchema(
-      id: 5507700345702421,
+      id: 5716072027851490715,
       name: r'order',
       target: r'Order',
       single: true,
     ),
     r'invoiceItems': LinkSchema(
-      id: 2798827698334167,
+      id: 3389505747480946783,
       name: r'invoiceItems',
       target: r'InvoiceItem',
       single: false,

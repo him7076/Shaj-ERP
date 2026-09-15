@@ -321,6 +321,15 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/bulk-item-edit',
                     currentPath: location,
                   ),
+                  _buildDrawerHeader('OTHER FEATURES'),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
+                    icon: Icons.extension_rounded,
+                    label: 'Bundle Items (Combo)',
+                    routePath: '/other-features',
+                    currentPath: location,
+                  ),
                   _buildDrawerHeader('REPORTS & SYSTEM'),
                   _buildDrawerItem(
                     context: context,
@@ -486,6 +495,7 @@ class CustomDrawer extends ConsumerWidget {
       case '/reports': return const Color(0xFF06B6D4);
       case '/sync-center': return const Color(0xFF10B981);
       case '/backup': return const Color(0xFF8B5CF6);
+      case '/other-features': return const Color(0xFFEAB308);
       case '/settings': return const Color(0xFF64748B);
       default: return const Color(0xFF6366F1);
     }

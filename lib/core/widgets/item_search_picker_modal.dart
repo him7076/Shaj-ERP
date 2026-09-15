@@ -6,9 +6,10 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_
 
 class ItemSearchPickerModal extends ConsumerStatefulWidget {
   final bool isPurchase;
-  const ItemSearchPickerModal({Key? key, this.isPurchase = false}) : super(key: key);
+  final bool onlyBundles;
+  const ItemSearchPickerModal({Key? key, this.isPurchase = false, this.onlyBundles = false}) : super(key: key);
 
-  static Future<Item?> show(BuildContext context, {bool isPurchase = false}) {
+  static Future<Item?> show(BuildContext context, {bool isPurchase = false, bool onlyBundles = false}) {
     return showDialog<Item>(
       context: context,
       builder: (context) => Dialog(
@@ -17,7 +18,7 @@ class ItemSearchPickerModal extends ConsumerStatefulWidget {
         child: SizedBox(
           width: 550,
           height: 600,
-          child: ItemSearchPickerModal(isPurchase: isPurchase),
+          child: ItemSearchPickerModal(isPurchase: isPurchase, onlyBundles: onlyBundles),
         ),
       ),
     );
@@ -45,7 +46,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: Text(widget.isPurchase ? 'Select Product for Purchase' : 'Select Product for Sales'),
+        title: Text(widget.onlyBundles ? 'Select Bundle' : (widget.isPurchase ? 'Select Product for Purchase' : 'Select Product for Sales')),
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
@@ -94,6 +95,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
             child: itemsAsync.when(
               data: (allItems) {
                 final filteredList = allItems.where((item) {
+                  if (widget.onlyBundles && !item.isBundle) return false;
                   if (_searchQuery.isEmpty) return true;
                   final name = item.itemName?.toLowerCase() ?? '';
                   final code = item.itemCode?.toLowerCase() ?? '';

@@ -155,8 +155,22 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   restoredQty = restoredQty / convFactor;
                 }
               }
-              dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
-              await isar.items.put(dbItem);
+              if (dbItem.isBundle) {
+                 final uuids = dbItem.bundleComponentUuids ?? [];
+                 final qts = dbItem.bundleComponentQuantities ?? [];
+                 for (int i = 0; i < uuids.length; i++) {
+                   final cuuid = uuids[i];
+                   final cqty = qts.length > i ? qts[i] : 1.0;
+                   final cItem = await isar.items.filter().uuidEqualTo(cuuid).findFirst();
+                   if (cItem != null) {
+                     cItem.currentStock = (cItem.currentStock ?? 0.0) + (restoredQty * cqty);
+                     await isar.items.put(cItem);
+                   }
+                 }
+              } else {
+                dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
+                await isar.items.put(dbItem);
+              }
             }
           }
         }
@@ -199,15 +213,46 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             }
 
             final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
-            if (!allowNegativeStock && available < requestedInPrimaryUnit) {
-              throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requestedInPrimaryUnit');
+            
+            if (dbItem.isBundle) {
+              final uuids = dbItem.bundleComponentUuids ?? [];
+              final qts = dbItem.bundleComponentQuantities ?? [];
+              for (int i = 0; i < uuids.length; i++) {
+                final cuuid = uuids[i];
+                final cqty = qts.length > i ? qts[i] : 1.0;
+                
+                Item? cItem = targetItemMap.values.where((it) => it.uuid == cuuid).firstOrNull;
+                if (cItem == null) {
+                  cItem = await isar.items.filter().uuidEqualTo(cuuid).findFirst();
+                  if (cItem != null) {
+                    targetItemMap[cItem.id] = cItem;
+                  }
+                }
+                
+                if (cItem != null) {
+                  final double compAvailable = cItem.currentStock ?? 0.0;
+                  final double compRequested = requestedInPrimaryUnit * cqty;
+                  
+                  if (!allowNegativeStock && compAvailable < compRequested) {
+                    throw StockException('Insufficient stock for bundle component "${cItem.itemName}". Available: $compAvailable, Requested: $compRequested');
+                  }
+                  
+                  cItem.currentStock = compAvailable - compRequested;
+                  final log = '[${DateTime.now().toIso8601String().substring(0,19)}] BUNDLE SOLD: -$compRequested | Bal: ${cItem.currentStock} | Invoice #${invoice.invoiceNumber}';
+                  cItem.notes = cItem.notes == null || cItem.notes!.isEmpty ? log : '$log\n${cItem.notes}';
+                }
+              }
+            } else {
+              if (!allowNegativeStock && available < requestedInPrimaryUnit) {
+                throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requestedInPrimaryUnit');
+              }
+  
+              dbItem.currentStock = available - requestedInPrimaryUnit;
+  
+              // Log stock movement
+              final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
+              dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
             }
-
-            dbItem.currentStock = available - requestedInPrimaryUnit;
-
-            // Log stock movement
-            final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
-            dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
           }
         }
 

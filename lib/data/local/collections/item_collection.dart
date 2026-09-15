@@ -69,6 +69,11 @@ class Item implements IsarModel {
   bool enableBatchTracking = false;
   String? defaultBatchNumber;
 
+  // Bundle Tracking (BOM/Recipe)
+  bool isBundle = false;
+  List<String>? bundleComponentUuids;
+  List<double>? bundleComponentQuantities;
+
   // Isar Links
   final category = IsarLink<Category>();
   final unit = IsarLink<Unit>();
