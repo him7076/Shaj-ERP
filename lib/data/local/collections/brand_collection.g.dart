@@ -15,7 +15,7 @@ extension GetBrandCollection on Isar {
 
 const BrandSchema = CollectionSchema(
   name: r'Brand',
-  id: 4318366976370227238,
+  id: 431836697637022,
   properties: {
     r'brandName': PropertySchema(
       id: 0,
@@ -60,7 +60,7 @@ const BrandSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -1170,3 +1170,4 @@ extension BrandQueryProperty on QueryBuilder<Brand, Brand, QQueryProperty> {
     });
   }
 }
+

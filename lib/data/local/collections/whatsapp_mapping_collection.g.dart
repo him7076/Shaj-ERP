@@ -15,7 +15,7 @@ extension GetWhatsAppMappingCollection on Isar {
 
 const WhatsAppMappingSchema = CollectionSchema(
   name: r'WhatsAppMapping',
-  id: 8233573275319620190,
+  id: 823357327531962,
   properties: {
     r'createdAt': PropertySchema(
       id: 0,
@@ -95,7 +95,7 @@ const WhatsAppMappingSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -108,7 +108,7 @@ const WhatsAppMappingSchema = CollectionSchema(
       ],
     ),
     r'mappingType': IndexSchema(
-      id: -2761947166389672708,
+      id: -276194716638967,
       name: r'mappingType',
       unique: false,
       replace: false,
@@ -121,7 +121,7 @@ const WhatsAppMappingSchema = CollectionSchema(
       ],
     ),
     r'rawKey': IndexSchema(
-      id: -4529732673282295727,
+      id: -452973267328229,
       name: r'rawKey',
       unique: false,
       replace: false,
@@ -2525,3 +2525,4 @@ extension WhatsAppMappingQueryProperty
     });
   }
 }
+

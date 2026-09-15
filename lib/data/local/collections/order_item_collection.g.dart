@@ -15,7 +15,7 @@ extension GetOrderItemCollection on Isar {
 
 const OrderItemSchema = CollectionSchema(
   name: r'OrderItem',
-  id: -5113141332666578860,
+  id: -511314133266657,
   properties: {
     r'batchNumber': PropertySchema(
       id: 0,
@@ -145,7 +145,7 @@ const OrderItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -158,7 +158,7 @@ const OrderItemSchema = CollectionSchema(
       ],
     ),
     r'orderUuid': IndexSchema(
-      id: 6151778030828055414,
+      id: 615177803082805,
       name: r'orderUuid',
       unique: false,
       replace: false,
@@ -173,13 +173,13 @@ const OrderItemSchema = CollectionSchema(
   },
   links: {
     r'order': LinkSchema(
-      id: 2005505930956294984,
+      id: 200550593095629,
       name: r'order',
       target: r'Order',
       single: true,
     ),
     r'item': LinkSchema(
-      id: -8590266203859439807,
+      id: -859026620385943,
       name: r'item',
       target: r'Item',
       single: true,
@@ -3876,3 +3876,4 @@ extension OrderItemQueryProperty
     });
   }
 }
+

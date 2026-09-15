@@ -15,7 +15,7 @@ extension GetItemCollection on Isar {
 
 const ItemSchema = CollectionSchema(
   name: r'Item',
-  id: 7900997316587104717,
+  id: 790099731658710,
   properties: {
     r'barcode': PropertySchema(
       id: 0,
@@ -235,7 +235,7 @@ const ItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -248,7 +248,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemCode': IndexSchema(
-      id: -1692757059073837553,
+      id: -169275705907383,
       name: r'itemCode',
       unique: true,
       replace: false,
@@ -261,7 +261,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'itemName': IndexSchema(
-      id: 2219846343528216480,
+      id: 221984634352821,
       name: r'itemName',
       unique: false,
       replace: false,
@@ -274,7 +274,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'hsnCode': IndexSchema(
-      id: -9149027471911101060,
+      id: -914902747191110,
       name: r'hsnCode',
       unique: false,
       replace: false,
@@ -287,7 +287,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'barcode': IndexSchema(
-      id: 1156800733621869998,
+      id: 115680073362186,
       name: r'barcode',
       unique: false,
       replace: false,
@@ -300,7 +300,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'sku': IndexSchema(
-      id: -3348042439688860591,
+      id: -334804243968886,
       name: r'sku',
       unique: false,
       replace: false,
@@ -313,7 +313,7 @@ const ItemSchema = CollectionSchema(
       ],
     ),
     r'skuCode': IndexSchema(
-      id: 2008583941080558886,
+      id: 200858394108055,
       name: r'skuCode',
       unique: false,
       replace: false,
@@ -328,19 +328,19 @@ const ItemSchema = CollectionSchema(
   },
   links: {
     r'category': LinkSchema(
-      id: -1059489203734757626,
+      id: -105948920373475,
       name: r'category',
       target: r'Category',
       single: true,
     ),
     r'unit': LinkSchema(
-      id: 7514228656935813173,
+      id: 751422865693581,
       name: r'unit',
       target: r'Unit',
       single: true,
     ),
     r'brand': LinkSchema(
-      id: 2993955207832475027,
+      id: 299395520783247,
       name: r'brand',
       target: r'Brand',
       single: true,
@@ -7425,3 +7425,4 @@ extension ItemQueryProperty on QueryBuilder<Item, Item, QQueryProperty> {
     });
   }
 }
+

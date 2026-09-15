@@ -15,7 +15,7 @@ extension GetDeletedVoucherCollection on Isar {
 
 const DeletedVoucherSchema = CollectionSchema(
   name: r'DeletedVoucher',
-  id: -3687841303572168796,
+  id: -368784130357216,
   properties: {
     r'amount': PropertySchema(
       id: 0,
@@ -85,7 +85,7 @@ const DeletedVoucherSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 213439734042772,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -98,7 +98,7 @@ const DeletedVoucherSchema = CollectionSchema(
       ],
     ),
     r'voucherType': IndexSchema(
-      id: 5137768226435522735,
+      id: 513776822643552,
       name: r'voucherType',
       unique: false,
       replace: false,
@@ -111,7 +111,7 @@ const DeletedVoucherSchema = CollectionSchema(
       ],
     ),
     r'voucherNumber': IndexSchema(
-      id: -6620117117444045036,
+      id: -662011711744404,
       name: r'voucherNumber',
       unique: false,
       replace: false,
@@ -2279,3 +2279,4 @@ extension DeletedVoucherQueryProperty
     });
   }
 }
+
