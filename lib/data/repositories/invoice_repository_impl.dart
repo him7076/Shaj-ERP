@@ -689,7 +689,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
   @override
   Future<Invoice?> getByUuid(String uuid) async {
     try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
+      final allItems = await getAll();
+      final entity = allItems.where((e) => e.uuid == uuid).firstOrNull;
       if (entity == null || entity.isDeleted) return null;
       return entity;
     } catch (e) {
