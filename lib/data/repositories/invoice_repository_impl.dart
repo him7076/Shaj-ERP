@@ -224,7 +224,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
               final itemUnit = (item.unit ?? '').trim().toLowerCase();
               final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
-              final pName = (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? '').trim().toLowerCase();
+              final pName = (dbItem.primaryUnitName ?? (!kIsWeb ? dbItem.unit.value?.shortName : '') ?? '').trim().toLowerCase();
               if (itemUnit == secUnit && itemUnit != pName) {
                 requestedInPrimaryUnit = requestedInPrimaryUnit / convFactor;
               }
@@ -367,7 +367,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
               final itemUnit = (item.unit ?? '').trim().toLowerCase();
               final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
-              final pName = (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? '').trim().toLowerCase();
+              final pName = (dbItem.primaryUnitName ?? (!kIsWeb ? dbItem.unit.value?.shortName : '') ?? '').trim().toLowerCase();
               if (itemUnit == secUnit && itemUnit != pName) {
                 restoredQty = restoredQty / convFactor;
               }
@@ -536,7 +536,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         invoice.id = invoiceId;
 
         // Link party
-        if (order.party.value != null) {
+        if (!kIsWeb && order.party.value != null) {
           invoice.party.value = order.party.value;
 
           // 2. Add Outstanding Balance to Party
@@ -544,10 +544,17 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           final pendingAmt = invoice.pendingAmount ?? 0.0;
           party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
           await isar.partys.put(party);
+        } else if (order.partyId != null) {
+          final party = await isar.partys.get(order.partyId!);
+          if (party != null) {
+            final pendingAmt = invoice.pendingAmount ?? 0.0;
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
+            await isar.partys.put(party);
+          }
         }
 
         // 3. Link Order
-        invoice.order.value = order;
+        if (!kIsWeb) invoice.order.value = order;
 
         // 4. Update source Order status
         await isar.orders.put(order);
@@ -582,8 +589,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             invItem.invoice.value = invoice;
           }
           
-          if (orderItem.item.value != null || orderItem.itemId != null) {
-            final dbItem = orderItem.item.value ?? (orderItem.itemId != null ? targetItemMap[orderItem.itemId!] : null);
+          if ((!kIsWeb && orderItem.item.value != null) || orderItem.itemId != null) {
+            final dbItem = (!kIsWeb ? orderItem.item.value : null) ?? (orderItem.itemId != null ? targetItemMap[orderItem.itemId!] : null);
             if (dbItem != null) {
               if (!kIsWeb) invItem.item.value = dbItem;
               
