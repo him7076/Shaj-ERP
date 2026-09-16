@@ -1068,7 +1068,7 @@ class WebMockIsar implements Isar {
           ..isSynced = map['isSynced'] as bool
           ..version = map['version'] as int;
       case 'Item':
-        return Item()
+        final item = Item()
           ..id = map['id'] as int
           ..uuid = map['uuid'] as String?
           ..itemCode = map['itemCode'] as String?
