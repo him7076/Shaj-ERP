@@ -87,52 +87,49 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
       final modifiedItems = <int, Item>{};
 
-      await isar.writeTxn(() async {
-        // Fetch old invoice before putting (if editing)
-        Invoice? oldInvoice;
-        if (!isNew) {
-          oldInvoice = await collection.get(invoice.id);
-        }
+      // --- PRE-FETCH ALL DATA OUTSIDE writeTxn ---
+      Invoice? oldInvoice;
+      if (!isNew) {
+        oldInvoice = await collection.get(invoice.id);
+      }
+      
+      final oldPartyId = oldInvoice?.partyId;
+      final oldParty = oldPartyId != null ? await isar.partys.get(oldPartyId) : null;
+      final newParty = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
 
+      List<InvoiceItem> oldByParentId = [];
+      List<InvoiceItem> oldByParentUuid = [];
+      if (!isNew) {
+        oldByParentId = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
+        if (invoice.uuid != null) {
+          oldByParentUuid = await isar.invoiceItems.filter().parentInvoiceUuidEqualTo(invoice.uuid).findAll();
+        }
+      }
+
+      await isar.writeTxn(() async {
         // 1. Put Invoice
         final invoiceId = await collection.put(invoice);
         invoice.id = invoiceId;
 
         // Load Party by ID to prevent IsarLink deadlocks in writeTxn
-        final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
-        if (!kIsWeb && party != null) {
-          invoice.party.value = party;
+        if (!kIsWeb && newParty != null) {
+          invoice.party.value = newParty;
         }
 
         // 2. Adjust Party Outstanding Balance
-        if (oldInvoice != null) {
-          final oldPartyId = oldInvoice.partyId;
-          final oldParty = oldPartyId != null ? await isar.partys.get(oldPartyId) : null;
-          if (oldParty != null) {
-            oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - (oldInvoice.pendingAmount ?? 0.0);
-            await isar.partys.put(oldParty);
-          }
+        if (oldParty != null) {
+          oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - (oldInvoice?.pendingAmount ?? 0.0);
+          await isar.partys.put(oldParty);
         }
 
-        if (party != null) {
+        if (newParty != null) {
           final pendingAmt = invoice.pendingAmount ?? 0.0;
-          party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
-          await isar.partys.put(party);
+          newParty.outstandingBalance = (newParty.outstandingBalance ?? 0.0) + pendingAmt;
+          await isar.partys.put(newParty);
         }
 
         // 3. Clear old items if editing
         if (!isNew) {
-          // Use only direct field filters - avoid IsarLink filters inside write txn (causes deadlock on legacy data)
-          final oldByParentId = await isar.invoiceItems
-              .filter()
-              .parentInvoiceIdEqualTo(invoiceId)
-              .findAll();
-          final oldByParentUuid = invoice.uuid != null
-              ? await isar.invoiceItems
-                  .filter()
-                  .parentInvoiceUuidEqualTo(invoice.uuid)
-                  .findAll()
-              : <InvoiceItem>[];
           // Merge, dedup by id
           final allOldIds = <int>{};
           final oldItems = <InvoiceItem>[];
@@ -147,9 +144,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             await isar.invoiceItems.put(oldItem);
 
             // Restore stock back before applying new ones (converting secondary unit if applicable)
-            final dbItem = kIsWeb
-                ? (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null)
-                : (oldItem.itemId != null ? await isar.items.get(oldItem.itemId!) : null);
+            final dbItem = oldItem.itemId != null ? targetItemMap[oldItem.itemId] : null;
             if (dbItem != null) {
               double restoredQty = oldItem.quantity ?? 0.0;
               final convFactor = dbItem.conversionFactor ?? 1.0;
@@ -345,11 +340,12 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final targetItemMap = {for (var i in allItems) i.id: i};
       final modifiedItems = <int, Item>{};
 
+      final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
+
       await isar.writeTxn(() async {
         await collection.put(invoice);
 
         // 1. Rollback Party Outstanding Balance
-        final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
         if (party != null) {
           final double pendingAmt = invoice.pendingAmount ?? 0.0;
           party.outstandingBalance = (party.outstandingBalance ?? 0.0) - pendingAmt;
