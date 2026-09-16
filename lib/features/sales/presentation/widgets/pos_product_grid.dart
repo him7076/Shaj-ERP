@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
-import 'package:business_sahaj_erp/features/sales/presentation/providers/sales_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class POSProductGrid extends ConsumerStatefulWidget {
@@ -51,7 +51,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
             data: (allItems) {
               final items = _selectedCategory == null 
                   ? allItems 
-                  : allItems.where((i) => i.categoryId == _selectedCategory!.id).toList();
+                  : allItems.where((i) => i.category.value?.id == _selectedCategory!.id).toList();
 
               if (items.isEmpty) {
                 return const Center(child: Text('No items found in this category.'));
