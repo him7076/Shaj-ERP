@@ -73,4 +73,29 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
       throw DatabaseException('Failed to generate next item code: $e');
     }
   }
+  @override
+  Future<List<Item>> getAll() async {
+    try {
+      final items = await collection.filter().isDeletedEqualTo(false).findAll();
+      for (var item in items) {
+        try { await item.category.load(); } catch (_) {}
+        try { await item.brand.load(); } catch (_) {}
+        try { await item.unit.load(); } catch (_) {}
+      }
+      return items;
+    } catch (e) {
+      throw DatabaseException('Failed to retrieve all active Item: $e');
+    }
+  }
+
+  @override
+  Future<Item?> getByUuid(String uuid) async {
+    try {
+      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
+      if (entity == null || entity.isDeleted) return null;
+      return entity;
+    } catch (e) {
+      throw DatabaseException('Failed to retrieve Item by uuid: $e');
+    }
+  }
 }
