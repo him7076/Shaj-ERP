@@ -983,7 +983,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   }
 
   Widget _buildImageUploaderSection() {
-    return _buildSection(
+    return _buildSectionCard(
+      context: context,
       title: 'Product Image',
       icon: Icons.image_rounded,
       color: Colors.pink,
