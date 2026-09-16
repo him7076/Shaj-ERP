@@ -226,16 +226,15 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
         items = items.where((item) => stockService.isOutOfStock(item)).toList();
         break;
     }
+    // Safe Dart-side Bundle filtering for Web
+    if (filter.isBundle != null) {
+      items = items.where((item) => item.isBundle == filter.isBundle).toList();
+    }
     
     // Apply limit after filtering
     if (items.length > filter.limit) {
       items = items.sublist(0, filter.limit);
     }
-  }
-
-  // Safe Dart-side Bundle filtering for Web
-  if (filter.isBundle != null) {
-    items = items.where((item) => item.isBundle == filter.isBundle).toList();
   }
 
   return items;
