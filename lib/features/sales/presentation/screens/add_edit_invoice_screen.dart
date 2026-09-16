@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:business_sahaj_erp/features/sales/presentation/widgets/pos_product_grid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -560,7 +561,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..itemId = cartItem.item.id
           ..itemName = cartItem.item.itemName
           ..hsnCode = cartItem.item.hsnCode
-          ..unit = cartItem.unit ?? cartItem.item.primaryUnitName ?? cartItem.item.unit.value?.shortName ?? cartItem.item.unit.value?.unitName ?? 'PCS'
+          ..unit = cartItem.unit ?? cartItem.item.primaryUnitName ?? (!kIsWeb ? cartItem.item.unit.value?.shortName : '') ?? (!kIsWeb ? cartItem.item.unit.value?.unitName : '') ?? 'PCS'
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
           ..rate = cartItem.rate
@@ -666,16 +667,21 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final mainContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildPartyAndHeaderCard(theme),
-        const SizedBox(height: 16),
-        _buildProductSearchAndCatalog(theme),
-        const SizedBox(height: 16),
-        _buildCartItemsTable(theme, cart),
-      ],
-    );
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final isRestaurantMode = prefs.getBool('enable_restaurant_mode') ?? false;
+
+    final mainContent = isRestaurantMode
+        ? const POSProductGrid()
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildPartyAndHeaderCard(theme),
+              const SizedBox(height: 16),
+              _buildProductSearchAndCatalog(theme),
+              const SizedBox(height: 16),
+              _buildCartItemsTable(theme, cart),
+            ],
+          );
 
     final summaryContent = Card(
       elevation: 0,
@@ -929,14 +935,41 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 children: [
                   Expanded(flex: 3, child: mainContent),
                   const SizedBox(width: 16),
-                  Expanded(flex: 2, child: summaryContent),
+                  Expanded(
+                    flex: 2, 
+                    child: isRestaurantMode 
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildPartyAndHeaderCard(theme),
+                              const SizedBox(height: 16),
+                              _buildCartItemsTable(theme, cart),
+                              const SizedBox(height: 16),
+                              summaryContent,
+                            ],
+                          )
+                        : summaryContent,
+                  ),
                 ],
               )
             : Column(
                 children: [
-                  mainContent,
-                  const SizedBox(height: 16),
-                  summaryContent,
+                  if (isRestaurantMode) ...[
+                    _buildPartyAndHeaderCard(theme),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 500, // Fixed height for POS grid on mobile
+                      child: mainContent,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCartItemsTable(theme, cart),
+                    const SizedBox(height: 16),
+                    summaryContent,
+                  ] else ...[
+                    mainContent,
+                    const SizedBox(height: 16),
+                    summaryContent,
+                  ],
                   const SizedBox(height: 30),
                 ],
               ),
@@ -1156,99 +1189,44 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             Row(
               children: [
                 Expanded(
-                  child: itemsAsync.when(
-                    data: (items) {
-                      return Autocomplete<Item>(
-                        displayStringForOption: (item) => '${item.itemName ?? "Unnamed"} (Stock: ${item.currentStock?.toInt() ?? 0})',
-                        optionsBuilder: (textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return items.take(20);
-                          }
-                          final query = textEditingValue.text.toLowerCase();
-                          return items.where((item) {
-                            final name = item.itemName?.toLowerCase() ?? '';
-                            final code = item.itemCode?.toLowerCase() ?? '';
-                            final hsn = item.hsnCode?.toLowerCase() ?? '';
-                            return name.contains(query) || code.contains(query) || hsn.contains(query);
-                          });
-                        },
-                        optionsMaxHeight: 300,
-                        onSelected: (item) {
-                          ref.read(invoiceCartProvider.notifier).addItem(item);
-                          FocusScope.of(context).unfocus();
-                        },
-                        optionsViewBuilder: (context, onSelected, options) {
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 6,
-                              borderRadius: BorderRadius.circular(12),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: options.length,
-                                  itemBuilder: (context, index) {
-                                    final item = options.elementAt(index);
-                                    return ListTile(
-                                      dense: true,
-                                      leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
-                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                      subtitle: Text(
-                                        'Code: ${item.itemCode ?? "N/A"} | Price: ₹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                      onTap: () => onSelected(item),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                          return TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Type product name to add...',
-                              prefixIcon: Icon(Icons.search),
-                              border: OutlineInputBorder(),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading products: $e'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.add_shopping_cart_rounded),
-                  tooltip: 'Search & Pick Item from Catalog',
-                  onPressed: () async {
-                    final selectedItem = await ItemSearchPickerModal.show(context);
-                    if (selectedItem != null) {
-                      ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
-                      ref.invalidate(filteredItemsProvider);
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false)
-                  IconButton.filledTonal(
-                    icon: const Icon(Icons.extension_rounded, color: Colors.orange),
-                    tooltip: 'Add Bundle / Combo',
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.add_shopping_cart_rounded),
+                    label: const Text('Add Item'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                     onPressed: () async {
-                      final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
+                      final selectedItem = await ItemSearchPickerModal.show(context);
                       if (selectedItem != null) {
                         ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
                         ref.invalidate(filteredItemsProvider);
                       }
                     },
                   ),
+                ),
+                if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.extension_rounded),
+                      label: const Text('Add Bundle'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: Colors.orange.shade100,
+                        foregroundColor: Colors.orange.shade900,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
+                        if (selectedItem != null) {
+                          ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
+                          ref.invalidate(filteredItemsProvider);
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ],
             ),
           ],

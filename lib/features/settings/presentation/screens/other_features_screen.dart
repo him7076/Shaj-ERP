@@ -13,6 +13,7 @@ class OtherFeaturesScreen extends ConsumerStatefulWidget {
 
 class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
   bool _enableBundleManagement = false;
+  bool _enableRestaurantMode = false;
 
   @override
   void initState() {
@@ -24,6 +25,7 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
     final prefs = ref.read(sharedPreferencesProvider);
     setState(() {
       _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
+      _enableRestaurantMode = prefs.getBool('enable_restaurant_mode') ?? false;
     });
   }
 
@@ -41,6 +43,27 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
             value 
               ? 'Bundle Item Management Enabled' 
               : 'Bundle Item Management Disabled'
+          ),
+          backgroundColor: value ? Colors.green : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleRestaurantMode(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_restaurant_mode', value);
+    setState(() {
+      _enableRestaurantMode = value;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value 
+              ? 'Restaurant Mode Enabled' 
+              : 'Restaurant Mode Disabled'
           ),
           backgroundColor: value ? Colors.green : Colors.redAccent,
         ),
@@ -94,6 +117,41 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
               value: _enableBundleManagement,
               onChanged: _toggleBundleManagement,
               activeColor: Colors.orange,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: SwitchListTile(
+              title: const Text(
+                'Restaurant Mode (POS)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Enable Point of Sale (POS) layout for fast billing. Shows product cards and categories instead of standard search form.',
+                style: TextStyle(fontSize: 12),
+              ),
+              secondary: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.pink.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.restaurant_menu_rounded, color: Colors.pink),
+              ),
+              value: _enableRestaurantMode,
+              onChanged: _toggleRestaurantMode,
+              activeColor: Colors.pink,
             ),
           ),
         ],
