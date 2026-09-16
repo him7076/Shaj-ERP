@@ -33,28 +33,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
   Future<List<Invoice>> searchInvoices(String query) async {
     if (query.trim().isEmpty) {
       return await getAll();
-    
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
     }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
 
     try {
       final cleanQuery = query.trim();
@@ -71,50 +50,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           .findAll();
     } catch (e) {
       throw DatabaseException('Failed to search invoices: $e');
-    
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
     }
   }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
 
   @override
   Future<String> generateNextInvoiceNumber() => _numberService.generateNextInvoiceNumber();
@@ -142,28 +79,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         invoice.paymentStatus = 'Paid';
       } else {
         invoice.paymentStatus = 'Partially Paid';
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      }
       invoice.invoiceStatus = 'Active';
 
       final allItems = await isar.items.where().findAll();
@@ -175,28 +91,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       Invoice? oldInvoice;
       if (!isNew) {
         oldInvoice = await collection.get(invoice.id);
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      }
       
       final oldPartyId = oldInvoice?.partyId;
       final oldParty = oldPartyId != null ? await isar.partys.get(oldPartyId) : null;
@@ -208,50 +103,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         oldByParentId = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
         if (invoice.uuid != null) {
           oldByParentUuid = await isar.invoiceItems.filter().parentInvoiceUuidEqualTo(invoice.uuid).findAll();
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
+      }
 
       await isar.writeTxn(() async {
         // 1. Put Invoice
@@ -261,82 +114,19 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         // Load Party by ID to prevent IsarLink deadlocks in writeTxn
         if (!kIsWeb && newParty != null) {
           invoice.party.value = newParty;
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         // 2. Adjust Party Outstanding Balance
         if (oldParty != null) {
           oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - (oldInvoice?.pendingAmount ?? 0.0);
           await isar.partys.put(oldParty);
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         if (newParty != null) {
           final pendingAmt = invoice.pendingAmount ?? 0.0;
           newParty.outstandingBalance = (newParty.outstandingBalance ?? 0.0) + pendingAmt;
           await isar.partys.put(newParty);
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         // 3. Clear old items if editing
         if (!isNew) {
@@ -345,28 +135,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           final oldItems = <InvoiceItem>[];
           for (var oi in [...oldByParentId, ...oldByParentUuid]) {
             if (allOldIds.add(oi.id)) oldItems.add(oi);
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+          }
 
           for (var oldItem in oldItems) {
             oldItem.isDeleted = true;
@@ -385,50 +154,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                 final pName = (dbItem.primaryUnitName ?? '').trim().toLowerCase();
                 if (uName == sName && uName != pName) {
                   restoredQty = restoredQty / convFactor;
-                
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                }
+              }
               final hasChildComponents = oldItems.any((oi) => oi.uuid != null && oi.uuid!.endsWith("_BNDLCOMP"));
               if ((oldItem.isBundle || dbItem.isBundle) && !hasChildComponents) {
                  final uuids = oldItem.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
@@ -455,141 +182,15 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                         ..reason = 'Reversed Bundle Sale #${oldInvoice?.invoiceNumber ?? "Editing"}'
                         ..notes = 'Component of ${dbItem.itemName}';
                      await isar.stockAdjustments.put(adj);
-                   
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-                 
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                   }
+                 }
               } else {
                 dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
                 modifiedItems[dbItem.id] = dbItem;
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-            
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+              }
+            }
+          }
+        }
 
         // 4. Put new InvoiceItems & Deduct Stock in batch
         // We already have targetItemMap and itemUuidMap pre-fetched
@@ -607,28 +208,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           item.parentInvoiceUuid = invoice.uuid;
           try {
             item.invoice.value = invoice;
-          } catch (_) {
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+          } catch (_) {}
           
           itemsToSave.add(item);
 
@@ -644,50 +224,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               final pName = (dbItem.primaryUnitName ?? (!kIsWeb ? dbItem.unit.value?.shortName : '') ?? '').trim().toLowerCase();
               if (itemUnit == secUnit && itemUnit != pName) {
                 requestedInPrimaryUnit = requestedInPrimaryUnit / convFactor;
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-            
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+              }
+            }
 
             final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
             
@@ -707,28 +245,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   
                   if (!allowNegativeStock && compAvailable < compRequested) {
                     throw StockException('Insufficient stock for bundle component "${cItem.itemName}". Available: $compAvailable, Requested: $compRequested');
-                  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                  }
                   
                   cItem.currentStock = compAvailable - compRequested;
                   final log = '[${DateTime.now().toIso8601String().substring(0,19)}] BUNDLE SOLD: -$compRequested | Bal: ${cItem.currentStock} | Invoice #${invoice.invoiceNumber}';
@@ -752,144 +269,18 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                     ..createdAt = DateTime.now()
                     ..updatedAt = DateTime.now();
 
-                  try { compItem.invoice.value = invoice; } catch (_) {
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                  try { compItem.invoice.value = invoice; } catch (_) {}
                   if (!kIsWeb) {
-                    try { compItem.item.value = cItem; } catch (_) {
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-                  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                    try { compItem.item.value = cItem; } catch (_) {}
+                  }
                   
                   itemsToSave.add(compItem);
-                
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                }
+              }
             } else {
               if (!allowNegativeStock && available < requestedInPrimaryUnit) {
                 throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requestedInPrimaryUnit');
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+              }
   
               dbItem.currentStock = available - requestedInPrimaryUnit;
   
@@ -897,98 +288,14 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
               dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
               modifiedItems[dbItem.id] = dbItem;
-            
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+            }
+          }
+        }
 
         await isar.invoiceItems.putAll(itemsToSave);
         if (modifiedItems.isNotEmpty) {
           await isar.items.putAll(modifiedItems.values.toList());
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         // 5. Add Sync Queue logs for Invoice
         final invoiceQueue = SyncQueue()
@@ -1012,78 +319,15 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ..createdAt = DateTime.now()
             ..updatedAt = DateTime.now();
           await isar.syncQueues.put(itemQueue);
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
       });
 
       logger.info('Invoice #${invoice.invoiceNumber} saved successfully.');
       Future.microtask(() => SyncManager.triggerUpload()); // Non-blocking background upload
     } catch (e) {
       throw DatabaseException('Failed to transaction-save invoice: $e');
-    
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
     }
   }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
 
   @override
   Future<void> cancelInvoice(String invoiceUuid, String reason, String user) async {
@@ -1091,28 +335,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final invoice = await collection.filter().uuidEqualTo(invoiceUuid).findFirst();
       if (invoice == null) {
         throw RecordNotFoundException('Invoice not found for cancellation.');
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      }
 
       invoice.invoiceStatus = 'Cancelled';
       invoice.paymentStatus = 'Cancelled';
@@ -1139,28 +362,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           final double pendingAmt = invoice.pendingAmount ?? 0.0;
           party.outstandingBalance = (party.outstandingBalance ?? 0.0) - pendingAmt;
           await isar.partys.put(party);
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         // 2. Restore Stock Levels
         for (var item in items) {
@@ -1176,50 +378,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               final pName = (dbItem.primaryUnitName ?? (!kIsWeb ? dbItem.unit.value?.shortName : '') ?? '').trim().toLowerCase();
               if (itemUnit == secUnit && itemUnit != pName) {
                 restoredQty = restoredQty / convFactor;
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-            
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+              }
+            }
 
             if (item.isBundle || dbItem.isBundle) {
                  final uuids = item.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
@@ -1246,146 +406,20 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                         ..reason = 'Cancelled Bundle Sale #${invoice.invoiceNumber}'
                         ..notes = 'Component of ${dbItem.itemName}';
                      await isar.stockAdjustments.put(adj);
-                   
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-                 
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                   }
+                 }
             } else {
               dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
               final log = '[${DateTime.now().toIso8601String().substring(0,19)}] RESTORED: +$restoredQty | Bal: ${dbItem.currentStock} | Cancel Invoice #${invoice.invoiceNumber}';
               dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
               modifiedItems[dbItem.id] = dbItem;
-            
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+            }
+          }
+        }
         
         if (modifiedItems.isNotEmpty) {
           await isar.items.putAll(modifiedItems.values.toList());
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         // 3. Sync Log
         final queueItem = SyncQueue()
@@ -1403,50 +437,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       SyncManager.triggerUpload(); // Instant Firebase upload
     } catch (e) {
       throw DatabaseException('Failed to cancel invoice: $e');
-    
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
     }
   }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
 
   @override
   Future<Invoice> convertOrderToInvoice({
@@ -1460,98 +452,14 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final order = await isar.orders.filter().uuidEqualTo(orderUuid).findFirst();
       if (order == null) {
         throw RecordNotFoundException('Order not found for conversion.');
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      }
 
       if (order.status == 'Converted To Sale') {
         throw const OrderConversionException('This order has already been converted to a sales invoice.');
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
+      }
 
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-
-      try { await order.party.load(); } catch (_) {
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-      try { await order.orderItems.load(); } catch (_) {
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      try { await order.party.load(); } catch (_) {}
+      try { await order.orderItems.load(); } catch (_) {}
 
       final prefix = _numberService.getFinancialYearPrefix(DateTime.now());
       final invoiceNum = await generateNextInvoiceNumber();
@@ -1602,28 +510,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         invoice.cgstAmount = 0.0;
         invoice.sgstAmount = 0.0;
         invoice.igstAmount = order.totalGST;
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      }
 
       // Calculate Payment Status
       final pending = invoice.pendingAmount ?? 0.0;
@@ -1634,28 +521,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         invoice.pendingAmount = 0.0;
       } else {
         invoice.paymentStatus = 'Partially Paid';
-      
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+      }
       invoice.invoiceStatus = 'Active';
 
       // Lock Order
@@ -1692,50 +558,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             final pendingAmt = invoice.pendingAmount ?? 0.0;
             party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
             await isar.partys.put(party);
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+          }
+        }
 
         // 3. Link Order
         if (!kIsWeb) invoice.order.value = order;
@@ -1771,28 +595,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           await isar.invoiceItems.put(invItem);
           if (!kIsWeb) {
             invItem.invoice.value = invoice;
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+          }
           
           if ((!kIsWeb && orderItem.item.value != null) || orderItem.itemId != null) {
             final dbItem = (!kIsWeb ? orderItem.item.value : null) ?? (orderItem.itemId != null ? targetItemMap[orderItem.itemId!] : null);
@@ -1806,28 +609,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                 final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
                 if (!allowNegativeStock && available < requested) {
                   throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requested');
-                
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+                }
 
                 dbItem.currentStock = available - requested;
 
@@ -1835,120 +617,15 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                 dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
                 
                 modifiedItems[dbItem.id] = dbItem;
-              
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-            
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-          
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+              }
+            }
+          }
           invoiceItems.add(invItem);
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         if (modifiedItems.isNotEmpty) {
           await isar.items.putAll(modifiedItems.values.toList());
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
         // 6. Sync logs for Invoice
         final invoiceQueue = SyncQueue()
           ..uuid = _generateUuid()
@@ -1971,28 +648,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ..createdAt = DateTime.now()
             ..updatedAt = DateTime.now();
           await isar.syncQueues.put(itemQueue);
-        
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
+        }
 
         // 8. Sync log for updating Order status
         final orderQueue = SyncQueue()
@@ -2011,77 +667,14 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       return invoice;
     } catch (e) {
       throw DatabaseException('Failed to convert order to invoice: $e');
-    
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
     }
   }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
-  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
-  }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
 
   String _generateUuid() {
     final random = Random();
     final parts = List.generate(4, (_) => random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0'));
     return '${DateTime.now().millisecondsSinceEpoch}-${parts.join("-")}';
-  
-  @override
-  Future<List<Invoice>> getAll() async {
-    try {
-      final items = await collection.filter().isDeletedEqualTo(false).findAll();
-      return items;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Invoice: $e');
-    }
   }
-
-  @override
-  Future<Invoice?> getByUuid(String uuid) async {
-    try {
-      final entity = await collection.filter().uuidEqualTo(uuid).findFirst();
-      if (entity == null || entity.isDeleted) return null;
-      return entity;
-    } catch (e) {
-      throw DatabaseException('Failed to retrieve Invoice by uuid: $e');
-    }
-  }
-}
 
   @override
   Future<List<Invoice>> getAll() async {
