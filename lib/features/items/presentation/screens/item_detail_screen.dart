@@ -247,7 +247,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         });
       }
     } catch (e) {
-      logger.error('Failed to load item detail', e);
+      logger.error('Failed to load item detail', e); if (mounted) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading item: $e'), backgroundColor: Colors.redAccent, duration: const Duration(seconds: 10))); }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -879,4 +879,5 @@ class _DetailRow {
   final bool isBold;
   _DetailRow(this.label, this.value, {this.isBold = false});
 }
+
 
