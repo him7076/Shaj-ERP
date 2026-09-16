@@ -20,7 +20,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoriesAsync = ref.watch(categoriesListProvider);
-    final itemsAsync = ref.watch(filteredItemsProvider); // we'll use all items and filter locally to avoid refetching
+    final itemsAsync = ref.watch(itemsListProvider); // we'll use all items and filter locally to avoid refetching
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -43,7 +43,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final itemsAsync = ref.watch(filteredItemsProvider);
+    final itemsAsync = ref.watch(itemsListProvider);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
