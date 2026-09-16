@@ -55,7 +55,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                   : allItems.where((i) => i.category.value?.id == _selectedCategory!.id).toList();
 
               if (items.isEmpty) {
-                return const Center(child: Text('No items found in this category.'));
+                return Center(child: Text('DEBUG: allItems length is ${allItems.length}. items length is ${items.length}. _selectedCategory is ${_selectedCategory?.id}.'));
               }
 
               return GridView.builder(
@@ -73,7 +73,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error loading items')),
+                        error: (e, _) => Center(child: Text('Error loading items: $e')),
           ),
         ),
       ],
@@ -193,4 +193,6 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     );
   }
 }
+
+
 
