@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
@@ -17,11 +19,47 @@ class POSProductGrid extends ConsumerStatefulWidget {
 class _POSProductGridState extends ConsumerState<POSProductGrid> {
   Category? _selectedCategory;
 
+  List<Item>? _loadedItems;
+  bool _isLoadingItems = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _fetchItems();
+  }
+  
+  Future<void> _fetchItems() async {
+    setState(() => _isLoadingItems = true);
+    try {
+      final isar = ref.read(isarProvider);
+      var query = isar.items.filter().isDeletedEqualTo(false);
+      
+      if (_selectedCategory != null) {
+        query = query.and().category((q) => q.idEqualTo(_selectedCategory!.id));
+      }
+      
+      final items = await query.findAll();
+      if (mounted) {
+        setState(() {
+          _loadedItems = items;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loadedItems = [];
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingItems = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoriesAsync = ref.watch(categoriesListProvider);
-    final itemsAsync = ref.watch(itemsListProvider); // we'll use all items and filter locally to avoid refetching
+    // Remove itemsListProvider watch
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -48,33 +86,23 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
         
         // Items Grid
         Expanded(
-          child: itemsAsync.when(
-            data: (allItems) {
-              final items = _selectedCategory == null 
-                  ? allItems 
-                  : allItems.where((i) => i.category.value?.id == _selectedCategory!.id).toList();
-
-              if (items.isEmpty) {
-                return Center(child: Text('DEBUG: allItems length is ${allItems.length}. items length is ${items.length}. _selectedCategory is ${_selectedCategory?.id}.'));
-              }
-
-              return GridView.builder(
-                padding: const EdgeInsets.all(8),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 220,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  return _buildProductCard(items[index], theme);
-                },
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Center(child: Text('Error loading items: $e')),
-          ),
+          child: _isLoadingItems || _loadedItems == null
+              ? const Center(child: CircularProgressIndicator())
+              : _loadedItems!.isEmpty
+                  ? const Center(child: Text('No items found in this category.'))
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 220,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: _loadedItems!.length,
+                      itemBuilder: (context, index) {
+                        return _buildProductCard(_loadedItems![index], theme);
+                      },
+                    ),
         ),
       ],
     );
@@ -91,6 +119,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
           setState(() {
             _selectedCategory = category;
           });
+          _fetchItems();
         },
         selectedColor: theme.colorScheme.primaryContainer,
         checkmarkColor: theme.colorScheme.primary,
@@ -193,6 +222,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     );
   }
 }
+
 
 
 
