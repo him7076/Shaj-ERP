@@ -161,17 +161,12 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
       queryBuilder = queryBuilder.and().gstRateEqualTo(filter.gstRate);
   }
 
-  if (filter.isBundle != null) {
-      if (filter.isBundle == true) {
-        queryBuilder = queryBuilder.and().isBundleEqualTo(true);
-      } else {
-        queryBuilder = queryBuilder.and().not().isBundleEqualTo(true);
-      }
-  }
+  // We will do isBundle filtering in Dart to avoid Isar Web missing field index bugs
+  // if (filter.isBundle != null) { ... }
   
   // If there's no dart-side filtering, push pagination to DB
   var items = <Item>[];
-  if (filter.stockStatus == 'All') {
+  if (filter.stockStatus == 'All' && filter.isBundle == null) {
     switch (filter.sortBy) {
       case 'Name A-Z':
         items = await queryBuilder.sortByItemName().limit(filter.limit).findAll();
@@ -236,6 +231,11 @@ final filteredItemsProvider = FutureProvider<List<Item>>((ref) async {
     if (items.length > filter.limit) {
       items = items.sublist(0, filter.limit);
     }
+  }
+
+  // Safe Dart-side Bundle filtering for Web
+  if (filter.isBundle != null) {
+    items = items.where((item) => item.isBundle == filter.isBundle).toList();
   }
 
   return items;
