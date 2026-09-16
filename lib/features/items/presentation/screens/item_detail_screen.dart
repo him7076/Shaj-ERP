@@ -87,27 +87,21 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final itemName = fetchedItem.itemName?.trim().toLowerCase() ?? '';
         final itemUuid = fetchedItem.uuid;
 
-        // 1. Indexed query for Sales Invoices (with fallback for legacy records)
-        final matchedInvItems = await isar.invoiceItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) {
-              if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
-              }
-              return q.itemIdEqualTo(fetchedItem.id);
-            })
-            .findAll();
+        // 1. Sales Invoices
+        final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedInvItems = allInvItems.where((ii) {
+          if (ii.itemId == fetchedItem.id) return true;
+          if (itemName.isNotEmpty && ii.itemId == null && (ii.itemName?.trim().toLowerCase() ?? '') == itemName) return true;
+          return false;
+        }).toList();
 
-        // Batch fetch parent Invoices to fix N+1 query freeze
         final invIds = matchedInvItems.map((ii) => ii.parentInvoiceId).where((id) => id != null).cast<int>().toSet().toList();
         final invoicesBatch = await isar.invoices.getAll(invIds);
         final invoicesMap = { for (var inv in invoicesBatch) if (inv != null) inv.id: inv };
 
         final invUuids = matchedInvItems.map((ii) => ii.parentInvoiceUuid).where((u) => u != null && u.isNotEmpty).cast<String>().toSet().toList();
-        final invoicesByUuidBatch = invUuids.isNotEmpty ? await isar.invoices.filter().anyOf(invUuids, (q, String u) => q.uuidEqualTo(u)).findAll() : <Invoice>[];
-        final invoicesUuidMap = { for (var inv in invoicesByUuidBatch) if (inv.uuid != null) inv.uuid!: inv };
+        final allInvoices = invUuids.isNotEmpty ? await isar.invoices.filter().isDeletedEqualTo(false).findAll() : <Invoice>[];
+        final invoicesUuidMap = { for (var inv in allInvoices) if (inv.uuid != null && invUuids.contains(inv.uuid)) inv.uuid!: inv };
 
         for (var ii in matchedInvItems) {
           Invoice? inv;
@@ -138,26 +132,21 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
-        // 2. Indexed query for Purchase Bills
-        final matchedPurItems = await isar.purchaseItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) {
-              if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
-              }
-              return q.itemIdEqualTo(fetchedItem.id);
-            })
-            .findAll();
+        // 2. Purchase Bills
+        final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedPurItems = allPurItems.where((pi) {
+          if (pi.itemId == fetchedItem.id) return true;
+          if (itemName.isNotEmpty && pi.itemId == null && (pi.itemName?.trim().toLowerCase() ?? '') == itemName) return true;
+          return false;
+        }).toList();
 
         final purIds = matchedPurItems.map((pi) => pi.purchaseId).where((id) => id != null).cast<int>().toSet().toList();
         final purchasesBatch = await isar.collection<Purchase>().getAll(purIds);
         final purchasesMap = { for (var pur in purchasesBatch) if (pur != null) pur.id: pur };
 
         final purUuids = matchedPurItems.map((pi) => pi.purchaseUuid).where((u) => u != null && u.isNotEmpty).cast<String>().toSet().toList();
-        final purchasesByUuidBatch = purUuids.isNotEmpty ? await isar.collection<Purchase>().filter().anyOf(purUuids, (q, String u) => q.uuidEqualTo(u)).findAll() : <Purchase>[];
-        final purchasesUuidMap = { for (var pur in purchasesByUuidBatch) if (pur.uuid != null) pur.uuid!: pur };
+        final allPurchases = purUuids.isNotEmpty ? await isar.collection<Purchase>().filter().isDeletedEqualTo(false).findAll() : <Purchase>[];
+        final purchasesUuidMap = { for (var pur in allPurchases) if (pur.uuid != null && purUuids.contains(pur.uuid)) pur.uuid!: pur };
 
         for (var pi in matchedPurItems) {
           Purchase? pur;
@@ -188,20 +177,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
-        // 3. Indexed query for Orders
-        final matchedOrdItems = await isar.orderItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) {
-              if (itemName.isNotEmpty) {
-                return q.itemIdEqualTo(fetchedItem.id).or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
-              }
-              return q.itemIdEqualTo(fetchedItem.id);
-            })
-            .findAll();
+        // 3. Orders
+        final allOrdItems = await isar.orderItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedOrdItems = allOrdItems.where((oi) {
+          if (oi.itemId == fetchedItem.id) return true;
+          if (itemName.isNotEmpty && oi.itemId == null && (oi.itemName?.trim().toLowerCase() ?? '') == itemName) return true;
+          return false;
+        }).toList();
 
-        // Batch fetch parent Orders
         final ordIds = matchedOrdItems.map((oi) => oi.orderId).where((id) => id != null).cast<int>().toSet().toList();
         final ordersBatch = await isar.orders.getAll(ordIds);
         final ordersMap = { for (var ord in ordersBatch) if (ord != null) ord.id: ord };
@@ -227,22 +210,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           }
         }
 
-        // 4. Indexed query for Stock Adjustments
-        final adjustments = await isar.collection<StockAdjustment>()
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) {
-              var builder = q.itemIdEqualTo(fetchedItem.id);
-              if (itemUuid != null && itemUuid.isNotEmpty) {
-                builder = builder.or().itemUuidEqualTo(itemUuid);
-              }
-              if (itemName.isNotEmpty) {
-                builder = builder.or().group((q2) => q2.itemIdIsNull().and().itemNameEqualTo(itemName, caseSensitive: false));
-              }
-              return builder;
-            })
-            .findAll();
+        // 4. Stock Adjustments
+        final allAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+        final adjustments = allAdjustments.where((adj) {
+          if (adj.itemId == fetchedItem.id) return true;
+          if (itemUuid != null && itemUuid.isNotEmpty && adj.itemUuid == itemUuid) return true;
+          if (itemName.isNotEmpty && adj.itemId == null && (adj.itemName?.trim().toLowerCase() ?? '') == itemName) return true;
+          return false;
+        }).toList();
 
         for (var adj in adjustments) {
           final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
@@ -904,3 +879,4 @@ class _DetailRow {
   final bool isBold;
   _DetailRow(this.label, this.value, {this.isBold = false});
 }
+
