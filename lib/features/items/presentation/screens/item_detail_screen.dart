@@ -50,9 +50,10 @@ class _ItemTransaction {
 }
 
 class ItemDetailScreen extends ConsumerStatefulWidget {
-  final String itemUuid;
+  final String? itemUuid;
+  final Item? item;
 
-  const ItemDetailScreen({Key? key, required this.itemUuid}) : super(key: key);
+  const ItemDetailScreen({Key? key, this.itemUuid, this.item}) : super(key: key);
 
   @override
   ConsumerState<ItemDetailScreen> createState() => _ItemDetailScreenState();
@@ -76,7 +77,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     try {
       final repo = ref.read(itemRepositoryProvider);
       final isar = ref.read(databaseServiceProvider).isar;
-      final fetchedItem = await repo.getByUuid(widget.itemUuid);
+      final fetchedItem = widget.item ?? (widget.itemUuid != null ? await repo.getByUuid(widget.itemUuid!) : null);
 
       if (fetchedItem != null) {
         try { await fetchedItem.category.load(); } catch (_) {}
@@ -879,5 +880,6 @@ class _DetailRow {
   final bool isBold;
   _DetailRow(this.label, this.value, {this.isBold = false});
 }
+
 
 

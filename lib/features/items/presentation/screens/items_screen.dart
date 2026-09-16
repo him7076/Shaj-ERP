@@ -791,7 +791,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ItemDetailScreen(itemUuid: item.uuid!),
+              builder: (context) => ItemDetailScreen(itemUuid: item.uuid, item: item),
             ),
           ).then((changed) { if (changed == true) ref.invalidate(filteredItemsProvider);
       ref.invalidate(itemsListProvider); });
@@ -998,3 +998,4 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
   // _getEffectiveBuyRate REMOVED — replaced by itemBuyRateCacheProvider (single-pass cache)
 }
+
