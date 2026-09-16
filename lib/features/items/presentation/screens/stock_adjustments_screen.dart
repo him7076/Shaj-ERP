@@ -149,6 +149,7 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
         Future.microtask(() => ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions());
         
         ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
         ref.invalidate(lowStockAlertProvider);
         await _loadAdjustments();
 
@@ -936,6 +937,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
       Future.microtask(() => ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions());
       
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
       ref.invalidate(lowStockAlertProvider);
 
       if (mounted) {

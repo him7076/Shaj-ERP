@@ -107,6 +107,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
       
       // Refresh the lists
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
       ref.invalidate(lowStockAlertProvider);
 
       if (mounted) {

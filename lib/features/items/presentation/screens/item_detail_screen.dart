@@ -304,6 +304,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         final repo = ref.read(itemRepositoryProvider);
         await repo.delete(_item!.id);
         ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
         ref.invalidate(lowStockAlertProvider);
         if (mounted) {
           Navigator.pop(context);
@@ -467,6 +468,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                     await ref.read(syncServiceProvider).recalculateAllItemStocksFromTransactions();
                     await _loadItem();
                     ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
 
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(

@@ -682,6 +682,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       }
 
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
       ref.invalidate(lowStockAlertProvider);
 
       if (mounted) {

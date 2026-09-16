@@ -104,6 +104,7 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
 
       _editedItemsMap.clear();
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
 
       // Lightweight non-blocking quiet background sync
       try {

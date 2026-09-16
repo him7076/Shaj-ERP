@@ -255,6 +255,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                             ref.invalidate(filteredTransactionsProvider);
                             ref.invalidate(filteredPartiesProvider);
                             ref.invalidate(filteredItemsProvider);
+                            ref.invalidate(itemsListProvider);
                             ref.invalidate(filteredInvoicesProvider);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -472,6 +473,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                             ref.invalidate(filteredTransactionsProvider);
                             ref.invalidate(filteredPartiesProvider);
                             ref.invalidate(filteredItemsProvider);
+                            ref.invalidate(itemsListProvider);
                             ref.invalidate(filteredInvoicesProvider);
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(

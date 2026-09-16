@@ -173,6 +173,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
       ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(query: ''));
       ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
       ref.invalidate(lowStockAlertProvider);
       ref.invalidate(categoriesListProvider);
       ref.invalidate(brandsListProvider);
@@ -570,6 +571,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             ),
           );
           ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider);
         },
       ),
     );
@@ -791,7 +793,8 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
             MaterialPageRoute(
               builder: (context) => ItemDetailScreen(itemUuid: item.uuid!),
             ),
-          ).then((changed) { if (changed == true) ref.invalidate(filteredItemsProvider); });
+          ).then((changed) { if (changed == true) ref.invalidate(filteredItemsProvider);
+      ref.invalidate(itemsListProvider); });
         },
         borderRadius: BorderRadius.circular(14),
         child: Padding(
