@@ -280,7 +280,19 @@ class DatabaseService {
     final Map<String, dynamic> result = {};
     try {
       final parties = await isar.partys.where().exportJson();
+      
       final items = await isar.items.where().exportJson();
+      final actualItems = await isar.items.where().findAll();
+      for (int i = 0; i < actualItems.length; i++) {
+        final actualItem = actualItems[i];
+        final mapItem = items.firstWhere((e) => e['id'] == actualItem.id, orElse: () => {});
+        if (mapItem.isNotEmpty) {
+          mapItem['categoryId'] = actualItem.category.value?.id;
+          mapItem['brandId'] = actualItem.brand.value?.id;
+          mapItem['unitId'] = actualItem.unit.value?.id;
+        }
+      }
+
       final invoices = await isar.invoices.where().exportJson();
       final invoiceItems = await isar.invoiceItems.where().exportJson();
       final purchases = await isar.purchases.where().exportJson();
@@ -422,6 +434,39 @@ class DatabaseService {
 
         final users = _getList('users');
         if (users.isNotEmpty) await isar.users.importJson(users);
+
+        // Restore IsarLinks for items after all collections (including categories/brands/units) are imported
+        if (items.isNotEmpty) {
+          final actualItems = await isar.items.where().findAll();
+          for (var mapItem in items) {
+            final id = mapItem['id'] as int?;
+            if (id == null) continue;
+            
+            final actualItem = actualItems.firstWhere((e) => e.id == id);
+            
+            final catId = mapItem['categoryId'] as int?;
+            if (catId != null) {
+              final cat = await isar.categorys.get(catId);
+              if (cat != null) actualItem.category.value = cat;
+            }
+
+            final brandId = mapItem['brandId'] as int?;
+            if (brandId != null) {
+              final brand = await isar.brands.get(brandId);
+              if (brand != null) actualItem.brand.value = brand;
+            }
+
+            final unitId = mapItem['unitId'] as int?;
+            if (unitId != null) {
+              final unit = await isar.units.get(unitId);
+              if (unit != null) actualItem.unit.value = unit;
+            }
+
+            await actualItem.category.save();
+            await actualItem.brand.save();
+            await actualItem.unit.save();
+          }
+        }
       });
     } catch (e) {
       logger.error('Failed to import collections from JSON', e);

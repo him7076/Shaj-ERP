@@ -8,6 +8,9 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
@@ -970,15 +973,52 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     );
   }
 
+  bool _isUploadingImage = false;
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50, maxWidth: 800, maxHeight: 800);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50, maxWidth: 600, maxHeight: 600);
     if (pickedFile != null) {
       final bytes = await pickedFile.readAsBytes();
       final base64String = base64Encode(bytes);
+      
       setState(() {
-        _imageBase64 = 'data:image/png;base64,$base64String';
+        _isUploadingImage = true;
       });
+
+      try {
+        final dio = Dio();
+        final formData = FormData.fromMap({
+          'key': 'e18b14a6021d7b38573fc0d091fc56ff', // Public Free ImgBB Key
+          'image': base64String,
+        });
+        
+        final response = await dio.post('https://api.imgbb.com/1/upload', data: formData);
+        if (response.statusCode == 200 && response.data['data'] != null) {
+          final url = response.data['data']['url'];
+          setState(() {
+            _imageBase64 = url; // Save the CDN URL instead of heavy base64
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image uploaded to cloud successfully! (Free Storage)')),
+            );
+          }
+        } else {
+          throw Exception('ImgBB API Error');
+        }
+      } catch (e) {
+        // Graceful fallback to local base64 if no internet or API limit reached
+        setState(() {
+          _imageBase64 = 'data:image/png;base64,$base64String';
+        });
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isUploadingImage = false;
+          });
+        }
+      }
     }
   }
 
@@ -1001,14 +1041,18 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               clipBehavior: Clip.antiAlias,
-              child: _imageBase64 != null
-                  ? Image.memory(
-                      base64Decode(_imageBase64!.split(',').last),
-                      fit: BoxFit.cover,
-                    )
-                  : const Center(
-                      child: Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey),
-                    ),
+              child: _isUploadingImage
+                  ? const Center(child: CircularProgressIndicator())
+                  : _imageBase64 != null
+                      ? (_imageBase64!.startsWith('http')
+                          ? Image.network(_imageBase64!, fit: BoxFit.cover)
+                          : Image.memory(
+                              base64Decode(_imageBase64!.split(',').last),
+                              fit: BoxFit.cover,
+                            ))
+                      : const Center(
+                          child: Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey),
+                        ),
             ),
             const SizedBox(width: 16),
             Expanded(

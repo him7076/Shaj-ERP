@@ -1765,6 +1765,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                 ref.invalidate(dashboardAnalyticsProvider);
                 ref.invalidate(filteredPartiesProvider);
+                ref.invalidate(itemsListProvider); // <-- Added explicit list invalidations
+                ref.invalidate(categoriesListProvider);
+                ref.invalidate(brandsListProvider);
                 ref.invalidate(filteredItemsProvider);
                 ref.invalidate(unitsListProvider);
                 ref.invalidate(purchaseListProvider);
