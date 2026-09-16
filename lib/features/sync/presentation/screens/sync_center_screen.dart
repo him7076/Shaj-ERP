@@ -656,12 +656,29 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Firebase connection error: $e'),
-                      backgroundColor: Colors.orange.shade800,
-                    ),
-                  );
+                  if (e.toString().contains('Web_Firebase_Reload_Required')) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Restart Required'),
+                        content: const Text('You have updated your Firebase Cloud Configs. Since you are using the Web platform, you must refresh the browser tab (press F5) for the new connection settings to take effect without breaking existing cache.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('I will refresh'),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Firebase connection error: $e'),
+                        backgroundColor: Colors.orange.shade800,
+                      ),
+                    );
+                  }
                 }
               }
             },

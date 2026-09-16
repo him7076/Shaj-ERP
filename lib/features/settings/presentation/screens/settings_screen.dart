@@ -2107,12 +2107,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Firebase error: $e'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
+                  if (e.toString().contains('Web_Firebase_Reload_Required')) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Restart Required'),
+                        content: const Text('You have updated your Firebase Cloud Configs. Since you are using the Web platform, you must refresh the browser tab (press F5) for the new connection settings to take effect without breaking existing cache.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('I will refresh'),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Firebase setup error: $e'),
+                        backgroundColor: Colors.orange.shade800,
+                      ),
+                    );
+                  }
                 }
               }
             },

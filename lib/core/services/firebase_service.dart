@@ -127,22 +127,32 @@ class FirebaseService {
     }
 
     try {
-      // Delete all existing Firebase apps to reinitialize cleanly
-      for (var app in Firebase.apps) {
-        try {
-          await app.delete();
-        } catch (_) {}
-      }
+      if (kIsWeb && Firebase.apps.isNotEmpty) {
+        // On Web, deleting and reinitializing the Firebase app breaks Firestore instances
+        // globally. If the user changed configs, they must reload the browser tab.
+        final existingApp = Firebase.apps.first;
+        final opts = existingApp.options;
+        if (opts.apiKey != apiKey || opts.projectId != projectId || opts.appId != appId) {
+          throw Exception('Web_Firebase_Reload_Required');
+        }
+      } else {
+        // On Native, we can safely delete all existing Firebase apps to reinitialize cleanly
+        for (var app in Firebase.apps) {
+          try {
+            await app.delete();
+          } catch (_) {}
+        }
 
-      await Firebase.initializeApp(
-        options: FirebaseOptions(
-          apiKey: apiKey,
-          projectId: projectId,
-          appId: appId,
-          messagingSenderId: senderId.isNotEmpty ? senderId : '000000000000',
-          storageBucket: storageBucket.isNotEmpty ? storageBucket : '$projectId.appspot.com',
-        ),
-      );
+        await Firebase.initializeApp(
+          options: FirebaseOptions(
+            apiKey: apiKey,
+            projectId: projectId,
+            appId: appId,
+            messagingSenderId: senderId.isNotEmpty ? senderId : '000000000000',
+            storageBucket: storageBucket.isNotEmpty ? storageBucket : '$projectId.appspot.com',
+          ),
+        );
+      }
 
       // Reset persistence flag so Firestore settings are reconfigured for new app
       _persistenceConfigured = false;
