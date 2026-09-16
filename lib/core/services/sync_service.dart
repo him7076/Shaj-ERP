@@ -996,6 +996,10 @@ class SyncService {
 
     WriteBatch currentBatch = _firebaseService.firestore.batch();
     int batchOpsCount = 0;
+    
+    List<Map<String, dynamic>> currentBatchSyncedItems = [];
+    List<int> currentBatchCompletedIds = [];
+    List<SyncQueue> currentBatchQueueItems = [];
 
     for (int i = 0; i < queueItems.length; i++) {
       final queueItem = queueItems[i];
@@ -1032,7 +1036,7 @@ class SyncService {
 
         if (entity == null && queueItem.operation != 'Delete') {
           logger.warning('Sync queue item ID ${queueItem.id} not found in database. Skipping.');
-          completedQueueIds.add(queueItem.id);
+          currentBatchCompletedIds.add(queueItem.id);
           continue;
         }
 
@@ -1048,29 +1052,38 @@ class SyncService {
 
         batchOpsCount++;
         if (entity != null) {
-          syncedItems.add({'entityType': entityType, 'entity': entity});
+          currentBatchSyncedItems.add({'entityType': entityType, 'entity': entity});
         }
-        completedQueueIds.add(queueItem.id);
-
-        // Commit WriteBatch if 450 items reached (safely under 500 limit)
-        if (batchOpsCount >= 450) {
-          await currentBatch.commit().timeout(const Duration(seconds: 8));
-          currentBatch = _firebaseService.firestore.batch();
-          batchOpsCount = 0;
-          await Future.delayed(Duration.zero);
-        }
+        currentBatchCompletedIds.add(queueItem.id);
+        currentBatchQueueItems.add(queueItem);
       } catch (e) {
-        logger.error('Failed to sync queue item ID ${queueItem.id}', e);
+        logger.error('Failed to map queue item ID ${queueItem.id}', e);
         await _queueService.updateAttempt(queueItem, e.toString());
       }
-    }
 
-    // Commit any remaining queued ops in batch with 8s timeout
-    if (batchOpsCount > 0) {
-      try {
-        await currentBatch.commit().timeout(const Duration(seconds: 8));
-      } catch (e) {
-        logger.error('Failed committing write batch to Firestore', e);
+      // Commit WriteBatch if 450 items reached OR if it's the last item
+      if (batchOpsCount >= 450 || (i == queueItems.length - 1 && batchOpsCount > 0)) {
+        try {
+          await currentBatch.commit().timeout(const Duration(seconds: 10));
+          // Only if commit succeeds, we add them to the global lists to be marked as synced locally
+          syncedItems.addAll(currentBatchSyncedItems);
+          completedQueueIds.addAll(currentBatchCompletedIds);
+        } catch (e) {
+          logger.error('Failed committing write batch to Firestore. Aborting sync cycle.', e);
+          // Mark attempts for all items in this failed batch so they show errors in UI
+          for (var q in currentBatchQueueItems) {
+            await _queueService.updateAttempt(q, e.toString());
+          }
+          throw Exception('Cloud Write Rejected (Permission/Timeout): $e'); // This halts the entire sync process
+        }
+
+        // Reset batch state
+        currentBatch = _firebaseService.firestore.batch();
+        batchOpsCount = 0;
+        currentBatchSyncedItems.clear();
+        currentBatchCompletedIds.clear();
+        currentBatchQueueItems.clear();
+        await Future.delayed(Duration.zero);
       }
     }
 
