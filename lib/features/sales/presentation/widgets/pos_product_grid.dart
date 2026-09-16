@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
-import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class POSProductGrid extends ConsumerStatefulWidget {
   const POSProductGrid({Key? key}) : super(key: key);
@@ -16,19 +15,9 @@ class POSProductGrid extends ConsumerStatefulWidget {
 }
 
 class _POSProductGridState extends ConsumerState<POSProductGrid> {
-  Category? _selectedCategory;
-  List<Item> _allItems = [];
-  List<Item> _filteredItems = [];
-  bool _isLoading = true;
-  String? _errorMsg;
+  int? _selectedCategoryId;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchAllItems();
-  }
 
   @override
   void dispose() {
@@ -36,63 +25,11 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     super.dispose();
   }
 
-  Future<void> _fetchAllItems() async {
-    setState(() {
-      _isLoading = true;
-      _errorMsg = null;
-    });
-    try {
-      final isar = ref.read(isarProvider);
-      final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
-      // Load category links for each item (needed for filtering)
-      for (var item in items) {
-        try { await item.category.load(); } catch (_) {}
-      }
-      if (mounted) {
-        setState(() {
-          _allItems = items;
-          _applyFilter();
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMsg = 'Error loading items: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _applyFilter() {
-    List<Item> result = _allItems;
-
-    // Category filter
-    if (_selectedCategory != null) {
-      result = result.where((item) {
-        return item.category.value?.id == _selectedCategory!.id;
-      }).toList();
-    }
-
-    // Search filter
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      result = result.where((item) {
-        final name = (item.itemName ?? '').toLowerCase();
-        final code = (item.itemCode ?? '').toLowerCase();
-        final barcode = (item.barcode ?? '').toLowerCase();
-        return name.contains(q) || code.contains(q) || barcode.contains(q);
-      }).toList();
-    }
-
-    _filteredItems = result;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final categoriesAsync = ref.watch(categoriesListProvider);
+    final itemsAsync = ref.watch(itemsListProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -103,17 +40,14 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
           child: TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Search items...',
+              hintText: 'Search items by name, code...',
               prefixIcon: const Icon(Icons.search, size: 20),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear, size: 18),
                       onPressed: () {
                         _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                          _applyFilter();
-                        });
+                        setState(() => _searchQuery = '');
                       },
                     )
                   : null,
@@ -121,12 +55,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               isDense: true,
             ),
-            onChanged: (val) {
-              setState(() {
-                _searchQuery = val.trim();
-                _applyFilter();
-              });
-            },
+            onChanged: (val) => setState(() => _searchQuery = val.trim()),
           ),
         ),
 
@@ -151,65 +80,88 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
 
         // Items Grid
         Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _errorMsg != null
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.error_outline, size: 40, color: Colors.red),
-                          const SizedBox(height: 8),
-                          Text(_errorMsg!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('Retry'),
-                            onPressed: _fetchAllItems,
-                          ),
-                        ],
+          child: itemsAsync.when(
+            data: (allItems) {
+              // Filter by category using the item's category link value
+              List<Item> items = allItems;
+
+              if (_selectedCategoryId != null) {
+                items = items.where((i) {
+                  final catId = i.category.value?.id;
+                  return catId == _selectedCategoryId;
+                }).toList();
+              }
+
+              // Filter by search query
+              if (_searchQuery.isNotEmpty) {
+                final q = _searchQuery.toLowerCase();
+                items = items.where((i) {
+                  final name = (i.itemName ?? '').toLowerCase();
+                  final code = (i.itemCode ?? '').toLowerCase();
+                  final barcode = (i.barcode ?? '').toLowerCase();
+                  return name.contains(q) || code.contains(q) || barcode.contains(q);
+                }).toList();
+              }
+
+              if (items.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.outline),
+                      const SizedBox(height: 8),
+                      Text(
+                        allItems.isEmpty
+                            ? 'No items in database. Add items first.'
+                            : 'No items found. Try "All Items" or clear search.',
+                        style: TextStyle(color: theme.colorScheme.outline),
+                        textAlign: TextAlign.center,
                       ),
-                    )
-                  : _filteredItems.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.outline),
-                              const SizedBox(height: 8),
-                              Text(
-                                _selectedCategory != null
-                                    ? 'No items in "${_selectedCategory!.categoryName}"'
-                                    : 'No items found.',
-                                style: TextStyle(color: theme.colorScheme.outline),
-                              ),
-                            ],
-                          ),
-                        )
-                      : RefreshIndicator(
-                          onRefresh: _fetchAllItems,
-                          child: GridView.builder(
-                            padding: const EdgeInsets.all(8),
-                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 180,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                              childAspectRatio: 0.75,
-                            ),
-                            itemCount: _filteredItems.length,
-                            itemBuilder: (context, index) {
-                              return _buildProductCard(_filteredItems[index], theme);
-                            },
-                          ),
-                        ),
+                    ],
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 180,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  return _buildProductCard(items[index], theme);
+                },
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                  const SizedBox(height: 8),
+                  Text('Error loading items: $e', textAlign: TextAlign.center, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Retry'),
+                    onPressed: () => ref.invalidate(itemsListProvider),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 
   Widget _buildCategoryChip(Category? category, String label, ThemeData theme) {
-    final isSelected = (_selectedCategory == null && category == null) ||
-        (_selectedCategory != null && category != null && _selectedCategory!.id == category.id);
+    final isSelected = (_selectedCategoryId == null && category == null) ||
+        (_selectedCategoryId != null && category != null && _selectedCategoryId == category.id);
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
@@ -220,8 +172,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
         )),
         onSelected: (selected) {
           setState(() {
-            _selectedCategory = category;
-            _applyFilter();
+            _selectedCategoryId = category?.id;
           });
         },
         selectedColor: theme.colorScheme.primaryContainer,
@@ -236,7 +187,6 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     final stock = item.currentStock ?? 0.0;
     final price = item.sellRate ?? 0.0;
     final isDark = theme.brightness == Brightness.dark;
-    final isOutOfStock = stock <= 0;
 
     return InkWell(
       onTap: () {
@@ -304,9 +254,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
-                          color: isOutOfStock
-                              ? Colors.red.withOpacity(0.1)
-                              : Colors.green.withOpacity(0.1),
+                          color: stock > 0 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -314,7 +262,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                            color: isOutOfStock ? Colors.red : Colors.green,
+                            color: stock > 0 ? Colors.green : Colors.red,
                           ),
                         ),
                       ),
@@ -347,7 +295,6 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     if (item.imagePaths != null && item.imagePaths!.isNotEmpty) {
       try {
         final raw = item.imagePaths!.first;
-        // Handle base64 data URI (e.g. "data:image/png;base64,iVBOR...") or plain base64
         final base64Str = raw.contains(',') ? raw.split(',').last : raw;
         final bytes = base64Decode(base64Str);
         return Image.memory(
