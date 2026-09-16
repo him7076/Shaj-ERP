@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -809,20 +809,19 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       child: PageView.builder(
         itemCount: images.length,
         itemBuilder: (context, index) {
-          final file = File(images[index]);
-          return FutureBuilder<bool>(
-            future: file.exists(),
-            builder: (context, snapshot) {
-              if (snapshot.data == true) {
-                return Image.file(file, fit: BoxFit.contain);
-              } else {
-                return Container(
-                  color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                  child: const Center(child: Text('Image file not found locally.')),
-                );
-              }
-            },
-          );
+          String base64Image = images[index];
+          if (base64Image.contains(',')) {
+            base64Image = base64Image.split(',').last;
+          }
+          
+          try {
+            return Image.memory(base64Decode(base64Image), fit: BoxFit.contain);
+          } catch (e) {
+            return Container(
+              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+              child: const Center(child: Text('Invalid Image Format.')),
+            );
+          }
         },
       ),
     );

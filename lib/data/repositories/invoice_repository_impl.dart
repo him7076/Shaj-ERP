@@ -156,7 +156,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   restoredQty = restoredQty / convFactor;
                 }
               }
-              if (oldItem.isBundle || dbItem.isBundle) {
+              final hasChildComponents = oldItems.any((oi) => oi.uuid != null && oi.uuid!.endsWith("_BNDLCOMP"));
+              if ((oldItem.isBundle || dbItem.isBundle) && !hasChildComponents) {
                  final uuids = oldItem.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
                  final qts = oldItem.bundleComponentQuantities ?? dbItem.bundleComponentQuantities ?? [];
                  final units = oldItem.bundleComponentUnits ?? dbItem.bundleComponentUnits ?? [];
@@ -192,9 +193,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         }
 
         // 4. Put new InvoiceItems & Deduct Stock in batch
-        // 4. Put new InvoiceItems & Deduct Stock in batch
         // We already have targetItemMap and itemUuidMap pre-fetched
-
+        final itemsToSave = <InvoiceItem>[];
 
         for (var item in items) {
           item.uuid ??= _generateUuid();
@@ -209,6 +209,8 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           try {
             item.invoice.value = invoice;
           } catch (_) {}
+          
+          itemsToSave.add(item);
 
           final dbItem = targetItemMap[item.itemId ?? 0] ?? (kIsWeb ? null : item.item.value);
           if (dbItem != null) {
@@ -250,19 +252,29 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   cItem.notes = cItem.notes == null || cItem.notes!.isEmpty ? log : '$log\n${cItem.notes}';
                   modifiedItems[cItem.id] = cItem;
 
-                  final adj = StockAdjustment()
-                        ..uuid = _generateUuid()
-                        ..itemId = cItem.id
-                        ..itemUuid = cItem.uuid
-                        ..itemName = cItem.itemName
-                        ..adjustmentType = 'Reduce'
-                        ..quantity = compRequested
-                        ..unit = units.length > i ? units[i] : cItem.primaryUnitName ?? 'PCS'
-                        ..ratePerUnit = cItem.buyRate ?? 0.0
-                        ..adjustmentDate = DateTime.now()
-                        ..reason = 'Sold in Bundle #${invoice.invoiceNumber}'
-                        ..notes = 'Component of ${dbItem.itemName}';
-                  await isar.stockAdjustments.put(adj);
+                  final compItem = InvoiceItem()
+                    ..uuid = "${_generateUuid()}_BNDLCOMP"
+                    ..itemId = cItem.id
+                    ..itemName = cItem.itemName
+                    ..parentInvoiceId = invoice.id
+                    ..parentInvoiceUuid = invoice.uuid
+                    ..quantity = compRequested
+                    ..unit = units.length > i ? units[i] : cItem.primaryUnitName ?? 'PCS'
+                    ..rate = 0.0
+                    ..taxableAmount = 0.0
+                    ..gstRate = 0.0
+                    ..gstAmount = 0.0
+                    ..totalAmount = 0.0
+                    ..isBundle = false
+                    ..createdAt = DateTime.now()
+                    ..updatedAt = DateTime.now();
+
+                  try { compItem.invoice.value = invoice; } catch (_) {}
+                  if (!kIsWeb) {
+                    try { compItem.item.value = cItem; } catch (_) {}
+                  }
+                  
+                  itemsToSave.add(compItem);
                 }
               }
             } else {
@@ -280,7 +292,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           }
         }
 
-        await isar.invoiceItems.putAll(items);
+        await isar.invoiceItems.putAll(itemsToSave);
         if (modifiedItems.isNotEmpty) {
           await isar.items.putAll(modifiedItems.values.toList());
         }
@@ -297,7 +309,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
         await isar.syncQueues.put(invoiceQueue);
 
         // 6. Add Sync Queue logs for InvoiceItems
-        for (var item in items) {
+        for (var item in itemsToSave) {
           final itemQueue = SyncQueue()
             ..uuid = _generateUuid()
             ..entityType = 'InvoiceItem'

@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
@@ -55,6 +57,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   final TextEditingController _dimensionsController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _hsnController = TextEditingController();
+
+  // Image State
+  String? _imageBase64;
 
   // Selections
   Category? _selectedCategory;
@@ -247,6 +252,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         _skuCodeController.text = item.skuCode ?? '';
 
         _isBundle = item.isBundle;
+        if (item.imagePaths != null && item.imagePaths!.isNotEmpty) {
+          _imageBase64 = item.imagePaths!.first;
+        }
+        
         if (_isBundle && item.bundleComponentUuids != null) {
           final itemsList = await repo.getAll();
           _bundleComponents = [];
@@ -661,7 +670,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.weight = double.tryParse(_weightController.text.trim());
       item.dimensions = _dimensionsController.text.trim();
       item.notes = _notesController.text.trim();
-      item.imagePaths = _existingItem?.imagePaths ?? [];
+      item.imagePaths = _imageBase64 != null ? [_imageBase64!] : [];
 
       item.category.value = _selectedCategory;
       item.brand.value = _selectedBrand;
@@ -961,6 +970,82 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50, maxWidth: 800, maxHeight: 800);
+    if (pickedFile != null) {
+      final bytes = await pickedFile.readAsBytes();
+      final base64String = base64Encode(bytes);
+      setState(() {
+        _imageBase64 = 'data:image/png;base64,$base64String';
+      });
+    }
+  }
+
+  Widget _buildImageUploaderSection() {
+    return _buildSection(
+      title: 'Product Image',
+      icon: Icons.image_rounded,
+      color: Colors.pink,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _imageBase64 != null
+                  ? Image.memory(
+                      base64Decode(_imageBase64!.split(',').last),
+                      fit: BoxFit.cover,
+                    )
+                  : const Center(
+                      child: Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey),
+                    ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Upload a clear image of the product to easily identify it during POS transactions.'),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _pickImage,
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('Choose Image'),
+                      ),
+                      if (_imageBase64 != null) ...[
+                        const SizedBox(width: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _imageBase64 = null;
+                            });
+                          },
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          label: const Text('Remove', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1022,6 +1107,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                         ),
                         const SizedBox(height: 28),
 
+                        _buildImageUploaderSection(),
                         _buildBundleSection(),
                         _buildBasicInfoSection(categoriesAsync, brandsAsync),
                         _buildIdentificationSection(),

@@ -114,6 +114,8 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
             try { itm.item.value = await isar.items.get(itm.itemId!); } catch (_) {}
           }
         }
+        
+        items = items.where((i) => i.uuid == null || !i.uuid!.endsWith("_BNDLCOMP")).toList();
 
         setState(() {
           _invoice = fetched;

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
@@ -125,13 +126,18 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                     color: isDark ? Colors.black26 : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(
-                    child: Icon(
-                      item.isBundle ? Icons.extension_rounded : Icons.fastfood_rounded,
-                      size: 40,
-                      color: item.isBundle ? Colors.orange : theme.colorScheme.primary.withOpacity(0.5),
-                    ),
-                  ),
+                  child: item.imagePaths != null && item.imagePaths!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.memory(
+                            base64Decode(item.imagePaths!.first.split(',').last),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (_, __, ___) => _buildPlaceholderIcon(item, theme),
+                          ),
+                        )
+                      : _buildPlaceholderIcon(item, theme),
                 ),
               ),
               const SizedBox(height: 12),
@@ -173,6 +179,16 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderIcon(Item item, ThemeData theme) {
+    return Center(
+      child: Icon(
+        item.isBundle ? Icons.extension_rounded : Icons.fastfood_rounded,
+        size: 40,
+        color: item.isBundle ? Colors.orange : theme.colorScheme.primary.withOpacity(0.5),
       ),
     );
   }

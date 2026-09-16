@@ -31,6 +31,7 @@ class PdfService {
     try {
       final pdf = pw.Document();
       final actualItems = items ?? invoice.invoiceItems.toList();
+      final filteredItems = actualItems.where((i) => i.uuid == null || !i.uuid!.endsWith("_BNDLCOMP")).toList();
 
       pdf.addPage(
         pw.MultiPage(
@@ -54,7 +55,7 @@ class PdfService {
               ),
               pw.SizedBox(height: 14),
 
-              _buildInvoiceItemsTable(actualItems),
+              _buildInvoiceItemsTable(filteredItems),
               pw.SizedBox(height: 14),
 
               _buildExecutiveSummary(

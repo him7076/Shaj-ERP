@@ -71,8 +71,14 @@ final unitsListProvider = FutureProvider<List<Unit>>((ref) async {
 });
 
 final itemsListProvider = FutureProvider<List<Item>>((ref) async {
-  final repo = ref.watch(itemRepositoryProvider);
-  return await repo.getAll();
+  final isar = ref.watch(isarProvider);
+  final items = await isar.items.filter().isDeletedEqualTo(false).findAll();
+  for (var item in items) {
+    try { await item.category.load(); } catch (_) {}
+    try { await item.brand.load(); } catch (_) {}
+    try { await item.unit.load(); } catch (_) {}
+  }
+  return items;
 });
 
 // Search & Filter State

@@ -249,6 +249,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             try { await invoice.invoiceItems.load(); } catch (_) {}
             try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
           }
+          
+          itemsList = itemsList.where((i) => i.uuid == null || !i.uuid!.endsWith("_BNDLCOMP")).toList();
 
           final List<CartItemState> cartItems = [];
           for (var item in itemsList) {
