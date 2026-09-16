@@ -11,6 +11,7 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/invoice_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/services/invoice_number_service.dart';
@@ -319,6 +320,40 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ..createdAt = DateTime.now()
             ..updatedAt = DateTime.now();
           await isar.syncQueues.put(itemQueue);
+        }
+
+        // 7. Auto-create Payment Transaction if paidAmount > 0
+        if (isNew && invoice.paidAmount != null && invoice.paidAmount! > 0) {
+          final t = Transaction()
+            ..uuid = _generateUuid()
+            ..transactionType = 'Cash In'
+            ..transactionCategory = 'Sales'
+            ..amount = invoice.paidAmount
+            ..transactionDate = DateTime.now()
+            ..partyId = invoice.partyId
+            ..partyName = invoice.partyName
+            ..remarks = 'Payment for Invoice #${invoice.invoiceNumber}'
+            ..paymentMode = 'Cash'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now()
+            ..isDeleted = false
+            ..isSynced = false
+            ..version = 1;
+
+          if (!kIsWeb && invoice.party.value != null) {
+            try { t.party.value = invoice.party.value; } catch (_) {}
+          }
+          
+          final tId = await isar.transactions.put(t);
+          final tQueue = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = 'Transaction'
+            ..entityId = tId
+            ..entityUuid = t.uuid
+            ..operation = 'Insert'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(tQueue);
         }
       });
 

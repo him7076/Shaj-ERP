@@ -226,6 +226,11 @@ const ItemSchema = CollectionSchema(
       id: 41,
       name: r'wholesaleRate',
       type: IsarType.double,
+    ),
+    r'itemType': PropertySchema(
+      id: 42,
+      name: r'itemType',
+      type: IsarType.string,
     )
   },
   estimateSize: _itemEstimateSize,
@@ -497,6 +502,12 @@ int _itemEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.itemType;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -548,6 +559,7 @@ void _itemSerialize(
   writer.writeLong(offsets[39], object.version);
   writer.writeDouble(offsets[40], object.weight);
   writer.writeDouble(offsets[41], object.wholesaleRate);
+  writer.writeString(offsets[42], object.itemType);
 }
 
 Item _itemDeserialize(
@@ -600,6 +612,7 @@ Item _itemDeserialize(
   object.version = reader.readLong(offsets[39]);
   object.weight = reader.readDoubleOrNull(offsets[40]);
   object.wholesaleRate = reader.readDoubleOrNull(offsets[41]);
+  object.itemType = reader.readStringOrNull(offsets[42]);
   return object;
 }
 
@@ -694,6 +707,8 @@ P _itemDeserializeProp<P>(
       return (reader.readDoubleOrNull(offset)) as P;
     case 41:
       return (reader.readDoubleOrNull(offset)) as P;
+    case 42:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

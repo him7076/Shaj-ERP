@@ -85,6 +85,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
   bool _enableBundleManagement = false;
   bool _isBundle = false;
+  String _itemType = 'Goods';
   List<Map<String, dynamic>> _bundleComponents = [];
 
   static const List<Map<String, String>> _commonUnits = [
@@ -255,6 +256,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         _skuCodeController.text = item.skuCode ?? '';
 
         _isBundle = item.isBundle;
+        _itemType = item.itemType ?? (_isBundle ? 'Bundle' : 'Goods');
         if (item.imagePaths != null && item.imagePaths!.isNotEmpty) {
           _imageBase64 = item.imagePaths!.first;
         }
@@ -629,6 +631,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.skuCode = _skuCodeController.text.trim().isEmpty ? null : _skuCodeController.text.trim();
 
       item.isBundle = _isBundle;
+      item.itemType = _itemType;
       if (_isBundle) {
         item.bundleComponentUuids = _bundleComponents.map((c) => (c['item'] as Item).uuid!).toList();
         item.bundleComponentQuantities = _bundleComponents.map((c) => (c['qty'] as double)).toList();
@@ -831,23 +834,44 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   }
 
   Widget _buildBundleSection() {
-    if (!_enableBundleManagement) return const SizedBox.shrink();
-    
     return _buildSectionCard(
       context: context,
-      title: 'Bundle / Recipe Configuration',
-      icon: Icons.extension_rounded,
-      color: Colors.orange,
+      title: 'Item Type & Bundle Configuration',
+      icon: Icons.category_rounded,
+      color: Colors.blue,
       children: [
-        SwitchListTile(
-          title: const Text('Is this a Bundle / Combo Item?'),
-          subtitle: const Text('Enable to add sub-components. When sold, the inventory of sub-components will be deducted.'),
-          value: _isBundle,
-          onChanged: (val) {
-            setState(() {
-              _isBundle = val;
-            });
-          },
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            segments: [
+              const ButtonSegment<String>(
+                value: 'Goods',
+                label: Text('Goods'),
+                icon: Icon(Icons.inventory_2_outlined),
+              ),
+              const ButtonSegment<String>(
+                value: 'Service',
+                label: Text('Service'),
+                icon: Icon(Icons.miscellaneous_services),
+              ),
+              if (_enableBundleManagement)
+                const ButtonSegment<String>(
+                  value: 'Bundle',
+                  label: Text('Bundle/Recipe'),
+                  icon: Icon(Icons.extension_rounded),
+                ),
+            ],
+            selected: {_itemType},
+            onSelectionChanged: (Set<String> newSelection) {
+              setState(() {
+                _itemType = newSelection.first;
+                _isBundle = _itemType == 'Bundle';
+              });
+            },
+            style: SegmentedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
         ),
         if (_isBundle) ...[
           const Divider(),

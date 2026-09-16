@@ -1021,15 +1021,21 @@ class SyncService {
           case 'Unit': entity = await isar.units.get(entityId); break;
           case 'Brand': entity = await isar.brands.get(entityId); break;
           case 'Order': entity = await isar.orders.get(entityId); break;
+          case 'OrderItem': entity = await isar.orderItems.get(entityId); break;
           case 'Invoice': entity = await isar.invoices.get(entityId); break;
+          case 'InvoiceItem': entity = await isar.invoiceItems.get(entityId); break;
           case 'Settings': entity = await isar.settings.get(entityId); break;
           case 'User': entity = await isar.users.get(entityId); break;
           case 'Purchase': entity = await isar.purchases.get(entityId); break;
+          case 'PurchaseItem': entity = await isar.purchaseItems.get(entityId); break;
           case 'Expense': entity = await isar.expenses.get(entityId); break;
+          case 'ExpenseItem': entity = await isar.collection<ExpenseItem>().get(entityId); break;
           case 'Transaction': entity = await isar.transactions.get(entityId); break;
           case 'BankAccount': entity = await isar.bankAccounts.get(entityId); break;
           case 'CreditNote': entity = await isar.creditNotes.get(entityId); break;
+          case 'CreditNoteItem': entity = await isar.creditNoteItems.get(entityId); break;
           case 'DebitNote': entity = await isar.debitNotes.get(entityId); break;
+          case 'DebitNoteItem': entity = await isar.debitNoteItems.get(entityId); break;
           case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
           case 'WhatsAppMapping': entity = await isar.whatsAppMappings.get(entityId); break;
         }
@@ -1944,6 +1950,11 @@ class SyncService {
           'categoryUuid': _safeGetLinkUuid(e.category),
           'unitUuid': _safeGetLinkUuid(e.unit),
           'brandUuid': _safeGetLinkUuid(e.brand),
+          'isBundle': e.isBundle,
+          'itemType': e.itemType,
+          'bundleComponentUuids': e.bundleComponentUuids,
+          'bundleComponentQuantities': e.bundleComponentQuantities,
+          'bundleComponentUnits': e.bundleComponentUnits,
         });
       case 'Category':
         final e = entity as Category;
@@ -2435,7 +2446,12 @@ class SyncService {
           ..skuCode = data['skuCode']
           ..imagePaths = data['imagePaths'] != null ? List<String>.from(data['imagePaths']) : null
           ..firebaseImageUrls = data['firebaseImageUrls'] != null ? List<String>.from(data['firebaseImageUrls']) : null
-          ..thumbnailImage = data['thumbnailImage'];
+          ..thumbnailImage = data['thumbnailImage']
+          ..isBundle = data['isBundle'] ?? false
+          ..itemType = data['itemType']
+          ..bundleComponentUuids = data['bundleComponentUuids'] != null ? List<String>.from(data['bundleComponentUuids']) : null
+          ..bundleComponentQuantities = data['bundleComponentQuantities'] != null ? List<double>.from(data['bundleComponentQuantities'].map((e) => (e as num).toDouble())) : null
+          ..bundleComponentUnits = data['bundleComponentUnits'] != null ? List<String>.from(data['bundleComponentUnits']) : null;
         break;
       case 'Category':
         entity = Category()

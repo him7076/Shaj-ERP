@@ -71,6 +71,7 @@ class Item implements IsarModel {
 
   // Bundle Tracking (BOM/Recipe)
   bool isBundle = false;
+  String? itemType; // Goods, Service, Bundle
   List<String>? bundleComponentUuids;
   List<double>? bundleComponentQuantities;
   List<String>? bundleComponentUnits;
