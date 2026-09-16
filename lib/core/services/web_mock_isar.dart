@@ -500,6 +500,13 @@ class WebMockIsar implements Isar {
         'imagePaths': entity.imagePaths,
         'firebaseImageUrls': entity.firebaseImageUrls,
         'thumbnailImage': entity.thumbnailImage,
+        'isBundle': entity.isBundle,
+        'bundleComponentUuids': entity.bundleComponentUuids,
+        'bundleComponentQuantities': entity.bundleComponentQuantities,
+        'bundleComponentUnits': entity.bundleComponentUnits,
+        'categoryId': entity.category.value?.id,
+        'brandId': entity.brand.value?.id,
+        'unitId': entity.unit.value?.id,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -1098,11 +1105,43 @@ class WebMockIsar implements Isar {
           ..imagePaths = (map['imagePaths'] as List<dynamic>?)?.cast<String>()
           ..firebaseImageUrls = (map['firebaseImageUrls'] as List<dynamic>?)?.cast<String>()
           ..thumbnailImage = map['thumbnailImage'] as String?
+          ..isBundle = map['isBundle'] as bool? ?? false
+          ..bundleComponentUuids = (map['bundleComponentUuids'] as List<dynamic>?)?.cast<String>()
+          ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List<dynamic>?)?.cast<num>().map((e) => e.toDouble()).toList()
+          ..bundleComponentUnits = (map['bundleComponentUnits'] as List<dynamic>?)?.cast<String>()
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
           ..isSynced = map['isSynced'] as bool
           ..version = map['version'] as int;
+
+        final catId = map['categoryId'] as int?;
+        if (catId != null) {
+          final catList = _db['categorys'];
+          if (catList != null) {
+            final cat = catList.firstWhere((e) => (e as dynamic).id == catId, orElse: () => null);
+            if (cat != null) item.category.value = cat as Category;
+          }
+        }
+
+        final brandId = map['brandId'] as int?;
+        if (brandId != null) {
+          final brandList = _db['brands'];
+          if (brandList != null) {
+            final brand = brandList.firstWhere((e) => (e as dynamic).id == brandId, orElse: () => null);
+            if (brand != null) item.brand.value = brand as Brand;
+          }
+        }
+
+        final unitId = map['unitId'] as int?;
+        if (unitId != null) {
+          final unitList = _db['units'];
+          if (unitList != null) {
+            final unit = unitList.firstWhere((e) => (e as dynamic).id == unitId, orElse: () => null);
+            if (unit != null) item.unit.value = unit as Unit;
+          }
+        }
+        return item;
       case 'OrderItem':
         return OrderItem()
           ..id = map['id'] as int
