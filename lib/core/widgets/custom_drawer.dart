@@ -120,33 +120,135 @@ class CustomDrawer extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 18),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      popupMenuTheme: PopupMenuThemeData(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.business_center_rounded, color: Color(0xFFA5B4FC), size: 14),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            firmName.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                              letterSpacing: 0.5,
+                    child: PopupMenuButton<String>(
+                      tooltip: 'Switch Firm',
+                      offset: const Offset(0, 45),
+                      onSelected: (selectedFirmId) async {
+                        if (selectedFirmId == activeFirmId) return;
+                        
+                        // Show switching indicator dialog
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            content: Row(
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Text(
+                                    'Switching firm & loading data...',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
+                        );
+
+                        try {
+                          final db = ref.read(databaseServiceProvider);
+                          await db.switchFirm(selectedFirmId, prefs);
+                          ref.read(activeFirmIdProvider.notifier).state = selectedFirmId;
+                          
+                          // Sync Manager clears stale timestamps and downloads data
+                          try {
+                            await ref.read(syncManagerProvider).handleFirmSwitch(selectedFirmId);
+                          } catch (_) {}
+
+                          // Invalidate providers to force refresh UI
+                          ref.invalidate(sharedPreferencesProvider);
+                          ref.invalidate(dashboardAnalyticsProvider);
+                          ref.invalidate(coreProviders); // Optional: invalidates many generic ones if defined
+                          
+                          if (context.mounted) {
+                            Navigator.of(context, rootNavigator: true).pop(); // Close dialog
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('⚡ Firm switched successfully!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            if (!isPermanent) Navigator.of(context).pop();
+                            context.go('/dashboard');
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(context, rootNavigator: true).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to switch firm: $e')),
+                            );
+                          }
+                        }
+                      },
+                      itemBuilder: (BuildContext context) {
+                        final firmsList = prefs.getStringList('firms_list') ?? ['firm_default'];
+                        return firmsList.map((firmId) {
+                          final name = prefs.getString('firm_name_$firmId') ?? 
+                              (firmId == 'firm_default' ? 'Default Company' : 'New Company');
+                          final isActive = firmId == activeFirmId;
+                          return PopupMenuItem<String>(
+                            value: firmId,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isActive ? Icons.check_circle_rounded : Icons.business_rounded, 
+                                  color: isActive ? Colors.green : (isDark ? Colors.white70 : Colors.black87),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    name,
+                                    style: TextStyle(
+                                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                      color: isActive ? Colors.green : null,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList();
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white.withOpacity(0.15)),
                         ),
-                        const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
-                      ],
+                        child: Row(
+                          children: [
+                            const Icon(Icons.business_center_rounded, color: Color(0xFFA5B4FC), size: 14),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                firmName.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
+                                  letterSpacing: 0.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white70, size: 16),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -607,7 +709,7 @@ class CustomDrawer extends ConsumerWidget {
               Navigator.of(context).pop();
             }
             if (!isActive) {
-              context.push(routePath);
+              context.go(routePath);
             }
           },
         ),

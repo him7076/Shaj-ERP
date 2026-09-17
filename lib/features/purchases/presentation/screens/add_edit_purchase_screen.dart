@@ -118,9 +118,19 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     }
   }
 
+  bool _isPaidAmountAutoFill = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = ref.read(sharedPreferencesProvider);
+      if (mounted) {
+        setState(() {
+          _isPaidAmountAutoFill = prefs.getBool('auto_fill_paid_amount') ?? false;
+        });
+      }
+    });
     _loadPaymentModes();
     _initValues();
   }
@@ -154,6 +164,9 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
           _paymentMode = 'Cash';
         }
         _paidAmountController.text = purchase.paidAmount?.toString() ?? '0.0';
+        if ((purchase.paidAmount ?? 0.0) > 0 && purchase.paidAmount == purchase.grandTotal) {
+          _isPaidAmountAutoFill = true;
+        }
         _discountController.text = purchase.discountAmount?.toString() ?? '0.0';
 
         Party? party;
@@ -389,6 +402,17 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isPaidAmountAutoFill) {
+       final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
+       if ((currentPaid - _grandTotal).abs() > 0.01) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+             if (mounted) {
+               _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+             }
+          });
+       }
+    }
+
     final theme = Theme.of(context);
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
@@ -429,12 +453,26 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
+                Checkbox(
+                  value: _isPaidAmountAutoFill,
+                  onChanged: (val) {
+                    setState(() {
+                      _isPaidAmountAutoFill = val ?? false;
+                      if (_isPaidAmountAutoFill) {
+                        _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+                      }
+                    });
+                  },
+                ),
                 Expanded(
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Paid Amount (₹)', border: OutlineInputBorder()),
-                    onChanged: (val) => _recalculateTotals(),
+                    onChanged: (val) {
+                      setState(() { _isPaidAmountAutoFill = false; });
+                      _recalculateTotals();
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),

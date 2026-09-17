@@ -233,6 +233,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
+            // Transaction Settings Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.receipt_long_rounded, color: Colors.orange, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Transaction Settings',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 28, thickness: 0.5),
+                    StatefulBuilder(
+                      builder: (context, setSettingsState) {
+                        final isAutoFill = prefs.getBool('auto_fill_paid_amount') ?? false;
+                        return SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Auto-fill Paid Amount by Default', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          subtitle: const Text('Automatically check the "Paid Amount" box and fill the grand total in all new Sales/Purchase transactions.', style: TextStyle(fontSize: 12)),
+                          value: isAutoFill,
+                          onChanged: (val) async {
+                            await prefs.setBool('auto_fill_paid_amount', val);
+                            setSettingsState(() {});
+                            ScaffoldMessenger.of(context).showSnackBar(
+                               SnackBar(content: Text(val ? 'Auto-fill Paid Amount ENABLED' : 'Auto-fill Paid Amount DISABLED')),
+                            );
+                          },
+                        );
+                      }
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
             // Company / Firm Manager Card
             Card(
               elevation: 0,

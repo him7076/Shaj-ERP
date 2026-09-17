@@ -178,10 +178,18 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     }
   }
 
+  bool _isPaidAmountAutoFill = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = ref.read(sharedPreferencesProvider);
+      if (mounted) {
+        setState(() {
+          _isPaidAmountAutoFill = prefs.getBool('auto_fill_paid_amount') ?? false;
+        });
+      }
       _loadSalesmenAndModes();
       ref.read(invoiceCartProvider.notifier).clear();
       if (widget.invoiceUuid != null) {
@@ -219,6 +227,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           _paymentMode = 'Cash';
         }
         _paidAmountController.text = invoice.paidAmount?.toString() ?? '0.0';
+        if ((invoice.paidAmount ?? 0.0) > 0 && invoice.paidAmount == invoice.grandTotal) {
+           _isPaidAmountAutoFill = true;
+        }
         final double subVal = invoice.subtotal ?? 0.0;
         final double discAmtVal = invoice.discountAmount ?? 0.0;
         _discountController.text = discAmtVal.toString();
@@ -661,6 +672,22 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(invoiceCartProvider, (prev, next) {
+      if (_isPaidAmountAutoFill) {
+        final totals = ref.read(invoiceCartProvider.notifier).calculateTotals();
+        final grandTotal = totals['grandTotal'] ?? 0.0;
+        final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
+        if ((currentPaid - grandTotal).abs() > 0.01) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _paidAmountController.text = grandTotal.toStringAsFixed(2);
+              ref.read(invoiceCartProvider.notifier).setPaidAmount(grandTotal);
+            }
+          });
+        }
+      }
+    });
+
     final theme = Theme.of(context);
     final cart = ref.watch(invoiceCartProvider);
     final isDesktop = ResponsiveLayout.isDesktop(context);
@@ -730,17 +757,33 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             const Divider(height: 24),
             Row(
               children: [
+                Checkbox(
+                  value: _isPaidAmountAutoFill,
+                  onChanged: (val) {
+                    setState(() {
+                      _isPaidAmountAutoFill = val ?? false;
+                      if (_isPaidAmountAutoFill) {
+                        final totals = ref.read(invoiceCartProvider.notifier).calculateTotals();
+                        final grandTotal = totals['grandTotal'] ?? 0.0;
+                        _paidAmountController.text = grandTotal.toStringAsFixed(2);
+                        ref.read(invoiceCartProvider.notifier).setPaidAmount(grandTotal);
+                      }
+                    });
+                  },
+                ),
                 Expanded(
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(labelText: 'Paid Amount (₹)', border: OutlineInputBorder()),
                     onChanged: (val) {
+                      setState(() {
+                        _isPaidAmountAutoFill = false;
+                      });
                       final double? amt = double.tryParse(val);
                       if (amt != null) {
                         ref.read(invoiceCartProvider.notifier).setPaidAmount(amt);
                       }
-                      setState(() {});
                     },
                   ),
                 ),

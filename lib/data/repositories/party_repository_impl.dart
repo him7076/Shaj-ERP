@@ -20,6 +20,24 @@ class PartyRepositoryImpl extends BaseIsarRepository<Party> implements PartyRepo
   IsarCollection<Party> get collection => isar.collection<Party>();
 
   @override
+  Future<List<Party>> getAll() async {
+    final list = await super.getAll();
+    if (!list.any((p) => p.partyName?.trim().toLowerCase() == 'cash')) {
+      final cashParty = Party()
+        ..partyName = 'Cash'
+        ..partyType = 'Customer'
+        ..mobileNumber = '0000000000'
+        ..city = 'Local'
+        ..notes = 'Default Cash Account';
+      try {
+        await create(cashParty);
+        list.insert(0, cashParty);
+      } catch (_) {}
+    }
+    return list;
+  }
+
+  @override
   Future<List<Party>> searchParties(String query) async {
     if (query.trim().isEmpty) {
       return await getAll();
