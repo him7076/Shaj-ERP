@@ -166,8 +166,6 @@ class CustomDrawer extends ConsumerWidget {
 
                           // Invalidate providers to force refresh UI
                           ref.invalidate(sharedPreferencesProvider);
-                          ref.invalidate(dashboardAnalyticsProvider);
-                          ref.invalidate(coreProviders); // Optional: invalidates many generic ones if defined
                           
                           if (context.mounted) {
                             Navigator.of(context, rootNavigator: true).pop(); // Close dialog

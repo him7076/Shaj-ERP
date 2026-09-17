@@ -674,7 +674,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
   Widget build(BuildContext context) {
     ref.listen(invoiceCartProvider, (prev, next) {
       if (_isPaidAmountAutoFill) {
-        final totals = ref.read(invoiceCartProvider.notifier).calculateTotals();
+        final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(null);
         final grandTotal = totals['grandTotal'] ?? 0.0;
         final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
         if ((currentPaid - grandTotal).abs() > 0.01) {
@@ -763,7 +763,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                     setState(() {
                       _isPaidAmountAutoFill = val ?? false;
                       if (_isPaidAmountAutoFill) {
-                        final totals = ref.read(invoiceCartProvider.notifier).calculateTotals();
+                        final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(null);
                         final grandTotal = totals['grandTotal'] ?? 0.0;
                         _paidAmountController.text = grandTotal.toStringAsFixed(2);
                         ref.read(invoiceCartProvider.notifier).setPaidAmount(grandTotal);
