@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
-import 'package:business_sahaj_erp/core/utils/logger.dart';
+import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FirebaseMigrationService {

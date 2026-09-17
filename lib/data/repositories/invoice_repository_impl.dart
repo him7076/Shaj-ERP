@@ -304,6 +304,394 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           ..entityType = 'Invoice'
           ..entityId = invoiceId
           ..entityUuid = invoice.uuid
+          ..operation = isNew ? 'Insert' : 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(invoiceQueue);
+
+        // 6. Add Sync Queue logs for InvoiceItems
+        for (var item in itemsToSave) {
+          final itemQueue = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = 'InvoiceItem'
+            ..entityId = item.id
+            ..entityUuid = item.uuid
+            ..operation = isNew ? 'Insert' : 'Update'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(itemQueue);
+        }
+
+        // 7. Auto-create Payment Transaction if paidAmount > 0
+        if (isNew && invoice.paidAmount != null && invoice.paidAmount! > 0) {
+          final t = Transaction()
+            ..uuid = _generateUuid()
+            ..transactionType = 'Receipt'
+            ..amount = invoice.paidAmount
+            ..transactionDate = DateTime.now()
+            ..partyUuid = invoice.party.value?.uuid
+            ..partyName = invoice.partyName
+            ..remarks = 'Payment for Invoice #${invoice.invoiceNumber}'
+            ..paymentMode = 'Cash'
+            ..paymentStatus = 'Paid'
+            ..linkedBillUuid = invoice.uuid
+            ..linkedBillNumber = invoice.invoiceNumber
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now()
+            ..isDeleted = false
+            ..isSynced = false
+            ..version = 1;
+
+          if (!kIsWeb && invoice.party.value != null) {
+            try { t.party.value = invoice.party.value; } catch (_) {}
+          }
+          
+          final tId = await isar.transactions.put(t);
+          final tQueue = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = 'Transaction'
+            ..entityId = tId
+            ..entityUuid = t.uuid
+            ..operation = 'Insert'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(tQueue);
+        }
+      });
+
+      logger.info('Invoice #${invoice.invoiceNumber} saved successfully.');
+      Future.microtask(() => SyncManager.triggerUpload()); // Non-blocking background upload
+    } catch (e) {
+      throw DatabaseException('Failed to save invoice: $e');
+    }
+  }
+
+  @override
+  Future<void> cancelInvoice(String invoiceUuid, String reason, String user) async {
+    try {
+      final invoice = await collection.filter().uuidEqualTo(invoiceUuid).findFirst();
+      if (invoice == null) {
+        throw RecordNotFoundException('Invoice not found for cancellation.');
+      }
+
+      invoice.invoiceStatus = 'Cancelled';
+      invoice.paymentStatus = 'Cancelled';
+      invoice.cancelledBy = user;
+      invoice.cancelledDate = DateTime.now();
+      invoice.cancellationReason = reason;
+      invoice.updatedAt = DateTime.now();
+      invoice.version += 1;
+      invoice.isSynced = false;
+
+      final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
+      final allItems = await isar.items.where().findAll();
+      final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
+      final targetItemMap = {for (var i in allItems) i.id: i};
+      final modifiedItems = <int, Item>{};
+
+      final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
+
+      await isar.writeTxn(() async {
+        await collection.put(invoice);
+
+        // 1. Rollback Party Outstanding Balance
+        if (party != null) {
+          final double pendingAmt = invoice.pendingAmount ?? 0.0;
+          party.outstandingBalance = (party.outstandingBalance ?? 0.0) - pendingAmt;
+          await isar.partys.put(party);
+        }
+
+        // 2. Restore Stock Levels
+        for (var item in items) {
+          final dbItem = item.itemId != null ? targetItemMap[item.itemId!] : null;
+          if (dbItem != null) {
+            double restoredQty = item.quantity ?? 0.0;
+            
+            // Reverse Unit Conversion if necessary
+            final convFactor = dbItem.conversionFactor ?? 1.0;
+            if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
+              final itemUnit = (item.unit ?? '').trim().toLowerCase();
+              final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
+              final pName = (dbItem.primaryUnitName ?? (!kIsWeb ? dbItem.unit.value?.shortName : '') ?? '').trim().toLowerCase();
+              if (itemUnit == secUnit && itemUnit != pName) {
+                restoredQty = restoredQty / convFactor;
+              }
+            }
+
+            if (item.isBundle || dbItem.isBundle) {
+                 final uuids = item.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
+                 final qts = item.bundleComponentQuantities ?? dbItem.bundleComponentQuantities ?? [];
+                 final units = item.bundleComponentUnits ?? dbItem.bundleComponentUnits ?? [];
+                 for (int i = 0; i < uuids.length; i++) {
+                   final cuuid = uuids[i];
+                   final cqty = qts.length > i ? qts[i] : 1.0;
+                   final cItem = itemUuidMap[cuuid];
+                   if (cItem != null) {
+                     cItem.currentStock = (cItem.currentStock ?? 0.0) + (restoredQty * cqty);
+                     modifiedItems[cItem.id] = cItem;
+
+                     final adj = StockAdjustment()
+                        ..uuid = _generateUuid()
+                        ..itemId = cItem.id
+                        ..itemUuid = cItem.uuid
+                        ..itemName = cItem.itemName
+                        ..adjustmentType = 'Add'
+                        ..quantity = restoredQty * cqty
+                        ..unit = units.length > i ? units[i] : cItem.primaryUnitName ?? 'PCS'
+                        ..ratePerUnit = cItem.buyRate ?? 0.0
+                        ..adjustmentDate = DateTime.now()
+                        ..reason = 'Cancelled Bundle Sale #${invoice.invoiceNumber}'
+                        ..notes = 'Component of ${dbItem.itemName}';
+                     await isar.stockAdjustments.put(adj);
+                   }
+                 }
+            } else {
+              dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
+              final log = '[${DateTime.now().toIso8601String().substring(0,19)}] RESTORED: +$restoredQty | Bal: ${dbItem.currentStock} | Cancel Invoice #${invoice.invoiceNumber}';
+              dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+              modifiedItems[dbItem.id] = dbItem;
+            }
+          }
+        }
+        
+        if (modifiedItems.isNotEmpty) {
+          await isar.items.putAll(modifiedItems.values.toList());
+        }
+
+        // 3. Sync Log
+        final queueItem = SyncQueue()
+          ..uuid = _generateUuid()
+          ..entityType = 'Invoice'
+          ..entityId = invoice.id
+          ..entityUuid = invoice.uuid
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(queueItem);
+      });
+
+      logger.info('Invoice #${invoice.invoiceNumber} cancelled by $user.');
+      SyncManager.triggerUpload(); // Instant Firebase upload
+    } catch (e) {
+      throw DatabaseException('Failed to cancel invoice: $e');
+    }
+  }
+
+  @override
+  Future<Invoice> convertOrderToInvoice({
+    required String orderUuid,
+    required String invoiceType,
+    required double paidAmount,
+    required DateTime dueDate,
+    required String user,
+  }) async {
+    try {
+      final order = await isar.orders.filter().uuidEqualTo(orderUuid).findFirst();
+      if (order == null) {
+        throw RecordNotFoundException('Order not found for conversion.');
+      }
+
+      if (order.status == 'Converted To Sale') {
+        throw const OrderConversionException('This order has already been converted to a sales invoice.');
+      }
+
+      try { await order.party.load(); } catch (_) {}
+      try { await order.orderItems.load(); } catch (_) {}
+
+      final prefix = _numberService.getFinancialYearPrefix(DateTime.now());
+      final invoiceNum = await generateNextInvoiceNumber();
+
+      final invoice = Invoice()
+        ..uuid = _generateUuid()
+        ..invoiceNumber = invoiceNum
+        ..invoiceDate = DateTime.now()
+        ..invoiceType = invoiceType
+        ..sourceOrderId = order.id
+        ..sourceOrderNumber = order.orderNumber
+        ..partyId = order.partyId
+        ..partyName = order.partyName
+        ..gstNumber = order.gstNumber
+        ..address = order.locationAddress
+        ..subtotal = order.subtotal
+        ..discountAmount = order.discountAmount
+        ..taxableAmount = order.subtotal // base taxable
+        ..cgstAmount = (order.totalGST ?? 0.0) / 2.0
+        ..sgstAmount = (order.totalGST ?? 0.0) / 2.0
+        ..igstAmount = 0.0
+        ..totalGST = order.totalGST
+        ..roundOff = order.roundOff
+        ..grandTotal = order.grandTotal
+        ..paidAmount = paidAmount
+        ..pendingAmount = (order.grandTotal ?? 0.0) - paidAmount
+        ..dueDate = dueDate
+        ..remarks = 'Converted from Order #${order.orderNumber}. ${order.remarks ?? ""}'
+        ..createdBy = user
+        ..createdAt = DateTime.now()
+        ..updatedAt = DateTime.now()
+        ..isDeleted = false
+        ..isSynced = false
+        ..version = 1;
+
+      // Split CGST/SGST/IGST based on state
+      final companySettings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+      final companyGst = companySettings?.companyGST;
+      final cleanCompany = companyGst?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+      final cleanParty = order.gstNumber?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
+      final isLocal = cleanCompany.length >= 2 && cleanParty.length >= 2 && cleanCompany.substring(0, 2) == cleanParty.substring(0, 2);
+
+      if (isLocal) {
+        invoice.cgstAmount = (order.totalGST ?? 0.0) / 2.0;
+        invoice.sgstAmount = (order.totalGST ?? 0.0) / 2.0;
+        invoice.igstAmount = 0.0;
+      } else {
+        invoice.cgstAmount = 0.0;
+        invoice.sgstAmount = 0.0;
+        invoice.igstAmount = order.totalGST;
+      }
+
+      // Calculate Payment Status
+      final pending = invoice.pendingAmount ?? 0.0;
+      if (paidAmount == 0.0) {
+        invoice.paymentStatus = 'Unpaid';
+      } else if (pending <= 0.0) {
+        invoice.paymentStatus = 'Paid';
+        invoice.pendingAmount = 0.0;
+      } else {
+        invoice.paymentStatus = 'Partially Paid';
+      }
+      invoice.invoiceStatus = 'Active';
+
+      // Lock Order
+      order.status = 'Converted To Sale';
+      order.updatedAt = DateTime.now();
+      order.version += 1;
+      order.isSynced = false;
+
+      final List<InvoiceItem> invoiceItems = [];
+      final reserveStockOnOrder = _prefs.getBool('reserve_stock_on_order') ?? false;
+
+      List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
+      final allItems = await isar.items.where().findAll();
+      final targetItemMap = {for (var i in allItems) i.id: i};
+      final modifiedItems = <int, Item>{};
+
+      await isar.writeTxn(() async {
+        // 1. Put Invoice
+        final invoiceId = await isar.invoices.put(invoice);
+        invoice.id = invoiceId;
+
+        // Link party
+        if (!kIsWeb && order.party.value != null) {
+          invoice.party.value = order.party.value;
+
+          // 2. Add Outstanding Balance to Party
+          final party = order.party.value!;
+          final pendingAmt = invoice.pendingAmount ?? 0.0;
+          party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
+          await isar.partys.put(party);
+        } else if (order.partyId != null) {
+          final party = await isar.partys.get(order.partyId!);
+          if (party != null) {
+            final pendingAmt = invoice.pendingAmount ?? 0.0;
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) + pendingAmt;
+            await isar.partys.put(party);
+          }
+        }
+
+        // 3. Link Order
+        if (!kIsWeb) invoice.order.value = order;
+
+        // 4. Update source Order status
+        await isar.orders.put(order);
+
+        // 5. Create InvoiceItems
+        // sourceItems pre-fetched
+
+        for (var orderItem in sourceItems) {
+          
+          final invItem = InvoiceItem()
+            ..uuid = _generateUuid()
+            ..parentInvoiceId = invoiceId
+            ..unit = orderItem.unit
+            ..itemId = orderItem.itemId
+            ..itemName = orderItem.itemName
+            ..hsnCode = orderItem.hsnCode
+            ..quantity = orderItem.quantity
+            ..freeQuantity = orderItem.freeQuantity
+            ..rate = orderItem.rate
+            ..discount = orderItem.discountAmount
+            ..taxableAmount = orderItem.taxableAmount
+            ..gstRate = orderItem.gstPercent
+            ..gstAmount = orderItem.gstAmount
+            ..totalAmount = orderItem.totalAmount
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now()
+            ..isDeleted = false
+            ..isSynced = false;
+
+          await isar.invoiceItems.put(invItem);
+          if (!kIsWeb) {
+            invItem.invoice.value = invoice;
+          }
+          
+          if ((!kIsWeb && orderItem.item.value != null) || orderItem.itemId != null) {
+            final dbItem = (!kIsWeb ? orderItem.item.value : null) ?? (orderItem.itemId != null ? targetItemMap[orderItem.itemId!] : null);
+            if (dbItem != null) {
+              if (!kIsWeb) invItem.item.value = dbItem;
+              
+              if (!reserveStockOnOrder) {
+                final double available = dbItem.currentStock ?? 0.0;
+                final double requested = orderItem.quantity ?? 0.0;
+
+                final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
+                if (!allowNegativeStock && available < requested) {
+                  throw StockException('Insufficient stock for item "${dbItem.itemName}". Available: $available, Requested: $requested');
+                }
+
+                dbItem.currentStock = available - requested;
+
+                final log = '[${DateTime.now().toIso8601String().substring(0,19)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Convert Order #${order.orderNumber}';
+                dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+                
+                modifiedItems[dbItem.id] = dbItem;
+              }
+            }
+          }
+          invoiceItems.add(invItem);
+        }
+
+        if (modifiedItems.isNotEmpty) {
+          await isar.items.putAll(modifiedItems.values.toList());
+        }
+        // 6. Sync logs for Invoice
+        final invoiceQueue = SyncQueue()
+          ..uuid = _generateUuid()
+          ..entityType = 'Invoice'
+          ..entityId = invoiceId
+          ..entityUuid = invoice.uuid
+          ..operation = 'Insert'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(invoiceQueue);
+
+        // 7. Sync logs for InvoiceItems
+        for (var item in invoiceItems) {
+          final itemQueue = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = 'InvoiceItem'
+            ..entityId = item.id
+            ..entityUuid = item.uuid
+            ..operation = 'Insert'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(itemQueue);
+        }
+
+        // 8. Sync log for updating Order status
+        final orderQueue = SyncQueue()
+          ..uuid = _generateUuid()
+          ..entityType = 'Order'
+          ..entityId = order.id
           ..entityUuid = order.uuid
           ..operation = 'Update'
           ..createdAt = DateTime.now()
