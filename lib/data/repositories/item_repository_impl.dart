@@ -99,4 +99,24 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
       throw DatabaseException('Failed to retrieve Item by uuid: $e');
     }
   }
+
+  @override
+  Future<void> create(Item entity, {bool isSyncDownload = false}) async {
+    await super.create(entity, isSyncDownload: isSyncDownload);
+    await isar.writeTxn(() async {
+      await entity.category.save();
+      await entity.unit.save();
+      await entity.brand.save();
+    });
+  }
+
+  @override
+  Future<void> update(Item entity, {bool isSyncDownload = false}) async {
+    await super.update(entity, isSyncDownload: isSyncDownload);
+    await isar.writeTxn(() async {
+      await entity.category.save();
+      await entity.unit.save();
+      await entity.brand.save();
+    });
+  }
 }

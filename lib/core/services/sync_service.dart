@@ -1950,6 +1950,11 @@ class SyncService {
           'categoryUuid': _safeGetLinkUuid(e.category),
           'unitUuid': _safeGetLinkUuid(e.unit),
           'brandUuid': _safeGetLinkUuid(e.brand),
+          'weight': e.weight,
+          'dimensions': e.dimensions,
+          'notes': e.notes,
+          'enableBatchTracking': e.enableBatchTracking,
+          'defaultBatchNumber': e.defaultBatchNumber,
           'isBundle': e.isBundle,
           'itemType': e.itemType,
           'bundleComponentUuids': e.bundleComponentUuids,
@@ -2469,6 +2474,11 @@ class SyncService {
           ..imagePaths = data['imagePaths'] != null ? List<String>.from(data['imagePaths']) : null
           ..firebaseImageUrls = data['firebaseImageUrls'] != null ? List<String>.from(data['firebaseImageUrls']) : null
           ..thumbnailImage = data['thumbnailImage']
+          ..weight = (data['weight'] as num?)?.toDouble()
+          ..dimensions = data['dimensions']
+          ..notes = data['notes']
+          ..enableBatchTracking = data['enableBatchTracking'] ?? false
+          ..defaultBatchNumber = data['defaultBatchNumber']
           ..isBundle = data['isBundle'] ?? false
           ..itemType = data['itemType']
           ..bundleComponentUuids = data['bundleComponentUuids'] != null ? List<String>.from(data['bundleComponentUuids']) : null
