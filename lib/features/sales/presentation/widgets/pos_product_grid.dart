@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
@@ -104,25 +105,6 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                 }).toList();
               }
 
-              if (items.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.inventory_2_outlined, size: 48, color: theme.colorScheme.outline),
-                      const SizedBox(height: 8),
-                      Text(
-                        allItems.isEmpty
-                            ? 'No items in database. Add items first.'
-                            : 'No items found. Try "All Items" or clear search.',
-                        style: TextStyle(color: theme.colorScheme.outline),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
-
               return GridView.builder(
                 padding: const EdgeInsets.all(8),
                 gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -131,8 +113,11 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                   crossAxisSpacing: 10,
                   childAspectRatio: 0.75,
                 ),
-                itemCount: items.length,
+                itemCount: items.length + 1,
                 itemBuilder: (context, index) {
+                  if (index == items.length) {
+                    return _buildCreateNewCard(theme, context);
+                  }
                   return _buildProductCard(items[index], theme);
                 },
               );
@@ -406,6 +391,55 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
         item.isBundle ? Icons.extension_rounded : Icons.fastfood_rounded,
         size: 36,
         color: item.isBundle ? Colors.orange : theme.colorScheme.primary.withOpacity(0.4),
+      ),
+    );
+  }
+
+  Widget _buildCreateNewCard(ThemeData theme, BuildContext context) {
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Card(
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.5), width: 1),
+      ),
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddEditItemScreen(),
+            ),
+          );
+          // After returning from AddEditItemScreen, we want to invalidate the items list
+          // so the new item shows up.
+          ref.invalidate(itemsListProvider);
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.add, size: 36, color: theme.colorScheme.primary),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Create New Item',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
