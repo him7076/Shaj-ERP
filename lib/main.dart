@@ -18,6 +18,7 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/router.dart';
+import 'package:business_sahaj_erp/core/services/firebase_migration_service.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -133,7 +134,12 @@ void main() {
       logger.error('DatabaseService init error on boot', e, stack);
     }
 
-    // 4. Run application
+    // 4. Run Firebase Migrations in background
+    Future.microtask(() {
+      FirebaseMigrationService().migrateLegacyItemsToParentDocuments();
+    });
+
+    // 5. Run application
     runApp(
       ProviderScope(
         overrides: [

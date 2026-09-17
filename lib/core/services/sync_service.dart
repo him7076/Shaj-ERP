@@ -1975,6 +1975,27 @@ class SyncService {
         });
       case 'Order':
         final e = entity as Order;
+        final isarRef = _dbService.isar;
+        final allOrdItems = await isarRef.orderItems.filter().isDeletedEqualTo(false).findAll();
+        final rawItems = allOrdItems.where((i) => i.orderId == e.id || (e.uuid != null && e.uuid!.isNotEmpty && i.orderUuid == e.uuid)).toList();
+
+        final itemsMapList = rawItems.map((item) => {
+          'uuid': item.uuid,
+          'itemId': item.itemId,
+          'itemName': item.itemName,
+          'hsnCode': item.hsnCode,
+          'quantity': item.quantity,
+          'freeQuantity': item.freeQuantity,
+          'unit': item.unit,
+          'rate': item.rate,
+          'discountPercent': item.discountPercent,
+          'discountAmount': item.discountAmount,
+          'taxableAmount': item.taxableAmount,
+          'gstPercent': item.gstPercent,
+          'gstAmount': item.gstAmount,
+          'totalAmount': item.totalAmount,
+        }).toList();
+
         return baseMap..addAll({
           'orderNumber': e.orderNumber,
           'orderDate': e.orderDate?.toIso8601String(),
@@ -2002,6 +2023,7 @@ class SyncService {
           'editedBy': e.editedBy,
           'editTime': e.editTime?.toIso8601String(),
           'partyUuid': _safeGetLinkUuid(e.party),
+          'items': itemsMapList,
         });
       case 'OrderItem':
         final e = entity as OrderItem;
@@ -2994,6 +3016,48 @@ class SyncService {
                 try { await ordItem.order.save(); } catch (_) {}
               });
             }
+          }
+        } else if (e.uuid != null && e.uuid!.isNotEmpty) {
+          // Legacy Cloud Fallback: Fetch from legacy 'order_items' collection in Firestore
+          try {
+            final legacySnapshot = await _firebaseService.firestore
+                .collection('order_items')
+                .where('companyId', isEqualTo: _firebaseService.companyId)
+                .where('orderUuid', isEqualTo: e.uuid)
+                .get()
+                .timeout(const Duration(seconds: 5));
+
+            for (var legacyDoc in legacySnapshot.docs) {
+              final itemMap = legacyDoc.data();
+              final itemUuid = itemMap['uuid'] as String? ?? legacyDoc.id;
+              final OrderItem ordItem = (await isar.orderItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? OrderItem();
+              ordItem
+                ..uuid = itemUuid
+                ..itemId = itemMap['itemId'] as int?
+                ..itemName = itemMap['itemName'] as String?
+                ..hsnCode = itemMap['hsnCode'] as String?
+                ..quantity = (itemMap['quantity'] as num?)?.toDouble()
+                ..freeQuantity = (itemMap['freeQuantity'] as num?)?.toDouble()
+                ..unit = itemMap['unit'] as String?
+                ..rate = (itemMap['rate'] as num?)?.toDouble()
+                ..discountPercent = (itemMap['discountPercent'] as num?)?.toDouble()
+                ..discountAmount = (itemMap['discountAmount'] as num?)?.toDouble()
+                ..taxableAmount = (itemMap['taxableAmount'] as num?)?.toDouble()
+                ..gstPercent = (itemMap['gstPercent'] as num?)?.toDouble()
+                ..gstAmount = (itemMap['gstAmount'] as num?)?.toDouble()
+                ..totalAmount = (itemMap['totalAmount'] as num?)?.toDouble()
+                ..isDeleted = false
+                ..isSynced = true
+                ..updatedAt = DateTime.now();
+
+              ordItem.order.value = e;
+              await isar.writeTxn(() async {
+                await isar.orderItems.put(ordItem);
+                try { await ordItem.order.save(); } catch (_) {}
+              });
+            }
+          } catch (e) {
+            logger.warning('Failed to fetch legacy order_items: $e');
           }
         }
       } else if (entityType == 'OrderItem') {

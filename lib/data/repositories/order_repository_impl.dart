@@ -154,18 +154,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(orderQueue);
 
-        // 6. Add Sync Queue logs for each OrderItem
-        for (var item in items) {
-          final itemQueue = SyncQueue()
-            ..uuid = _generateUuid()
-            ..entityType = 'OrderItem'
-            ..entityId = item.id
-            ..entityUuid = item.uuid
-            ..operation = isNew ? 'Insert' : 'Update'
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now();
-          await isar.syncQueues.put(itemQueue);
-        }
+        // 6. Removed Sync Queue logs for OrderItems as they are embedded in Order
       });
 
       logger.info('Order #${order.orderNumber} saved successfully. Reserve stock: $reserveStock');

@@ -18,6 +18,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
   int? _selectedCategoryId;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  final Map<int, double> _itemQuantities = {};
 
   @override
   void dispose() {
@@ -188,25 +189,11 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     final price = item.sellRate ?? 0.0;
     final isDark = theme.brightness == Brightness.dark;
 
-    return InkWell(
-      onTap: () {
-        ref.read(invoiceCartProvider.notifier).addItem(item);
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${item.itemName ?? "Item"} added to cart'),
-            duration: const Duration(milliseconds: 800),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 60, left: 20, right: 20),
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: Card(
-        elevation: 1.5,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        child: Stack(
+    return Card(
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+      child: Stack(
           children: [
             Padding(
               padding: const EdgeInsets.all(10),
@@ -268,6 +255,109 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 6),
+                  // Quantity Selector & Add Button
+                  Row(
+                    children: [
+                      // Minus Button
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            final current = _itemQuantities[item.id] ?? 1.0;
+                            if (current > 1.0) {
+                              _itemQuantities[item.id] = current - 1.0;
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Icon(Icons.remove, size: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Manual Input
+                      Expanded(
+                        child: SizedBox(
+                          height: 26,
+                          child: TextFormField(
+                            key: ValueKey('qty_${item.id}_${_itemQuantities[item.id] ?? 1.0}'),
+                            initialValue: (_itemQuantities[item.id] ?? 1.0).toStringAsFixed(0),
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.zero,
+                              border: InputBorder.none,
+                            ),
+                            onChanged: (val) {
+                              final parsed = double.tryParse(val);
+                              if (parsed != null && parsed > 0) {
+                                _itemQuantities[item.id] = parsed;
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Plus Button
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            final current = _itemQuantities[item.id] ?? 1.0;
+                            _itemQuantities[item.id] = current + 1.0;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceVariant,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Icon(Icons.add, size: 16),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Add Button
+                      InkWell(
+                        onTap: () {
+                          final qty = _itemQuantities[item.id] ?? 1.0;
+                          ref.read(invoiceCartProvider.notifier).addItem(item, qty: qty);
+                          ScaffoldMessenger.of(context).clearSnackBars();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('${qty.toInt()}x ${item.itemName ?? "Item"} added to cart'),
+                              duration: const Duration(milliseconds: 800),
+                              behavior: SnackBarBehavior.floating,
+                              margin: const EdgeInsets.only(bottom: 60, left: 20, right: 20),
+                            ),
+                          );
+                          // Reset qty to 1 after adding
+                          setState(() {
+                            _itemQuantities.remove(item.id);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'ADD',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -287,8 +377,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
               ),
           ],
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildItemImage(Item item, ThemeData theme) {
