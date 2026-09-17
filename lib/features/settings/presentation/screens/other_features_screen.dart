@@ -14,6 +14,7 @@ class OtherFeaturesScreen extends ConsumerStatefulWidget {
 class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
   bool _enableBundleManagement = false;
   bool _enableRestaurantMode = false;
+  bool _isAutoFillPaidAmount = false;
 
   @override
   void initState() {
@@ -26,6 +27,7 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
     setState(() {
       _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
       _enableRestaurantMode = prefs.getBool('enable_restaurant_mode') ?? false;
+      _isAutoFillPaidAmount = prefs.getBool('auto_fill_paid_amount') ?? false;
     });
   }
 
@@ -152,6 +154,55 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
               value: _enableRestaurantMode,
               onChanged: _toggleRestaurantMode,
               activeColor: Colors.pink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: SwitchListTile(
+              title: const Text(
+                'Transaction Settings (Auto-fill Paid Amount)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: const Text(
+                'Automatically check the "Paid Amount" box and fill the grand total in all new Sales/Purchase transactions.',
+                style: TextStyle(fontSize: 12),
+              ),
+              secondary: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.receipt_long_rounded, color: Colors.orange),
+              ),
+              value: _isAutoFillPaidAmount,
+              onChanged: (val) async {
+                final prefs = ref.read(sharedPreferencesProvider);
+                await prefs.setBool('auto_fill_paid_amount', val);
+                setState(() {
+                  _isAutoFillPaidAmount = val;
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(val ? 'Auto-fill Paid Amount ENABLED' : 'Auto-fill Paid Amount DISABLED'),
+                      backgroundColor: val ? Colors.green : Colors.redAccent,
+                    ),
+                  );
+                }
+              },
+              activeColor: Colors.orange,
             ),
           ),
         ],

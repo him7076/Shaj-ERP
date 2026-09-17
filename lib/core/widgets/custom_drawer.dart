@@ -425,8 +425,8 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
-                    icon: Icons.extension_rounded,
-                    label: 'Bundle Items (Combo)',
+                    icon: Icons.settings_applications_rounded, // Optional: change icon to better fit "settings"
+                    label: 'Other Settings',
                     routePath: '/other-features',
                     currentPath: location,
                   ),

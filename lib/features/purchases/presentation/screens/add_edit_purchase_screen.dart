@@ -460,7 +460,10 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       _isPaidAmountAutoFill = val ?? false;
                       if (_isPaidAmountAutoFill) {
                         _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+                      } else {
+                        _paidAmountController.text = '';
                       }
+                      _recalculateTotals();
                     });
                   },
                 ),

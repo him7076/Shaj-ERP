@@ -767,6 +767,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                         final grandTotal = totals['grandTotal'] ?? 0.0;
                         _paidAmountController.text = grandTotal.toStringAsFixed(2);
                         ref.read(invoiceCartProvider.notifier).setPaidAmount(grandTotal);
+                      } else {
+                        _paidAmountController.text = '';
+                        ref.read(invoiceCartProvider.notifier).setPaidAmount(0.0);
                       }
                     });
                   },
