@@ -935,7 +935,12 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 3, child: mainContent),
+                  Expanded(
+                    flex: 3, 
+                    child: isRestaurantMode 
+                        ? SizedBox(height: MediaQuery.of(context).size.height - 180, child: mainContent)
+                        : mainContent,
+                  ),
                   const SizedBox(width: 16),
                   Expanded(
                     flex: 2, 
