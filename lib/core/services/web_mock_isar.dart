@@ -501,6 +501,7 @@ class WebMockIsar implements Isar {
         'firebaseImageUrls': entity.firebaseImageUrls,
         'thumbnailImage': entity.thumbnailImage,
         'isBundle': entity.isBundle,
+        'itemType': entity.itemType,
         'bundleComponentUuids': entity.bundleComponentUuids,
         'bundleComponentQuantities': entity.bundleComponentQuantities,
         'bundleComponentUnits': entity.bundleComponentUnits,
@@ -1106,6 +1107,7 @@ class WebMockIsar implements Isar {
           ..firebaseImageUrls = (map['firebaseImageUrls'] as List<dynamic>?)?.cast<String>()
           ..thumbnailImage = map['thumbnailImage'] as String?
           ..isBundle = map['isBundle'] as bool? ?? false
+          ..itemType = map['itemType'] as String?
           ..bundleComponentUuids = (map['bundleComponentUuids'] as List<dynamic>?)?.cast<String>()
           ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List<dynamic>?)?.cast<num>().map((e) => e.toDouble()).toList()
           ..bundleComponentUnits = (map['bundleComponentUnits'] as List<dynamic>?)?.cast<String>()
@@ -1854,6 +1856,8 @@ class WebMockCollection<T> extends IsarCollection<T> {
       if (prop == 'sellrate') return item.sellRate;
       if (prop == 'buyrate') return item.buyRate;
       if (prop == 'gstrate') return item.gstRate;
+      if (prop == 'itemtype') return item.itemType;
+      if (prop == 'isbundle') return item.isBundle;
     }
     if (item is Party) {
       if (prop == 'partyname') return item.partyName;
