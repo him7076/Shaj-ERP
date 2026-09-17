@@ -329,7 +329,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ..transactionType = 'Receipt'
             ..amount = invoice.paidAmount
             ..transactionDate = DateTime.now()
-            ..partyUuid = invoice.partyUuid
+            ..partyUuid = invoice.party.value?.uuid
             ..partyName = invoice.partyName
             ..remarks = 'Payment for Invoice #${invoice.invoiceNumber}'
             ..paymentMode = 'Cash'
