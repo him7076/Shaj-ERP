@@ -48,7 +48,7 @@ class FirebaseMigrationService {
       await prefs.setBool('has_migrated_items_to_parents', true);
       logger.info('Legacy items migration completed successfully.');
     } catch (e) {
-      logger.severe('Migration failed: $e');
+      logger.error('Migration failed: $e');
     }
   }
 
