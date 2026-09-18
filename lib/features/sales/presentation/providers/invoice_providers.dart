@@ -90,17 +90,28 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     state = state.copyWith(selectedParty: party);
   }
 
-  void addItem(Item item, {double qty = 1.0}) {
+  void addItem(Item item, {double qty = 1.0, String? selectedSubItemUuid, String? selectedSubItemName}) {
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
     final defaultUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+
+    // If sub-item selected, use its price if available
+    double finalRate = rate;
+    if (selectedSubItemUuid != null && item.subItems != null) {
+      final sub = item.subItems!.where((s) => s.uuid == selectedSubItemUuid).firstOrNull;
+      if (sub != null && sub.sellPrice != null) {
+        finalRate = sub.sellPrice!;
+      }
+    }
 
     final newItem = CartItemState(
       item: item,
       quantity: qty,
       unit: defaultUnit,
-      rate: rate,
+      rate: finalRate,
       gstPercent: gst,
+      selectedSubItemUuid: selectedSubItemUuid,
+      selectedSubItemName: selectedSubItemName,
       bundleComponentUuids: item.isBundle ? item.bundleComponentUuids : null,
       bundleComponentQuantities: item.isBundle ? item.bundleComponentQuantities : null,
       bundleComponentUnits: item.isBundle ? item.bundleComponentUnits : null,
