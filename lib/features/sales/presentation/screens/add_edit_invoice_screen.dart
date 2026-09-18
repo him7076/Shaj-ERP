@@ -608,7 +608,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       
       // Safety timeout to prevent infinite UI freeze if Isar transaction deadlocks
       await repo.saveInvoice(invoice, invoiceItems).timeout(
-        const Duration(seconds: 8),
+        const Duration(seconds: 30),
         onTimeout: () => throw Exception('Database operation timed out. Please try again.'),
       );
 

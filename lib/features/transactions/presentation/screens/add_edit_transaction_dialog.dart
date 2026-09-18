@@ -408,7 +408,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       await Future.delayed(const Duration(milliseconds: 100));
 
       await repo.saveTransaction(txn).timeout(
-        const Duration(seconds: 8),
+        const Duration(seconds: 30),
         onTimeout: () => throw Exception('Database operation timed out. Please try again.'),
       );
       

@@ -83,11 +83,6 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       }
       invoice.invoiceStatus = 'Active';
 
-      final allItems = await isar.items.where().findAll();
-      final targetItemMap = {for (var i in allItems) i.id: i};
-      final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
-      final modifiedItems = <int, Item>{};
-
       // --- PRE-FETCH ALL DATA OUTSIDE writeTxn ---
       Invoice? oldInvoice;
       if (!isNew) {
@@ -106,6 +101,47 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           oldByParentUuid = await isar.invoiceItems.filter().parentInvoiceUuidEqualTo(invoice.uuid).findAll();
         }
       }
+
+      await Future.delayed(Duration.zero); // Yield to event loop
+
+      final requiredItemIds = <int>{};
+      final requiredItemUuids = <String>{};
+
+      for (var item in items) {
+        if (item.itemId != null) requiredItemIds.add(item.itemId!);
+        if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
+        if (!kIsWeb && item.item.value?.bundleComponentUuids != null) {
+          requiredItemUuids.addAll(item.item.value!.bundleComponentUuids!);
+        }
+      }
+      
+      for (var oldItem in [...oldByParentId, ...oldByParentUuid]) {
+        if (oldItem.itemId != null) requiredItemIds.add(oldItem.itemId!);
+        if (oldItem.bundleComponentUuids != null) requiredItemUuids.addAll(oldItem.bundleComponentUuids!);
+      }
+
+      final targetItemMap = <int, Item>{};
+      final itemUuidMap = <String, Item>{};
+
+      for (var id in requiredItemIds) {
+        final item = await isar.items.get(id);
+        if (item != null) {
+          targetItemMap[id] = item;
+          if (item.uuid != null) itemUuidMap[item.uuid!] = item;
+          if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
+        }
+      }
+      for (var uuid in requiredItemUuids) {
+        if (!itemUuidMap.containsKey(uuid)) {
+          final item = await isar.items.filter().uuidEqualTo(uuid).findFirst();
+          if (item != null) {
+            targetItemMap[item.id] = item;
+            itemUuidMap[uuid] = item;
+          }
+        }
+      }
+
+      final modifiedItems = <int, Item>{};
 
       await isar.writeTxn(() async {
         // 1. Put Invoice
@@ -384,9 +420,36 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       invoice.isSynced = false;
 
       final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(invoice.id).findAll();
-      final allItems = await isar.items.where().findAll();
-      final itemUuidMap = {for (var i in allItems) if (i.uuid != null) i.uuid!: i};
-      final targetItemMap = {for (var i in allItems) i.id: i};
+
+      final requiredItemIds = <int>{};
+      final requiredItemUuids = <String>{};
+
+      for (var item in items) {
+        if (item.itemId != null) requiredItemIds.add(item.itemId!);
+        if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
+      }
+
+      final targetItemMap = <int, Item>{};
+      final itemUuidMap = <String, Item>{};
+
+      for (var id in requiredItemIds) {
+        final item = await isar.items.get(id);
+        if (item != null) {
+          targetItemMap[id] = item;
+          if (item.uuid != null) itemUuidMap[item.uuid!] = item;
+          if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
+        }
+      }
+      for (var uuid in requiredItemUuids) {
+        if (!itemUuidMap.containsKey(uuid)) {
+          final item = await isar.items.filter().uuidEqualTo(uuid).findFirst();
+          if (item != null) {
+            targetItemMap[item.id] = item;
+            itemUuidMap[uuid] = item;
+          }
+        }
+      }
+      
       final modifiedItems = <int, Item>{};
 
       final party = invoice.partyId != null ? await isar.partys.get(invoice.partyId!) : null;
@@ -571,8 +634,39 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
       final reserveStockOnOrder = _prefs.getBool('reserve_stock_on_order') ?? false;
 
       List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
-      final allItems = await isar.items.where().findAll();
-      final targetItemMap = {for (var i in allItems) i.id: i};
+      
+      final requiredItemIds = <int>{};
+      final requiredItemUuids = <String>{};
+
+      for (var item in sourceItems) {
+        if (item.itemId != null) requiredItemIds.add(item.itemId!);
+        if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
+        if (!kIsWeb && item.item.value?.bundleComponentUuids != null) {
+          requiredItemUuids.addAll(item.item.value!.bundleComponentUuids!);
+        }
+      }
+
+      final targetItemMap = <int, Item>{};
+      final itemUuidMap = <String, Item>{};
+
+      for (var id in requiredItemIds) {
+        final item = await isar.items.get(id);
+        if (item != null) {
+          targetItemMap[id] = item;
+          if (item.uuid != null) itemUuidMap[item.uuid!] = item;
+          if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
+        }
+      }
+      for (var uuid in requiredItemUuids) {
+        if (!itemUuidMap.containsKey(uuid)) {
+          final item = await isar.items.filter().uuidEqualTo(uuid).findFirst();
+          if (item != null) {
+            targetItemMap[item.id] = item;
+            itemUuidMap[uuid] = item;
+          }
+        }
+      }
+
       final modifiedItems = <int, Item>{};
 
       await isar.writeTxn(() async {
