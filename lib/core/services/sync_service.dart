@@ -753,7 +753,17 @@ class SyncService {
   Future<void> _uploadLocalChanges() async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
-    // REMOVED: await _enqueueAllLocalRecordsForUpload(forceAll: false); // Redundant sweep causing UI freeze
+
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Scanning for pending offline changes...',
+      lastSyncTime: _currentState.lastSyncTime,
+      progress: 0.05,
+      currentStep: 1,
+      totalSteps: 22,
+    ));
+    await _enqueueAllLocalRecordsForUpload(forceAll: false); // Restored the sweep, it's chunked so it won't freeze
+    
     await _queueService.resetAllRetries();
     final allQueueItems = await _queueService.getPendingQueue();
 
@@ -806,6 +816,17 @@ class SyncService {
       // Yield event loop every 10 items for 60 FPS UI responsiveness & to prevent Vercel 95% hang
       if (i % 10 == 0) {
         await Future.delayed(Duration.zero);
+        if (i % 50 == 0) {
+          final p = 0.1 + ((i / queueItems.length) * 0.1); // 10% to 20%
+          _updateState(SyncState(
+            status: SyncStatus.syncing,
+            message: 'Pushing data to cloud ($i/${queueItems.length})...',
+            lastSyncTime: _currentState.lastSyncTime,
+            progress: p,
+            currentStep: 2,
+            totalSteps: 22,
+          ));
+        }
       }
 
       try {
