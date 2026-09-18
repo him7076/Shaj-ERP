@@ -106,6 +106,7 @@ class SyncService {
     status: SyncStatus.idle,
     message: 'System ready for sync',
   );
+  DateTime _lastSyncCompleteTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   SyncService(
     this._firebaseService,
@@ -296,12 +297,14 @@ class SyncService {
     _quietSyncDebounceTimer = Timer(delay, () async {
       if (_currentState.status == SyncStatus.syncing) return;
       if (_isUploadingQuietly) return; // Prevent concurrent quiet uploads
+      // Cooldown: skip if a full syncAll just completed within last 5 seconds
+      if (DateTime.now().difference(_lastSyncCompleteTime).inSeconds < 5) return;
 
       _isUploadingQuietly = true;
       try {
         await _firebaseService.ensureAuthenticated();
         if (_firebaseService.isAuthenticated) {
-          await _uploadLocalChanges();
+          await _uploadLocalChanges(silent: true);
         }
       } catch (e) {
         logger.warning('Quiet background upload encountered non-fatal error: $e');
@@ -386,6 +389,7 @@ class SyncService {
       await _logSyncEvent('Success', 'Full sync completed successfully.');
 
       logger.info('Firebase sync cycle completed successfully.');
+      _lastSyncCompleteTime = DateTime.now();
       _updateState(SyncState(
         status: SyncStatus.success,
         message: 'Sync completed successfully (100%)',
@@ -751,18 +755,21 @@ class SyncService {
   }
 
   /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
-  Future<void> _uploadLocalChanges() async {
+  /// [silent] = true when called from background quiet sync — avoids polluting global state
+  Future<void> _uploadLocalChanges({bool silent = false}) async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
 
-    _updateState(SyncState(
-      status: SyncStatus.syncing,
-      message: 'Checking pending queue...',
-      lastSyncTime: _currentState.lastSyncTime,
-      progress: 0.05,
-      currentStep: 1,
-      totalSteps: 22,
-    ));
+    if (!silent) {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Checking pending queue...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.05,
+        currentStep: 1,
+        totalSteps: 22,
+      ));
+    }
     await Future.delayed(Duration.zero); // Yield before heavy DB work
 
     // NOTE: We do NOT call _enqueueAllLocalRecordsForUpload here.
@@ -783,14 +790,16 @@ class SyncService {
     final List<int> completedQueueIds = [];
 
     // Deduplicate queue items to minimize Firebase Writes — with event-loop yielding
-    _updateState(SyncState(
-      status: SyncStatus.syncing,
-      message: 'Deduplicating ${allQueueItems.length} queue items...',
-      lastSyncTime: _currentState.lastSyncTime,
-      progress: 0.07,
-      currentStep: 1,
-      totalSteps: 22,
-    ));
+    if (!silent) {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Deduplicating ${allQueueItems.length} queue items...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.07,
+        currentStep: 1,
+        totalSteps: 22,
+      ));
+    }
     await Future.delayed(Duration.zero);
 
     final uniqueItemsToProcess = <String, SyncQueue>{};
@@ -844,7 +853,7 @@ class SyncService {
         await Future.delayed(Duration.zero);
       }
       // Update progress every 25 items
-      if (i % 25 == 0) {
+      if (i % 25 == 0 && !silent) {
         final p = 0.10 + ((i / totalItems) * 0.30); // 10% to 40% range
         _updateState(SyncState(
           status: SyncStatus.syncing,
@@ -918,14 +927,16 @@ class SyncService {
       // Commit WriteBatch if 200 items reached OR if it's the last item
       if (batchOpsCount >= 200 || (i == queueItems.length - 1 && batchOpsCount > 0)) {
         try {
-          _updateState(SyncState(
-            status: SyncStatus.syncing,
-            message: 'Committing batch to Firebase ($totalUploaded/$totalItems)...',
-            lastSyncTime: _currentState.lastSyncTime,
-            progress: 0.10 + ((i / totalItems) * 0.30),
-            currentStep: 2,
-            totalSteps: 22,
-          ));
+          if (!silent) {
+            _updateState(SyncState(
+              status: SyncStatus.syncing,
+              message: 'Committing batch to Firebase ($totalUploaded/$totalItems)...',
+              lastSyncTime: _currentState.lastSyncTime,
+              progress: 0.10 + ((i / totalItems) * 0.30),
+              currentStep: 2,
+              totalSteps: 22,
+            ));
+          }
           await currentBatch.commit().timeout(const Duration(seconds: 30));
           totalUploaded += batchOpsCount;
           // Only if commit succeeds, we add them to the global lists to be marked as synced locally
@@ -953,14 +964,16 @@ class SyncService {
     }
 
     // Mark synced items in local DB — chunked with yields
-    _updateState(SyncState(
-      status: SyncStatus.syncing,
-      message: 'Updating local sync status ($totalUploaded items)...',
-      lastSyncTime: _currentState.lastSyncTime,
-      progress: 0.42,
-      currentStep: 3,
-      totalSteps: 22,
-    ));
+    if (!silent) {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Updating local sync status ($totalUploaded items)...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.42,
+        currentStep: 3,
+        totalSteps: 22,
+      ));
+    }
 
     if (syncedItems.isNotEmpty || completedQueueIds.isNotEmpty) {
       if (syncedItems.isNotEmpty) {
