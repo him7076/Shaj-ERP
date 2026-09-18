@@ -646,6 +646,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 await syncService.syncFirms();
                 await syncService.syncAll();
                 await _refreshQueue();
+                ref.invalidate(sharedPreferencesProvider);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

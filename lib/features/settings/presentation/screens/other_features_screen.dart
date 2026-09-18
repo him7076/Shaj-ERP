@@ -15,6 +15,7 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
   bool _enableBundleManagement = false;
   bool _enableRestaurantMode = false;
   bool _isAutoFillPaidAmount = false;
+  bool _enableSubItems = false;
 
   @override
   void initState() {
@@ -28,6 +29,7 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
       _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
       _enableRestaurantMode = prefs.getBool('enable_restaurant_mode') ?? false;
       _isAutoFillPaidAmount = prefs.getBool('auto_fill_paid_amount') ?? false;
+      _enableSubItems = prefs.getBool('enable_sub_items') ?? false;
     });
   }
 
@@ -45,6 +47,27 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
             value 
               ? 'Bundle Item Management Enabled' 
               : 'Bundle Item Management Disabled'
+          ),
+          backgroundColor: value ? Colors.green : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleSubItems(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_sub_items', value);
+    setState(() {
+      _enableSubItems = value;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value 
+              ? 'Sub-Items Management Enabled' 
+              : 'Sub-Items Management Disabled'
           ),
           backgroundColor: value ? Colors.green : Colors.redAccent,
         ),
@@ -260,17 +283,34 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
                 BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
               ],
             ),
-            child: SwitchListTile(
-              title: const Text('Bundle Item Management', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('Enable this to create combo items or recipes. When a bundle is sold, its constituent items will be automatically deducted from inventory.', style: TextStyle(fontSize: 12)),
-              secondary: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.extension_rounded, color: Colors.amber),
-              ),
-              value: _enableBundleManagement,
-              onChanged: _toggleBundleManagement,
-              activeColor: Colors.amber,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Bundle Item Management', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable this to create combo items or recipes. When a bundle is sold, its constituent items will be automatically deducted from inventory.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.amber.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.extension_rounded, color: Colors.amber),
+                  ),
+                  value: _enableBundleManagement,
+                  onChanged: _toggleBundleManagement,
+                  activeColor: Colors.amber,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Manage Sub-Items (Flavors/Variants)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable creating sub-items within an item (e.g., Tandoori Burger inside Burger) with separate prices and photos.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.purple.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.fastfood_rounded, color: Colors.purple),
+                  ),
+                  value: _enableSubItems,
+                  onChanged: _toggleSubItems,
+                  activeColor: Colors.purple,
+                ),
+              ],
             ),
           ),
         ],

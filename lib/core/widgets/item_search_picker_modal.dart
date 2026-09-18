@@ -132,15 +132,11 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                 MaterialPageRoute(builder: (_) => AddEditItemScreen(initialIsBundle: widget.onlyBundles, prefilledItem: Item()..itemName = _searchController.text.trim())),
                               );
                               if (created == true && mounted) {
-                                // AddEditItemScreen returns true on success, not the item itself. 
-                                // So we just close modal. Or wait, maybe we fetch the last created item?
-                                // Actually, if we just close with null, they can search for it again.
-                                // Or we can find the item by name.
                                 final repo = ref.read(itemRepositoryProvider);
                                 final items = await repo.getAll();
-                                final newItem = items.where((i) => i.itemName == _searchController.text.trim()).lastOrNull;
-                                if (newItem != null && mounted) {
-                                  Navigator.pop(context, newItem);
+                                if (items.isNotEmpty && mounted) {
+                                  items.sort((a, b) => b.id.compareTo(a.id));
+                                  Navigator.pop(context, items.first);
                                 } else {
                                   Navigator.pop(context);
                                 }
@@ -171,9 +167,9 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                   if (created == true && mounted) {
                                     final repo = ref.read(itemRepositoryProvider);
                                     final items = await repo.getAll();
-                                    final newItem = items.where((i) => i.itemName == _searchController.text.trim()).lastOrNull;
-                                    if (newItem != null && mounted) {
-                                      Navigator.pop(context, newItem);
+                                    if (items.isNotEmpty && mounted) {
+                                      items.sort((a, b) => b.id.compareTo(a.id));
+                                      Navigator.pop(context, items.first);
                                     } else {
                                       Navigator.pop(context);
                                     }
@@ -209,9 +205,9 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                     if (created == true && mounted) {
                                       final repo = ref.read(itemRepositoryProvider);
                                       final items = await repo.getAll();
-                                      final newItem = items.where((i) => i.itemName == _searchController.text.trim()).lastOrNull;
-                                      if (newItem != null && mounted) {
-                                        Navigator.pop(context, newItem);
+                                      if (items.isNotEmpty && mounted) {
+                                        items.sort((a, b) => b.id.compareTo(a.id));
+                                        Navigator.pop(context, items.first);
                                       } else {
                                         Navigator.pop(context);
                                       }

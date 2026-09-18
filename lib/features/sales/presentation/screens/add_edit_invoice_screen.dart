@@ -768,7 +768,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                         _paidAmountController.text = grandTotal.toStringAsFixed(2);
                         ref.read(invoiceCartProvider.notifier).setPaidAmount(grandTotal);
                       } else {
-                        _paidAmountController.text = '';
+                        _paidAmountController.clear();
                         ref.read(invoiceCartProvider.notifier).setPaidAmount(0.0);
                       }
                     });
@@ -1092,6 +1092,43 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     );
   }
 
+  Future<void> _handleItemAdded(Item item) async {
+    if (item.hasSubItems && item.subItems != null && item.subItems!.isNotEmpty) {
+      final subItem = await showModalBottomSheet<SubItem>(
+        context: context,
+        builder: (ctx) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: Text('Select Variant for ${item.itemName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                const Divider(),
+                ...item.subItems!.map((sub) => ListTile(
+                  title: Text(sub.name ?? 'Unknown'),
+                  subtitle: Text('₹${sub.sellPrice ?? 0}'),
+                  onTap: () => Navigator.pop(ctx, sub),
+                )),
+              ],
+            ),
+          );
+        }
+      );
+      if (subItem != null) {
+        ref.read(invoiceCartProvider.notifier).addItem(
+          item, 
+          selectedSubItemUuid: subItem.uuid, 
+          selectedSubItemName: subItem.name,
+        );
+        ref.invalidate(filteredItemsProvider);
+      }
+    } else {
+      ref.read(invoiceCartProvider.notifier).addItem(item);
+      ref.invalidate(filteredItemsProvider);
+    }
+  }
+
   Widget _buildPartyAndHeaderCard(ThemeData theme) {
     final partiesAsync = ref.watch(partiesListProvider);
     final cart = ref.watch(invoiceCartProvider);
@@ -1118,10 +1155,14 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             const SizedBox(height: 12),
             partiesAsync.when(
                 data: (parties) {
+                  final listWithCash = parties.any((p) => p.partyName?.toLowerCase() == 'cash') 
+                      ? parties 
+                      : [Party()..partyName = 'Cash'..id = -1, ...parties];
+                      
                   return SearchablePartyDropdown(
-                    parties: parties,
-                    selectedParty: cart.selectedParty != null && parties.any((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
-                        ? parties.firstWhere((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
+                    parties: listWithCash,
+                    selectedParty: cart.selectedParty != null && listWithCash.any((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
+                        ? listWithCash.firstWhere((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
                         : cart.selectedParty,
                     labelText: 'Select Billing Party / Customer Account',
                     onChanged: (party) {
@@ -1252,8 +1293,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                     onPressed: () async {
                       final selectedItem = await ItemSearchPickerModal.show(context);
                       if (selectedItem != null) {
-                        ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
-                        ref.invalidate(filteredItemsProvider);
+                        await _handleItemAdded(selectedItem);
                       }
                     },
                   ),
@@ -1273,8 +1313,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       onPressed: () async {
                         final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
                         if (selectedItem != null) {
-                          ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
-                          ref.invalidate(filteredItemsProvider);
+                          await _handleItemAdded(selectedItem);
                         }
                       },
                     ),
@@ -1351,8 +1390,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               onPressed: () async {
                 final selectedItem = await ItemSearchPickerModal.show(context);
                 if (selectedItem != null) {
-                  ref.read(invoiceCartProvider.notifier).addItem(selectedItem);
-                  ref.invalidate(filteredItemsProvider);
+                  await _handleItemAdded(selectedItem);
                 }
               },
               style: OutlinedButton.styleFrom(

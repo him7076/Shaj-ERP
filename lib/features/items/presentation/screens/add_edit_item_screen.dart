@@ -84,9 +84,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   Timer? _debounceTimer;
 
   bool _enableBundleManagement = false;
+  bool _enableSubItems = false;
   bool _isBundle = false;
   String _itemType = 'Goods';
   List<Map<String, dynamic>> _bundleComponents = [];
+  List<SubItem> _subItems = [];
 
   static const List<Map<String, String>> _commonUnits = [
     {'name': 'Pieces', 'code': 'PCS'},
@@ -162,6 +164,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     final prefs = ref.read(sharedPreferencesProvider);
     setState(() {
       _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
+      _enableSubItems = prefs.getBool('enable_sub_items') ?? false;
     });
   }
 
@@ -275,6 +278,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           }
         }
 
+        if (item.subItems != null) {
+          _subItems = List.from(item.subItems!);
+        }
+
         _buyRateController.text = item.buyRate?.toString() ?? '';
         _mrpController.text = item.mrp?.toString() ?? '';
         _sellRateController.text = item.sellRate?.toString() ?? '';
@@ -303,10 +310,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         final units = await ref.read(unitRepositoryProvider).getAll();
 
         if (item.category.value != null) {
-          _selectedCategory = categories.firstWhere((c) => c.id == item.category.value!.id);
+          _selectedCategory = categories.where((c) => c.id == item.category.value!.id || (c.uuid != null && c.uuid == item.category.value!.uuid)).firstOrNull;
         }
         if (item.brand.value != null) {
-          _selectedBrand = brands.firstWhere((b) => b.id == item.brand.value!.id);
+          _selectedBrand = brands.where((b) => b.id == item.brand.value!.id || (b.uuid != null && b.uuid == item.brand.value!.uuid)).firstOrNull;
         }
         if (item.primaryUnitName != null && item.primaryUnitName!.isNotEmpty) {
           _selectedUnit = units.where((u) => (u.shortName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase() || u.unitName?.trim().toLowerCase() == item.primaryUnitName!.trim().toLowerCase())).firstOrNull;
@@ -1115,6 +1122,115 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     );
   }
 
+  Widget _buildSubItemsSection() {
+    if (!_enableSubItems) return const SizedBox.shrink();
+    return _buildSectionCard(
+      context: context,
+      title: 'Sub-Items (Flavors / Variants)',
+      icon: Icons.fastfood_rounded,
+      color: Colors.purple,
+      children: [
+        if (_subItems.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text('No sub-items added yet. Add variants like flavors or sizes.'),
+          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _subItems.length,
+          itemBuilder: (context, index) {
+            final sub = _subItems[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: Text(sub.name ?? 'Unknown'),
+                subtitle: Text('Sell: ₹${sub.sellPrice ?? 0} | Buy: ₹${sub.buyPrice ?? 0}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      _subItems.removeAt(index);
+                    });
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: ElevatedButton.icon(
+            onPressed: _showAddSubItemDialog,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Sub-Item'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddSubItemDialog() {
+    final nameCtrl = TextEditingController();
+    final sellCtrl = TextEditingController();
+    final buyCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Sub-Item'),
+        content: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Sub-Item Name (e.g. Tandoori)'),
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: sellCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Sell Price'),
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: buyCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Buy Price'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                setState(() {
+                  _subItems.add(SubItem()
+                    ..uuid = DateTime.now().millisecondsSinceEpoch.toString()
+                    ..name = nameCtrl.text.trim()
+                    ..sellPrice = double.tryParse(sellCtrl.text)
+                    ..buyPrice = double.tryParse(buyCtrl.text));
+                });
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1178,6 +1294,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
                         _buildImageUploaderSection(),
                         _buildBundleSection(),
+                        _buildSubItemsSection(),
                         _buildBasicInfoSection(categoriesAsync, brandsAsync),
                         _buildIdentificationSection(),
                         _buildPricingSection(),

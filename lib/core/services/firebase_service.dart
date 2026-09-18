@@ -195,6 +195,7 @@ class FirebaseService {
         }
       } catch (e) {
         logger.error('Firebase authentication failed', e);
+        throw Exception('Authentication failed. Please ensure Anonymous or Email/Password Auth is enabled in your Firebase Console. Error: $e');
       }
     }
   }

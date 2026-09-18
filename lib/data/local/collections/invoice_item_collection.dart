@@ -18,6 +18,9 @@ class InvoiceItem implements IsarModel {
   String? itemName;
   String? hsnCode;
   
+  String? selectedSubItemUuid;
+  String? selectedSubItemName;
+  
   @Index()
   int? parentInvoiceId;
   @Index()

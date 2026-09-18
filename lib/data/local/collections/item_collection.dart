@@ -76,6 +76,10 @@ class Item implements IsarModel {
   List<double>? bundleComponentQuantities;
   List<String>? bundleComponentUnits;
 
+  // Sub-Items (Variants/Flavors)
+  bool hasSubItems = false;
+  List<SubItem>? subItems;
+
   // Isar Links
   final category = IsarLink<Category>();
   final unit = IsarLink<Unit>();
@@ -95,4 +99,14 @@ class Item implements IsarModel {
 
   @override
   int version = 1;
+}
+
+@embedded
+class SubItem {
+  String? uuid;
+  String? name;
+  String? localPhotoPath;
+  String? googlePhotoLink;
+  double? buyPrice;
+  double? sellPrice;
 }

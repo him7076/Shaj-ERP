@@ -1936,6 +1936,15 @@ class SyncService {
           'stock': e.currentStock,
           'reorderLevel': e.reorderLevel,
           'minimumStock': e.minimumStock,
+          'hasSubItems': e.hasSubItems,
+          'subItems': e.subItems?.map((s) => {
+            'uuid': s.uuid,
+            'name': s.name,
+            'localPhotoPath': s.localPhotoPath,
+            'googlePhotoLink': s.googlePhotoLink,
+            'buyPrice': s.buyPrice,
+            'sellPrice': s.sellPrice,
+          }).toList(),
           'primaryUnitName': e.primaryUnitName ?? _safeGetLinkShortName(e.unit),
           'secondaryUnit': e.secondaryUnit,
           'tertiaryUnit': e.tertiaryUnit,
@@ -2124,6 +2133,8 @@ class SyncService {
           'parentInvoiceId': e.parentInvoiceId,
           'parentInvoiceUuid': invUuid,
           'invoiceUuid': invUuid,
+          'selectedSubItemUuid': e.selectedSubItemUuid,
+          'selectedSubItemName': e.selectedSubItemName,
           'quantity': e.quantity,
           'freeQuantity': e.freeQuantity,
           'unit': e.unit,
@@ -2461,6 +2472,17 @@ class SyncService {
             if (o > 0.0) return o;
             return c;
           })()
+          ..hasSubItems = data['hasSubItems'] as bool? ?? false
+          ..subItems = (data['subItems'] as List<dynamic>?)?.map((s) {
+            final m = s as Map<String, dynamic>;
+            return SubItem()
+              ..uuid = m['uuid'] as String?
+              ..name = m['name'] as String?
+              ..localPhotoPath = m['localPhotoPath'] as String?
+              ..googlePhotoLink = m['googlePhotoLink'] as String?
+              ..buyPrice = (m['buyPrice'] as num?)?.toDouble()
+              ..sellPrice = (m['sellPrice'] as num?)?.toDouble();
+          }).toList()
           ..reorderLevel = (data['reorderLevel'] as num?)?.toDouble()
           ..minimumStock = (data['minimumStock'] as num?)?.toDouble()
           ..primaryUnitName = (data['primaryUnitName'] as String?)?.isNotEmpty == true ? (data['primaryUnitName'] as String) : ((data['unit'] as String?)?.isNotEmpty == true ? (data['unit'] as String) : null)
@@ -2588,6 +2610,8 @@ class SyncService {
           ..hsnCode = data['hsnCode']
           ..parentInvoiceId = data['parentInvoiceId']
           ..parentInvoiceUuid = (data['parentInvoiceUuid'] ?? data['invoiceUuid']) as String?
+          ..selectedSubItemUuid = data['selectedSubItemUuid'] as String?
+          ..selectedSubItemName = data['selectedSubItemName'] as String?
           ..quantity = (data['quantity'] as num?)?.toDouble()
           ..freeQuantity = (data['freeQuantity'] as num?)?.toDouble()
           ..unit = data['unit']

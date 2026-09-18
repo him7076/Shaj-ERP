@@ -44,6 +44,8 @@ class CartItemState {
   final String? batchNumber;
   final String? expiryDate;
   final String? mfgDate;
+  final String? selectedSubItemUuid;
+  final String? selectedSubItemName;
   final List<String>? bundleComponentUuids;
   final List<double>? bundleComponentQuantities;
   final List<String>? bundleComponentUnits;
@@ -60,6 +62,8 @@ class CartItemState {
     this.batchNumber,
     this.expiryDate,
     this.mfgDate,
+    this.selectedSubItemUuid,
+    this.selectedSubItemName,
     this.bundleComponentUuids,
     this.bundleComponentQuantities,
     this.bundleComponentUnits,
@@ -88,6 +92,8 @@ class CartItemState {
     String? batchNumber,
     String? expiryDate,
     String? mfgDate,
+    String? selectedSubItemUuid,
+    String? selectedSubItemName,
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,
@@ -104,6 +110,8 @@ class CartItemState {
       batchNumber: batchNumber ?? this.batchNumber,
       expiryDate: expiryDate ?? this.expiryDate,
       mfgDate: mfgDate ?? this.mfgDate,
+      selectedSubItemUuid: selectedSubItemUuid ?? this.selectedSubItemUuid,
+      selectedSubItemName: selectedSubItemName ?? this.selectedSubItemName,
       bundleComponentUuids: bundleComponentUuids ?? this.bundleComponentUuids,
       bundleComponentQuantities: bundleComponentQuantities ?? this.bundleComponentQuantities,
       bundleComponentUnits: bundleComponentUnits ?? this.bundleComponentUnits,
@@ -163,8 +171,15 @@ class CartNotifier extends StateNotifier<OrderCart> {
     state = state.copyWith(selectedParty: party);
   }
 
-  void addItem(Item item, {double qty = 1.0}) {
-    final rate = item.sellRate ?? 0.0;
+  void addItem(Item item, {double qty = 1.0, String? selectedSubItemUuid, String? selectedSubItemName}) {
+    double rate = item.sellRate ?? 0.0;
+    if (selectedSubItemUuid != null && item.subItems != null) {
+      try {
+        final subItem = item.subItems!.firstWhere((s) => s.uuid == selectedSubItemUuid);
+        rate = subItem.sellPrice ?? rate;
+      } catch (_) {}
+    }
+    
     final gst = item.gstRate ?? 18.0;
     final defaultUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
 
@@ -174,6 +189,8 @@ class CartNotifier extends StateNotifier<OrderCart> {
       unit: defaultUnit,
       rate: rate,
       gstPercent: gst,
+      selectedSubItemUuid: selectedSubItemUuid,
+      selectedSubItemName: selectedSubItemName,
       bundleComponentUuids: item.isBundle ? item.bundleComponentUuids : null,
       bundleComponentQuantities: item.isBundle ? item.bundleComponentQuantities : null,
       bundleComponentUnits: item.isBundle ? item.bundleComponentUnits : null,

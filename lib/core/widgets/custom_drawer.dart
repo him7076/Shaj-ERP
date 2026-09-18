@@ -131,6 +131,11 @@ class CustomDrawer extends ConsumerWidget {
                       tooltip: 'Switch Firm',
                       offset: const Offset(0, 45),
                       onSelected: (selectedFirmId) async {
+                        if (selectedFirmId == 'manage_firms') {
+                          if (!isPermanent) Navigator.of(context).pop();
+                          context.go('/settings');
+                          return;
+                        }
                         if (selectedFirmId == activeFirmId) return;
                         
                         // Show switching indicator dialog
@@ -189,7 +194,7 @@ class CustomDrawer extends ConsumerWidget {
                       },
                       itemBuilder: (BuildContext context) {
                         final firmsList = prefs.getStringList('firms_list') ?? ['firm_default'];
-                        return firmsList.map((firmId) {
+                        final items = firmsList.map((firmId) {
                           final name = prefs.getString('firm_name_$firmId') ?? 
                               (firmId == 'firm_default' ? 'Default Company' : 'New Company');
                           final isActive = firmId == activeFirmId;
@@ -217,6 +222,18 @@ class CustomDrawer extends ConsumerWidget {
                             ),
                           );
                         }).toList();
+                        
+                        items.add(const PopupMenuItem<String>(
+                          value: 'manage_firms',
+                          child: Row(
+                            children: [
+                              Icon(Icons.settings_outlined, size: 18),
+                              SizedBox(width: 10),
+                              Text('Manage Firms', style: TextStyle(fontSize: 13)),
+                            ],
+                          ),
+                        ));
+                        return items;
                       },
                       child: Container(
                         width: double.infinity,
@@ -706,9 +723,7 @@ class CustomDrawer extends ConsumerWidget {
             if (!isPermanent) {
               Navigator.of(context).pop();
             }
-            if (!isActive) {
-              context.go(routePath);
-            }
+            context.go(routePath);
           },
         ),
       ),
