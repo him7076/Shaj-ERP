@@ -640,7 +640,6 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
       for (var item in sourceItems) {
         if (item.itemId != null) requiredItemIds.add(item.itemId!);
-        if (item.bundleComponentUuids != null) requiredItemUuids.addAll(item.bundleComponentUuids!);
         if (!kIsWeb && item.item.value?.bundleComponentUuids != null) {
           requiredItemUuids.addAll(item.item.value!.bundleComponentUuids!);
         }
