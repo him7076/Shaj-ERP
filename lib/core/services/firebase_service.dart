@@ -164,6 +164,8 @@ class FirebaseService {
       // Fallback: if already initialized at build time, still try auth
       if (_isFirebaseReady) {
         await ensureAuthenticated();
+      } else {
+        throw Exception('Initialization Failed. Ensure you are using the correct Firebase App ID (Android ID for APK, Web ID for Web). Error: $e');
       }
     }
   }
