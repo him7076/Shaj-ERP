@@ -1071,7 +1071,7 @@ class SyncService {
 
         dynamic querySnapshot;
 
-        // Step 1: Compound query (companyId + firmId + filterCutoff)
+        // Step 1: Compound query (companyId + firmId + filterCutoff) — primary path for delta sync
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
@@ -1081,46 +1081,28 @@ class SyncService {
           if (filterCutoff != null) {
             query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
           }
-          querySnapshot = await query.get().timeout(const Duration(seconds: 3));
+          querySnapshot = await query.get().timeout(const Duration(seconds: 15));
         } catch (e1) {
-          logger.warning('Primary query failed or timed out (> 3s) for $entityType: $e1. Trying firmId-only query...');
+          logger.warning('Primary query failed or timed out for $entityType: $e1. Trying firmId-only query...');
         }
 
-        // Step 2: Fallback to firmId query only (bypasses missing companyId/indexes)
+        // Step 2: Fallback to firmId query WITH filterCutoff (preserves delta sync, just drops companyId filter)
         if (querySnapshot == null || querySnapshot.docs.isEmpty) {
           try {
-            final firmQuery = _firebaseService.firestore
+            var firmQuery = _firebaseService.firestore
                 .collection(collectionName)
                 .where('firmId', isEqualTo: activeFirmId);
-            querySnapshot = await firmQuery.get().timeout(const Duration(seconds: 8));
+            if (filterCutoff != null) {
+              firmQuery = firmQuery.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+            }
+            querySnapshot = await firmQuery.get().timeout(const Duration(seconds: 15));
           } catch (e2) {
-            logger.warning('Firm-only query failed for $entityType: $e2. Trying companyId-only query...');
+            logger.warning('Firm-only query also failed for $entityType: $e2. Skipping this entity type.');
           }
         }
 
-        // Step 3: Fallback to companyId query only
-        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
-          try {
-            final companyQuery = _firebaseService.firestore
-                .collection(collectionName)
-                .where('companyId', isEqualTo: companyId);
-            querySnapshot = await companyQuery.get().timeout(const Duration(seconds: 8));
-          } catch (e3) {
-            logger.warning('Company-only query failed for $entityType: $e3. Trying full collection query...');
-          }
-        }
-
-        // Step 4: Robust Fallback — full collection query (up to 500 docs, filtered in Dart!)
-        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
-          try {
-            final fullQuery = _firebaseService.firestore
-                .collection(collectionName)
-                .limit(500);
-            querySnapshot = await fullQuery.get().timeout(const Duration(seconds: 8));
-          } catch (e4) {
-            logger.error('All Firestore query levels failed for $entityType: $e4');
-          }
-        }
+        // REMOVED Steps 3 & 4: No more companyId-only or full-collection fallbacks.
+        // Those were downloading ALL documents every sync cycle, wasting Firebase reads.
 
         // Only update timestamp AFTER we've confirmed we got results
         if (querySnapshot == null || querySnapshot.docs.isEmpty) {
@@ -1217,55 +1199,46 @@ class SyncService {
       }
     }
 
-    // Post-download pass: Re-link relations and recalculate item stocks with yielding
-    try {
-      _updateState(SyncState(
-        status: SyncStatus.syncing,
-        message: 'Relinking database relationships (96%)...',
-        lastSyncTime: _currentState.lastSyncTime,
-        progress: 0.96,
-        currentStep: totalSteps - 1,
-        totalSteps: totalSteps,
-      ));
+    // Post-download pass: Re-link relations and recalculate stocks
+    // ONLY run during full download — during delta sync this is wasteful O(N²) overhead
+    // that loads ALL records into memory and causes the "96% hang"
+    if (forceFullDownload) {
       try {
-        await _relinkAllRelations();
-      } catch (relErr) {
-        logger.warning('Relink relations warning: $relErr');
-      }
+        _updateState(SyncState(
+          status: SyncStatus.syncing,
+          message: 'Relinking database relationships (96%)...',
+          lastSyncTime: _currentState.lastSyncTime,
+          progress: 0.96,
+          currentStep: totalSteps - 1,
+          totalSteps: totalSteps,
+        ));
+        await Future.delayed(Duration.zero);
+        try {
+          await _relinkAllRelations();
+        } catch (relErr) {
+          logger.warning('Relink relations warning: $relErr');
+        }
 
-      _updateState(SyncState(
-        status: SyncStatus.syncing,
-        message: 'Recalculating inventory stock balances (98%)...',
-        lastSyncTime: _currentState.lastSyncTime,
-        progress: 0.98,
-        currentStep: totalSteps,
-        totalSteps: totalSteps,
-      ));
-      try {
-        await recalculateAllItemStocksFromTransactions();
-        await recalculateAllPartyBalancesFromTransactions();
-      } catch (recalcErr) {
-        logger.warning('Recalculate balances warning: $recalcErr');
+        _updateState(SyncState(
+          status: SyncStatus.syncing,
+          message: 'Recalculating inventory stock balances (98%)...',
+          lastSyncTime: _currentState.lastSyncTime,
+          progress: 0.98,
+          currentStep: totalSteps,
+          totalSteps: totalSteps,
+        ));
+        await Future.delayed(Duration.zero);
+        try {
+          await recalculateAllItemStocksFromTransactions();
+          await recalculateAllPartyBalancesFromTransactions();
+        } catch (recalcErr) {
+          logger.warning('Recalculate balances warning: $recalcErr');
+        }
+      } catch (e, stackTrace) {
+        logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
       }
-
-      _updateState(SyncState(
-        status: SyncStatus.success,
-        message: 'Sync completed successfully (100%)',
-        lastSyncTime: DateTime.now(),
-        progress: 1.0,
-        currentStep: totalSteps,
-        totalSteps: totalSteps,
-      ));
-    } catch (e, stackTrace) {
-      logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
-      _updateState(SyncState(
-        status: SyncStatus.success,
-        message: 'Sync completed (100%)',
-        lastSyncTime: DateTime.now(),
-        progress: 1.0,
-        currentStep: totalSteps,
-        totalSteps: totalSteps,
-      ));
+    } else {
+      logger.info('Delta sync: skipping relinking & stock recalculation (not needed for incremental changes).');
     }
   }
 
