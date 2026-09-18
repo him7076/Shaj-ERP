@@ -519,7 +519,7 @@ class SyncService {
     final uuidGen = Uuid();
     final isar = _dbService.isar;
 
-    Future<void> enqueueChunk<T>(List<T> items, String entityType, String Function(T) getUuid, int Function(T) getId) async {
+    Future<void> enqueueChunk<T>(List<T> items, String entityType, String? Function(T) getUuid, int Function(T) getId) async {
       if (items.isEmpty) return;
       for (var i = 0; i < items.length; i += 500) {
         final chunk = items.skip(i).take(500).toList();
