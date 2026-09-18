@@ -518,293 +518,104 @@ class SyncService {
   Future<void> _enqueueAllLocalRecordsForUpload({bool forceAll = false}) async {
     final uuidGen = Uuid();
     final isar = _dbService.isar;
-    await isar.writeTxn(() async {
-      final parties = forceAll ? await isar.partys.filter().idGreaterThan(-1).findAll() : await isar.partys.filter().isSyncedEqualTo(false).findAll();
-      for (var p in parties) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Party'
-          ..entityId = p.id
-          ..entityUuid = p.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final items = forceAll ? await isar.items.filter().idGreaterThan(-1).findAll() : await isar.items.filter().isSyncedEqualTo(false).findAll();
-      for (var i in items) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Item'
-          ..entityId = i.id
-          ..entityUuid = i.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final invoices = forceAll ? await isar.invoices.filter().idGreaterThan(-1).findAll() : await isar.invoices.filter().isSyncedEqualTo(false).findAll();
-      for (var inv in invoices) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Invoice'
-          ..entityId = inv.id
-          ..entityUuid = inv.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final orders = forceAll ? await isar.orders.filter().idGreaterThan(-1).findAll() : await isar.orders.filter().isSyncedEqualTo(false).findAll();
-      for (var ord in orders) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Order'
-          ..entityId = ord.id
-          ..entityUuid = ord.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final purchases = forceAll ? await isar.purchases.filter().idGreaterThan(-1).findAll() : await isar.purchases.filter().isSyncedEqualTo(false).findAll();
-      for (var pur in purchases) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Purchase'
-          ..entityId = pur.id
-          ..entityUuid = pur.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final invItems = forceAll ? await isar.invoiceItems.filter().idGreaterThan(-1).findAll() : await isar.invoiceItems.filter().isSyncedEqualTo(false).findAll();
-      for (var ii in invItems) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'InvoiceItem'
-          ..entityId = ii.id
-          ..entityUuid = ii.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final purItems = forceAll ? await isar.purchaseItems.filter().idGreaterThan(-1).findAll() : await isar.purchaseItems.filter().isSyncedEqualTo(false).findAll();
-      for (var pi in purItems) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'PurchaseItem'
-          ..entityId = pi.id
-          ..entityUuid = pi.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final expenses = forceAll ? await isar.expenses.filter().idGreaterThan(-1).findAll() : await isar.expenses.filter().isSyncedEqualTo(false).findAll();
-      for (var exp in expenses) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Expense'
-          ..entityId = exp.id
-          ..entityUuid = exp.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allExpItems = await isar.expenseItems.where().findAll();
-      final expItems = allExpItems.where((ei) => forceAll || !ei.isSynced).toList();
-      for (var ei in expItems) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'ExpenseItem'
-          ..entityId = ei.id
-          ..entityUuid = ei.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allStockAdjs = await isar.collection<StockAdjustment>().where().findAll();
-      final stockAdjs = allStockAdjs.where((sa) => forceAll || !sa.isSynced).toList();
-      for (var sa in stockAdjs) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'StockAdjustment'
-          ..entityId = sa.id
-          ..entityUuid = sa.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allCreditNotes = await isar.creditNotes.where().findAll();
-      final creditNotes = allCreditNotes.where((cn) => forceAll || !cn.isSynced).toList();
-      for (var cn in creditNotes) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'CreditNote'
-          ..entityId = cn.id
-          ..entityUuid = cn.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allCreditNoteItems = await isar.creditNoteItems.where().findAll();
-      final creditNoteItems = allCreditNoteItems.where((cni) => forceAll || !cni.isSynced).toList();
-      for (var cni in creditNoteItems) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'CreditNoteItem'
-          ..entityId = cni.id
-          ..entityUuid = cni.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allWaMappings = await isar.whatsAppMappings.where().findAll();
-      final waMappings = allWaMappings.where((wm) => forceAll || !wm.isSynced).toList();
-      for (var wm in waMappings) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'WhatsAppMapping'
-          ..entityId = wm.id
-          ..entityUuid = wm.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allDebitNotes = await isar.debitNotes.where().findAll();
-      final debitNotes = allDebitNotes.where((dn) => forceAll || !dn.isSynced).toList();
-      for (var dn in debitNotes) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'DebitNote'
-          ..entityId = dn.id
-          ..entityUuid = dn.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final allDebitNoteItems = await isar.debitNoteItems.where().findAll();
-      final debitNoteItems = allDebitNoteItems.where((dni) => forceAll || !dni.isSynced).toList();
-      for (var dni in debitNoteItems) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'DebitNoteItem'
-          ..entityId = dni.id
-          ..entityUuid = dni.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final txns = forceAll ? await isar.transactions.filter().idGreaterThan(-1).findAll() : await isar.transactions.filter().isSyncedEqualTo(false).findAll();
-      for (var t in txns) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Transaction'
-          ..entityId = t.id
-          ..entityUuid = t.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
 
-      // === Missing entity types that were never enqueued before ===
-      final categories = forceAll ? await isar.categorys.filter().idGreaterThan(-1).findAll() : await isar.categorys.filter().isSyncedEqualTo(false).findAll();
-      for (var c in categories) {
-        final q = SyncQueue()
+    Future<void> enqueueChunk<T>(List<T> items, String entityType, String Function(T) getUuid, int Function(T) getId) async {
+      if (items.isEmpty) return;
+      for (var i = 0; i < items.length; i += 500) {
+        final chunk = items.skip(i).take(500).toList();
+        final queues = chunk.map((item) => SyncQueue()
           ..uuid = uuidGen.v4()
-          ..entityType = 'Category'
-          ..entityId = c.id
-          ..entityUuid = c.uuid
+          ..entityType = entityType
+          ..entityId = getId(item)
+          ..entityUuid = getUuid(item)
           ..operation = 'Update'
           ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
+          ..updatedAt = DateTime.now()).toList();
+
+        await isar.writeTxn(() async {
+          await isar.syncQueues.putAll(queues);
+        });
+        // Yield to browser event loop
+        await Future.delayed(const Duration(milliseconds: 10));
       }
-      final units = forceAll ? await isar.units.filter().idGreaterThan(-1).findAll() : await isar.units.filter().isSyncedEqualTo(false).findAll();
-      for (var u in units) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Unit'
-          ..entityId = u.id
-          ..entityUuid = u.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final brands = forceAll ? await isar.brands.filter().idGreaterThan(-1).findAll() : await isar.brands.filter().isSyncedEqualTo(false).findAll();
-      for (var b in brands) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Brand'
-          ..entityId = b.id
-          ..entityUuid = b.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final settingsList = forceAll ? await isar.settings.filter().idGreaterThan(-1).findAll() : await isar.settings.filter().isSyncedEqualTo(false).findAll();
-      for (var s in settingsList) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'Settings'
-          ..entityId = s.id
-          ..entityUuid = s.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final users = forceAll ? await isar.users.filter().idGreaterThan(-1).findAll() : await isar.users.filter().isSyncedEqualTo(false).findAll();
-      for (var u in users) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'User'
-          ..entityId = u.id
-          ..entityUuid = u.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final bankAccounts = forceAll ? await isar.bankAccounts.filter().idGreaterThan(-1).findAll() : await isar.bankAccounts.filter().isSyncedEqualTo(false).findAll();
-      for (var ba in bankAccounts) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'BankAccount'
-          ..entityId = ba.id
-          ..entityUuid = ba.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-      final orderItems = forceAll ? await isar.orderItems.filter().idGreaterThan(-1).findAll() : await isar.orderItems.filter().isSyncedEqualTo(false).findAll();
-      for (var oi in orderItems) {
-        final q = SyncQueue()
-          ..uuid = uuidGen.v4()
-          ..entityType = 'OrderItem'
-          ..entityId = oi.id
-          ..entityUuid = oi.uuid
-          ..operation = 'Update'
-          ..createdAt = DateTime.now()
-          ..updatedAt = DateTime.now();
-        await isar.syncQueues.put(q);
-      }
-    });
+    }
+
+    final parties = forceAll ? await isar.partys.filter().idGreaterThan(-1).findAll() : await isar.partys.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Party>(parties, 'Party', (e) => e.uuid, (e) => e.id);
+
+    final itemsList = forceAll ? await isar.items.filter().idGreaterThan(-1).findAll() : await isar.items.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Item>(itemsList, 'Item', (e) => e.uuid, (e) => e.id);
+
+    final invoices = forceAll ? await isar.invoices.filter().idGreaterThan(-1).findAll() : await isar.invoices.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Invoice>(invoices, 'Invoice', (e) => e.uuid, (e) => e.id);
+
+    final orders = forceAll ? await isar.orders.filter().idGreaterThan(-1).findAll() : await isar.orders.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Order>(orders, 'Order', (e) => e.uuid, (e) => e.id);
+
+    final purchases = forceAll ? await isar.purchases.filter().idGreaterThan(-1).findAll() : await isar.purchases.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Purchase>(purchases, 'Purchase', (e) => e.uuid, (e) => e.id);
+
+    final invItems = forceAll ? await isar.invoiceItems.filter().idGreaterThan(-1).findAll() : await isar.invoiceItems.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<InvoiceItem>(invItems, 'InvoiceItem', (e) => e.uuid, (e) => e.id);
+
+    final purItems = forceAll ? await isar.purchaseItems.filter().idGreaterThan(-1).findAll() : await isar.purchaseItems.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<PurchaseItem>(purItems, 'PurchaseItem', (e) => e.uuid, (e) => e.id);
+
+    final expenses = forceAll ? await isar.expenses.filter().idGreaterThan(-1).findAll() : await isar.expenses.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Expense>(expenses, 'Expense', (e) => e.uuid, (e) => e.id);
+
+    final allExpItems = await isar.expenseItems.where().findAll();
+    final expItems = allExpItems.where((ei) => forceAll || !ei.isSynced).toList();
+    await enqueueChunk<ExpenseItem>(expItems, 'ExpenseItem', (e) => e.uuid, (e) => e.id);
+
+    final allStockAdjs = await isar.collection<StockAdjustment>().where().findAll();
+    final stockAdjs = allStockAdjs.where((sa) => forceAll || !sa.isSynced).toList();
+    await enqueueChunk<StockAdjustment>(stockAdjs, 'StockAdjustment', (e) => e.uuid, (e) => e.id);
+
+    final allCreditNotes = await isar.creditNotes.where().findAll();
+    final creditNotes = allCreditNotes.where((cn) => forceAll || !cn.isSynced).toList();
+    await enqueueChunk<CreditNote>(creditNotes, 'CreditNote', (e) => e.uuid, (e) => e.id);
+
+    final allCreditNoteItems = await isar.creditNoteItems.where().findAll();
+    final creditNoteItems = allCreditNoteItems.where((cni) => forceAll || !cni.isSynced).toList();
+    await enqueueChunk<CreditNoteItem>(creditNoteItems, 'CreditNoteItem', (e) => e.uuid, (e) => e.id);
+
+    final allWaMappings = await isar.whatsAppMappings.where().findAll();
+    final waMappings = allWaMappings.where((wm) => forceAll || !wm.isSynced).toList();
+    await enqueueChunk<WhatsAppMapping>(waMappings, 'WhatsAppMapping', (e) => e.uuid, (e) => e.id);
+
+    final allDebitNotes = await isar.debitNotes.where().findAll();
+    final debitNotes = allDebitNotes.where((dn) => forceAll || !dn.isSynced).toList();
+    await enqueueChunk<DebitNote>(debitNotes, 'DebitNote', (e) => e.uuid, (e) => e.id);
+
+    final allDebitNoteItems = await isar.debitNoteItems.where().findAll();
+    final debitNoteItems = allDebitNoteItems.where((dni) => forceAll || !dni.isSynced).toList();
+    await enqueueChunk<DebitNoteItem>(debitNoteItems, 'DebitNoteItem', (e) => e.uuid, (e) => e.id);
+
+    final txns = forceAll ? await isar.transactions.filter().idGreaterThan(-1).findAll() : await isar.transactions.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Transaction>(txns, 'Transaction', (e) => e.uuid, (e) => e.id);
+
+    // === Missing entity types that were never enqueued before ===
+    final categories = forceAll ? await isar.categorys.filter().idGreaterThan(-1).findAll() : await isar.categorys.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Category>(categories, 'Category', (e) => e.uuid, (e) => e.id);
+
+    final units = forceAll ? await isar.units.filter().idGreaterThan(-1).findAll() : await isar.units.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Unit>(units, 'Unit', (e) => e.uuid, (e) => e.id);
+
+    final brands = forceAll ? await isar.brands.filter().idGreaterThan(-1).findAll() : await isar.brands.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Brand>(brands, 'Brand', (e) => e.uuid, (e) => e.id);
+
+    final settingsList = forceAll ? await isar.settings.filter().idGreaterThan(-1).findAll() : await isar.settings.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<Settings>(settingsList, 'Settings', (e) => e.uuid, (e) => e.id);
+
+    final users = forceAll ? await isar.users.filter().idGreaterThan(-1).findAll() : await isar.users.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<User>(users, 'User', (e) => e.uuid, (e) => e.id);
+
+    final bankAccounts = forceAll ? await isar.bankAccounts.filter().idGreaterThan(-1).findAll() : await isar.bankAccounts.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<BankAccount>(bankAccounts, 'BankAccount', (e) => e.uuid, (e) => e.id);
+
+    final orderItems = forceAll ? await isar.orderItems.filter().idGreaterThan(-1).findAll() : await isar.orderItems.filter().isSyncedEqualTo(false).findAll();
+    await enqueueChunk<OrderItem>(orderItems, 'OrderItem', (e) => e.uuid, (e) => e.id);
   }
 
   /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
@@ -844,26 +655,35 @@ class SyncService {
       if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
 
       try {
-        final batch = _firebaseService.firestore.batch();
-        for (var doc in querySnapshot.docs) {
-          batch.delete(doc.reference);
+        // Chunk batch deletes to max 450
+        for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+          final chunk = querySnapshot.docs.skip(i).take(450);
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in chunk) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          await Future.delayed(const Duration(milliseconds: 50)); // Yield
         }
-        await batch.commit();
       } catch (e) {
         logger.warning('Physical batch delete failed for $entityType ($e). Falling back to soft delete...');
         try {
-          final batch = _firebaseService.firestore.batch();
-          for (var doc in querySnapshot.docs) {
-            batch.set(
-              doc.reference,
-              {
-                'isDeleted': true,
-                'updatedAt': DateTime.now().toIso8601String(),
-              },
-              SetOptions(merge: true),
-            );
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.set(
+                doc.reference,
+                {
+                  'isDeleted': true,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50)); // Yield
           }
-          await batch.commit();
         } catch (softErr) {
           logger.error('Soft delete fallback failed for $entityType', softErr);
         }
@@ -923,26 +743,35 @@ class SyncService {
       if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
 
       try {
-        final batch = _firebaseService.firestore.batch();
-        for (var doc in querySnapshot.docs) {
-          batch.delete(doc.reference);
+        // Chunk batch deletes to max 450
+        for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+          final chunk = querySnapshot.docs.skip(i).take(450);
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in chunk) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          await Future.delayed(const Duration(milliseconds: 50)); // Yield
         }
-        await batch.commit();
       } catch (e) {
         logger.warning('Physical batch delete failed for firm $activeFirmId ($entityType): $e. Falling back to soft delete...');
         try {
-          final batch = _firebaseService.firestore.batch();
-          for (var doc in querySnapshot.docs) {
-            batch.set(
-              doc.reference,
-              {
-                'isDeleted': true,
-                'updatedAt': DateTime.now().toIso8601String(),
-              },
-              SetOptions(merge: true),
-            );
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.set(
+                doc.reference,
+                {
+                  'isDeleted': true,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50)); // Yield
           }
-          await batch.commit();
         } catch (softErr) {
           logger.error('Soft delete fallback failed for firm $activeFirmId ($entityType)', softErr);
         }
@@ -1094,33 +923,49 @@ class SyncService {
     }
 
     // Single batched Isar write transaction to mark synced items & atomic queue clearing
+    // Single batched Isar write transaction to mark synced items & atomic queue clearing
     if (syncedItems.isNotEmpty || completedQueueIds.isNotEmpty) {
-      await isar.writeTxn(() async {
-        for (var itemMap in syncedItems) {
-          final entityType = itemMap['entityType'] as String;
-          final entity = itemMap['entity'];
-          entity.isSynced = true;
-          switch (entityType) {
-            case 'Party': await isar.partys.put(entity as Party); break;
-            case 'Item': await isar.items.put(entity as Item); break;
-            case 'Category': await isar.categorys.put(entity as Category); break;
-            case 'Unit': await isar.units.put(entity as Unit); break;
-            case 'Brand': await isar.brands.put(entity as Brand); break;
-            case 'Order': await isar.orders.put(entity as Order); break;
-            case 'Invoice': await isar.invoices.put(entity as Invoice); break;
-            case 'Settings': await isar.settings.put(entity as Settings); break;
-            case 'User': await isar.users.put(entity as User); break;
-            case 'Purchase': await isar.purchases.put(entity as Purchase); break;
-            case 'Expense': await isar.expenses.put(entity as Expense); break;
-            case 'Transaction': await isar.transactions.put(entity as Transaction); break;
-            case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
-            case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
-            case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
-            case 'WhatsAppMapping': await isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
-          }
+      if (syncedItems.isNotEmpty) {
+        for (var i = 0; i < syncedItems.length; i += 500) {
+          final chunk = syncedItems.skip(i).take(500);
+          await isar.writeTxn(() async {
+            for (var itemMap in chunk) {
+              final entityType = itemMap['entityType'] as String;
+              final entity = itemMap['entity'];
+              entity.isSynced = true;
+              switch (entityType) {
+                case 'Party': await isar.partys.put(entity as Party); break;
+                case 'Item': await isar.items.put(entity as Item); break;
+                case 'Category': await isar.categorys.put(entity as Category); break;
+                case 'Unit': await isar.units.put(entity as Unit); break;
+                case 'Brand': await isar.brands.put(entity as Brand); break;
+                case 'Order': await isar.orders.put(entity as Order); break;
+                case 'Invoice': await isar.invoices.put(entity as Invoice); break;
+                case 'Settings': await isar.settings.put(entity as Settings); break;
+                case 'User': await isar.users.put(entity as User); break;
+                case 'Purchase': await isar.purchases.put(entity as Purchase); break;
+                case 'Expense': await isar.expenses.put(entity as Expense); break;
+                case 'Transaction': await isar.transactions.put(entity as Transaction); break;
+                case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
+                case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
+                case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
+                case 'WhatsAppMapping': await isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
+              }
+            }
+          });
+          await Future.delayed(const Duration(milliseconds: 10)); // Yield
         }
-        await isar.syncQueues.deleteAll(completedQueueIds);
-      });
+      }
+
+      if (completedQueueIds.isNotEmpty) {
+        for (var i = 0; i < completedQueueIds.length; i += 500) {
+          final chunk = completedQueueIds.skip(i).take(500).toList();
+          await isar.writeTxn(() async {
+            await isar.syncQueues.deleteAll(chunk);
+          });
+          await Future.delayed(const Duration(milliseconds: 10)); // Yield
+        }
+      }
 
       // Atomic Queue Clearing before upload start time to prevent clearing edits made during upload
       await _queueService.removeQueueItemsBefore(uploadStartTime);
