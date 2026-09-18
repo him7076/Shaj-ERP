@@ -30,6 +30,46 @@ class SyncQueueService {
     }
   }
 
+  /// Fast count-only query — does NOT load items into memory. Use for UI metrics.
+  Future<int> getPendingQueueCount() async {
+    try {
+      return await _queueCollection.filter().isSyncedEqualTo(false).count();
+    } catch (e) {
+      logger.error('Failed to count pending sync queue', e);
+      return 0;
+    }
+  }
+
+  /// Returns count of items that have exceeded max retries (failed/blocked)
+  Future<int> getFailedQueueCount() async {
+    try {
+      return await _queueCollection.filter().isSyncedEqualTo(false).retryCountGreaterThan(4).count();
+    } catch (e) {
+      logger.error('Failed to count failed sync queue items', e);
+      return 0;
+    }
+  }
+
+  /// Returns count of items currently retrying (1-4 retries)
+  Future<int> getRetryingQueueCount() async {
+    try {
+      return await _queueCollection.filter().isSyncedEqualTo(false).retryCountBetween(1, 4).count();
+    } catch (e) {
+      logger.error('Failed to count retrying sync queue items', e);
+      return 0;
+    }
+  }
+
+  /// Lightweight preview — loads only first N items for the UI log list.
+  Future<List<SyncQueue>> getPendingQueuePreview(int limit) async {
+    try {
+      return await _queueCollection.filter().isSyncedEqualTo(false).sortByCreatedAt().limit(limit).findAll();
+    } catch (e) {
+      logger.error('Failed to get sync queue preview', e);
+      return [];
+    }
+  }
+
   /// Remove sync queue item from local db once uploaded successfully
   Future<void> removeQueueItem(int id) async {
     try {

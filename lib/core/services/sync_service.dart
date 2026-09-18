@@ -295,6 +295,7 @@ class SyncService {
     _quietSyncDebounceTimer?.cancel();
     _quietSyncDebounceTimer = Timer(delay, () async {
       if (_currentState.status == SyncStatus.syncing) return;
+      if (_isUploadingQuietly) return; // Prevent concurrent quiet uploads
 
       _isUploadingQuietly = true;
       try {
@@ -749,22 +750,25 @@ class SyncService {
     }
   }
 
-  /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 500 docs per batch)
+  /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
   Future<void> _uploadLocalChanges() async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
 
     _updateState(SyncState(
       status: SyncStatus.syncing,
-      message: 'Scanning for pending offline changes...',
+      message: 'Checking pending queue...',
       lastSyncTime: _currentState.lastSyncTime,
       progress: 0.05,
       currentStep: 1,
       totalSteps: 22,
     ));
-    await _enqueueAllLocalRecordsForUpload(forceAll: false); // Restored the sweep, it's chunked so it won't freeze
-    
-    await _queueService.resetAllRetries();
+    await Future.delayed(Duration.zero); // Yield before heavy DB work
+
+    // NOTE: We do NOT call _enqueueAllLocalRecordsForUpload here.
+    // Records are enqueued by repositories during save/update/delete.
+    // The full sweep is only needed for forceLocalDataToCloud().
+
     final allQueueItems = await _queueService.getPendingQueue();
 
     if (allQueueItems.isEmpty) {
@@ -772,39 +776,61 @@ class SyncService {
       return;
     }
 
+    logger.info('Found ${allQueueItems.length} queue items to process.');
+
     final isar = _dbService.isar;
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    // Deduplicate queue items to minimize Firebase Writes
+    // Deduplicate queue items to minimize Firebase Writes — with event-loop yielding
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Deduplicating ${allQueueItems.length} queue items...',
+      lastSyncTime: _currentState.lastSyncTime,
+      progress: 0.07,
+      currentStep: 1,
+      totalSteps: 22,
+    ));
+    await Future.delayed(Duration.zero);
+
     final uniqueItemsToProcess = <String, SyncQueue>{};
-    for (var q in allQueueItems) {
+    for (var i = 0; i < allQueueItems.length; i++) {
+      final q = allQueueItems[i];
       if (q.retryCount >= 5) continue;
       
       final key = '${q.entityType}_${q.entityUuid}';
       if (q.operation == 'Delete') {
         if (uniqueItemsToProcess.containsKey(key)) {
-          completedQueueIds.add(uniqueItemsToProcess[key]!.id); // Mark old duplicate for deletion
+          completedQueueIds.add(uniqueItemsToProcess[key]!.id);
         }
         uniqueItemsToProcess[key] = q;
       } else {
         if (uniqueItemsToProcess.containsKey(key)) {
           if (uniqueItemsToProcess[key]!.operation == 'Delete') {
-             completedQueueIds.add(q.id); // Ignore updates after a delete
+             completedQueueIds.add(q.id);
           } else {
-             completedQueueIds.add(uniqueItemsToProcess[key]!.id); // Keep newest, mark old for deletion
+             completedQueueIds.add(uniqueItemsToProcess[key]!.id);
              uniqueItemsToProcess[key] = q;
           }
         } else {
           uniqueItemsToProcess[key] = q;
         }
       }
+
+      // Yield every 200 items to prevent browser freeze during deduplication
+      if (i % 200 == 0 && i > 0) {
+        await Future.delayed(Duration.zero);
+      }
     }
 
     final queueItems = uniqueItemsToProcess.values.toList();
+    final totalItems = queueItems.length;
+    logger.info('Deduplicated to $totalItems unique items for upload.');
 
     WriteBatch currentBatch = _firebaseService.firestore.batch();
     int batchOpsCount = 0;
+    int totalUploaded = 0;
+    int totalFailed = 0;
     
     List<Map<String, dynamic>> currentBatchSyncedItems = [];
     List<int> currentBatchCompletedIds = [];
@@ -813,20 +839,21 @@ class SyncService {
     for (int i = 0; i < queueItems.length; i++) {
       final queueItem = queueItems[i];
 
-      // Yield event loop every 10 items for 60 FPS UI responsiveness & to prevent Vercel 95% hang
-      if (i % 10 == 0) {
+      // Yield event loop every 5 items for responsive UI
+      if (i % 5 == 0) {
         await Future.delayed(Duration.zero);
-        if (i % 50 == 0) {
-          final p = 0.1 + ((i / queueItems.length) * 0.1); // 10% to 20%
-          _updateState(SyncState(
-            status: SyncStatus.syncing,
-            message: 'Pushing data to cloud ($i/${queueItems.length})...',
-            lastSyncTime: _currentState.lastSyncTime,
-            progress: p,
-            currentStep: 2,
-            totalSteps: 22,
-          ));
-        }
+      }
+      // Update progress every 25 items
+      if (i % 25 == 0) {
+        final p = 0.10 + ((i / totalItems) * 0.30); // 10% to 40% range
+        _updateState(SyncState(
+          status: SyncStatus.syncing,
+          message: 'Uploading to cloud ($i/$totalItems)...',
+          lastSyncTime: _currentState.lastSyncTime,
+          progress: p,
+          currentStep: 2,
+          totalSteps: 22,
+        ));
       }
 
       try {
@@ -885,22 +912,34 @@ class SyncService {
       } catch (e) {
         logger.error('Failed to map queue item ID ${queueItem.id}', e);
         await _queueService.updateAttempt(queueItem, e.toString());
+        totalFailed++;
       }
 
-      // Commit WriteBatch if 450 items reached OR if it's the last item
-      if (batchOpsCount >= 450 || (i == queueItems.length - 1 && batchOpsCount > 0)) {
+      // Commit WriteBatch if 200 items reached OR if it's the last item
+      if (batchOpsCount >= 200 || (i == queueItems.length - 1 && batchOpsCount > 0)) {
         try {
-          await currentBatch.commit().timeout(const Duration(seconds: 10));
+          _updateState(SyncState(
+            status: SyncStatus.syncing,
+            message: 'Committing batch to Firebase ($totalUploaded/$totalItems)...',
+            lastSyncTime: _currentState.lastSyncTime,
+            progress: 0.10 + ((i / totalItems) * 0.30),
+            currentStep: 2,
+            totalSteps: 22,
+          ));
+          await currentBatch.commit().timeout(const Duration(seconds: 30));
+          totalUploaded += batchOpsCount;
           // Only if commit succeeds, we add them to the global lists to be marked as synced locally
           syncedItems.addAll(currentBatchSyncedItems);
           completedQueueIds.addAll(currentBatchCompletedIds);
+          logger.info('Batch committed: $batchOpsCount items (total: $totalUploaded/$totalItems)');
         } catch (e) {
-          logger.error('Failed committing write batch to Firestore. Aborting sync cycle.', e);
-          // Mark attempts for all items in this failed batch so they show errors in UI
+          logger.error('Failed committing write batch to Firestore. Continuing with next batch...', e);
+          totalFailed += currentBatchQueueItems.length;
+          // Mark attempts for all items in this failed batch
           for (var q in currentBatchQueueItems) {
             await _queueService.updateAttempt(q, e.toString());
           }
-          throw Exception('Cloud Write Rejected (Permission/Timeout): $e'); // This halts the entire sync process
+          // NON-FATAL: Continue with remaining batches instead of aborting entire sync
         }
 
         // Reset batch state
@@ -909,16 +948,24 @@ class SyncService {
         currentBatchSyncedItems.clear();
         currentBatchCompletedIds.clear();
         currentBatchQueueItems.clear();
-        await Future.delayed(Duration.zero);
+        await Future.delayed(const Duration(milliseconds: 50)); // Brief pause between batches
       }
     }
 
-    // Single batched Isar write transaction to mark synced items & atomic queue clearing
-    // Single batched Isar write transaction to mark synced items & atomic queue clearing
+    // Mark synced items in local DB — chunked with yields
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Updating local sync status ($totalUploaded items)...',
+      lastSyncTime: _currentState.lastSyncTime,
+      progress: 0.42,
+      currentStep: 3,
+      totalSteps: 22,
+    ));
+
     if (syncedItems.isNotEmpty || completedQueueIds.isNotEmpty) {
       if (syncedItems.isNotEmpty) {
-        for (var i = 0; i < syncedItems.length; i += 500) {
-          final chunk = syncedItems.skip(i).take(500);
+        for (var i = 0; i < syncedItems.length; i += 200) {
+          final chunk = syncedItems.skip(i).take(200);
           await isar.writeTxn(() async {
             for (var itemMap in chunk) {
               final entityType = itemMap['entityType'] as String;
@@ -944,24 +991,24 @@ class SyncService {
               }
             }
           });
-          await Future.delayed(const Duration(milliseconds: 10)); // Yield
+          await Future.delayed(const Duration(milliseconds: 20)); // Yield between DB chunks
         }
       }
 
       if (completedQueueIds.isNotEmpty) {
-        for (var i = 0; i < completedQueueIds.length; i += 500) {
-          final chunk = completedQueueIds.skip(i).take(500).toList();
+        for (var i = 0; i < completedQueueIds.length; i += 200) {
+          final chunk = completedQueueIds.skip(i).take(200).toList();
           await isar.writeTxn(() async {
             await isar.syncQueues.deleteAll(chunk);
           });
-          await Future.delayed(const Duration(milliseconds: 10)); // Yield
+          await Future.delayed(const Duration(milliseconds: 20)); // Yield
         }
       }
 
       // Atomic Queue Clearing before upload start time to prevent clearing edits made during upload
       await _queueService.removeQueueItemsBefore(uploadStartTime);
 
-      logger.info('Batched sync complete: Updated ${syncedItems.length} entities and cleared queue items.');
+      logger.info('Upload complete: $totalUploaded succeeded, $totalFailed failed out of $totalItems items.');
     }
   }
 

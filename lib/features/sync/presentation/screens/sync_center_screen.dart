@@ -25,9 +25,12 @@ class SyncCenterScreen extends ConsumerStatefulWidget {
 }
 
 class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
-  List<SyncQueue> _queueItems = [];
+  List<SyncQueue> _queuePreviewItems = [];
   bool _isLoadingQueue = false;
   int _queueDisplayLimit = 20;
+  int _totalPending = 0;
+  int _totalFailed = 0;
+  int _totalRetrying = 0;
 
   @override
   void initState() {
@@ -39,9 +42,18 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
     setState(() => _isLoadingQueue = true);
     try {
       final queueService = ref.read(syncQueueServiceProvider);
-      final items = await queueService.getPendingQueue();
+      // Use lightweight count queries instead of loading all items into memory
+      final counts = await Future.wait([
+        queueService.getPendingQueueCount(),
+        queueService.getFailedQueueCount(),
+        queueService.getRetryingQueueCount(),
+        queueService.getPendingQueuePreview(_queueDisplayLimit),
+      ]);
       setState(() {
-        _queueItems = items;
+        _totalPending = counts[0] as int;
+        _totalFailed = counts[1] as int;
+        _totalRetrying = counts[2] as int;
+        _queuePreviewItems = counts[3] as List<SyncQueue>;
       });
     } catch (_) {}
     setState(() => _isLoadingQueue = false);
@@ -54,10 +66,10 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
     final isOnline = ref.watch(isOnlineProvider);
     final theme = Theme.of(context);
 
-    // Calculate metrics
-    final totalPending = _queueItems.length;
-    final totalFailed = _queueItems.where((item) => item.retryCount >= 5).length;
-    final totalRetrying = _queueItems.where((item) => item.retryCount > 0 && item.retryCount < 5).length;
+    // Metrics are now count-based, not computed from full list
+    final totalPending = _totalPending;
+    final totalFailed = _totalFailed;
+    final totalRetrying = _totalRetrying;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -169,10 +181,11 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                             activeColor: Colors.blue,
                             onChanged: (bool val) async {
                               await prefs.setBool('enable_firebase_cloud_sync', val);
-                              if (val) {
-                                ref.read(syncServiceProvider).syncAll();
-                              }
                               setState(() {});
+                              if (val) {
+                                // Non-blocking: use Future.microtask so UI stays responsive
+                                Future.microtask(() => ref.read(syncServiceProvider).syncAll());
+                              }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -446,7 +459,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
 
               _isLoadingQueue
                   ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator()))
-                  : _queueItems.isEmpty
+                  : _totalPending == 0
                       ? Card(
                           child: Padding(
                             padding: const EdgeInsets.all(32.0),
@@ -469,16 +482,22 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                       : ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _queueItems.length > _queueDisplayLimit ? _queueDisplayLimit + 1 : _queueItems.length,
+                          itemCount: _queuePreviewItems.length > _queueDisplayLimit ? _queueDisplayLimit + 1 : _queuePreviewItems.length,
                           itemBuilder: (context, index) {
                             if (index == _queueDisplayLimit) {
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                                 child: Center(
                                   child: ElevatedButton.icon(
-                                    onPressed: () {
+                                    onPressed: () async {
                                       setState(() {
                                         _queueDisplayLimit += 20;
+                                      });
+                                      // Reload preview with new limit
+                                      final queueService = ref.read(syncQueueServiceProvider);
+                                      final preview = await queueService.getPendingQueuePreview(_queueDisplayLimit);
+                                      setState(() {
+                                        _queuePreviewItems = preview;
                                       });
                                     },
                                     icon: const Icon(Icons.expand_more_rounded),
@@ -488,7 +507,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                               );
                             }
 
-                            final item = _queueItems[index];
+                            final item = _queuePreviewItems[index];
                             IconData icon;
                             Color color;
 

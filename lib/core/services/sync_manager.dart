@@ -102,6 +102,11 @@ class SyncManager {
     // Skip DB query entirely if a sync is already running to avoid lock contention
     if (_syncService.currentState.status == SyncStatus.syncing) return;
 
+    // Lightweight count check first — avoids loading 3000+ items into memory
+    final pendingCount = await _queueService.getPendingQueueCount();
+    if (pendingCount == 0) return;
+
+    // Only load items if there are pending ones to check
     final queueItems = await _queueService.getPendingQueue();
     if (queueItems.isEmpty) return;
 
