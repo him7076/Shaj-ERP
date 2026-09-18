@@ -13,7 +13,17 @@ class SyncQueueService {
   /// Fetch all pending queue records, ordered by creation date (FIFO)
   Future<List<SyncQueue>> getPendingQueue() async {
     try {
-      return await _queueCollection.filter().isSyncedEqualTo(false).sortByCreatedAt().findAll();
+      final List<SyncQueue> allItems = [];
+      int offset = 0;
+      const int limit = 500;
+      while (true) {
+        final chunk = await _queueCollection.filter().isSyncedEqualTo(false).sortByCreatedAt().offset(offset).limit(limit).findAll();
+        if (chunk.isEmpty) break;
+        allItems.addAll(chunk);
+        offset += limit;
+        await Future.delayed(const Duration(milliseconds: 10)); // Yield
+      }
+      return allItems;
     } catch (e) {
       logger.error('Failed to get pending sync queue', e);
       return [];
@@ -51,10 +61,14 @@ class SyncQueueService {
   Future<void> removeQueueItemsByIds(List<int> ids) async {
     if (ids.isEmpty) return;
     try {
-      await _dbService.isar.writeTxn(() async {
-        await _queueCollection.deleteAll(ids);
-      });
-      logger.debug('Removed ${ids.length} SyncQueue items from queue.');
+      for (var i = 0; i < ids.length; i += 500) {
+        final chunk = ids.skip(i).take(500).toList();
+        await _dbService.isar.writeTxn(() async {
+          await _queueCollection.deleteAll(chunk);
+        });
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      logger.debug('Removed ${ids.length} SyncQueue items from queue in chunks.');
     } catch (e) {
       logger.error('Failed to remove batch SyncQueue items', e);
     }
@@ -63,12 +77,26 @@ class SyncQueueService {
   /// Atomically remove sync queue items created at or before cutoff timestamp
   Future<void> removeQueueItemsBefore(DateTime cutoff) async {
     try {
-      final allQueue = await _queueCollection.filter().idGreaterThan(-1).findAll();
-      final itemsToDelete = allQueue.where((e) => e.createdAt.isBefore(cutoff) || e.createdAt.isAtSameMomentAs(cutoff)).toList();
-      if (itemsToDelete.isEmpty) return;
-      final ids = itemsToDelete.map((e) => e.id).toList();
-      await removeQueueItemsByIds(ids);
-      logger.info('Atomic Queue Clearing: Removed ${ids.length} queue items created before $cutoff');
+      final List<int> idsToDelete = [];
+      int offset = 0;
+      const int limit = 500;
+      
+      while (true) {
+        final chunk = await _queueCollection.filter().idGreaterThan(-1).offset(offset).limit(limit).findAll();
+        if (chunk.isEmpty) break;
+        
+        final matching = chunk
+            .where((e) => e.createdAt.isBefore(cutoff) || e.createdAt.isAtSameMomentAs(cutoff))
+            .map((e) => e.id);
+        idsToDelete.addAll(matching);
+        
+        offset += limit;
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+
+      if (idsToDelete.isEmpty) return;
+      await removeQueueItemsByIds(idsToDelete);
+      logger.info('Atomic Queue Clearing: Removed ${idsToDelete.length} queue items created before $cutoff');
     } catch (e) {
       logger.error('Failed atomic queue clearing before cutoff', e);
     }
@@ -77,18 +105,22 @@ class SyncQueueService {
   /// Resets retries on all unsynced queue items to trigger sync retry phase
   Future<void> resetAllRetries() async {
     try {
-      final pendingItems = await _queueCollection.filter().isSyncedEqualTo(false).findAll();
+      final pendingItems = await getPendingQueue(); // This is now chunked internally!
       if (pendingItems.isEmpty) return;
 
-      await _dbService.isar.writeTxn(() async {
-        for (var item in pendingItems) {
-          item.retryCount = 0;
-          item.lastAttempt = null;
-          item.lastError = null;
-          await _queueCollection.put(item);
-        }
-      });
-      logger.info('Reset retry counters on ${pendingItems.length} sync queue tasks.');
+      for (var i = 0; i < pendingItems.length; i += 500) {
+        final chunk = pendingItems.skip(i).take(500).toList();
+        await _dbService.isar.writeTxn(() async {
+          for (var item in chunk) {
+            item.retryCount = 0;
+            item.lastAttempt = null;
+            item.lastError = null;
+            await _queueCollection.put(item);
+          }
+        });
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      logger.info('Reset retry counters on ${pendingItems.length} sync queue tasks in chunks.');
     } catch (e) {
       logger.error('Failed to reset sync queue retries', e);
     }

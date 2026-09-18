@@ -85,6 +85,21 @@ class SyncService {
   final DatabaseService _dbService;
   final SharedPreferences _prefs;
 
+  /// Helper to fetch items from Isar in chunks to avoid blocking the Web Wasm thread
+  Future<List<T>> _chunkedFindAll<T>(Future<List<T>> Function(int offset, int limit) queryFn) async {
+    final List<T> results = [];
+    int offset = 0;
+    const int limit = 500;
+    while(true) {
+      final chunk = await queryFn(offset, limit);
+      if (chunk.isEmpty) break;
+      results.addAll(chunk);
+      offset += limit;
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+    return results;
+  }
+
   final _stateController = StreamController<SyncState>.broadcast();
   bool _isRecalculating = false; // Lock flag to prevent concurrent stock recalculations
   SyncState _currentState = const SyncState(
@@ -519,10 +534,17 @@ class SyncService {
     final uuidGen = Uuid();
     final isar = _dbService.isar;
 
-    Future<void> enqueueChunk<T>(List<T> items, String entityType, String? Function(T) getUuid, int Function(T) getId) async {
-      if (items.isEmpty) return;
-      for (var i = 0; i < items.length; i += 500) {
-        final chunk = items.skip(i).take(500).toList();
+    Future<void> processEnqueuing<T>(
+        Future<List<T>> Function(int offset, int limit) queryFn,
+        String entityType,
+        String? Function(T) getUuid,
+        int Function(T) getId) async {
+      int offset = 0;
+      const int limit = 500;
+      while (true) {
+        final chunk = await queryFn(offset, limit);
+        if (chunk.isEmpty) break;
+        
         final queues = chunk.map((item) => SyncQueue()
           ..uuid = uuidGen.v4()
           ..entityType = entityType
@@ -535,87 +557,35 @@ class SyncService {
         await isar.writeTxn(() async {
           await isar.syncQueues.putAll(queues);
         });
-        // Yield to browser event loop
+        
+        offset += limit;
         await Future.delayed(const Duration(milliseconds: 10));
       }
     }
 
-    final parties = forceAll ? await isar.partys.filter().idGreaterThan(-1).findAll() : await isar.partys.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Party>(parties, 'Party', (e) => e.uuid, (e) => e.id);
-
-    final itemsList = forceAll ? await isar.items.filter().idGreaterThan(-1).findAll() : await isar.items.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Item>(itemsList, 'Item', (e) => e.uuid, (e) => e.id);
-
-    final invoices = forceAll ? await isar.invoices.filter().idGreaterThan(-1).findAll() : await isar.invoices.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Invoice>(invoices, 'Invoice', (e) => e.uuid, (e) => e.id);
-
-    final orders = forceAll ? await isar.orders.filter().idGreaterThan(-1).findAll() : await isar.orders.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Order>(orders, 'Order', (e) => e.uuid, (e) => e.id);
-
-    final purchases = forceAll ? await isar.purchases.filter().idGreaterThan(-1).findAll() : await isar.purchases.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Purchase>(purchases, 'Purchase', (e) => e.uuid, (e) => e.id);
-
-    final invItems = forceAll ? await isar.invoiceItems.filter().idGreaterThan(-1).findAll() : await isar.invoiceItems.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<InvoiceItem>(invItems, 'InvoiceItem', (e) => e.uuid, (e) => e.id);
-
-    final purItems = forceAll ? await isar.purchaseItems.filter().idGreaterThan(-1).findAll() : await isar.purchaseItems.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<PurchaseItem>(purItems, 'PurchaseItem', (e) => e.uuid, (e) => e.id);
-
-    final expenses = forceAll ? await isar.expenses.filter().idGreaterThan(-1).findAll() : await isar.expenses.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Expense>(expenses, 'Expense', (e) => e.uuid, (e) => e.id);
-
-    final allExpItems = await isar.expenseItems.where().findAll();
-    final expItems = allExpItems.where((ei) => forceAll || !ei.isSynced).toList();
-    await enqueueChunk<ExpenseItem>(expItems, 'ExpenseItem', (e) => e.uuid, (e) => e.id);
-
-    final allStockAdjs = await isar.collection<StockAdjustment>().where().findAll();
-    final stockAdjs = allStockAdjs.where((sa) => forceAll || !sa.isSynced).toList();
-    await enqueueChunk<StockAdjustment>(stockAdjs, 'StockAdjustment', (e) => e.uuid, (e) => e.id);
-
-    final allCreditNotes = await isar.creditNotes.where().findAll();
-    final creditNotes = allCreditNotes.where((cn) => forceAll || !cn.isSynced).toList();
-    await enqueueChunk<CreditNote>(creditNotes, 'CreditNote', (e) => e.uuid, (e) => e.id);
-
-    final allCreditNoteItems = await isar.creditNoteItems.where().findAll();
-    final creditNoteItems = allCreditNoteItems.where((cni) => forceAll || !cni.isSynced).toList();
-    await enqueueChunk<CreditNoteItem>(creditNoteItems, 'CreditNoteItem', (e) => e.uuid, (e) => e.id);
-
-    final allWaMappings = await isar.whatsAppMappings.where().findAll();
-    final waMappings = allWaMappings.where((wm) => forceAll || !wm.isSynced).toList();
-    await enqueueChunk<WhatsAppMapping>(waMappings, 'WhatsAppMapping', (e) => e.uuid, (e) => e.id);
-
-    final allDebitNotes = await isar.debitNotes.where().findAll();
-    final debitNotes = allDebitNotes.where((dn) => forceAll || !dn.isSynced).toList();
-    await enqueueChunk<DebitNote>(debitNotes, 'DebitNote', (e) => e.uuid, (e) => e.id);
-
-    final allDebitNoteItems = await isar.debitNoteItems.where().findAll();
-    final debitNoteItems = allDebitNoteItems.where((dni) => forceAll || !dni.isSynced).toList();
-    await enqueueChunk<DebitNoteItem>(debitNoteItems, 'DebitNoteItem', (e) => e.uuid, (e) => e.id);
-
-    final txns = forceAll ? await isar.transactions.filter().idGreaterThan(-1).findAll() : await isar.transactions.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Transaction>(txns, 'Transaction', (e) => e.uuid, (e) => e.id);
-
-    // === Missing entity types that were never enqueued before ===
-    final categories = forceAll ? await isar.categorys.filter().idGreaterThan(-1).findAll() : await isar.categorys.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Category>(categories, 'Category', (e) => e.uuid, (e) => e.id);
-
-    final units = forceAll ? await isar.units.filter().idGreaterThan(-1).findAll() : await isar.units.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Unit>(units, 'Unit', (e) => e.uuid, (e) => e.id);
-
-    final brands = forceAll ? await isar.brands.filter().idGreaterThan(-1).findAll() : await isar.brands.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Brand>(brands, 'Brand', (e) => e.uuid, (e) => e.id);
-
-    final settingsList = forceAll ? await isar.settings.filter().idGreaterThan(-1).findAll() : await isar.settings.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<Settings>(settingsList, 'Settings', (e) => e.uuid, (e) => e.id);
-
-    final users = forceAll ? await isar.users.filter().idGreaterThan(-1).findAll() : await isar.users.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<User>(users, 'User', (e) => e.uuid, (e) => e.id);
-
-    final bankAccounts = forceAll ? await isar.bankAccounts.filter().idGreaterThan(-1).findAll() : await isar.bankAccounts.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<BankAccount>(bankAccounts, 'BankAccount', (e) => e.uuid, (e) => e.id);
-
-    final orderItems = forceAll ? await isar.orderItems.filter().idGreaterThan(-1).findAll() : await isar.orderItems.filter().isSyncedEqualTo(false).findAll();
-    await enqueueChunk<OrderItem>(orderItems, 'OrderItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Party>((o, l) => forceAll ? isar.partys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.partys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Party', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Item>((o, l) => forceAll ? isar.items.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.items.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Item', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<InvoiceItem>((o, l) => forceAll ? isar.invoiceItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoiceItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'InvoiceItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<PurchaseItem>((o, l) => forceAll ? isar.purchaseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchaseItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'PurchaseItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((cn) => forceAll || !cn.isSynced).toList()), 'CreditNote', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<CreditNoteItem>((o, l) => isar.creditNoteItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((cni) => forceAll || !cni.isSynced).toList()), 'CreditNoteItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((dn) => forceAll || !dn.isSynced).toList()), 'DebitNote', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<DebitNoteItem>((o, l) => isar.debitNoteItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((dni) => forceAll || !dni.isSynced).toList()), 'DebitNoteItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Unit>((o, l) => forceAll ? isar.units.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.units.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Unit', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Brand>((o, l) => forceAll ? isar.brands.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.brands.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Brand', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<OrderItem>((o, l) => forceAll ? isar.orderItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orderItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'OrderItem', (e) => e.uuid, (e) => e.id);
   }
 
   /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
@@ -1239,7 +1209,7 @@ class SyncService {
     logger.info('Executing post-sync pass to re-link all line items to parents...');
 
     try {
-      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final allInvoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final Map<String, Invoice> invoiceByUuid = {};
       final Map<int, Invoice> invoiceById = {};
 
@@ -1251,7 +1221,7 @@ class SyncService {
         invoiceById[inv.id] = inv;
       }
 
-      final allInvoiceItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
+      final allInvoiceItems = await _chunkedFindAll((o, l) => isar.invoiceItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final List<InvoiceItem> modifiedInvItems = [];
 
       for (int i = 0; i < allInvoiceItems.length; i++) {
@@ -1281,7 +1251,7 @@ class SyncService {
       }
 
       // Relink PurchaseItems
-      final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final allPurchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final Map<String, Purchase> purchaseByUuid = {};
       final Map<int, Purchase> purchaseById = {};
 
@@ -1293,7 +1263,7 @@ class SyncService {
         purchaseById[pur.id] = pur;
       }
 
-      final allPurchaseItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
+      final allPurchaseItems = await _chunkedFindAll((o, l) => isar.purchaseItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final List<PurchaseItem> modifiedPurItems = [];
 
       for (int i = 0; i < allPurchaseItems.length; i++) {
@@ -1332,11 +1302,11 @@ class SyncService {
     logger.info('Recalculating party outstanding balances dynamically from transactions...');
 
     try {
-      final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+      final parties = await _chunkedFindAll((o, l) => isar.partys.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       if (parties.isEmpty) return;
 
-      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
-      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final invoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final purchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
 
       final Map<int, String> partyIdToUuid = {};
       for (var p in parties) {
@@ -1374,7 +1344,7 @@ class SyncService {
         }
       }
 
-      final transactions = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+      final transactions = await _chunkedFindAll((o, l) => isar.transactions.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final Map<String, double> uuidUnlinkedCredits = {};
       final Map<int, double> idUnlinkedCredits = {};
 
@@ -1434,13 +1404,13 @@ class SyncService {
     logger.info('Recalculating item stocks dynamically from local transactions...');
 
     try {
-      final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
+      final allItems = await _chunkedFindAll((o, l) => isar.items.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       if (allItems.isEmpty) return;
 
-      final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-      final allPurItems = await isar.purchaseItems.filter().isDeletedEqualTo(false).findAll();
-      final allCreditNoteItems = await isar.creditNoteItems.filter().isDeletedEqualTo(false).findAll();
-      final allDebitNoteItems = await isar.debitNoteItems.filter().isDeletedEqualTo(false).findAll();
+      final allInvItems = await _chunkedFindAll((o, l) => isar.invoiceItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final allPurItems = await _chunkedFindAll((o, l) => isar.purchaseItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final allCreditNoteItems = await _chunkedFindAll((o, l) => isar.creditNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final allDebitNoteItems = await _chunkedFindAll((o, l) => isar.debitNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
 
       // Load item links for accuracy with non-blocking async yielding
       final Map<int, String> itemIdToUuid = {
@@ -1449,15 +1419,15 @@ class SyncService {
       };
 
       // Filter out deleted parent invoices/purchases
-      final allInvoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final allInvoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final validInvIds = allInvoices.map((i) => i.id).toSet();
       final validInvUuids = allInvoices.map((i) => i.uuid).whereType<String>().toSet();
 
-      final allPurchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final allPurchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final validPurIds = allPurchases.map((p) => p.id).toSet();
       final validPurUuids = allPurchases.map((p) => p.uuid).whereType<String>().toSet();
 
-      final allStockAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
+      final allStockAdjustments = await _chunkedFindAll((o, l) => isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
 
       final List<Item> itemsToUpdate = [];
 
@@ -1652,7 +1622,7 @@ class SyncService {
           final r = await isar.expenses.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
           return r?.updatedAt;
         case 'ExpenseItem':
-          final list = await isar.collection<ExpenseItem>().where().findAll();
+          final list = await _chunkedFindAll((o, l) => isar.collection<ExpenseItem>().where().offset(o).limit(l).findAll());
           if (list.isEmpty) return null;
           list.sort((a, b) => (a.updatedAt ?? DateTime(1970)).compareTo(b.updatedAt ?? DateTime(1970)));
           return list.last.updatedAt;
@@ -1835,8 +1805,14 @@ class SyncService {
       case 'Order':
         final e = entity as Order;
         final isarRef = _dbService.isar;
-        final allOrdItems = await isarRef.orderItems.filter().isDeletedEqualTo(false).findAll();
-        final rawItems = allOrdItems.where((i) => i.orderId == e.id || (e.uuid != null && e.uuid!.isNotEmpty && i.orderUuid == e.uuid)).toList();
+        final query = isarRef.orderItems.filter().isDeletedEqualTo(false).and().group((q) {
+          var sq = q.orderIdEqualTo(e.id);
+          if (e.uuid != null && e.uuid!.isNotEmpty) {
+            sq = sq.or().orderUuidEqualTo(e.uuid!);
+          }
+          return sq;
+        });
+        final rawItems = await query.findAll();
 
         final itemsMapList = rawItems.map((item) => {
           'uuid': item.uuid,
@@ -1906,8 +1882,14 @@ class SyncService {
       case 'Invoice':
         final e = entity as Invoice;
         final isarRef = _dbService.isar;
-        final allInvItems = await isarRef.invoiceItems.filter().isDeletedEqualTo(false).findAll();
-        final rawItems = allInvItems.where((i) => i.parentInvoiceId == e.id || (e.uuid != null && e.uuid!.isNotEmpty && i.parentInvoiceUuid == e.uuid)).toList();
+        final query = isarRef.invoiceItems.filter().isDeletedEqualTo(false).and().group((q) {
+          var sq = q.parentInvoiceIdEqualTo(e.id);
+          if (e.uuid != null && e.uuid!.isNotEmpty) {
+            sq = sq.or().parentInvoiceUuidEqualTo(e.uuid!);
+          }
+          return sq;
+        });
+        final rawItems = await query.findAll();
 
         final itemsMapList = rawItems.map((item) => {
           'uuid': item.uuid,
@@ -2015,8 +1997,14 @@ class SyncService {
       case 'Purchase':
         final e = entity as Purchase;
         final isarRefP = _dbService.isar;
-        final allPurItems = await isarRefP.purchaseItems.filter().isDeletedEqualTo(false).findAll();
-        final rawPItems = allPurItems.where((i) => i.purchaseId == e.id || (e.uuid != null && e.uuid!.isNotEmpty && i.purchaseUuid == e.uuid)).toList();
+        final query = isarRefP.purchaseItems.filter().isDeletedEqualTo(false).and().group((q) {
+          var sq = q.purchaseIdEqualTo(e.id);
+          if (e.uuid != null && e.uuid!.isNotEmpty) {
+            sq = sq.or().purchaseUuidEqualTo(e.uuid!);
+          }
+          return sq;
+        });
+        final rawPItems = await query.findAll();
 
         final pItemsMapList = rawPItems.map((item) => {
           'uuid': item.uuid,
