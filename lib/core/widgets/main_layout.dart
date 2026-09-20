@@ -6,8 +6,8 @@ import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_drawer.dart';
 import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
-import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 class MainLayout extends ConsumerWidget {
   final Widget child;

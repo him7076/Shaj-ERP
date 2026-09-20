@@ -10,7 +10,7 @@ class TaskRepositoryImpl extends BaseIsarRepository<Task> implements TaskReposit
 
   @override
   Future<List<Task>> getByStatus(String status) async {
-    return await _isar.tasks.filter()
+    return await isar.tasks.filter()
       .isDeletedEqualTo(false)
       .statusEqualTo(status)
       .sortByCreatedAtDesc()

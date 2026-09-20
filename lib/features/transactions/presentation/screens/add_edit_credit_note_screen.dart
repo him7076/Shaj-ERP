@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -286,8 +286,8 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     final newItem = CreditNoteItem()
       ..itemId = item.id
       ..itemName = item.itemName
-      ..selectedSubItemUuid = data.selectedSubItemUuid
-      ..selectedSubItemName = data.selectedSubItemName
+      ..selectedSubItemUuid = data.selectedSubItem?.subItemUuid
+      ..selectedSubItemName = data.selectedSubItem?.subItemName
       ..hsnCode = item.hsnCode
       ..quantity = 1.0
       ..unit = primaryUnitName
@@ -435,7 +435,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
             TextFormField(
               controller: _discountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Bill Level Discount (Ã¢â€šÂ¹)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Bill Level Discount (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', border: OutlineInputBorder()),
               onChanged: (val) => _recalculateTotals(),
             ),
             const SizedBox(height: 12),
@@ -516,7 +516,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 Text(
-                  'Ã¢â€šÂ¹${_grandTotal.toStringAsFixed(2)}',
+                  'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${_grandTotal.toStringAsFixed(2)}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -597,7 +597,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: Ã¢â€šÂ¹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -695,7 +695,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                         },
                         optionsMaxHeight: 300,
                         onSelected: (item) {
-                          _addItemLine(item);
+                          _addItemLine(SelectedProductData(item));
                           FocusScope.of(context).unfocus();
                         },
                         optionsViewBuilder: (context, onSelected, options) {
@@ -717,7 +717,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                                       leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
                                       title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                       subtitle: Text(
-                                        'Code: ${item.itemCode ?? "N/A"} | Buy: Ã¢â€šÂ¹${item.buyRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
+                                        'Code: ${item.itemCode ?? "N/A"} | Buy: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.buyRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
                                         style: const TextStyle(fontSize: 11),
                                       ),
                                       onTap: () => onSelected(item),
@@ -976,7 +976,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
             ),
           ),
           Text(
-            'Ã¢â€šÂ¹${val.toStringAsFixed(2)}',
+            'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
               fontSize: (isBold || isPending) ? 15 : 13,
@@ -1274,7 +1274,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                       controller: _rateExclController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
-                        labelText: 'CreditNote Rate (Ã¢â€šÂ¹)',
+                        labelText: 'CreditNote Rate (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)',
                         isDense: true,
                         border: OutlineInputBorder(),
                       ),
@@ -1293,7 +1293,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                       controller: _discController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
-                        labelText: 'Disc (Ã¢â€šÂ¹)',
+                        labelText: 'Disc (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)',
                         isDense: true,
                         border: OutlineInputBorder(),
                       ),
@@ -1322,7 +1322,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _showMoreDetails ? 'Ã¢â€“Â² Hide Batch, Free Qty & GST Details' : 'Ã¢â€“Â¼ More Inputs (Free Qty, Batch, Expiry, GST %)',
+                        _showMoreDetails ? 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â² Hide Batch, Free Qty & GST Details' : 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ More Inputs (Free Qty, Batch, Expiry, GST %)',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                       ),
                     ],
@@ -1347,7 +1347,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                             child: TextFormField(
                               controller: _rateInclController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: const InputDecoration(labelText: 'Rate Incl (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
+                              decoration: const InputDecoration(labelText: 'Rate Incl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, border: OutlineInputBorder()),
                               onChanged: (val) {
                                 final double? incl = double.tryParse(val);
                                 if (incl != null) {
@@ -1424,7 +1424,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                   children: [
                     Text('GST: ${_gstController.text}%', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
                     Text(
-                      'Total: Ã¢â€šÂ¹${(item.totalAmount ?? 0.0).toStringAsFixed(2)}',
+                      'Total: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${(item.totalAmount ?? 0.0).toStringAsFixed(2)}',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                     ),
                   ],
@@ -1540,7 +1540,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Rate Excl (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Rate Excl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1561,7 +1561,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Rate Incl (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Rate Incl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1586,7 +1586,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _discController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Disc (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Disc (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
                   final double? discVal = double.tryParse(val);
                   if (discVal != null) {
