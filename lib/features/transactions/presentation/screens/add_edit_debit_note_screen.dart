@@ -286,8 +286,8 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     final newItem = DebitNoteItem()
       ..itemId = item.id
       ..itemName = item.itemName
-      ..selectedSubItemUuid = data.selectedSubItem?.subItemUuid
-      ..selectedSubItemName = data.selectedSubItem?.subItemName
+      ..selectedSubItemUuid = data.selectedSubItem?.uuid
+      ..selectedSubItemName = data.selectedSubItem?.name
       ..hsnCode = item.hsnCode
       ..quantity = 1.0
       ..unit = primaryUnitName
