@@ -15,7 +15,11 @@ class TasksScreen extends ConsumerWidget {
     final tasksAsync = ref.watch(taskListProvider);
 
     return Scaffold(
-      appBar: const CustomAppBar(title: 'Tasks'),
+      appBar: AppBar(
+        title: const Text('Tasks'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
       backgroundColor: theme.colorScheme.background,
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/tasks/add'),

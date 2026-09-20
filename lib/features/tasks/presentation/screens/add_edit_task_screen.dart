@@ -131,7 +131,11 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
     final isEdit = _existingTask != null;
 
     return Scaffold(
-      appBar: CustomAppBar(title: isEdit ? 'Edit Task' : 'New Task'),
+      appBar: AppBar(
+        title: Text(isEdit ? 'Edit Task' : 'New Task'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(

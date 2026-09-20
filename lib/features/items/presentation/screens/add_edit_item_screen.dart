@@ -1751,7 +1751,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           onChanged: (_) => setState(() {}),
                           decoration: const InputDecoration(
-                            labelText: 'Purchase Rate (Buy)',
+                            labelText: 'Purchase Rate (₹)',
                             border: OutlineInputBorder(),
                             prefixIcon: Icon(Icons.currency_rupee),
                           ),

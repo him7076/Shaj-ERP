@@ -50,8 +50,8 @@ class ItemExcelImportService {
       TextCellValue('Purchase Price'),
       TextCellValue('Purchase Price Tax Type'), // Without Tax / With Tax
       TextCellValue('Minimum Selling Price'),
-      TextCellValue('GST Rate (%)'),
-      TextCellValue('CESS Rate (%)'),
+      TextCellValue('GST Rate (₹)'),
+      TextCellValue('CESS Rate (₹)'),
       TextCellValue('Tax Inclusive'), // Yes/No
       TextCellValue('Opening Stock'),
       TextCellValue('Current Stock'),

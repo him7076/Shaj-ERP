@@ -597,7 +597,7 @@ class WhatsappMappingService {
         pcsRate = pcsPerCarton > 0 ? (userRate / pcsPerCarton) : userRate;
       }
     } else {
-      // Default to item's sellRate (which is per Primary Unit / Carton)
+      // Default to item's sellRate (₹)
       final double defaultCartonRate = item.sellRate ?? 0.0;
       pcsRate = pcsPerCarton > 0 ? (defaultCartonRate / pcsPerCarton) : defaultCartonRate;
     }
