@@ -800,7 +800,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   onPressed: () async {
                     final selectedItem = await ItemSearchPickerModal.show(context);
                     if (selectedItem != null) {
-                      ref.read(cartProvider.notifier).addItem(selectedItem);
+                      ref.read(cartProvider.notifier).addItem(selectedItem.item);
                       ref.invalidate(filteredItemsProvider);
                     }
                   },
@@ -876,7 +876,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
               onPressed: () async {
                 final selectedItem = await ItemSearchPickerModal.show(context);
                 if (selectedItem != null) {
-                  ref.read(cartProvider.notifier).addItem(selectedItem);
+                  ref.read(cartProvider.notifier).addItem(selectedItem.item);
                   ref.invalidate(filteredItemsProvider);
                 }
               },

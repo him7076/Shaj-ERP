@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'stock_adjustment_collection.dart';
 
@@ -3027,4 +3027,5 @@ extension StockAdjustmentQueryProperty
     });
   }
 }
+
 

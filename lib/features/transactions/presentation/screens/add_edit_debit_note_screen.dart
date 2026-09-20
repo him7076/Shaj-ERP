@@ -12,7 +12,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
-import 'package:business_sahaj_erp/features/transactions/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
@@ -23,7 +23,9 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:uuid/uuid.dart';
 class AddEditDebitNoteScreen extends ConsumerStatefulWidget {
   final String? parentDebitNoteUuid;
-  const AddEditDebitNoteScreen({Key? key, this.parentDebitNoteUuid}) : super(key: key);
+  final String? initialInvoiceNumber;
+  final String? initialInvoiceUuid;
+  const AddEditDebitNoteScreen({Key? key, this.parentDebitNoteUuid, this.initialInvoiceNumber, this.initialInvoiceUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditDebitNoteScreen> createState() => _AddEditDebitNoteScreenState();
@@ -180,12 +182,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
         final pId = debitNote.id;
         final pUuid = debitNote.uuid;
 
-        if (pUuid != null && pUuid.isNotEmpty) {
-          itemsList = await isar.debitNoteItems
-              .filter()
-              .parentDebitNoteUuidEqualTo(pUuid)
-              .findAll();
-        }
+
         if (itemsList.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
           itemsList = await isar.debitNoteItems
               .filter()
@@ -224,6 +221,9 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     } else {
       final numStr = await repo.generateNextDebitNoteNumber();
       _billNumberController.text = numStr;
+      if (widget.initialInvoiceNumber != null) {
+        _originalBillNumberController.text = widget.initialInvoiceNumber!;
+      }
       if (mounted) {
         setState(() {});
       }
@@ -275,8 +275,8 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   }
 
 
-  void _addItemLine(Item item) async {
-
+  void _addItemLine(SelectedProductData data) async {
+    final item = data.item;
     try {
       await item.unit.load();
     } catch (_) {}
@@ -286,6 +286,8 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     final newItem = DebitNoteItem()
       ..itemId = item.id
       ..itemName = item.itemName
+      ..selectedSubItemUuid = data.selectedSubItemUuid
+      ..selectedSubItemName = data.selectedSubItemName
       ..hsnCode = item.hsnCode
       ..quantity = 1.0
       ..unit = primaryUnitName

@@ -1101,7 +1101,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                              Navigator.of(context, rootNavigator: true).push(
                                                MaterialPageRoute(
                                                  builder: (context) => AddEditCreditNoteScreen(
-                                                   initialPartyUuid: txn.partyUuid,
                                                    initialInvoiceNumber: txn.transactionNumber,
                                                    initialInvoiceUuid: txn.uuid,
                                                  ),
@@ -1111,7 +1110,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                              Navigator.of(context, rootNavigator: true).push(
                                                MaterialPageRoute(
                                                  builder: (context) => AddEditDebitNoteScreen(
-                                                   initialPartyUuid: txn.partyUuid,
                                                    initialInvoiceNumber: txn.transactionNumber,
                                                    initialInvoiceUuid: txn.uuid,
                                                  ),

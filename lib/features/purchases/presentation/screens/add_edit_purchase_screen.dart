@@ -284,8 +284,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   }
 
 
-  void _addItemLine(Item item) async {
-
+  void _addItemLine(SelectedProductData data) async {
+    final item = data.item;
     try {
       await item.unit.load();
     } catch (_) {}
@@ -295,6 +295,8 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
     final newItem = PurchaseItem()
       ..itemId = item.id
       ..itemName = item.itemName
+      ..selectedSubItemUuid = data.selectedSubItemUuid
+      ..selectedSubItemName = data.selectedSubItemName
       ..hsnCode = item.hsnCode
       ..quantity = 1.0
       ..unit = primaryUnitName

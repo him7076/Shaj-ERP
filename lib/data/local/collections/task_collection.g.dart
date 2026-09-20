@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'task_collection.dart';
 
@@ -15,7 +15,7 @@ extension GetTaskCollection on Isar {
 
 const TaskSchema = CollectionSchema(
   name: r'Task',
-  id: 2998003626758701373,
+  id: 69,
   properties: {
     r'completedAt': PropertySchema(
       id: 0,
@@ -85,7 +85,7 @@ const TaskSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 70,
       name: r'uuid',
       unique: true,
       replace: true,
@@ -1985,3 +1985,4 @@ extension TaskQueryProperty on QueryBuilder<Task, Task, QQueryProperty> {
     });
   }
 }
+

@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'invoice_item_collection.dart';
 
@@ -15,7 +15,7 @@ extension GetInvoiceItemCollection on Isar {
 
 const InvoiceItemSchema = CollectionSchema(
   name: r'InvoiceItem',
-  id: 3489790213250467162,
+  id: 27,
   properties: {
     r'batchNumber': PropertySchema(
       id: 0,
@@ -170,7 +170,7 @@ const InvoiceItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 28,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -183,7 +183,7 @@ const InvoiceItemSchema = CollectionSchema(
       ],
     ),
     r'parentInvoiceId': IndexSchema(
-      id: 1508905303563271528,
+      id: 29,
       name: r'parentInvoiceId',
       unique: false,
       replace: false,
@@ -196,7 +196,7 @@ const InvoiceItemSchema = CollectionSchema(
       ],
     ),
     r'parentInvoiceUuid': IndexSchema(
-      id: -3782403528708774392,
+      id: 30,
       name: r'parentInvoiceUuid',
       unique: false,
       replace: false,
@@ -211,13 +211,13 @@ const InvoiceItemSchema = CollectionSchema(
   },
   links: {
     r'invoice': LinkSchema(
-      id: 9067807999479117358,
+      id: 31,
       name: r'invoice',
       target: r'Invoice',
       single: true,
     ),
     r'item': LinkSchema(
-      id: -4145695838680310432,
+      id: 32,
       name: r'item',
       target: r'Item',
       single: true,
@@ -5197,3 +5197,4 @@ extension InvoiceItemQueryProperty
     });
   }
 }
+

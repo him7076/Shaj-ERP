@@ -16,8 +16,9 @@ import 'package:business_sahaj_erp/core/widgets/pulsing_dot_widget.dart';
 
 class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
+  final String? title;
 
-  const CustomAppBar({Key? key, this.onMenuPressed}) : super(key: key);
+  const CustomAppBar({Key? key, this.onMenuPressed, this.title}) : super(key: key);
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -106,12 +107,13 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     Text(
                       (!isMobile || isDashboard)
                           ? (isMobile ? 'Sahaj ERP' : 'Business Sahaj ERP')
-                          : () {
+                          : title ?? () {
                               if (location.startsWith('/transactions')) return 'Transactions';
                               if (location.startsWith('/parties')) return 'Parties';
                               if (location.startsWith('/reports')) return 'Reports';
                               if (location.startsWith('/settings')) return 'Settings';
                               if (location.startsWith('/items')) return 'Products';
+                              if (location.startsWith('/tasks')) return 'Tasks';
                               return 'Sahaj ERP';
                             }(),
                       style: theme.textTheme.titleMedium?.copyWith(

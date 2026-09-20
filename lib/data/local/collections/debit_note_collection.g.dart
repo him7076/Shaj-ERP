@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'debit_note_collection.dart';
 
@@ -15,7 +15,7 @@ extension GetDebitNoteCollection on Isar {
 
 const DebitNoteSchema = CollectionSchema(
   name: r'DebitNote',
-  id: 4902956559645443098,
+  id: 10,
   properties: {
     r'address': PropertySchema(
       id: 0,
@@ -150,7 +150,7 @@ const DebitNoteSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 2134397340427724972,
+      id: 11,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -163,7 +163,7 @@ const DebitNoteSchema = CollectionSchema(
       ],
     ),
     r'debitNoteNumber': IndexSchema(
-      id: 6740389171701755994,
+      id: 12,
       name: r'debitNoteNumber',
       unique: true,
       replace: false,
@@ -178,13 +178,13 @@ const DebitNoteSchema = CollectionSchema(
   },
   links: {
     r'party': LinkSchema(
-      id: 5214170914114671839,
+      id: 13,
       name: r'party',
       target: r'Party',
       single: true,
     ),
     r'debitNoteItems': LinkSchema(
-      id: -8364729016998773262,
+      id: 14,
       name: r'debitNoteItems',
       target: r'DebitNoteItem',
       single: false,
@@ -4211,3 +4211,4 @@ extension DebitNoteQueryProperty
     });
   }
 }
+

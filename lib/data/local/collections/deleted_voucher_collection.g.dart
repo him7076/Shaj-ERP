@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'deleted_voucher_collection.dart';
 
@@ -2279,4 +2279,5 @@ extension DeletedVoucherQueryProperty
     });
   }
 }
+
 

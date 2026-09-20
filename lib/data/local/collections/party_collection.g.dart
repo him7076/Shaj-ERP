@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'party_collection.dart';
 
@@ -6757,4 +6757,5 @@ extension PartyQueryProperty on QueryBuilder<Party, Party, QQueryProperty> {
     });
   }
 }
+
 

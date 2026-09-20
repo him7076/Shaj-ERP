@@ -896,13 +896,13 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 onPressed: () async {
                   final selected = await ItemSearchPickerModal.show(context);
                   if (selected != null) {
-                    final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.id);
+                    final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.item.id);
                     if (!exists) {
                       setState(() {
                         _bundleComponents.add({
-                          'item': selected, 
+                          'item': selected.item, 
                           'qty': 1.0, 
-                          'unit': selected.primaryUnitName ?? 'PCS'
+                          'unit': selected.item.primaryUnitName ?? 'PCS'
                         });
                       });
                     }

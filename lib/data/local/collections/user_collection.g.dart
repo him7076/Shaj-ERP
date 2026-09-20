@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'user_collection.dart';
 
@@ -1558,4 +1558,5 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 }
+
 

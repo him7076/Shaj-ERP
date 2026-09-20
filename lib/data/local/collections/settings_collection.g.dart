@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'settings_collection.dart';
 
@@ -2393,4 +2393,5 @@ extension SettingsQueryProperty
     });
   }
 }
+
 

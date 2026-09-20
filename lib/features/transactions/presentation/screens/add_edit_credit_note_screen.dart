@@ -23,7 +23,9 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:uuid/uuid.dart';
 class AddEditCreditNoteScreen extends ConsumerStatefulWidget {
   final String? parentCreditNoteUuid;
-  const AddEditCreditNoteScreen({Key? key, this.parentCreditNoteUuid}) : super(key: key);
+  final String? initialInvoiceNumber;
+  final String? initialInvoiceUuid;
+  const AddEditCreditNoteScreen({Key? key, this.parentCreditNoteUuid, this.initialInvoiceNumber, this.initialInvoiceUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditCreditNoteScreen> createState() => _AddEditCreditNoteScreenState();
@@ -180,12 +182,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         final pId = creditNote.id;
         final pUuid = creditNote.uuid;
 
-        if (pUuid != null && pUuid.isNotEmpty) {
-          itemsList = await isar.creditNoteItems
-              .filter()
-              .parentCreditNoteUuidEqualTo(pUuid)
-              .findAll();
-        }
+
         if (itemsList.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
           itemsList = await isar.creditNoteItems
               .filter()
@@ -224,6 +221,9 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     } else {
       final numStr = await repo.generateNextCreditNoteNumber();
       _billNumberController.text = numStr;
+      if (widget.initialInvoiceNumber != null) {
+        _originalBillNumberController.text = widget.initialInvoiceNumber!;
+      }
       if (mounted) {
         setState(() {});
       }
@@ -275,8 +275,8 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
   }
 
 
-  void _addItemLine(Item item) async {
-
+  void _addItemLine(SelectedProductData data) async {
+    final item = data.item;
     try {
       await item.unit.load();
     } catch (_) {}
@@ -286,6 +286,8 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     final newItem = CreditNoteItem()
       ..itemId = item.id
       ..itemName = item.itemName
+      ..selectedSubItemUuid = data.selectedSubItemUuid
+      ..selectedSubItemName = data.selectedSubItemName
       ..hsnCode = item.hsnCode
       ..quantity = 1.0
       ..unit = primaryUnitName

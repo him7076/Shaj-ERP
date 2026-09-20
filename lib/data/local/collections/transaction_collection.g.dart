@@ -1,4 +1,4 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+﻿// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'transaction_collection.dart';
 
@@ -3990,4 +3990,5 @@ extension TransactionQueryProperty
     });
   }
 }
+
 
