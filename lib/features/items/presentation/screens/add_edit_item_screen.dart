@@ -685,6 +685,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       item.notes = _notesController.text.trim();
       item.imagePaths = _imageBase64 != null ? [_imageBase64!] : [];
 
+      item.hasSubItems = _subItems.isNotEmpty;
+      item.subItems = _subItems.isNotEmpty ? _subItems : null;
+
       item.category.value = _selectedCategory;
       item.brand.value = _selectedBrand;
       if (_selectedUnit != null) {
@@ -1144,16 +1147,43 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                leading: const Icon(Icons.inventory_2_outlined),
+                leading: sub.localPhotoPath != null && sub.localPhotoPath!.isNotEmpty
+                    ? CircleAvatar(
+                        backgroundImage: FileImage(File(sub.localPhotoPath!)),
+                        radius: 20,
+                      )
+                    : const Icon(Icons.inventory_2_outlined),
                 title: Text(sub.name ?? 'Unknown'),
-                subtitle: Text('Sell: ₹${sub.sellPrice ?? 0} | Buy: ₹${sub.buyPrice ?? 0}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      _subItems.removeAt(index);
-                    });
-                  },
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Sell: ₹${sub.sellPrice ?? 0} | Buy: ₹${sub.buyPrice ?? 0}'),
+                    if (sub.googlePhotoLink != null && sub.googlePhotoLink!.isNotEmpty)
+                      Text('Google Photos: ${sub.googlePhotoLink}', 
+                        style: const TextStyle(fontSize: 12, color: Colors.blue, overflow: TextOverflow.ellipsis),
+                        maxLines: 1,
+                      ),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () {
+                        _showAddSubItemDialog(subItemToEdit: sub, index: index);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _subItems.removeAt(index);
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ),
             );
@@ -1171,62 +1201,105 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     );
   }
 
-  void _showAddSubItemDialog() {
-    final nameCtrl = TextEditingController();
-    final sellCtrl = TextEditingController();
-    final buyCtrl = TextEditingController();
+  void _showAddSubItemDialog({SubItem? subItemToEdit, int? index}) {
+    final nameCtrl = TextEditingController(text: subItemToEdit?.name ?? '');
+    final sellCtrl = TextEditingController(text: subItemToEdit?.sellPrice?.toString() ?? '');
+    final buyCtrl = TextEditingController(text: subItemToEdit?.buyPrice?.toString() ?? '');
+    final googlePhotoCtrl = TextEditingController(text: subItemToEdit?.googlePhotoLink ?? '');
     final formKey = GlobalKey<FormState>();
+    String? localPhotoPath = subItemToEdit?.localPhotoPath;
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Sub-Item'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Sub-Item Name (e.g. Tandoori)'),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return AlertDialog(
+            title: Text(subItemToEdit == null ? 'Add Sub-Item' : 'Edit Sub-Item'),
+            content: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Sub-Item Name (e.g. Tandoori)'),
+                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: sellCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Sell Price'),
+                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: buyCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Buy Price'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: googlePhotoCtrl,
+                      decoration: const InputDecoration(labelText: 'Google Photos Link'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final picker = ImagePicker();
+                            final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                            if (pickedFile != null) {
+                              setStateDialog(() {
+                                localPhotoPath = pickedFile.path;
+                              });
+                            }
+                          },
+                          icon: const Icon(Icons.image),
+                          label: const Text('Pick Photo'),
+                        ),
+                        if (localPhotoPath != null) ...[
+                          const SizedBox(width: 8),
+                          const Icon(Icons.check_circle, color: Colors.green),
+                          const SizedBox(width: 4),
+                          const Expanded(child: Text('Photo Selected', overflow: TextOverflow.ellipsis, maxLines: 1)),
+                        ]
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: sellCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Sell Price'),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: buyCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Buy Price'),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                setState(() {
-                  _subItems.add(SubItem()
-                    ..uuid = DateTime.now().millisecondsSinceEpoch.toString()
-                    ..name = nameCtrl.text.trim()
-                    ..sellPrice = double.tryParse(sellCtrl.text)
-                    ..buyPrice = double.tryParse(buyCtrl.text));
-                });
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    setState(() {
+                      final sub = SubItem()
+                        ..uuid = subItemToEdit?.uuid ?? DateTime.now().millisecondsSinceEpoch.toString()
+                        ..name = nameCtrl.text.trim()
+                        ..sellPrice = double.tryParse(sellCtrl.text)
+                        ..buyPrice = double.tryParse(buyCtrl.text)
+                        ..googlePhotoLink = googlePhotoCtrl.text.trim()
+                        ..localPhotoPath = localPhotoPath;
+                        
+                      if (subItemToEdit != null && index != null) {
+                        _subItems[index] = sub;
+                      } else {
+                        _subItems.add(sub);
+                      }
+                    });
+                    Navigator.pop(ctx);
+                  }
+                },
+                child: Text(subItemToEdit == null ? 'Add' : 'Save'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
