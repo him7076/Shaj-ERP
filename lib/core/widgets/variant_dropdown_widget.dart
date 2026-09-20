@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
-import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:uuid/uuid.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 
 class VariantDropdownWidget extends ConsumerStatefulWidget {
   final Item item;
@@ -134,14 +135,12 @@ class _VariantSelectionDialogState extends ConsumerState<_VariantSelectionDialog
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              final newSub = SubItem()
+              final newSubItem = SubItem()
                 ..uuid = const Uuid().v4()
                 ..name = name
-                ..sellPrice = double.tryParse(rateController.text) ?? _currentItem.sellRate
-                ..buyPrice = _currentItem.buyRate
-                ..openingStock = 0
-                ..currentStock = 0;
-              Navigator.pop(ctx, newSub);
+                ..sellPrice = double.tryParse(rateController.text) ?? 0.0
+                ..buyPrice = double.tryParse(rateController.text) ?? 0.0;
+              Navigator.pop(ctx, newSubItem);
             },
             child: const Text('Create'),
           ),
@@ -231,7 +230,7 @@ class _VariantSelectionDialogState extends ConsumerState<_VariantSelectionDialog
                         final sub = filteredList[index];
                         return ListTile(
                           title: Text(sub.name ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text('Price: ₹${(sub.sellPrice ?? _currentItem.sellRate ?? 0).toStringAsFixed(2)} | Stock: ${sub.currentStock?.toInt() ?? 0}'),
+                          subtitle: Text('Price: ₹${(sub.sellPrice ?? _currentItem.sellRate ?? 0).toStringAsFixed(2)}'),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () => Navigator.pop(context, sub),
                         );

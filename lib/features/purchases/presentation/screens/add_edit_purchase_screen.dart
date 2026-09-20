@@ -1328,18 +1328,17 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         VariantDropdownWidget(
-                          item: item,
+                          item: item.item.value ?? Item(),
                           selectedSubItemUuid: item.selectedSubItemUuid,
                           onChanged: (sub) {
                             if (sub != null) {
                               setState(() {
                                 item.selectedSubItemUuid = sub.uuid;
                                 item.selectedSubItemName = sub.name;
-                                item.buyRate = sub.buyPrice ?? sub.sellPrice ?? item.buyRate;
+                                item.rate = sub.buyPrice ?? sub.sellPrice ?? item.rate;
                               });
                               _qtyController.text = '1';
-                              _triggerChanged(qty: 1.0, exclRate: item.buyRate);
-                              widget.onChanged();
+                              _triggerChanged(qty: 1.0, exclRate: item.rate);
                             }
                           },
                         ),
@@ -1633,18 +1632,17 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                   VariantDropdownWidget(
-                    item: item,
+                    item: item.item.value ?? Item(),
                     selectedSubItemUuid: item.selectedSubItemUuid,
                     onChanged: (sub) {
                       if (sub != null) {
                         setState(() {
                           item.selectedSubItemUuid = sub.uuid;
                           item.selectedSubItemName = sub.name;
-                          item.buyRate = sub.buyPrice ?? sub.sellPrice ?? item.buyRate;
+                          item.rate = sub.buyPrice ?? sub.sellPrice ?? item.rate;
                         });
                         _qtyController.text = '1';
-                        _triggerChanged(qty: 1.0, exclRate: item.buyRate);
-                        widget.onChanged();
+                        _triggerChanged(qty: 1.0, exclRate: item.rate);
                       }
                     },
                   ),
