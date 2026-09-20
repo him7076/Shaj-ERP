@@ -23,7 +23,7 @@ class TaskNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> addTask(Task task) async {
     state = const AsyncValue.loading();
     try {
-      await _repository.insert(task);
+      await _repository.create(task);
       _ref.invalidate(taskListProvider);
       state = const AsyncValue.data(null);
     } catch (e, st) {

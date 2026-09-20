@@ -26,6 +26,7 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_item_collectio
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
@@ -153,7 +154,7 @@ class SyncService {
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
       'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-      'StockAdjustment', 'WhatsAppMapping',
+      'StockAdjustment', 'WhatsAppMapping', 'Task',
     ];
     for (final et in allEntityTypes) {
       await _prefs.remove('last_cloud_sync_timestamp_${firmId}_$et');
@@ -448,7 +449,7 @@ class SyncService {
         'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
         'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
         'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-        'StockAdjustment', 'WhatsAppMapping',
+        'StockAdjustment', 'WhatsAppMapping', 'Task',
       ];
       for (final et in allEntityTypes) {
         // Clear both old non-firm-specific keys AND new firm-specific keys
@@ -591,6 +592,7 @@ class SyncService {
     await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<OrderItem>((o, l) => forceAll ? isar.orderItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orderItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'OrderItem', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (e) => e.uuid, (e) => e.id);
   }
 
   /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
@@ -605,7 +607,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task'
     ];
 
     for (var entityType in entityTypes) {
@@ -684,7 +686,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task'
     ];
 
     for (var entityType in entityTypes) {
@@ -894,6 +896,7 @@ class SyncService {
           case 'DebitNoteItem': entity = await isar.debitNoteItems.get(entityId); break;
           case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
           case 'WhatsAppMapping': entity = await isar.whatsAppMappings.get(entityId); break;
+          case 'Task': entity = await isar.tasks.get(entityId); break;
         }
 
         if (entity == null && queueItem.operation != 'Delete') {
@@ -1001,6 +1004,7 @@ class SyncService {
                 case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
                 case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
                 case 'WhatsAppMapping': await isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
+                case 'Task': await isar.tasks.put(entity as Task); break;
               }
             }
           });
@@ -1038,7 +1042,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'Invoice', 'Settings', 'User',
       'Purchase', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
-      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping'
+      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping', 'Task'
     ];
     final activeFirmId = _dbService.activeFirmId;
     final companyId = _firebaseService.companyId;
@@ -1167,6 +1171,7 @@ class SyncService {
               case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
               case 'WhatsAppMapping': localRecord = await isar.whatsAppMappings.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Task': localRecord = await isar.tasks.filter().uuidEqualTo(uuid).findFirst(); break;
             }
 
             if (localRecord != null) {
@@ -1255,7 +1260,6 @@ class SyncService {
     }
   }
 
-  /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
   /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
   /// with their respective parent documents by UUID/ID in local DB.
   Future<void> _relinkAllRelations() async {
@@ -1645,6 +1649,7 @@ class SyncService {
         case 'Expense': return await isar.expenses.filter().idGreaterThan(-1).count();
         case 'ExpenseItem': return await isar.collection<ExpenseItem>().count();
         case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
+        case 'Task': return await isar.tasks.filter().idGreaterThan(-1).count();
         default: return 0;
       }
     } catch (_) {
@@ -1683,6 +1688,9 @@ class SyncService {
         case 'Transaction':
           final r = await isar.transactions.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
           return r?.updatedAt;
+        case 'Task':
+          final r = await isar.tasks.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
       }
     } catch (_) {}
     return null;
@@ -1714,6 +1722,7 @@ class SyncService {
       case 'DebitNoteItem': return 'debit_note_items';
       case 'StockAdjustment': return 'stock_adjustments';
       case 'WhatsAppMapping': return 'whatsapp_mappings';
+      case 'Task': return 'tasks';
       default: return entityType.toLowerCase();
     }
   }
@@ -2292,6 +2301,16 @@ class SyncService {
           'rateUnit': e.rateUnit,
           'isTaxInclusive': e.isTaxInclusive,
         });
+      case 'Task':
+        final e = entity as Task;
+        return baseMap..addAll({
+          'title': e.title,
+          'description': e.description,
+          'status': e.status,
+          'priority': e.priority,
+          'dueDate': e.dueDate?.toUtc().toIso8601String(),
+          'completedAt': e.completedAt?.toUtc().toIso8601String(),
+        });
       default:
         return baseMap;
     }
@@ -2723,6 +2742,15 @@ class SyncService {
           ..pcsPerCarton = (data['pcsPerCarton'] as num?)?.toDouble()
           ..customRate = (data['customRate'] as num?)?.toDouble();
         break;
+      case 'Task':
+        entity = Task()
+          ..title = data['title'] as String?
+          ..description = data['description'] as String?
+          ..status = data['status'] as String?
+          ..priority = data['priority'] as String?
+          ..dueDate = data['dueDate'] != null ? DateTime.tryParse(data['dueDate']) : null
+          ..completedAt = data['completedAt'] != null ? DateTime.tryParse(data['completedAt']) : null;
+        break;
     }
 
     if (entity != null) {
@@ -2772,6 +2800,7 @@ class SyncService {
         case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
         case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
         case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
+        case 'Task': await _dbService.isar.tasks.put(entity as Task); break;
       }
     });
 
@@ -2862,6 +2891,7 @@ class SyncService {
         case 'DebitNoteItem': await _dbService.isar.debitNoteItems.put(entity as DebitNoteItem); break;
         case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
         case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
+        case 'Task': await _dbService.isar.tasks.put(entity as Task); break;
       }
     });
 
