@@ -408,8 +408,6 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       children: [
         _buildPartyAndHeaderCard(theme),
         const SizedBox(height: 16),
-        _buildProductSearchAndCatalog(theme),
-        const SizedBox(height: 16),
         _buildCartItemsTable(theme),
       ],
     );
@@ -654,120 +652,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     );
   }
 
-  Widget _buildProductSearchAndCatalog(ThemeData theme) {
-    final itemsAsync = ref.watch(filteredItemsProvider);
 
-    return Card(
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            left: BorderSide(color: Color(0xFF43A047), width: 5),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: itemsAsync.when(
-                    data: (items) {
-                      return Autocomplete<Item>(
-                        displayStringForOption: (item) => '${item.itemName ?? "Unnamed"} (Stock: ${item.currentStock?.toInt() ?? 0})',
-                        optionsBuilder: (textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return items.take(20);
-                          }
-                          final query = textEditingValue.text.toLowerCase();
-                          return items.where((item) {
-                            final name = item.itemName?.toLowerCase() ?? '';
-                            final code = item.itemCode?.toLowerCase() ?? '';
-                            final hsn = item.hsnCode?.toLowerCase() ?? '';
-                            return name.contains(query) || code.contains(query) || hsn.contains(query);
-                          });
-                        },
-                        optionsMaxHeight: 300,
-                        onSelected: (item) {
-                          _addItemLine(SelectedProductData(item));
-                          FocusScope.of(context).unfocus();
-                        },
-                        optionsViewBuilder: (context, onSelected, options) {
-                          return Align(
-                            alignment: Alignment.topLeft,
-                            child: Material(
-                              elevation: 6,
-                              borderRadius: BorderRadius.circular(12),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
-                                child: ListView.builder(
-                                  padding: EdgeInsets.zero,
-                                  shrinkWrap: true,
-                                  itemCount: options.length,
-                                  itemBuilder: (context, index) {
-                                    final item = options.elementAt(index);
-                                    return ListTile(
-                                      dense: true,
-                                      leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
-                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                      subtitle: Text(
-                                        'Code: ${item.itemCode ?? "N/A"} | Buy: ₹${item.buyRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
-                                        style: const TextStyle(fontSize: 11),
-                                      ),
-                                      onTap: () => onSelected(item),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                          return TextField(
-                            controller: controller,
-                            focusNode: focusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Type product name to add...',
-                              prefixIcon: Icon(Icons.search),
-                              border: OutlineInputBorder(),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (e, _) => Text('Error loading products: $e'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filledTonal(
-                  icon: const Icon(Icons.add_shopping_cart_rounded),
-                  tooltip: 'Search & Pick Item from Catalog',
-                  onPressed: () async {
-                    final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
-                    if (selectedItem != null) {
-                      _addItemLine(selectedItem);
-                      ref.invalidate(filteredItemsProvider);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      ),
-    );
-  }
 
   Widget _buildCartItemsTable(ThemeData theme) {
     if (_draftItems.isEmpty) {
@@ -785,6 +670,47 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                 Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey),
                 SizedBox(height: 12),
                 Text('No product lines added yet.', style: TextStyle(color: Colors.grey)),
+                SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
+                        if (selectedItem != null) {
+                          _addItemLine(selectedItem);
+                          ref.invalidate(filteredItemsProvider);
+                        }
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                      label: const Text('Add Item'),
+                      style: ElevatedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true, isPurchase: true);
+                          if (selectedItem != null) {
+                            _addItemLine(selectedItem);
+                            ref.invalidate(filteredItemsProvider);
+                          }
+                        },
+                        icon: const Icon(Icons.extension_rounded, size: 18),
+                        label: const Text('Add Bundle'),
+                        style: ElevatedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: Colors.orange.shade100,
+                          foregroundColor: Colors.orange.shade900,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -848,21 +774,49 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                ),
              ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
-                if (selectedItem != null) {
-                  _addItemLine(selectedItem);
-                  ref.invalidate(filteredItemsProvider);
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                side: BorderSide(color: theme.colorScheme.primary),
-              ),
-              icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-              label: const Text('+ Add Another Item from Catalog', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
+                      if (selectedItem != null) {
+                        _addItemLine(selectedItem);
+                        ref.invalidate(filteredItemsProvider);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: BorderSide(color: theme.colorScheme.primary),
+                    ),
+                    icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                    label: const Text('Add Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                ),
+                if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true, isPurchase: true);
+                        if (selectedItem != null) {
+                          _addItemLine(selectedItem);
+                          ref.invalidate(filteredItemsProvider);
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        side: BorderSide(color: Colors.orange.shade700),
+                        foregroundColor: Colors.orange.shade900,
+                      ),
+                      icon: const Icon(Icons.extension_rounded, size: 18),
+                      label: const Text('Add Bundle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

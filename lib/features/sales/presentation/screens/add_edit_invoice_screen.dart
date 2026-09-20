@@ -579,6 +579,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..quantity = cartItem.quantity
           ..freeQuantity = cartItem.freeQuantity
           ..rate = cartItem.rate
+          ..buyRate = cartItem.buyRate
           ..discount = cartItem.discountAmount
           ..taxableAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
           ..gstRate = cartItem.gstPercent
@@ -706,8 +707,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildPartyAndHeaderCard(theme),
-              const SizedBox(height: 16),
-              _buildProductSearchAndCatalog(theme),
               const SizedBox(height: 16),
               _buildCartItemsTable(theme, cart),
             ],
@@ -1230,76 +1229,6 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     );
   }
 
-  Widget _buildProductSearchAndCatalog(ThemeData theme) {
-    final itemsAsync = ref.watch(filteredItemsProvider);
-
-    return Card(
-      elevation: 0,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Container(
-        decoration: const BoxDecoration(
-          border: Border(
-            left: BorderSide(color: Color(0xFF43A047), width: 5),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.add_shopping_cart_rounded),
-                    label: const Text('Add Item'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () async {
-                      final selectedItem = await ItemSearchPickerModal.show(context);
-                      if (selectedItem != null) {
-                        await _handleItemAdded(selectedItem);
-                      }
-                    },
-                  ),
-                ),
-                if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.extension_rounded),
-                      label: const Text('Add Bundle'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.orange.shade100,
-                        foregroundColor: Colors.orange.shade900,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () async {
-                        final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
-                        if (selectedItem != null) {
-                          await _handleItemAdded(selectedItem);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-      ),
-    );
-  }
 
   Widget _buildCartItemsTable(ThemeData theme, InvoiceCart cart) {
     if (cart.items.isEmpty) {
@@ -1317,6 +1246,45 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey),
                 SizedBox(height: 12),
                 Text('No product lines added yet.', style: TextStyle(color: Colors.grey)),
+                SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final selectedItem = await ItemSearchPickerModal.show(context);
+                        if (selectedItem != null) {
+                          await _handleItemAdded(selectedItem);
+                        }
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                      label: const Text('Add Item'),
+                      style: ElevatedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
+                          if (selectedItem != null) {
+                            await _handleItemAdded(selectedItem);
+                          }
+                        },
+                        icon: const Icon(Icons.extension_rounded, size: 18),
+                        label: const Text('Add Bundle'),
+                        style: ElevatedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          backgroundColor: Colors.orange.shade100,
+                          foregroundColor: Colors.orange.shade900,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -1359,20 +1327,47 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                },
              ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final selectedItem = await ItemSearchPickerModal.show(context);
-                if (selectedItem != null) {
-                  await _handleItemAdded(selectedItem);
-                }
-              },
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                side: BorderSide(color: theme.colorScheme.primary),
-              ),
-              icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-              label: const Text('+ Add Another Item from Catalog', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final selectedItem = await ItemSearchPickerModal.show(context);
+                      if (selectedItem != null) {
+                        await _handleItemAdded(selectedItem);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: BorderSide(color: theme.colorScheme.primary),
+                    ),
+                    icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+                    label: const Text('Add Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  ),
+                ),
+                if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
+                        if (selectedItem != null) {
+                          await _handleItemAdded(selectedItem);
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        side: BorderSide(color: Colors.orange.shade700),
+                        foregroundColor: Colors.orange.shade900,
+                      ),
+                      icon: const Icon(Icons.extension_rounded, size: 18),
+                      label: const Text('Add Bundle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -1397,6 +1392,17 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         final cgst = isLocal ? totalGst / 2.0 : 0.0;
         final sgst = isLocal ? totalGst / 2.0 : 0.0;
         final igst = isLocal ? 0.0 : totalGst;
+
+        // Margin Calculation
+        final prefs = ref.watch(sharedPreferencesProvider);
+        final enableBuyPrice = prefs.getBool('enable_sales_buy_price') ?? false;
+        double totalBuyCost = 0.0;
+        if (enableBuyPrice) {
+          for (var item in cart.items) {
+            totalBuyCost += (item.buyRate ?? 0.0) * item.quantity;
+          }
+        }
+        final double grossMargin = (totals['subtotal'] ?? 0.0) - totalBuyCost;
 
         // Dynamic Tax Slab Calculation
         final gstRates = cart.items.map((i) => i.gstPercent).toSet().toList();
@@ -1474,6 +1480,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
             _buildSummaryRow('GRAND TOTAL', totals['grandTotal']!, theme, isBold: true),
             _buildSummaryRow('Pending Outstanding', totals['pendingAmount']!, theme, isPending: true),
+            
+            if (enableBuyPrice) ...[
+              const Divider(),
+              _buildSummaryRow('Est. Gross Margin', grossMargin, theme, isBold: true),
+            ],
           ],
         );
       },
@@ -1526,6 +1537,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
   late TextEditingController _freeQtyController;
   late TextEditingController _rateExclController;
   late TextEditingController _rateInclController;
+  late TextEditingController _buyRateController;
   late TextEditingController _discPercentController;
   late TextEditingController _discAmountController;
   late TextEditingController _batchController;
@@ -1552,6 +1564,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _freeQtyController = TextEditingController(text: item.freeQuantity.toInt().toString());
     _rateExclController = TextEditingController(text: rateExcl.toStringAsFixed(2));
     _rateInclController = TextEditingController(text: rateIncl.toStringAsFixed(2));
+    _buyRateController = TextEditingController(text: (item.buyRate ?? 0.0).toStringAsFixed(2));
     _discPercentController = TextEditingController(text: item.discountPercent.toString());
     _discAmountController = TextEditingController(text: item.discountAmount.toString());
     _batchController = TextEditingController(text: item.batchNumber ?? '');
@@ -1579,6 +1592,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _updateIfChanged(_freeQtyController, item.freeQuantity.toInt().toString());
     _updateIfChanged(_rateExclController, rateExcl.toStringAsFixed(2));
     _updateIfChanged(_rateInclController, rateIncl.toStringAsFixed(2));
+    _updateIfChanged(_buyRateController, (item.buyRate ?? 0.0).toStringAsFixed(2));
     _updateIfChanged(_discPercentController, item.discountPercent.toString());
     _updateIfChanged(_discAmountController, item.discountAmount.toString());
   }
@@ -1595,6 +1609,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _freeQtyController.dispose();
     _rateExclController.dispose();
     _rateInclController.dispose();
+    _buyRateController.dispose();
     _discPercentController.dispose();
     _discAmountController.dispose();
     _batchController.dispose();
@@ -1611,10 +1626,18 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     List<String> uuids = List.from(item.bundleComponentUuids!);
     List<double> quantities = List.from(item.bundleComponentQuantities ?? []);
     List<String> units = List.from(item.bundleComponentUnits ?? []);
+    List<double> rates = List.from(item.bundleComponentRates ?? []);
+    List<double> buyRates = List.from(item.bundleComponentBuyRates ?? []);
+    List<double> gstRates = List.from(item.bundleComponentGstPercents ?? []);
+    List<String> descriptions = List.from(item.bundleComponentDescriptions ?? []);
     
     // Ensure lists match length
     while (quantities.length < uuids.length) quantities.add(1.0);
     while (units.length < uuids.length) units.add('PCS');
+    while (rates.length < uuids.length) rates.add(0.0);
+    while (buyRates.length < uuids.length) buyRates.add(0.0);
+    while (gstRates.length < uuids.length) gstRates.add(0.0);
+    while (descriptions.length < uuids.length) descriptions.add('');
 
     final itemRepo = ref.read(itemRepositoryProvider);
     final allItems = await itemRepo.getAll();
@@ -1652,55 +1675,123 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                           if (cItem == null) return const SizedBox.shrink();
                           
                           return Card(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            child: ListTile(
-                              title: Text(cItem.itemName ?? 'Unknown'),
-                              subtitle: Text('Default Unit: ${cItem.primaryUnitName ?? "PCS"}'),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SizedBox(
-                                    width: 80,
-                                    child: TextFormField(
-                                      initialValue: quantities[index].toString(),
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(labelText: 'Qty', isDense: true),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          cItem.itemName ?? 'Unknown',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () {
+                                          setSheetState(() {
+                                            uuids.removeAt(index);
+                                            quantities.removeAt(index);
+                                            units.removeAt(index);
+                                            rates.removeAt(index);
+                                            buyRates.removeAt(index);
+                                            gstRates.removeAt(index);
+                                            descriptions.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          initialValue: quantities[index].toString(),
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(labelText: 'Qty', border: OutlineInputBorder(), isDense: true),
+                                          onChanged: (val) {
+                                            final parsed = double.tryParse(val);
+                                            if (parsed != null) quantities[index] = parsed;
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: DropdownButtonFormField<String>(
+                                          value: units[index],
+                                          isExpanded: true,
+                                          decoration: const InputDecoration(labelText: 'Unit', border: OutlineInputBorder(), isDense: true),
+                                          items: [
+                                            if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) cItem.primaryUnitName!,
+                                            if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) cItem.secondaryUnit!,
+                                            if (cItem.tertiaryUnit != null && cItem.tertiaryUnit!.isNotEmpty) cItem.tertiaryUnit!,
+                                            if (cItem.primaryUnitName == null || cItem.primaryUnitName!.isEmpty) 'PCS',
+                                          ].toSet().map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
+                                          onChanged: (val) {
+                                            if (val != null) {
+                                              units[index] = val;
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          initialValue: rates[index].toString(),
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(labelText: 'Selling Rate', border: OutlineInputBorder(), isDense: true),
+                                          onChanged: (val) {
+                                            final parsed = double.tryParse(val);
+                                            if (parsed != null) rates[index] = parsed;
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: TextFormField(
+                                          initialValue: gstRates[index].toString(),
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(labelText: 'GST %', border: OutlineInputBorder(), isDense: true),
+                                          onChanged: (val) {
+                                            final parsed = double.tryParse(val);
+                                            if (parsed != null) gstRates[index] = parsed;
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (ref.watch(sharedPreferencesProvider).getBool('enable_sales_buy_price') ?? false)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8.0),
+                                      child: TextFormField(
+                                        initialValue: buyRates[index].toString(),
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(labelText: 'Buy Price', border: OutlineInputBorder(), isDense: true),
+                                        onChanged: (val) {
+                                          final parsed = double.tryParse(val);
+                                          if (parsed != null) buyRates[index] = parsed;
+                                        },
+                                      ),
+                                    ),
+                                  if (ref.watch(sharedPreferencesProvider).getBool('enable_item_descriptions') ?? false)
+                                    TextFormField(
+                                      initialValue: descriptions[index],
+                                      maxLines: 2,
+                                      decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder(), isDense: true),
                                       onChanged: (val) {
-                                        final parsed = double.tryParse(val);
-                                        if (parsed != null) quantities[index] = parsed;
+                                        descriptions[index] = val;
                                       },
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 100,
-                                    child: DropdownButtonFormField<String>(
-                                      value: units[index],
-                                      isExpanded: true,
-                                      decoration: const InputDecoration(labelText: 'Unit', isDense: true),
-                                      items: [
-                                        if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) cItem.primaryUnitName!,
-                                        if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) cItem.secondaryUnit!,
-                                        if (cItem.tertiaryUnit != null && cItem.tertiaryUnit!.isNotEmpty) cItem.tertiaryUnit!,
-                                        if (cItem.primaryUnitName == null || cItem.primaryUnitName!.isEmpty) 'PCS',
-                                      ].toSet().map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
-                                      onChanged: (val) {
-                                        if (val != null) {
-                                          units[index] = val;
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      setSheetState(() {
-                                        uuids.removeAt(index);
-                                        quantities.removeAt(index);
-                                        units.removeAt(index);
-                                      });
-                                    },
-                                  ),
                                 ],
                               ),
                             ),
@@ -1720,6 +1811,10 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                               uuids.add(selected.item.uuid!);
                               quantities.add(1.0);
                               units.add(selected.item.primaryUnitName ?? 'PCS');
+                              rates.add(selected.item.sellRate ?? 0.0);
+                              buyRates.add(selected.item.buyRate ?? 0.0);
+                              gstRates.add(selected.item.gstRate ?? 18.0);
+                              descriptions.add(selected.item.description ?? '');
                             });
                           }
                         }
@@ -1734,6 +1829,10 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                           bundleComponentUuids: uuids,
                           bundleComponentQuantities: quantities,
                           bundleComponentUnits: units,
+                          bundleComponentRates: rates,
+                          bundleComponentBuyRates: buyRates,
+                          bundleComponentGstPercents: gstRates,
+                          bundleComponentDescriptions: descriptions,
                         );
                         Navigator.pop(ctx);
                       },
@@ -1753,6 +1852,8 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final bool enableBuyPrice = prefs.getBool('enable_sales_buy_price') ?? false;
     final item = widget.cartItem;
     final primaryUnit = item.item.primaryUnitName ?? item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
     final secondaryUnit = item.item.secondaryUnit;
@@ -1926,6 +2027,31 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                   ),
                 ],
               ),
+              if (enableBuyPrice) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _buyRateController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Buy Price (Cost)',
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (val) {
+                          final double? parsed = double.tryParse(val);
+                          if (parsed != null) {
+                            ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, buyRate: parsed);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 10),
 
               // Rate Input with Tax Mode & Unit Dropdowns
@@ -2367,6 +2493,22 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                 child: Text('${item.gstPercent.toInt()}%'),
               ),
             ),
+            if (enableBuyPrice) ...[
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: _buyRateController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Buy Price', isDense: true, border: OutlineInputBorder()),
+                  onChanged: (val) {
+                    final double? parsed = double.tryParse(val);
+                    if (parsed != null) {
+                      ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, buyRate: parsed);
+                    }
+                  },
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 8),

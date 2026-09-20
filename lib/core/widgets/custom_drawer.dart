@@ -344,6 +344,14 @@ class CustomDrawer extends ConsumerWidget {
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
+                    icon: Icons.domain_rounded,
+                    label: 'Fixed Assets',
+                    routePath: '/fixed-assets',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
                     icon: Icons.arrow_circle_down_rounded,
                     label: 'Receipts (Payment In)',
                     routePath: '/receipts',
@@ -457,6 +465,15 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/other-features',
                     currentPath: location,
                   ),
+                  if (prefs.getBool('enable_personal_vault') ?? false)
+                    _buildDrawerItem(
+                      context: context,
+                      ref: ref,
+                      icon: Icons.security,
+                      label: 'Personal Vault',
+                      routePath: '/vault',
+                      currentPath: location,
+                    ),
                   _buildDrawerHeader('REPORTS & SYSTEM'),
                   _buildDrawerItem(
                     context: context,
@@ -607,6 +624,7 @@ class CustomDrawer extends ConsumerWidget {
       case '/sales': return const Color(0xFF10B981);
       case '/purchases': return const Color(0xFF6366F1);
       case '/expenses': return const Color(0xFFF43F5E);
+      case '/fixed-assets': return const Color(0xFFEAB308);
       case '/receipts': return const Color(0xFF10B981);
       case '/payments': return const Color(0xFFF43F5E);
       case '/credit-notes': return const Color(0xFF6366F1);
@@ -624,6 +642,7 @@ class CustomDrawer extends ConsumerWidget {
       case '/sync-center': return const Color(0xFF10B981);
       case '/backup': return const Color(0xFF8B5CF6);
       case '/other-features': return const Color(0xFFEAB308);
+      case '/vault': return Colors.blueGrey;
       case '/settings': return const Color(0xFF64748B);
       default: return const Color(0xFF6366F1);
     }

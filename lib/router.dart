@@ -31,6 +31,8 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/bulk_item
 import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/tasks_screen.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_task_screen.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/screens/vault_screen.dart';
+import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/fixed_assets_dashboard_screen.dart';
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
@@ -281,6 +283,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               final id = state.pathParameters['id'] ?? '';
               return AddEditTaskScreen(taskId: int.tryParse(id));
             },
+          ),
+          GoRoute(
+            path: '/vault',
+            name: 'vault',
+            builder: (context, state) => const VaultScreen(),
+          ),
+          GoRoute(
+            path: '/fixed-assets',
+            name: 'fixed-assets',
+            builder: (context, state) => const FixedAssetsDashboardScreen(),
           ),
         ],
       ),

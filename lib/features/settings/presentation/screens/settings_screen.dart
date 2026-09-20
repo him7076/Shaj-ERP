@@ -234,6 +234,201 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
 
+            // Personal Vault Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.blueGrey.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.lock_rounded, color: Colors.blueGrey, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Personal Vault',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                        StatefulBuilder(
+                          builder: (context, setState) {
+                            final bool isVaultEnabled = prefs.getBool('enable_personal_vault') ?? false;
+                            return Switch.adaptive(
+                              value: isVaultEnabled,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_personal_vault', val);
+                                setState(() {});
+                                // Also rebuild parent to trigger sidebar refresh if needed
+                                this.setState(() {}); 
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    const Text(
+                      'Store private notes and sensitive data locally on this device.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 16),
+                    StatefulBuilder(
+                      builder: (context, setState) {
+                        final bool isVaultEnabled = prefs.getBool('enable_personal_vault') ?? false;
+                        if (!isVaultEnabled) return const SizedBox.shrink();
+                        return SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueGrey,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.security, size: 18),
+                            label: const Text('Open Personal Vault', style: TextStyle(fontWeight: FontWeight.bold)),
+                            onPressed: () => context.go('/vault'),
+                          ),
+                        );
+                      }
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Product Description System Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.teal.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.description_rounded, color: Colors.teal, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Product Descriptions',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                        StatefulBuilder(
+                          builder: (context, setState) {
+                            final bool isDescriptionEnabled = prefs.getBool('enable_item_descriptions') ?? false;
+                            return Switch.adaptive(
+                              value: isDescriptionEnabled,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_item_descriptions', val);
+                                setState(() {});
+                                this.setState(() {}); 
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    const Text(
+                      'Enable detailed descriptions and notes for items, goods, and bundles.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Sales Form Buy Price System Card
+            Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.price_change_rounded, color: Colors.orange, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Sales Form Manage Buy Price',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                        StatefulBuilder(
+                          builder: (context, setState) {
+                            final bool isBuyPriceEnabled = prefs.getBool('enable_sales_buy_price') ?? false;
+                            return Switch.adaptive(
+                              value: isBuyPriceEnabled,
+                              onChanged: (val) async {
+                                await prefs.setBool('enable_sales_buy_price', val);
+                                setState(() {});
+                                this.setState(() {}); 
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    const Text(
+                      'Enable capturing and adjusting buy price directly during sales invoice entry for accurate margin calculations.',
+                      style: TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Company / Firm Manager Card
             Card(

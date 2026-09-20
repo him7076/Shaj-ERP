@@ -30,6 +30,7 @@ class InvoiceItem implements IsarModel {
   double? freeQuantity;
   String? unit;
   double? rate;
+  double? buyRate; // Added for margin tracking
   double? discount; // discount amount
 
   double? taxableAmount;
@@ -47,6 +48,10 @@ class InvoiceItem implements IsarModel {
   List<String>? bundleComponentUuids;
   List<double>? bundleComponentQuantities;
   List<String>? bundleComponentUnits;
+  List<double>? bundleComponentRates;
+  List<double>? bundleComponentBuyRates;
+  List<double>? bundleComponentGstPercents;
+  List<String>? bundleComponentDescriptions;
 
   // Isar Links
   final invoice = IsarLink<Invoice>();

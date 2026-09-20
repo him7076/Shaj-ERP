@@ -104,11 +104,21 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       }
     }
 
+    // Also capture buy rate
+    double finalBuyRate = item.buyRate ?? 0.0;
+    if (selectedSubItemUuid != null && item.subItems != null) {
+      final sub = item.subItems!.where((s) => s.uuid == selectedSubItemUuid).firstOrNull;
+      if (sub != null && sub.buyPrice != null) {
+        finalBuyRate = sub.buyPrice!;
+      }
+    }
+
     final newItem = CartItemState(
       item: item,
       quantity: qty,
       unit: defaultUnit,
       rate: finalRate,
+      buyRate: finalBuyRate,
       gstPercent: gst,
       selectedSubItemUuid: selectedSubItemUuid,
       selectedSubItemName: selectedSubItemName,
@@ -126,6 +136,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     double? freeQuantity,
     String? unit,
     double? rate,
+    double? buyRate,
     double? discountPercent,
     double? discountAmount,
     String? batchNumber,
@@ -160,6 +171,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       freeQuantity: freeQuantity,
       unit: unit,
       rate: rate,
+      buyRate: buyRate,
       discountPercent: finalDiscPercent,
       discountAmount: finalDiscAmount,
       batchNumber: batchNumber,
@@ -184,6 +196,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     double? freeQuantity,
     String? unit,
     double? rate,
+    double? buyRate,
     double? discountPercent,
     double? discountAmount,
   }) {
@@ -195,6 +208,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       freeQuantity: freeQuantity,
       unit: unit,
       rate: rate,
+      buyRate: buyRate,
       discountPercent: discountPercent,
       discountAmount: discountAmount,
     );

@@ -38,6 +38,7 @@ class CartItemState {
   final double freeQuantity;
   final String? unit;
   final double rate;
+  final double? buyRate; // For margin calculations
   final double discountPercent;
   final double discountAmount;
   final double gstPercent;
@@ -49,6 +50,10 @@ class CartItemState {
   final List<String>? bundleComponentUuids;
   final List<double>? bundleComponentQuantities;
   final List<String>? bundleComponentUnits;
+  final List<double>? bundleComponentRates;
+  final List<double>? bundleComponentBuyRates;
+  final List<double>? bundleComponentGstPercents;
+  final List<String>? bundleComponentDescriptions;
 
   const CartItemState({
     required this.item,
@@ -56,6 +61,7 @@ class CartItemState {
     this.freeQuantity = 0.0,
     this.unit,
     required this.rate,
+    this.buyRate,
     this.discountPercent = 0.0,
     this.discountAmount = 0.0,
     required this.gstPercent,
@@ -67,6 +73,10 @@ class CartItemState {
     this.bundleComponentUuids,
     this.bundleComponentQuantities,
     this.bundleComponentUnits,
+    this.bundleComponentRates,
+    this.bundleComponentBuyRates,
+    this.bundleComponentGstPercents,
+    this.bundleComponentDescriptions,
   });
 
   double calculateItemTotal(bool isGstInclusive) {
@@ -86,6 +96,7 @@ class CartItemState {
     double? freeQuantity,
     String? unit,
     double? rate,
+    double? buyRate,
     double? discountPercent,
     double? discountAmount,
     double? gstPercent,
@@ -97,6 +108,10 @@ class CartItemState {
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,
+    List<double>? bundleComponentRates,
+    List<double>? bundleComponentBuyRates,
+    List<double>? bundleComponentGstPercents,
+    List<String>? bundleComponentDescriptions,
   }) {
     return CartItemState(
       item: item,
@@ -104,6 +119,7 @@ class CartItemState {
       freeQuantity: freeQuantity ?? this.freeQuantity,
       unit: unit ?? this.unit,
       rate: rate ?? this.rate,
+      buyRate: buyRate ?? this.buyRate,
       discountPercent: discountPercent ?? this.discountPercent,
       discountAmount: discountAmount ?? this.discountAmount,
       gstPercent: gstPercent ?? this.gstPercent,
@@ -115,6 +131,10 @@ class CartItemState {
       bundleComponentUuids: bundleComponentUuids ?? this.bundleComponentUuids,
       bundleComponentQuantities: bundleComponentQuantities ?? this.bundleComponentQuantities,
       bundleComponentUnits: bundleComponentUnits ?? this.bundleComponentUnits,
+      bundleComponentRates: bundleComponentRates ?? this.bundleComponentRates,
+      bundleComponentBuyRates: bundleComponentBuyRates ?? this.bundleComponentBuyRates,
+      bundleComponentGstPercents: bundleComponentGstPercents ?? this.bundleComponentGstPercents,
+      bundleComponentDescriptions: bundleComponentDescriptions ?? this.bundleComponentDescriptions,
     );
   }
 }

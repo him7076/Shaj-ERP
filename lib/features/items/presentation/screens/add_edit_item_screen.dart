@@ -18,7 +18,8 @@ import 'package:business_sahaj_erp/core/services/hsn_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
-import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
+import 'package:business_sahaj_erp/core/widgets/sub_item_picker_modal.dart';
 
 class AddEditItemScreen extends ConsumerStatefulWidget {
   final String? itemUuid;
@@ -886,34 +887,66 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         if (_isBundle) ...[
           const Divider(),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Components', style: TextStyle(fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Add Component'),
-                onPressed: () async {
-                  final selected = await ItemSearchPickerModal.show(context);
-                  if (selected != null) {
-                    final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.item.id);
-                    if (!exists) {
-                      setState(() {
-                        _bundleComponents.add({
-                          'item': selected.item, 
-                          'qty': 1.0, 
-                          'unit': selected.item.primaryUnitName ?? 'PCS'
-                        });
+          const Text('Components', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 12),
+          
+          // Streamlined Add Component Flow using Searchable Dropdown
+          Consumer(
+            builder: (context, ref, child) {
+              final itemsList = ref.watch(itemsListProvider).valueOrNull ?? [];
+              return SearchableItemDropdown(
+                items: itemsList.where((i) => i.id != _editingItemId).toList(), // Prevent self-adding
+                labelText: 'Search and add component...',
+                onSelected: (selected) {
+                  final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.id);
+                  if (!exists) {
+                    setState(() {
+                      _bundleComponents.add({
+                        'item': selected, 
+                        'qty': 1.0, 
+                        'unit': selected.primaryUnitName ?? 'PCS'
                       });
-                    }
+                    });
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('${selected.itemName} is already in the bundle.')),
+                    );
                   }
                 },
-              ),
-            ],
+              );
+            },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           if (_bundleComponents.isEmpty)
-            const Text('No components added yet.', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.extension_off_rounded, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No components added yet.',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Search and select a product above to add it to this bundle.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ..._bundleComponents.asMap().entries.map((entry) {
             final idx = entry.key;
             final map = entry.value;
@@ -1480,6 +1513,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     AsyncValue<List<Brand>> brandsAsync,
   ) {
     final theme = Theme.of(context);
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final bool enableDescriptions = prefs.getBool('enable_item_descriptions') ?? false;
     return _buildSectionCard(
       context: context,
       title: 'Basic Information',
@@ -1603,16 +1638,18 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 error: (e, _) => const Icon(Icons.error),
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _descController,
-                decoration: const InputDecoration(
-                  labelText: 'Description',
-                  border: OutlineInputBorder(),
+            if (enableDescriptions) ...[
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _descController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],
@@ -2327,6 +2364,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
   }
 
   Widget _buildSpecsSection() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final bool enableDescriptions = prefs.getBool('enable_item_descriptions') ?? false;
+
     return _buildSectionCard(
       context: context,
       title: 'Physical Specs & Notes',
@@ -2359,15 +2399,17 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: _notesController,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Operational Notes / Custom Specs',
-            border: OutlineInputBorder(),
+        if (enableDescriptions) ...[
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _notesController,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Operational Notes / Custom Specs',
+              border: OutlineInputBorder(),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

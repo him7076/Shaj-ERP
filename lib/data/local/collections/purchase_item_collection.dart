@@ -40,6 +40,16 @@ class PurchaseItem implements IsarModel {
   String? expiryDate;
   String? mfgDate;
 
+  // Bundle Tracking
+  bool isBundle = false;
+  List<String>? bundleComponentUuids;
+  List<double>? bundleComponentQuantities;
+  List<String>? bundleComponentUnits;
+  List<double>? bundleComponentRates;
+  List<double>? bundleComponentBuyRates;
+  List<double>? bundleComponentGstPercents;
+  List<String>? bundleComponentDescriptions;
+
   // Isar Links
   final purchase = IsarLink<Purchase>();
   final item = IsarLink<Item>();
