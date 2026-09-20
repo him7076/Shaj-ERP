@@ -136,7 +136,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
 
             dbItem.currentStock = available - requested;
             // Append stock log to item notes
-            final log = '[${DateTime.now().toIso8601String().substring(0₹9)}] RESERVED: -$requested | Bal: ${dbItem.currentStock} | Order #${order.orderNumber}';
+            final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] RESERVED: -$requested | Bal: ${dbItem.currentStock} | Order #${order.orderNumber}';
             dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
             
             await isar.items.put(dbItem);
@@ -195,7 +195,7 @@ class OrderRepositoryImpl extends BaseIsarRepository<Order> implements OrderRepo
               final double qty = item.quantity ?? 0.0;
               dbItem.currentStock = (dbItem.currentStock ?? 0.0) + qty;
               
-              final log = '[${DateTime.now().toIso8601String().substring(0₹9)}] RESTORED: +$qty | Bal: ${dbItem.currentStock} | Cancel Order #${order.orderNumber}';
+              final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] RESTORED: +$qty | Bal: ${dbItem.currentStock} | Cancel Order #${order.orderNumber}';
               dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
               
               await isar.items.put(dbItem);

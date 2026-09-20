@@ -26,6 +26,7 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart' show ItemSearchPickerModal, SelectedProductData;
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
 import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
@@ -1797,11 +1798,40 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      item.item.itemName ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.item.itemName ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        VariantDropdownWidget(
+                          item: item.item,
+                          selectedSubItemUuid: item.selectedSubItemUuid,
+                          onChanged: (sub) {
+                            if (sub != null) {
+                              final newRate = sub.sellPrice ?? sub.buyPrice ?? item.rate;
+                              ref.read(invoiceCartProvider.notifier).updateItemAt(
+                                widget.index,
+                                selectedSubItemUuid: sub.uuid,
+                                selectedSubItemName: sub.name,
+                                rate: newRate,
+                                quantity: 1,
+                              );
+                              _qtyController.text = '1';
+                              if (widget.isGstInclusive) {
+                                _rateInclController.text = newRate.toStringAsFixed(2);
+                                _rateExclController.text = (newRate / (1 + item.gstPercent / 100)).toStringAsFixed(2);
+                              } else {
+                                _rateExclController.text = newRate.toStringAsFixed(2);
+                                _rateInclController.text = (newRate * (1 + item.gstPercent / 100)).toStringAsFixed(2);
+                              }
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   if (item.item.isBundle && (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false))
@@ -2128,9 +2158,38 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                item.item.itemName ?? '',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.item.itemName ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  VariantDropdownWidget(
+                    item: item.item,
+                    selectedSubItemUuid: item.selectedSubItemUuid,
+                    onChanged: (sub) {
+                      if (sub != null) {
+                        final newRate = sub.sellPrice ?? sub.buyPrice ?? item.rate;
+                        ref.read(invoiceCartProvider.notifier).updateItemAt(
+                          widget.index,
+                          selectedSubItemUuid: sub.uuid,
+                          selectedSubItemName: sub.name,
+                          rate: newRate,
+                          quantity: 1,
+                        );
+                        _qtyController.text = '1';
+                        if (widget.isGstInclusive) {
+                          _rateInclController.text = newRate.toStringAsFixed(2);
+                          _rateExclController.text = (newRate / (1 + item.gstPercent / 100)).toStringAsFixed(2);
+                        } else {
+                          _rateExclController.text = newRate.toStringAsFixed(2);
+                          _rateInclController.text = (newRate * (1 + item.gstPercent / 100)).toStringAsFixed(2);
+                        }
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
             if (item.item.isBundle && (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false))

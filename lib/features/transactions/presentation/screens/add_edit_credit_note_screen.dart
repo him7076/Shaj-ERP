@@ -20,6 +20,8 @@ import 'package:business_sahaj_erp/features/reports/presentation/providers/repor
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
+import 'package:uuid/uuid.dart';
 import 'package:uuid/uuid.dart';
 class AddEditCreditNoteScreen extends ConsumerStatefulWidget {
   final String? parentCreditNoteUuid;
@@ -1172,11 +1174,32 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      item.itemName ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.itemName ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        VariantDropdownWidget(
+                          item: item,
+                          selectedSubItemUuid: item.selectedSubItemUuid,
+                          onChanged: (sub) {
+                            if (sub != null) {
+                              setState(() {
+                                item.selectedSubItemUuid = sub.uuid;
+                                item.selectedSubItemName = sub.name;
+                                item.buyRate = sub.buyPrice ?? sub.sellPrice ?? item.buyRate;
+                              });
+                              _qtyController.text = '1';
+                              _triggerChanged(qty: 1.0, exclRate: item.buyRate);
+                              widget.onChanged();
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   IconButton(
@@ -1458,9 +1481,30 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                item.itemName ?? '',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.itemName ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                  ),
+                  VariantDropdownWidget(
+                    item: item,
+                    selectedSubItemUuid: item.selectedSubItemUuid,
+                    onChanged: (sub) {
+                      if (sub != null) {
+                        setState(() {
+                          item.selectedSubItemUuid = sub.uuid;
+                          item.selectedSubItemName = sub.name;
+                          item.buyRate = sub.buyPrice ?? sub.sellPrice ?? item.buyRate;
+                        });
+                        _qtyController.text = '1';
+                        _triggerChanged(qty: 1.0, exclRate: item.buyRate);
+                        widget.onChanged();
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
             IconButton(

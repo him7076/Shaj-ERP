@@ -285,7 +285,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                   }
                   
                   cItem.currentStock = compAvailable - compRequested;
-                  final log = '[${DateTime.now().toIso8601String().substring(0₹9)}] BUNDLE SOLD: -$compRequested | Bal: ${cItem.currentStock} | Invoice #${invoice.invoiceNumber}';
+                  final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] BUNDLE SOLD: -$compRequested | Bal: ${cItem.currentStock} | Invoice #${invoice.invoiceNumber}';
                   cItem.notes = cItem.notes == null || cItem.notes!.isEmpty ? log : '$log\n${cItem.notes}';
                   modifiedItems[cItem.id] = cItem;
 
@@ -322,7 +322,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
               dbItem.currentStock = available - requestedInPrimaryUnit;
   
               // Log stock movement
-              final log = '[${DateTime.now().toIso8601String().substring(0₹9)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
+              final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] SOLD: -$requestedInPrimaryUnit | Bal: ${dbItem.currentStock} | Invoice #${invoice.invoiceNumber}';
               dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
               modifiedItems[dbItem.id] = dbItem;
             }
@@ -510,7 +510,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
                  }
             } else {
               dbItem.currentStock = (dbItem.currentStock ?? 0.0) + restoredQty;
-              final log = '[${DateTime.now().toIso8601String().substring(0₹9)}] RESTORED: +$restoredQty | Bal: ${dbItem.currentStock} | Cancel Invoice #${invoice.invoiceNumber}';
+              final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] RESTORED: +$restoredQty | Bal: ${dbItem.currentStock} | Cancel Invoice #${invoice.invoiceNumber}';
               dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
               modifiedItems[dbItem.id] = dbItem;
             }
@@ -743,7 +743,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
                 dbItem.currentStock = available - requested;
 
-                final log = '[${DateTime.now().toIso8601String().substring(0₹9)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Convert Order #${order.orderNumber}';
+                final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] SOLD: -$requested | Bal: ${dbItem.currentStock} | Convert Order #${order.orderNumber}';
                 dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
                 
                 modifiedItems[dbItem.id] = dbItem;

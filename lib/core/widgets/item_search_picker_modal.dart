@@ -48,13 +48,8 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
   }
 
   Future<void> _handleItemSelection(Item item) async {
-    SubItem? selectedSubItem;
-    if (item.hasSubItems && item.subItems != null && item.subItems!.isNotEmpty) {
-      selectedSubItem = await SubItemPickerModal.show(context, item);
-      if (selectedSubItem == null) return; // User cancelled sub-item selection
-    }
     if (mounted) {
-      Navigator.pop(context, SelectedProductData(item, selectedSubItem));
+      Navigator.pop(context, SelectedProductData(item, null));
     }
   }
 
