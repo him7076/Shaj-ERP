@@ -109,9 +109,15 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
         managedItem.category.value = entity.category.value;
         managedItem.unit.value = entity.unit.value;
         managedItem.brand.value = entity.brand.value;
-        await managedItem.category.save();
-        await managedItem.unit.save();
-        await managedItem.brand.save();
+        try {
+          await managedItem.category.save();
+          await managedItem.unit.save();
+          await managedItem.brand.save();
+        } catch (e) {
+          if (!e.toString().contains('managed by Isar')) {
+            rethrow;
+          }
+        }
       }
     });
   }
@@ -125,9 +131,15 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
         managedItem.category.value = entity.category.value;
         managedItem.unit.value = entity.unit.value;
         managedItem.brand.value = entity.brand.value;
-        await managedItem.category.save();
-        await managedItem.unit.save();
-        await managedItem.brand.save();
+        try {
+          await managedItem.category.save();
+          await managedItem.unit.save();
+          await managedItem.brand.save();
+        } catch (e) {
+          if (!e.toString().contains('managed by Isar')) {
+            rethrow;
+          }
+        }
       }
     });
   }
