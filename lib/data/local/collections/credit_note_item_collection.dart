@@ -17,6 +17,8 @@ class CreditNoteItem implements IsarModel {
   int? itemId;
   String? itemName;
   String? hsnCode;
+  String? selectedSubItemUuid;
+  String? selectedSubItemName;
 
   // Helper field to track parent for Web mock queries
   int? parentCreditNoteId;

@@ -17,6 +17,8 @@ class OrderItem implements IsarModel {
   int? itemId;
   String? itemName;
   String? hsnCode;
+  String? selectedSubItemUuid;
+  String? selectedSubItemName;
 
   int? orderId;
   @Index()

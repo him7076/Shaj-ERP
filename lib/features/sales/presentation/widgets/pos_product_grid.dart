@@ -7,6 +7,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/core/widgets/sub_item_picker_modal.dart';
 
 class POSProductGrid extends ConsumerStatefulWidget {
   const POSProductGrid({Key? key}) : super(key: key);
@@ -308,13 +309,25 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                       const SizedBox(width: 8),
                       // Add Button
                       InkWell(
-                        onTap: () {
+                        onTap: () async {
                           final qty = _itemQuantities[item.id] ?? 1.0;
-                          ref.read(invoiceCartProvider.notifier).addItem(item, qty: qty);
+                          SubItem? selectedSub;
+                          if (item.hasSubItems && item.subItems != null && item.subItems!.isNotEmpty) {
+                            selectedSub = await SubItemPickerModal.show(context, item);
+                            if (selectedSub == null) return;
+                          }
+                          if (!mounted) return;
+
+                          ref.read(invoiceCartProvider.notifier).addItem(
+                            item, 
+                            qty: qty, 
+                            selectedSubItemUuid: selectedSub?.uuid, 
+                            selectedSubItemName: selectedSub?.name,
+                          );
                           ScaffoldMessenger.of(context).clearSnackBars();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${qty.toInt()}x ${item.itemName ?? "Item"} added to cart'),
+                              content: Text('${qty.toInt()}x ${selectedSub?.name ?? item.itemName ?? "Item"} added to cart'),
                               duration: const Duration(milliseconds: 800),
                               behavior: SnackBarBehavior.floating,
                               margin: const EdgeInsets.only(bottom: 60, left: 20, right: 20),

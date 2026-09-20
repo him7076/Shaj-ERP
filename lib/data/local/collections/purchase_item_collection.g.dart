@@ -15,7 +15,7 @@ extension GetPurchaseItemCollection on Isar {
 
 const PurchaseItemSchema = CollectionSchema(
   name: r'PurchaseItem',
-  id: 546064316120221,
+  id: 5460643161202212317,
   properties: {
     r'batchNumber': PropertySchema(
       id: 0,
@@ -97,33 +97,43 @@ const PurchaseItemSchema = CollectionSchema(
       name: r'rate',
       type: IsarType.double,
     ),
-    r'taxableAmount': PropertySchema(
+    r'selectedSubItemName': PropertySchema(
       id: 16,
+      name: r'selectedSubItemName',
+      type: IsarType.string,
+    ),
+    r'selectedSubItemUuid': PropertySchema(
+      id: 17,
+      name: r'selectedSubItemUuid',
+      type: IsarType.string,
+    ),
+    r'taxableAmount': PropertySchema(
+      id: 18,
       name: r'taxableAmount',
       type: IsarType.double,
     ),
     r'totalAmount': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'totalAmount',
       type: IsarType.double,
     ),
     r'unit': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'unit',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'uuid': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'version',
       type: IsarType.long,
     )
@@ -135,7 +145,7 @@ const PurchaseItemSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
-      id: 213439734042772,
+      id: 2134397340427724972,
       name: r'uuid',
       unique: true,
       replace: false,
@@ -148,7 +158,7 @@ const PurchaseItemSchema = CollectionSchema(
       ],
     ),
     r'purchaseId': IndexSchema(
-      id: -162747061722907,
+      id: -162747061722907333,
       name: r'purchaseId',
       unique: false,
       replace: false,
@@ -161,7 +171,7 @@ const PurchaseItemSchema = CollectionSchema(
       ],
     ),
     r'purchaseUuid': IndexSchema(
-      id: 912042881352106,
+      id: 9120428813521064904,
       name: r'purchaseUuid',
       unique: false,
       replace: false,
@@ -176,13 +186,13 @@ const PurchaseItemSchema = CollectionSchema(
   },
   links: {
     r'purchase': LinkSchema(
-      id: 619387155428905,
+      id: 6193871554289054377,
       name: r'purchase',
       target: r'Purchase',
       single: true,
     ),
     r'item': LinkSchema(
-      id: 605731148445952,
+      id: 6057311484459529453,
       name: r'item',
       target: r'Item',
       single: true,
@@ -238,6 +248,18 @@ int _purchaseItemEstimateSize(
     }
   }
   {
+    final value = object.selectedSubItemName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.selectedSubItemUuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.unit;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -274,12 +296,14 @@ void _purchaseItemSerialize(
   writer.writeString(offsets[13], object.purchaseUuid);
   writer.writeDouble(offsets[14], object.quantity);
   writer.writeDouble(offsets[15], object.rate);
-  writer.writeDouble(offsets[16], object.taxableAmount);
-  writer.writeDouble(offsets[17], object.totalAmount);
-  writer.writeString(offsets[18], object.unit);
-  writer.writeDateTime(offsets[19], object.updatedAt);
-  writer.writeString(offsets[20], object.uuid);
-  writer.writeLong(offsets[21], object.version);
+  writer.writeString(offsets[16], object.selectedSubItemName);
+  writer.writeString(offsets[17], object.selectedSubItemUuid);
+  writer.writeDouble(offsets[18], object.taxableAmount);
+  writer.writeDouble(offsets[19], object.totalAmount);
+  writer.writeString(offsets[20], object.unit);
+  writer.writeDateTime(offsets[21], object.updatedAt);
+  writer.writeString(offsets[22], object.uuid);
+  writer.writeLong(offsets[23], object.version);
 }
 
 PurchaseItem _purchaseItemDeserialize(
@@ -306,12 +330,14 @@ PurchaseItem _purchaseItemDeserialize(
   object.purchaseUuid = reader.readStringOrNull(offsets[13]);
   object.quantity = reader.readDoubleOrNull(offsets[14]);
   object.rate = reader.readDoubleOrNull(offsets[15]);
-  object.taxableAmount = reader.readDoubleOrNull(offsets[16]);
-  object.totalAmount = reader.readDoubleOrNull(offsets[17]);
-  object.unit = reader.readStringOrNull(offsets[18]);
-  object.updatedAt = reader.readDateTime(offsets[19]);
-  object.uuid = reader.readStringOrNull(offsets[20]);
-  object.version = reader.readLong(offsets[21]);
+  object.selectedSubItemName = reader.readStringOrNull(offsets[16]);
+  object.selectedSubItemUuid = reader.readStringOrNull(offsets[17]);
+  object.taxableAmount = reader.readDoubleOrNull(offsets[18]);
+  object.totalAmount = reader.readDoubleOrNull(offsets[19]);
+  object.unit = reader.readStringOrNull(offsets[20]);
+  object.updatedAt = reader.readDateTime(offsets[21]);
+  object.uuid = reader.readStringOrNull(offsets[22]);
+  object.version = reader.readLong(offsets[23]);
   return object;
 }
 
@@ -355,16 +381,20 @@ P _purchaseItemDeserializeProp<P>(
     case 15:
       return (reader.readDoubleOrNull(offset)) as P;
     case 16:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 17:
-      return (reader.readDoubleOrNull(offset)) as P;
-    case 18:
       return (reader.readStringOrNull(offset)) as P;
+    case 17:
+      return (reader.readStringOrNull(offset)) as P;
+    case 18:
+      return (reader.readDoubleOrNull(offset)) as P;
     case 19:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDoubleOrNull(offset)) as P;
     case 20:
       return (reader.readStringOrNull(offset)) as P;
     case 21:
+      return (reader.readDateTime(offset)) as P;
+    case 22:
+      return (reader.readStringOrNull(offset)) as P;
+    case 23:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2393,6 +2423,314 @@ extension PurchaseItemQueryFilter
   }
 
   QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'selectedSubItemName',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'selectedSubItemName',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'selectedSubItemName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'selectedSubItemName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'selectedSubItemName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'selectedSubItemName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'selectedSubItemName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'selectedSubItemName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'selectedSubItemName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'selectedSubItemName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'selectedSubItemName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemNameIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'selectedSubItemName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'selectedSubItemUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'selectedSubItemUuid',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'selectedSubItemUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'selectedSubItemUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'selectedSubItemUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'selectedSubItemUuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'selectedSubItemUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'selectedSubItemUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'selectedSubItemUuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'selectedSubItemUuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'selectedSubItemUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
+      selectedSubItemUuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'selectedSubItemUuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterFilterCondition>
       taxableAmountIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3206,6 +3544,34 @@ extension PurchaseItemQuerySortBy
     });
   }
 
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      sortBySelectedSubItemName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      sortBySelectedSubItemNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      sortBySelectedSubItemUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      sortBySelectedSubItemUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemUuid', Sort.desc);
+    });
+  }
+
   QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy> sortByTaxableAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'taxableAmount', Sort.asc);
@@ -3491,6 +3857,34 @@ extension PurchaseItemQuerySortThenBy
     });
   }
 
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      thenBySelectedSubItemName() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemName', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      thenBySelectedSubItemNameDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      thenBySelectedSubItemUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemUuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy>
+      thenBySelectedSubItemUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'selectedSubItemUuid', Sort.desc);
+    });
+  }
+
   QueryBuilder<PurchaseItem, PurchaseItem, QAfterSortBy> thenByTaxableAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'taxableAmount', Sort.asc);
@@ -3671,6 +4065,22 @@ extension PurchaseItemQueryWhereDistinct
   }
 
   QueryBuilder<PurchaseItem, PurchaseItem, QDistinct>
+      distinctBySelectedSubItemName({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'selectedSubItemName',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QDistinct>
+      distinctBySelectedSubItemUuid({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'selectedSubItemUuid',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PurchaseItem, PurchaseItem, QDistinct>
       distinctByTaxableAmount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'taxableAmount');
@@ -3814,6 +4224,20 @@ extension PurchaseItemQueryProperty
     });
   }
 
+  QueryBuilder<PurchaseItem, String?, QQueryOperations>
+      selectedSubItemNameProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'selectedSubItemName');
+    });
+  }
+
+  QueryBuilder<PurchaseItem, String?, QQueryOperations>
+      selectedSubItemUuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'selectedSubItemUuid');
+    });
+  }
+
   QueryBuilder<PurchaseItem, double?, QQueryOperations>
       taxableAmountProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3851,4 +4275,3 @@ extension PurchaseItemQueryProperty
     });
   }
 }
-

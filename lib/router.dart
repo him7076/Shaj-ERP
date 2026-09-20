@@ -29,6 +29,8 @@ import 'package:business_sahaj_erp/features/reports/presentation/screens/payable
 import 'package:business_sahaj_erp/features/reports/presentation/screens/day_book_report_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/bulk_item_edit_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/screens/tasks_screen.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_task_screen.dart';
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
@@ -261,6 +263,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/stock-adjustments',
             name: 'stock-adjustments',
             builder: (context, state) => const StockAdjustmentsScreen(),
+          ),
+          GoRoute(
+            path: '/tasks',
+            name: 'tasks',
+            builder: (context, state) => const TasksScreen(),
+          ),
+          GoRoute(
+            path: '/tasks/add',
+            name: 'add-task',
+            builder: (context, state) => const AddEditTaskScreen(),
+          ),
+          GoRoute(
+            path: '/tasks/edit/:id',
+            name: 'edit-task',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return AddEditTaskScreen(taskId: int.tryParse(id));
+            },
           ),
         ],
       ),

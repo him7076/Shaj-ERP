@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_drawer.dart';
 import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
+import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
-class MainLayout extends StatelessWidget {
+class MainLayout extends ConsumerWidget {
   final Widget child;
   static final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -18,13 +21,13 @@ class MainLayout extends StatelessWidget {
     final location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/dashboard')) return 0;
     if (location.startsWith('/transactions')) return 1;
-    if (location.startsWith('/parties')) return 2;
+    if (location.startsWith('/parties') || location.startsWith('/tasks')) return 2;
     if (location.startsWith('/reports') || location.startsWith('/settings')) return 3;
     return 0;
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
     final theme = Theme.of(context);
     final selectedIndex = _calculateSelectedIndex(context);
@@ -62,8 +65,12 @@ class MainLayout extends StatelessWidget {
           location.contains('/add') ||
           location.contains('/edit') ||
           location.contains('/item/') ||
-          location.contains('/party/');
+          location.contains('/party/') ||
+          location.contains('/task/');
       final isDashboard = location == '/' || location == '/dashboard' || location.isEmpty;
+      
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final enableTasks = prefs.getBool('enable_task_management') ?? false;
 
       return Scaffold(
         key: scaffoldKey,
@@ -162,14 +169,24 @@ class MainLayout extends StatelessWidget {
                         onTap: () => context.go('/transactions'),
                       ),
                       const SizedBox(width: 36), // Space for central FAB notch
-                      _buildNavItem(
-                        context,
-                        icon: Icons.people_outline_rounded,
-                        activeIcon: Icons.people_rounded,
-                        label: 'Parties',
-                        isSelected: selectedIndex == 2,
-                        onTap: () => context.go('/parties'),
-                      ),
+                      if (enableTasks)
+                        _buildNavItem(
+                          context,
+                          icon: Icons.task_alt_rounded,
+                          activeIcon: Icons.task_alt_rounded,
+                          label: 'Tasks',
+                          isSelected: selectedIndex == 2,
+                          onTap: () => context.go('/tasks'),
+                        )
+                      else
+                        _buildNavItem(
+                          context,
+                          icon: Icons.people_outline_rounded,
+                          activeIcon: Icons.people_rounded,
+                          label: 'Parties',
+                          isSelected: selectedIndex == 2,
+                          onTap: () => context.go('/parties'),
+                        ),
                       _buildNavItem(
                         context,
                         icon: Icons.grid_view_outlined,

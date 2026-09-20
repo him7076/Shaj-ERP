@@ -24,7 +24,7 @@ import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_pro
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
-import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
+import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart' show ItemSearchPickerModal, SelectedProductData;
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
@@ -1092,41 +1092,13 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     );
   }
 
-  Future<void> _handleItemAdded(Item item) async {
-    if (item.hasSubItems && item.subItems != null && item.subItems!.isNotEmpty) {
-      final subItem = await showModalBottomSheet<SubItem>(
-        context: context,
-        builder: (ctx) {
-          return SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  title: Text('Select Variant for ${item.itemName}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                const Divider(),
-                ...item.subItems!.map((sub) => ListTile(
-                  title: Text(sub.name ?? 'Unknown'),
-                  subtitle: Text('₹${sub.sellPrice ?? 0}'),
-                  onTap: () => Navigator.pop(ctx, sub),
-                )),
-              ],
-            ),
-          );
-        }
-      );
-      if (subItem != null) {
-        ref.read(invoiceCartProvider.notifier).addItem(
-          item, 
-          selectedSubItemUuid: subItem.uuid, 
-          selectedSubItemName: subItem.name,
-        );
-        ref.invalidate(filteredItemsProvider);
-      }
-    } else {
-      ref.read(invoiceCartProvider.notifier).addItem(item);
-      ref.invalidate(filteredItemsProvider);
-    }
+  Future<void> _handleItemAdded(SelectedProductData data) async {
+    ref.read(invoiceCartProvider.notifier).addItem(
+      data.item, 
+      selectedSubItemUuid: data.selectedSubItem?.uuid, 
+      selectedSubItemName: data.selectedSubItem?.name,
+    );
+    ref.invalidate(filteredItemsProvider);
   }
 
   Widget _buildPartyAndHeaderCard(ThemeData theme) {
@@ -1741,12 +1713,12 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                       label: const Text('Add Component to this Bundle'),
                       onPressed: () async {
                         final selected = await ItemSearchPickerModal.show(ctx);
-                        if (selected != null && selected.uuid != null) {
-                          if (!uuids.contains(selected.uuid)) {
+                        if (selected != null && selected.item.uuid != null) {
+                          if (!uuids.contains(selected.item.uuid)) {
                             setSheetState(() {
-                              uuids.add(selected.uuid!);
+                              uuids.add(selected.item.uuid!);
                               quantities.add(1.0);
-                              units.add(selected.primaryUnitName ?? 'PCS');
+                              units.add(selected.item.primaryUnitName ?? 'PCS');
                             });
                           }
                         }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
@@ -74,6 +75,7 @@ class WebMockIsar implements Isar {
       if (col == 'invoiceItems') return 'InvoiceItem';
       if (col == 'invoices') return 'Invoice';
       if (col == 'settings') return 'Settings';
+      if (col == 'tasks') return 'Task';
       if (col == 'users') return 'User';
       if (col == 'syncQueues') return 'SyncQueue';
       if (col == 'purchases') return 'Purchase';
@@ -202,6 +204,7 @@ class WebMockIsar implements Isar {
     if (T == InvoiceItem) return 'invoiceItems';
     if (T == Invoice) return 'invoices';
     if (T == Settings) return 'settings';
+    if (T == Task) return 'tasks';
     if (T == User) return 'users';
     if (T == SyncQueue) return 'syncQueues';
     if (T == Purchase) return 'purchases';
@@ -255,6 +258,7 @@ class WebMockIsar implements Isar {
     if (name == 'invoiceItems') return WebMockCollection<InvoiceItem>('invoiceItems', _db, this);
     if (name == 'invoices') return WebMockCollection<Invoice>('invoices', _db, this);
     if (name == 'settings') return WebMockCollection<Settings>('settings', _db, this);
+    if (name == 'tasks') return WebMockCollection<Task>('tasks', _db, this);
     if (name == 'users') return WebMockCollection<User>('users', _db, this);
     if (name == 'syncQueues') return WebMockCollection<SyncQueue>('syncQueues', _db, this);
     if (name == 'purchases') return WebMockCollection<Purchase>('purchases', _db, this);
@@ -311,7 +315,7 @@ class WebMockIsar implements Isar {
         'categorys', 'units', 'brands', 'partys', 'items', 'orderItems', 'orders',
         'invoiceItems', 'invoices', 'settings', 'users', 'syncQueues', 'purchases',
         'purchaseItems', 'expenses', 'transactions', 'bankAccounts', 'creditNotes',
-        'creditNoteItems', 'debitNotes', 'debitNoteItems'
+        'creditNoteItems', 'debitNotes', 'debitNoteItems', 'tasks'
       ];
 
       for (var colName in collectionNames) {
@@ -368,6 +372,7 @@ class WebMockIsar implements Isar {
     if (col == 'invoiceItems') return 'InvoiceItem';
     if (col == 'invoices') return 'Invoice';
     if (col == 'settings') return 'Settings';
+    if (col == 'tasks') return 'Task';
     if (col == 'users') return 'User';
     if (col == 'syncQueues') return 'SyncQueue';
     if (col == 'purchases') return 'Purchase';
@@ -523,6 +528,8 @@ class WebMockIsar implements Isar {
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
+        'selectedSubItemUuid': entity.selectedSubItemUuid,
+        'selectedSubItemName': entity.selectedSubItemName,
         'quantity': entity.quantity,
         'freeQuantity': entity.freeQuantity,
         'unit': entity.unit,
@@ -584,6 +591,8 @@ class WebMockIsar implements Isar {
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
+        'selectedSubItemUuid': entity.selectedSubItemUuid,
+        'selectedSubItemName': entity.selectedSubItemName,
         'parentInvoiceId': entity.parentInvoiceId,
         'parentInvoiceUuid': entity.parentInvoiceUuid,
         'quantity': entity.quantity,
@@ -743,6 +752,8 @@ class WebMockIsar implements Isar {
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
+        'selectedSubItemUuid': entity.selectedSubItemUuid,
+        'selectedSubItemName': entity.selectedSubItemName,
         'quantity': entity.quantity,
         'unit': entity.unit,
         'rate': entity.rate,
@@ -861,6 +872,8 @@ class WebMockIsar implements Isar {
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
+        'selectedSubItemUuid': entity.selectedSubItemUuid,
+        'selectedSubItemName': entity.selectedSubItemName,
         'parentCreditNoteId': entity.parentCreditNoteId,
         'quantity': entity.quantity,
         'freeQuantity': entity.freeQuantity,
@@ -919,6 +932,8 @@ class WebMockIsar implements Isar {
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
+        'selectedSubItemUuid': entity.selectedSubItemUuid,
+        'selectedSubItemName': entity.selectedSubItemName,
         'parentDebitNoteId': entity.parentDebitNoteId,
         'quantity': entity.quantity,
         'freeQuantity': entity.freeQuantity,
@@ -969,6 +984,24 @@ class WebMockIsar implements Isar {
         'pcsPerBundle': entity.pcsPerBundle,
         'pcsPerCarton': entity.pcsPerCarton,
         'customRate': entity.customRate,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is Task) {
+      return {
+        'type': 'Task',
+        'id': entity.id,
+        'uuid': entity.uuid,
+        'title': entity.title,
+        'description': entity.description,
+        'status': entity.status,
+        'priority': entity.priority,
+        'dueDate': entity.dueDate?.toIso8601String(),
+        'completedAt': entity.completedAt?.toIso8601String(),
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -1151,6 +1184,8 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
+          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
+          ..selectedSubItemName = map['selectedSubItemName'] as String?
           ..quantity = (map['quantity'] as num?)?.toDouble()
           ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
@@ -1206,6 +1241,8 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
+          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
+          ..selectedSubItemName = map['selectedSubItemName'] as String?
           ..parentInvoiceId = map['parentInvoiceId'] as int?
           ..parentInvoiceUuid = map['parentInvoiceUuid'] as String?
           ..quantity = (map['quantity'] as num?)?.toDouble()
@@ -1347,6 +1384,8 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
+          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
+          ..selectedSubItemName = map['selectedSubItemName'] as String?
           ..quantity = (map['quantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
           ..rate = (map['rate'] as num?)?.toDouble()
@@ -1450,6 +1489,8 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
+          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
+          ..selectedSubItemName = map['selectedSubItemName'] as String?
           ..parentCreditNoteId = map['parentCreditNoteId'] as int?
           ..quantity = (map['quantity'] as num?)?.toDouble()
           ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
@@ -1503,6 +1544,8 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
+          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
+          ..selectedSubItemName = map['selectedSubItemName'] as String?
           ..parentDebitNoteId = map['parentDebitNoteId'] as int?
           ..quantity = (map['quantity'] as num?)?.toDouble()
           ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
@@ -1549,6 +1592,21 @@ class WebMockIsar implements Isar {
           ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate'] as String) : null
           ..reason = map['reason'] as String?
           ..notes = map['notes'] as String?
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'Task':
+        return Task()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..title = map['title'] as String?
+          ..description = map['description'] as String?
+          ..status = map['status'] as String?
+          ..priority = map['priority'] as String?
+          ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
+          ..completedAt = map['completedAt'] != null ? DateTime.parse(map['completedAt'] as String) : null
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool
@@ -1969,6 +2027,11 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (item is StockAdjustment) {
       if (prop == 'itemuuid') return item.itemUuid;
       if (prop == 'itemname') return item.itemName;
+    }
+    if (item is Task) {
+      if (prop == 'title') return item.title;
+      if (prop == 'status') return item.status;
+      if (prop == 'priority') return item.priority;
     }
     
     return null;

@@ -5,14 +5,21 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/sub_item_picker_modal.dart';
+
+class SelectedProductData {
+  final Item item;
+  final SubItem? selectedSubItem;
+  SelectedProductData(this.item, [this.selectedSubItem]);
+}
 
 class ItemSearchPickerModal extends ConsumerStatefulWidget {
   final bool isPurchase;
   final bool onlyBundles;
   const ItemSearchPickerModal({Key? key, this.isPurchase = false, this.onlyBundles = false}) : super(key: key);
 
-  static Future<Item?> show(BuildContext context, {bool isPurchase = false, bool onlyBundles = false}) {
-    return showDialog<Item>(
+  static Future<SelectedProductData?> show(BuildContext context, {bool isPurchase = false, bool onlyBundles = false}) {
+    return showDialog<SelectedProductData>(
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -38,6 +45,17 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleItemSelection(Item item) async {
+    SubItem? selectedSubItem;
+    if (item.hasSubItems && item.subItems != null && item.subItems!.isNotEmpty) {
+      selectedSubItem = await SubItemPickerModal.show(context, item);
+      if (selectedSubItem == null) return; // User cancelled sub-item selection
+    }
+    if (mounted) {
+      Navigator.pop(context, SelectedProductData(item, selectedSubItem));
+    }
   }
 
   @override
@@ -136,7 +154,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                 final items = await repo.getAll();
                                 if (items.isNotEmpty && mounted) {
                                   items.sort((a, b) => b.id.compareTo(a.id));
-                                  Navigator.pop(context, items.first);
+                                  _handleItemSelection(items.first);
                                 } else {
                                   Navigator.pop(context);
                                 }
@@ -169,7 +187,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                     final items = await repo.getAll();
                                     if (items.isNotEmpty && mounted) {
                                       items.sort((a, b) => b.id.compareTo(a.id));
-                                      Navigator.pop(context, items.first);
+                                      _handleItemSelection(items.first);
                                     } else {
                                       Navigator.pop(context);
                                     }
@@ -207,7 +225,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                       final items = await repo.getAll();
                                       if (items.isNotEmpty && mounted) {
                                         items.sort((a, b) => b.id.compareTo(a.id));
-                                        Navigator.pop(context, items.first);
+                                        _handleItemSelection(items.first);
                                       } else {
                                         Navigator.pop(context);
                                       }
@@ -247,11 +265,11 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                                   ),
                                   child: const Text('Select'),
                                   onPressed: () {
-                                    Navigator.pop(context, item);
+                                    _handleItemSelection(item);
                                   },
                                 ),
                                 onTap: () {
-                                  Navigator.pop(context, item);
+                                  _handleItemSelection(item);
                                 },
                               ),
                             );
@@ -270,3 +288,4 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
     );
   }
 }
+

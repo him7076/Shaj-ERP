@@ -16,6 +16,7 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
   bool _enableRestaurantMode = false;
   bool _isAutoFillPaidAmount = false;
   bool _enableSubItems = false;
+  bool _enableTaskManagement = false;
 
   @override
   void initState() {
@@ -30,6 +31,7 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
       _enableRestaurantMode = prefs.getBool('enable_restaurant_mode') ?? false;
       _isAutoFillPaidAmount = prefs.getBool('auto_fill_paid_amount') ?? false;
       _enableSubItems = prefs.getBool('enable_sub_items') ?? false;
+      _enableTaskManagement = prefs.getBool('enable_task_management') ?? false;
     });
   }
 
@@ -68,6 +70,27 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
             value 
               ? 'Sub-Items Management Enabled' 
               : 'Sub-Items Management Disabled'
+          ),
+          backgroundColor: value ? Colors.green : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleTaskManagement(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_task_management', value);
+    setState(() {
+      _enableTaskManagement = value;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value 
+              ? 'Task Management Enabled' 
+              : 'Task Management Disabled'
           ),
           backgroundColor: value ? Colors.green : Colors.redAccent,
         ),
@@ -163,6 +186,19 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
                   value: _enableRestaurantMode,
                   onChanged: _toggleRestaurantMode,
                   activeColor: Colors.pink,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Task Management', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable the Task Management system. This replaces the Parties tab with a Tasks tab in the bottom navigation bar.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.check_circle_outline_rounded, color: Colors.blueAccent),
+                  ),
+                  value: _enableTaskManagement,
+                  onChanged: _toggleTaskManagement,
+                  activeColor: Colors.blueAccent,
                 ),
               ],
             ),
