@@ -24,6 +24,7 @@ class CustomDrawer extends ConsumerWidget {
     final activeFirmId = ref.watch(activeFirmIdProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
     final firmName = prefs.getString('firm_name_$activeFirmId') ?? (activeFirmId == 'firm_default' ? 'Default Company' : 'New Company');
+    final enableTasks = prefs.getBool('enable_task_management') ?? false;
 
     return Drawer(
       elevation: isPermanent ? 0 : 8,
@@ -429,6 +430,15 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/items',
                     currentPath: location,
                   ),
+                  if (enableTasks)
+                    _buildDrawerItem(
+                      context: context,
+                      ref: ref,
+                      icon: Icons.task_alt_rounded,
+                      label: 'Task Management',
+                      routePath: '/tasks',
+                      currentPath: location,
+                    ),
                   _buildDrawerHeader('MANAGEMENT & BULK EDIT'),
                   _buildDrawerItem(
                     context: context,
@@ -609,6 +619,7 @@ class CustomDrawer extends ConsumerWidget {
       case '/items': return const Color(0xFFF97316);
       case '/stock-adjustments': return const Color(0xFF8B5CF6);
       case '/bulk-item-edit': return const Color(0xFFF59E0B);
+      case '/tasks': return const Color(0xFF22C55E);
       case '/reports': return const Color(0xFF06B6D4);
       case '/sync-center': return const Color(0xFF10B981);
       case '/backup': return const Color(0xFF8B5CF6);
