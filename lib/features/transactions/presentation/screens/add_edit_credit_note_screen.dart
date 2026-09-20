@@ -1,46 +1,29 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
-import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
-import 'package:business_sahaj_erp/core/services/gst_service.dart';
-import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
-import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provider.dart';
-import 'package:isar/isar.dart';
-import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
-import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
-import 'package:intl/intl.dart';
-import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
+import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
+import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:uuid/uuid.dart';
-import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
-
 class AddEditCreditNoteScreen extends ConsumerStatefulWidget {
-  final String? creditNoteUuid;
-  final String? initialPartyUuid;
-  final String? initialInvoiceNumber;
-  final String? initialInvoiceUuid;
-
-  const AddEditCreditNoteScreen({
-    Key? key,
-    this.creditNoteUuid,
-    this.initialPartyUuid,
-    this.initialInvoiceNumber,
-    this.initialInvoiceUuid,
-  }) : super(key: key);
+  final String? parentCreditNoteUuid;
+  const AddEditCreditNoteScreen({Key? key, this.parentCreditNoteUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditCreditNoteScreen> createState() => _AddEditCreditNoteScreenState();
@@ -48,750 +31,506 @@ class AddEditCreditNoteScreen extends ConsumerStatefulWidget {
 
 class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _isSaving = false;
+  final _remarksController = TextEditingController();
+  final _billNumberController = TextEditingController();
+  final _originalBillNumberController = TextEditingController();
+  final _paidAmountController = TextEditingController(text: '0.0');
+  final _discountController = TextEditingController(text: '0.0');
+  final _productSearchController = TextEditingController();
   final ScrollController _itemsScrollController = ScrollController();
 
-  final TextEditingController _remarksController = TextEditingController();
-  final TextEditingController _discountController = TextEditingController();
-  final TextEditingController _discountPercentController = TextEditingController();
-  final TextEditingController _productSearchController = TextEditingController();
-  final TextEditingController _originalInvoiceController = TextEditingController();
-
+  Party? _selectedParty;
+  List<CreditNoteItem> _draftItems = [];
   DateTime _creditNoteDate = DateTime.now();
-  CreditNote? _existingCreditNote;
-  String _voucherNumberDisplay = '';
+  DateTime _dueDate = DateTime.now().add(const Duration(days: 15));
+
+  double _subtotal = 0.0;
+  double _discountAmount = 0.0;
+  double _taxableAmount = 0.0;
+  double _totalGST = 0.0;
+  double _grandTotal = 0.0;
+  double? _customRoundOff;
+  double _roundOff = 0.0;
+  bool _isSaving = false;
   String? _companyGst;
+  CreditNote? _existingCreditNote;
+  String _paymentMode = 'Cash';
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      ref.read(creditNoteCartProvider.notifier).clear();
-      await _loadCompanySettings();
+  List<String> _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit'];
 
-      if (widget.creditNoteUuid != null) {
-        await _loadCreditNoteData();
-      } else {
-        try {
-          final repo = ref.read(creditNoteRepositoryProvider);
-          final nextNo = await repo.generateNextCreditNoteNumber();
-          if (mounted) {
-            setState(() => _voucherNumberDisplay = nextNo);
-          }
-        } catch (_) {}
-
-        if (widget.initialPartyUuid != null) {
-          final isar = ref.read(databaseServiceProvider).isar;
-          final party = await isar.partys.filter().uuidEqualTo(widget.initialPartyUuid).findFirst();
-          if (party != null) {
-            ref.read(creditNoteCartProvider.notifier).setParty(party);
-          }
-        }
-        if (widget.initialInvoiceNumber != null) {
-          _originalInvoiceController.text = widget.initialInvoiceNumber!;
-          ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(widget.initialInvoiceNumber, widget.initialInvoiceUuid);
-        }
-        if (widget.initialInvoiceUuid != null) {
-          await _loadInitialInvoiceData();
-        }
-      }
-    });
-  }
-
-  Future<void> _loadInitialInvoiceData() async {
+  void _loadPaymentModes() {
     try {
-      final db = ref.read(databaseServiceProvider).isar;
-      final invoice = await db.invoices.filter().uuidEqualTo(widget.initialInvoiceUuid).findFirst();
-      if (invoice != null) {
-        List<InvoiceItem> itemsList = await db.invoiceItems
-            .filter()
-            .isDeletedEqualTo(false)
-            .and()
-            .group((q) => q.parentInvoiceIdEqualTo(invoice.id).or().parentInvoiceUuidEqualTo(invoice.uuid))
-            .findAll();
-        
-        if (itemsList.isEmpty) {
-          try { await invoice.invoiceItems.load(); } catch (_) {}
-          try { itemsList = invoice.invoiceItems.where((i) => !i.isDeleted).toList(); } catch (_) {}
-        }
-
-        final List<CartItemState> cartItems = [];
-        for (var item in itemsList) {
-          Item? dbItem;
-          if (item.itemId != null && item.itemId! > 0) {
-            dbItem = await db.items.get(item.itemId!);
-          }
-          if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
-            dbItem = await db.items.filter().itemNameEqualTo(item.itemName!).findFirst();
-          }
-          if (dbItem == null) {
-            try { await item.item.load(); } catch (_) {}
-            try { dbItem = item.item.value; } catch (_) {}
-          }
-          if (dbItem != null) {
-            final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
-            final discPct = totalBase > 0 ? ((item.discount ?? 0.0) / totalBase) * 100.0 : 0.0;
-
-            cartItems.add(
-              CartItemState(
-                item: dbItem,
-                quantity: item.quantity ?? 1.0,
-                freeQuantity: item.freeQuantity ?? 0.0,
-                unit: (item.unit != null && item.unit!.isNotEmpty && item.unit != 'PCS') 
-                    ? item.unit! 
-                    : (dbItem.primaryUnitName ?? dbItem.unit.value?.shortName ?? item.unit ?? 'PCS'),
-                rate: item.rate ?? 0.0,
-                discountPercent: discPct,
-                discountAmount: item.discount ?? 0.0,
-                gstPercent: item.gstRate ?? 18.0,
-                batchNumber: item.batchNumber,
-                expiryDate: item.expiryDate,
-                mfgDate: item.mfgDate,
-              ),
-            );
-          }
-        }
-        
-        Party? party;
-        if (invoice.partyId != null && invoice.partyId! > 0) {
-          party = await db.partys.get(invoice.partyId!);
-        }
-        if (party == null && invoice.partyName != null && invoice.partyName!.isNotEmpty) {
-          party = await db.partys.filter().partyNameEqualTo(invoice.partyName!).findFirst();
-        }
-        if (party == null) {
-          try { await invoice.party.load(); } catch (_) {}
-          try { party = invoice.party.value; } catch (_) {}
-        }
-
-        if (party != null && cartItems.isNotEmpty) {
-          ref.read(creditNoteCartProvider.notifier).loadCreditNote(
-            party: party,
-            creditNote: Transaction()..transactionDate = _creditNoteDate..remarks = invoice.remarks..referenceNumber = invoice.invoiceNumber..linkedBillUuid = invoice.uuid,
-            items: cartItems,
-            isGstInclusive: false,
-          );
-          if (mounted) {
-            setState(() {});
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error loading initial invoice data: $e');
-    }
+      final prefs = ref.read(sharedPreferencesProvider);
+      final customP = prefs.getStringList('custom_payment_modes_list') ?? [];
+      setState(() {
+        _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...customP].toSet().toList();
+      });
+    } catch (_) {}
   }
 
-  Future<void> _showLinkInvoiceDialog() async {
-    final cart = ref.read(creditNoteCartProvider);
-    if (cart.selectedParty == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a party first')));
-      return;
-    }
+  Future<void> _showAddPaymentModeDialog() async {
+    final modeController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
-    final db = ref.read(databaseServiceProvider).isar;
-    final partyId = cart.selectedParty!.id;
-    final partyUuid = cart.selectedParty!.uuid;
-    final pNameLower = cart.selectedParty!.partyName?.trim().toLowerCase();
-
-    final allInvoices = await db.invoices.filter().isDeletedEqualTo(false).findAll();
-    
-    final partyInvoices = allInvoices.where((inv) {
-      return (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
-             (partyId > 0 && inv.partyId == partyId) ||
-             (pNameLower != null && pNameLower.isNotEmpty && inv.partyName?.trim().toLowerCase() == pNameLower);
-    }).toList();
-
-    partyInvoices.sort((a, b) => (b.invoiceDate ?? DateTime.now()).compareTo(a.invoiceDate ?? DateTime.now()));
-
-    if (!mounted) return;
-
-    final selectedInvoice = await showDialog<Invoice>(
+    final newMode = await showDialog<String>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Select Invoice to Link'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 400,
-            child: partyInvoices.isEmpty 
-              ? const Center(child: Text('No invoices found for this party.'))
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: partyInvoices.length,
-                  itemBuilder: (context, index) {
-                    final inv = partyInvoices[index];
-                    return ListTile(
-                      title: Text(inv.invoiceNumber ?? 'Unknown'),
-                      subtitle: Text('Date: ${inv.invoiceDate != null ? DateFormat('dd MMM yyyy').format(inv.invoiceDate!) : '-'} | Amount: ₹${inv.grandTotal?.toStringAsFixed(2) ?? '0.00'}'),
-                      trailing: (inv.uuid == widget.initialInvoiceUuid) 
-                          ? const Icon(Icons.check_circle, color: Colors.green)
-                          : null,
-                      onTap: () => Navigator.pop(context, inv),
-                    );
-                  },
-                ),
+          title: const Text('Add Payment Type'),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: modeController,
+              decoration: const InputDecoration(
+                labelText: 'Payment Mode Name (e.g. Finance, EMI)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.account_balance_wallet),
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  Navigator.pop(context, modeController.text.trim());
+                }
+              },
+              child: const Text('Add Payment Type'),
+            ),
           ],
         );
       },
     );
 
-    if (selectedInvoice != null) {
-      _originalInvoiceController.text = selectedInvoice.invoiceNumber ?? '';
-      ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(selectedInvoice.invoiceNumber, selectedInvoice.uuid);
-      setState(() {});
+    if (newMode != null && newMode.isNotEmpty) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList('custom_payment_modes_list') ?? [];
+      if (!list.contains(newMode)) {
+        list.add(newMode);
+        await prefs.setStringList('custom_payment_modes_list', list);
+      }
+      setState(() {
+        _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...list].toSet().toList();
+        _paymentMode = newMode;
+      });
     }
   }
 
-  Future<void> _loadCompanySettings() async {
-    final isar = ref.read(databaseServiceProvider).isar;
-    final companySettings = await isar.settings.filter().idGreaterThan(-1).findFirst();
-    _companyGst = companySettings?.companyGST;
+  bool _isPaidAmountAutoFill = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = ref.read(sharedPreferencesProvider);
+      if (mounted) {
+        setState(() {
+          _isPaidAmountAutoFill = prefs.getBool('auto_fill_paid_amount') ?? false;
+        });
+      }
+    });
+    _loadPaymentModes();
+    _initValues();
   }
 
-  Future<void> _loadCreditNoteData() async {
-    try {
-      final db = ref.read(databaseServiceProvider).isar;
-      final creditNote = await db.creditNotes.filter().uuidEqualTo(widget.creditNoteUuid).findFirst();
+  void _initValues() async {
+    final repo = ref.read(creditNoteRepositoryProvider);
+    final isar = ref.read(databaseServiceProvider).isar;
+    final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+    _companyGst = settings?.companyGST;
+
+    if (widget.parentCreditNoteUuid != null && widget.parentCreditNoteUuid!.isNotEmpty) {
+      CreditNote? creditNote = await isar.creditNotes.filter().uuidEqualTo(widget.parentCreditNoteUuid).findFirst();
+      if (creditNote == null) {
+        final idVal = int.tryParse(widget.parentCreditNoteUuid!);
+        if (idVal != null) {
+          creditNote = await isar.creditNotes.get(idVal);
+        }
+      }
+
       if (creditNote != null) {
         _existingCreditNote = creditNote;
-        _voucherNumberDisplay = creditNote.creditNoteNumber ?? '';
+        _billNumberController.text = creditNote.creditNoteNumber ?? '';
+        _originalBillNumberController.text = creditNote.originalInvoiceNumber ?? '';
         _creditNoteDate = creditNote.creditNoteDate ?? DateTime.now();
-        _remarksController.text = creditNote.remarks ?? '';
-        _originalInvoiceController.text = creditNote.originalInvoiceNumber ?? '';
+        final remarksText = creditNote.remarks ?? '';
+        _remarksController.text = remarksText;
         
-        final double subVal = creditNote.subtotal ?? 0.0;
-        final double discAmtVal = creditNote.discountAmount ?? 0.0;
-        _discountController.text = discAmtVal.toString();
-        final double discPctVal = subVal > 0 ? (discAmtVal / subVal * 100) : 0.0;
-        _discountPercentController.text = discPctVal.toStringAsFixed(1);
+        _discountController.text = creditNote.discountAmount?.toString() ?? '0.0';
 
         Party? party;
         if (creditNote.partyId != null && creditNote.partyId! > 0) {
-          party = await db.partys.get(creditNote.partyId!);
+          party = await isar.partys.get(creditNote.partyId!);
         }
         if (party == null && creditNote.partyName != null && creditNote.partyName!.isNotEmpty) {
-          party = await db.partys.filter().partyNameEqualTo(creditNote.partyName!).findFirst();
+          party = await isar.partys.filter().partyNameEqualTo(creditNote.partyName!).findFirst();
         }
+        if (party == null) {
+          try { await creditNote.party.load(); } catch (_) {}
+          try { party = creditNote.party.value; } catch (_) {}
+        }
+        _selectedParty = party ?? (Party()
+          ..partyName = creditNote.partyName
+          ..gstNumber = creditNote.gstNumber
+          ..addressLine1 = creditNote.address);
 
-        if (party != null) {
-          final itemsList = await db.creditNoteItems
+        List<CreditNoteItem> itemsList = [];
+        final pId = creditNote.id;
+        final pUuid = creditNote.uuid;
+
+        if (pUuid != null && pUuid.isNotEmpty) {
+          itemsList = await isar.creditNoteItems
               .filter()
-              .isDeletedEqualTo(false)
-              .and()
-              .group((q) => q.parentCreditNoteIdEqualTo(creditNote.id).or().parentCreditNoteIdIsNull()) // Wait, actually I should link by parent ID properly. For Web Mock, parentCreditNoteId is used. For Isar, links are used.
+              .parentCreditNoteUuidEqualTo(pUuid)
               .findAll();
-          
-          final List<CreditNoteItem> realItems = [];
-          try { await creditNote.creditNoteItems.load(); realItems.addAll(creditNote.creditNoteItems.where((i) => !i.isDeleted)); } catch (_) {}
-          
-          final effectiveItems = realItems.isNotEmpty ? realItems : itemsList;
-
-          final List<CartItemState> cartItems = [];
-          for (var item in effectiveItems) {
-            Item? dbItem;
-            if (item.itemId != null && item.itemId! > 0) {
-              dbItem = await db.items.get(item.itemId!);
-            }
-            if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
-              dbItem = await db.items.filter().itemNameEqualTo(item.itemName!).findFirst();
-            }
-
-            if (dbItem != null) {
-              final totalBase = (item.rate ?? 0.0) * (item.quantity ?? 1.0);
-              final discPct = totalBase > 0 ? ((item.discount ?? 0.0) / totalBase) * 100.0 : 0.0;
-
-              cartItems.add(
-                CartItemState(
-                  item: dbItem,
-                  quantity: item.quantity ?? 1.0,
-                  freeQuantity: item.freeQuantity ?? 0.0,
-                  unit: item.unit ?? 'PCS',
-                  rate: item.rate ?? 0.0,
-                  discountPercent: discPct,
-                  discountAmount: item.discount ?? 0.0,
-                  gstPercent: item.gstRate ?? 18.0,
-                  batchNumber: item.batchNumber,
-                  expiryDate: item.expiryDate,
-                  mfgDate: item.mfgDate,
-                ),
-              );
-            }
-          }
-
-          ref.read(creditNoteCartProvider.notifier).loadCreditNote(
-            party: party,
-            creditNote: Transaction()..transactionDate = _creditNoteDate..remarks = creditNote.remarks..referenceNumber = creditNote.originalInvoiceNumber..linkedBillUuid = creditNote.uuid,
-            items: cartItems,
-            isGstInclusive: false,
-          );
         }
+        if (itemsList.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
+          itemsList = await isar.creditNoteItems
+              .filter()
+              .parentCreditNoteIdEqualTo(pId)
+              .findAll();
+        }
+        if (itemsList.isEmpty) {
+          try { await creditNote.creditNoteItems.load(); } catch (_) {}
+          try { itemsList = creditNote.creditNoteItems.toList(); } catch (_) {}
+        }
+
+        for (var pi in itemsList) {
+          Item? dbItem;
+          if (pi.itemId != null && pi.itemId! > 0) {
+            try { dbItem = await isar.items.get(pi.itemId!); } catch (_) {}
+          }
+          if (dbItem == null && pi.itemName != null && pi.itemName!.isNotEmpty) {
+            try { dbItem = await isar.items.filter().itemNameEqualTo(pi.itemName!).findFirst(); } catch (_) {}
+          }
+          if (dbItem == null) {
+            try { await pi.item.load(); } catch (_) {}
+            try { dbItem = pi.item.value; } catch (_) {}
+          }
+          if (dbItem != null) {
+            try { pi.item.value = dbItem; } catch (_) {}
+            try { await dbItem.unit.load(); } catch (_) {}
+          }
+        }
+
+        _draftItems = List<CreditNoteItem>.from(itemsList);
+        _recalculateTotals();
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    } else {
+      final numStr = await repo.generateNextCreditNoteNumber();
+      _billNumberController.text = numStr;
+      if (mounted) {
         setState(() {});
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error loading credit note: $e')));
     }
   }
 
   @override
   void dispose() {
     _remarksController.dispose();
+    _billNumberController.dispose();
+    _originalBillNumberController.dispose();
+    _paidAmountController.dispose();
     _discountController.dispose();
-    _discountPercentController.dispose();
     _productSearchController.dispose();
-    _originalInvoiceController.dispose();
-    _itemsScrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _creditNoteDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setState(() {
-        _creditNoteDate = picked;
-      });
-      ref.read(creditNoteCartProvider.notifier).setDate(picked);
-      ref.read(unsavedChangesProvider.notifier).state = true;
+  void _recalculateTotals() {
+    double sub = 0.0;
+    double tax = 0.0;
+
+    for (var item in _draftItems) {
+      final double qty = item.quantity ?? 0.0;
+      final double rate = item.rate ?? 0.0;
+      final double itemDisc = item.discount ?? 0.0;
+      
+      final lineSub = qty * rate;
+      final lineTaxable = lineSub - itemDisc;
+      final lineTax = lineTaxable * ((item.gstRate ?? 0.0) / 100.0);
+      
+      item.taxableAmount = lineTaxable;
+      item.gstAmount = lineTax;
+      item.totalAmount = lineTaxable + lineTax;
+
+      sub += lineSub;
+      tax += lineTax;
     }
+
+    _discountAmount = double.tryParse(_discountController.text) ?? 0.0;
+    final double rawTotal = (sub - _discountAmount) + tax;
+    _roundOff = _customRoundOff ?? (rawTotal.roundToDouble() - rawTotal);
+
+    setState(() {
+      _subtotal = sub;
+      _taxableAmount = sub - _discountAmount;
+      _totalGST = tax;
+      _grandTotal = rawTotal + _roundOff;
+    });
   }
 
-  void _onDiscountChanged() {
-    final pct = double.tryParse(_discountPercentController.text);
-    final amt = double.tryParse(_discountController.text);
-    ref.read(creditNoteCartProvider.notifier).setDiscounts(pct, amt);
-    ref.read(unsavedChangesProvider.notifier).state = true;
+
+  void _addItemLine(Item item) async {
+
+    try {
+      await item.unit.load();
+    } catch (_) {}
+
+    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+
+    final newItem = CreditNoteItem()
+      ..itemId = item.id
+      ..itemName = item.itemName
+      ..hsnCode = item.hsnCode
+      ..quantity = 1.0
+      ..unit = primaryUnitName
+      ..rate = item.buyRate ?? item.sellRate ?? 0.0
+      ..discount = 0.0
+      ..gstRate = item.gstRate ?? 18.0;
+      
+    newItem.item.value = item;
+
+    setState(() {
+      _draftItems.add(newItem);
+    });
+    _recalculateTotals();
   }
 
-  Future<void> _saveCreditNote() async {
-    final cart = ref.read(creditNoteCartProvider);
-    if (cart.selectedParty == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a customer.')));
+  void _saveBill() async {
+    if (_selectedParty == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a supplier party.')),
+      );
       return;
     }
-    if (cart.items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add at least one item.')));
+
+    if (_draftItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one item to creditNote.')),
+      );
       return;
     }
 
     setState(() => _isSaving = true);
-
     try {
-      final auth = ref.read(authProvider);
-      final repo = ref.read(creditNoteRepositoryProvider);
-      final totals = ref.read(creditNoteCartProvider.notifier).calculateTotals(_companyGst);
+      String currentRemarks = _remarksController.text.trim();
 
       final creditNote = _existingCreditNote ?? CreditNote();
-      
       if (_existingCreditNote == null) {
-         creditNote.uuid = const Uuid().v4();
-         creditNote.creditNoteNumber = _voucherNumberDisplay;
+        creditNote.uuid ??= Uuid().v4();
+        creditNote.creditNoteNumber = _billNumberController.text.trim();
+        creditNote.createdAt = DateTime.now();
+        creditNote.version = 1;
+      } else {
+        creditNote.uuid ??= Uuid().v4();
+        creditNote.version = _existingCreditNote!.version + 1;
       }
 
       creditNote
         ..creditNoteDate = _creditNoteDate
-        ..originalInvoiceNumber = _originalInvoiceController.text.trim()
-        ..partyId = cart.selectedParty!.id
-        ..partyName = cart.selectedParty!.partyName
-        ..gstNumber = cart.selectedParty!.gstNumber
-        ..address = cart.selectedParty!.city
-        ..subtotal = totals['subtotal']
-        ..discountAmount = totals['discountAmount']
-        ..taxableAmount = totals['subtotal']! - totals['discountAmount']!
-        ..cgstAmount = totals['cgst']
-        ..sgstAmount = totals['sgst']
-        ..igstAmount = totals['igst']
-        ..totalGST = totals['totalGST']
-        ..roundOff = totals['roundOff']
-        ..grandTotal = totals['grandTotal']
-        ..remarks = _remarksController.text.trim()
-        ..createdBy = auth.email ?? 'Admin';
+        ..creditNoteNumber = _billNumberController.text.trim()
+        ..originalInvoiceNumber = _originalBillNumberController.text.trim()
+        ..partyId = _selectedParty!.id
+        ..partyName = _selectedParty!.partyName
+        ..gstNumber = _selectedParty!.gstNumber
+        ..address = _selectedParty!.addressLine1
+        ..subtotal = _subtotal
+        ..discountAmount = _discountAmount
+        ..taxableAmount = _taxableAmount
+        ..totalGST = _totalGST
+        ..roundOff = _roundOff
+        ..grandTotal = _grandTotal
+        ..remarks = currentRemarks
+        ..updatedAt = DateTime.now();
 
-      final List<CreditNoteItem> creditNoteItems = [];
-      for (var cartItem in cart.items) {
-        final taxRes = GstService().calculateTax(
-          rate: cartItem.rate,
-          quantity: cartItem.quantity,
-          gstRatePercent: cartItem.gstPercent,
-          isInclusive: cart.isGstInclusive,
-          itemDiscountAmount: cartItem.discountAmount,
-          companyGst: _companyGst,
-          partyGst: cart.selectedParty?.gstNumber,
-          partyState: cart.selectedParty?.state,
-        );
-
-        final item = CreditNoteItem()
-          ..uuid = const Uuid().v4()
-          ..itemId = cartItem.item.id
-          ..itemName = cartItem.item.itemName
-          ..hsnCode = cartItem.item.hsnCode
-          ..quantity = cartItem.quantity
-          ..freeQuantity = cartItem.freeQuantity
-          ..unit = cartItem.unit
-          ..rate = cartItem.rate
-          ..discount = cartItem.discountAmount
-          ..taxableAmount = taxRes.taxableAmount
-          ..gstRate = cartItem.gstPercent
-          ..gstAmount = taxRes.gstAmount
-          ..totalAmount = taxRes.taxableAmount + taxRes.gstAmount
-          ..batchNumber = cartItem.batchNumber
-          ..mfgDate = cartItem.mfgDate
-          ..expiryDate = cartItem.expiryDate;
-          
-        if (!kIsWeb) {
-          item.item.value = cartItem.item;
-        }
-        creditNoteItems.add(item);
-      }
-      
       if (!kIsWeb) {
-        creditNote.party.value = cart.selectedParty;
+        creditNote.party.value = _selectedParty;
       }
 
-      await repo.saveCreditNote(creditNote, creditNoteItems);
+      await Future.delayed(Duration.zero);
+      final repo = ref.read(creditNoteRepositoryProvider);
+      await repo.saveCreditNote(creditNote, _draftItems);
+      final success = true;
 
-      ref.read(unsavedChangesProvider.notifier).state = false;
-      ref.invalidate(filteredTransactionsProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
 
-      if (mounted) {
+      // Lightweight non-blocking quiet background sync
+      try {
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
+      } catch (_) {}
+
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Credit Note saved successfully!'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('CreditNote invoice saved successfully!')),
         );
-        Navigator.pop(context, true);
+        Navigator.pop(context);
       }
-    } catch (e, stack) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save Credit Note: $e')));
-      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save creditNote: $e')),
+      );
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      setState(() => _isSaving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isPaidAmountAutoFill) {
+       final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
+       if ((currentPaid - _grandTotal).abs() > 0.01) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+             if (mounted) {
+               _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+             }
+          });
+       }
+    }
+
     final theme = Theme.of(context);
-    final isMobile = ResponsiveLayout.isMobile(context);
-    final cartState = ref.watch(creditNoteCartProvider);
-    final partiesAsync = ref.watch(partiesListProvider);
-    final totals = ref.read(creditNoteCartProvider.notifier).calculateTotals(_companyGst);
-    final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹');
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    if (_isSaving) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final mainContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPartyAndHeaderCard(theme),
+        const SizedBox(height: 16),
+        _buildProductSearchAndCatalog(theme),
+        const SizedBox(height: 16),
+        _buildCartItemsTable(theme),
+      ],
+    );
+
+    final summaryContent = Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFF5E35B1), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+            Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _discountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Bill Level Discount (Ã¢â€šÂ¹)', border: OutlineInputBorder()),
+              onChanged: (val) => _recalculateTotals(),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _remarksController,
+              decoration: const InputDecoration(labelText: 'Remarks / Notes', border: OutlineInputBorder()),
+            ),
+            const Divider(height: 32),
+            _buildTotalsSummaryPanel(theme),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Save CreditNote Bill'),
+              onPressed: _saveBill,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(55),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(
-        title: Text(_existingCreditNote == null ? 'New Credit Note' : 'Edit Credit Note', style: const TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          TextButton.icon(
-            icon: _isSaving ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.save),
-            label: const Text('SAVE'),
-            onPressed: _isSaving ? null : _saveCreditNote,
-          ),
-          const SizedBox(width: 16),
-        ],
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+        title: Text(
+          widget.parentCreditNoteUuid != null
+              ? 'Edit CreditNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
+              : 'New CreditNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
+        ),
       ),
-      body: Form(
-        key: _formKey,
-        child: Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: isDesktop
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: mainContent),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 2, child: summaryContent),
+                ],
+              )
+            : Column(
+                children: [
+                  mainContent,
+                  const SizedBox(height: 16),
+                  summaryContent,
+                  const SizedBox(height: 30),
+                ],
+              ),
+      ),
+      bottomNavigationBar: !isDesktop
+          ? null
+          : Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _itemsScrollController,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header Card
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text('Voucher: $_voucherNumberDisplay', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                                InkWell(
-                                  onTap: () => _selectDate(context),
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant, borderRadius: BorderRadius.circular(8)),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.calendar_today, size: 16),
-                                        const SizedBox(width: 8),
-                                        Text(DateFormat('dd MMM yyyy').format(_creditNoteDate), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: partiesAsync.when(
-                                    data: (parties) {
-                                      return SearchablePartyDropdown(
-                                        parties: parties,
-                                        selectedParty: cartState.selectedParty,
-                                        onChanged: (party) {
-                                          ref.read(creditNoteCartProvider.notifier).setParty(party);
-                                          ref.read(unsavedChangesProvider.notifier).state = true;
-                                        },
-                                        labelText: 'Party (Customer/Supplier) *',
-                                      );
-                                    },
-                                    loading: () => const Center(child: CircularProgressIndicator()),
-                                    error: (e, st) => Center(child: Text('Error loading parties: $e')),
-                                  ),
-                                ),
-                                if (!isMobile) const SizedBox(width: 16),
-                                if (!isMobile)
-                                  Expanded(
-                                    flex: 1,
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _originalInvoiceController,
-                                            decoration: InputDecoration(
-                                              labelText: 'Original Invoice No.',
-                                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                              prefixIcon: const Icon(Icons.receipt_long),
-                                            ),
-                                            onChanged: (val) {
-                                              ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(val, null);
-                                              ref.read(unsavedChangesProvider.notifier).state = true;
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        ElevatedButton.icon(
-                                          onPressed: _showLinkInvoiceDialog,
-                                          icon: const Icon(Icons.link, size: 18),
-                                          label: const Text('Link Invoice'),
-                                          style: ElevatedButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            if (isMobile) const SizedBox(height: 16),
-                            if (isMobile)
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _originalInvoiceController,
-                                      decoration: InputDecoration(
-                                        labelText: 'Original Invoice No.',
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                        prefixIcon: const Icon(Icons.receipt_long),
-                                      ),
-                                      onChanged: (val) {
-                                        ref.read(creditNoteCartProvider.notifier).setOriginalInvoice(val, null);
-                                        ref.read(unsavedChangesProvider.notifier).state = true;
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  ElevatedButton.icon(
-                                    onPressed: _showLinkInvoiceDialog,
-                                    icon: const Icon(Icons.link, size: 18),
-                                    label: const Text('Link Invoice'),
-                                    style: ElevatedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Product Search
-                    Card(
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: InkWell(
-                          onTap: () async {
-                            final item = await ItemSearchPickerModal.show(context);
-                            if (item != null) {
-                              ref.read(creditNoteCartProvider.notifier).addItem(item, qty: 1);
-                              ref.read(unsavedChangesProvider.notifier).state = true;
-                              _productSearchController.clear();
-                            }
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: theme.colorScheme.outlineVariant),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant),
-                                const SizedBox(width: 12),
-                                Text('Tap to search and add product...', style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Items List
-                    if (cartState.items.isNotEmpty)
-                      Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: theme.colorScheme.outlineVariant)),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: cartState.items.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            return _buildCartItemTile(context, index, cartState.items[index]);
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    // Totals
-                    if (cartState.items.isNotEmpty)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (!isMobile)
-                            Expanded(
-                              flex: 1,
-                              child: Column(
-                                children: [
-                                  TextFormField(
-                                    controller: _remarksController,
-                                    maxLines: 3,
-                                    decoration: InputDecoration(
-                                      labelText: 'Remarks / Notes',
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                    ),
-                                    onChanged: (val) {
-                                      ref.read(creditNoteCartProvider.notifier).setRemarks(val);
-                                      ref.read(unsavedChangesProvider.notifier).state = true;
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
-                          if (!isMobile) const SizedBox(width: 16),
-                          Expanded(
-                            flex: 1,
-                            child: Card(
-                              elevation: 0,
-                              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  children: [
-                                    _buildTotalRow('Subtotal', currencyFormat.format(totals['subtotal'])),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        const Text('Discount:', style: TextStyle(fontWeight: FontWeight.bold)),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _discountPercentController,
-                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                            decoration: const InputDecoration(labelText: '%', isDense: true, border: OutlineInputBorder()),
-                                            onChanged: (val) {
-                                              ref.read(creditNoteCartProvider.notifier).setDiscounts(double.tryParse(val), null);
-                                              ref.read(unsavedChangesProvider.notifier).state = true;
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: TextFormField(
-                                            controller: _discountController,
-                                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                            decoration: const InputDecoration(labelText: 'Amt', isDense: true, border: OutlineInputBorder()),
-                                            onChanged: (val) {
-                                              ref.read(creditNoteCartProvider.notifier).setDiscounts(null, double.tryParse(val));
-                                              ref.read(unsavedChangesProvider.notifier).state = true;
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (totals['cgst']! > 0) ...[
-                                      const SizedBox(height: 8),
-                                      _buildTotalRow('CGST', currencyFormat.format(totals['cgst'])),
-                                      const SizedBox(height: 4),
-                                      _buildTotalRow('SGST', currencyFormat.format(totals['sgst'])),
-                                    ],
-                                    if (totals['igst']! > 0) ...[
-                                      const SizedBox(height: 8),
-                                      _buildTotalRow('IGST', currencyFormat.format(totals['igst'])),
-                                    ],
-                                    const SizedBox(height: 8),
-                                    _buildTotalRow('Round Off', currencyFormat.format(totals['roundOff'])),
-                                    const Divider(height: 24),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Grand Total', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                                        Text(currencyFormat.format(totals['grandTotal']), style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      
-                    if (isMobile && cartState.items.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _remarksController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: 'Remarks / Notes',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onChanged: (val) {
-                          ref.read(creditNoteCartProvider.notifier).setRemarks(val);
-                          ref.read(unsavedChangesProvider.notifier).state = true;
-                        },
-                      ),
-                    ],
-                  ],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Grand Total (${_draftItems.length} items)',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
+                Text(
+                  'Ã¢â€šÂ¹${_grandTotal.toStringAsFixed(2)}',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('Save CreditNote Bill', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: _saveBill,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ],
@@ -800,59 +539,1040 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     );
   }
 
-  Widget _buildTotalRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildPartyAndHeaderCard(ThemeData theme) {
+    final partiesAsync = ref.watch(partiesListProvider);
+
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFF1E88E5), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            partiesAsync.when(
+              data: (parties) {
+                final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                return SearchablePartyDropdown(
+                  parties: supplierParties,
+                  selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                      ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                      : _selectedParty,
+                  labelText: 'Select Supplier Account',
+                  onChanged: (party) {
+                    setState(() {
+                      _selectedParty = party;
+                    });
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Error loading suppliers: $e'),
+            ),
+            if (_selectedParty != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info, color: Colors.blue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: Ã¢â€šÂ¹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _creditNoteDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _creditNoteDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(labelText: 'CreditNote Date', border: OutlineInputBorder(), isDense: true),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_creditNoteDate), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _billNumberController,
+                    readOnly: true,
+                    decoration: const InputDecoration(labelText: 'Internal Bill # (Auto)', border: OutlineInputBorder(), isDense: true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextFormField(
+                    controller: _originalBillNumberController,
+                    decoration: const InputDecoration(labelText: 'Supplier Invoice #', border: OutlineInputBorder(), isDense: true),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildProductSearchAndCatalog(ThemeData theme) {
+    final itemsAsync = ref.watch(filteredItemsProvider);
+
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFF43A047), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: itemsAsync.when(
+                    data: (items) {
+                      return Autocomplete<Item>(
+                        displayStringForOption: (item) => '${item.itemName ?? "Unnamed"} (Stock: ${item.currentStock?.toInt() ?? 0})',
+                        optionsBuilder: (textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return items.take(20);
+                          }
+                          final query = textEditingValue.text.toLowerCase();
+                          return items.where((item) {
+                            final name = item.itemName?.toLowerCase() ?? '';
+                            final code = item.itemCode?.toLowerCase() ?? '';
+                            final hsn = item.hsnCode?.toLowerCase() ?? '';
+                            return name.contains(query) || code.contains(query) || hsn.contains(query);
+                          });
+                        },
+                        optionsMaxHeight: 300,
+                        onSelected: (item) {
+                          _addItemLine(item);
+                          FocusScope.of(context).unfocus();
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 6,
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final item = options.elementAt(index);
+                                    return ListTile(
+                                      dense: true,
+                                      leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
+                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                      subtitle: Text(
+                                        'Code: ${item.itemCode ?? "N/A"} | Buy: Ã¢â€šÂ¹${item.buyRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                      onTap: () => onSelected(item),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Type product name to add...',
+                              prefixIcon: Icon(Icons.search),
+                              border: OutlineInputBorder(),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error loading products: $e'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.add_shopping_cart_rounded),
+                  tooltip: 'Search & Pick Item from Catalog',
+                  onPressed: () async {
+                    final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
+                    if (selectedItem != null) {
+                      _addItemLine(selectedItem);
+                      ref.invalidate(filteredItemsProvider);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildCartItemsTable(ThemeData theme) {
+    if (_draftItems.isEmpty) {
+      return Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40.0),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey),
+                SizedBox(height: 12),
+                Text('No product lines added yet.', style: TextStyle(color: Colors.grey)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          border: Border(
+            left: BorderSide(color: Color(0xFFFB8C00), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+             ConstrainedBox(
+               constraints: const BoxConstraints(maxHeight: 450),
+               child: Scrollbar(
+                 thumbVisibility: true,
+                 controller: _itemsScrollController,
+                 child: ListView.separated(
+                   controller: _itemsScrollController,
+                   shrinkWrap: true,
+                   itemCount: _draftItems.length,
+                   separatorBuilder: (context, index) => const Divider(height: 24),
+                   itemBuilder: (context, index) {
+                     final item = _draftItems[index];
+                     return PurchaseCartItemRow(
+                       index: index,
+                       item: item,
+                       onDelete: () {
+                         setState(() {
+                           _draftItems.removeAt(index);
+                         });
+                         _recalculateTotals();
+                       },
+                       onChanged: (qty, rate, discount, gstRate) {
+                         setState(() {
+                           item.quantity = qty;
+                           item.rate = rate;
+                           item.discount = discount;
+                           item.gstRate = gstRate;
+                         });
+                         _recalculateTotals();
+                       },
+                     );
+                   },
+                 ),
+               ),
+             ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
+                if (selectedItem != null) {
+                  _addItemLine(selectedItem);
+                  ref.invalidate(filteredItemsProvider);
+                }
+              },
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                side: BorderSide(color: theme.colorScheme.primary),
+              ),
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+              label: const Text('+ Add Another Item from Catalog', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildTotalsSummaryPanel(ThemeData theme) {
+    final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+    final double pendingAmt = _grandTotal - paidAmt;
+
+    final isLocal = GstService().isIntrastate(_companyGst, _selectedParty?.gstNumber, partyState: _selectedParty?.state);
+
+    final totalGst = _totalGST;
+    final cgst = isLocal ? totalGst / 2.0 : 0.0;
+    final sgst = isLocal ? totalGst / 2.0 : 0.0;
+    final igst = isLocal ? 0.0 : totalGst;
+
+    // Dynamic Tax Slab Calculation
+    final gstRates = _draftItems.map((i) => i.gstRate ?? 18.0).toSet().toList();
+    String cgstLabel = 'CGST';
+    String sgstLabel = 'SGST';
+    String igstLabel = 'IGST';
+
+    if (gstRates.length == 1) {
+      final singleRate = gstRates.first;
+      final halfRate = singleRate / 2.0;
+      final halfStr = halfRate % 1 == 0 ? halfRate.toInt().toString() : halfRate.toStringAsFixed(1);
+      final rateStr = singleRate % 1 == 0 ? singleRate.toInt().toString() : singleRate.toStringAsFixed(1);
+      cgstLabel = 'CGST ($halfStr%)';
+      sgstLabel = 'SGST ($halfStr%)';
+      igstLabel = 'IGST ($rateStr%)';
+    } else if (gstRates.length > 1) {
+      cgstLabel = 'CGST (Multiple Tax Rates)';
+      sgstLabel = 'SGST (Multiple Tax Rates)';
+      igstLabel = 'IGST (Multiple Tax Rates)';
+    }
+
+    return Column(
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        _buildSummaryRow('Subtotal (Before Discount)', _subtotal, theme),
+        _buildSummaryRow('Discounts Total', -_discountAmount, theme),
+        _buildSummaryRow('Taxable Value', _taxableAmount, theme),
+        if (isLocal) ...[
+          _buildSummaryRow(cgstLabel, cgst, theme),
+          _buildSummaryRow(sgstLabel, sgst, theme),
+        ] else ...[
+          _buildSummaryRow(igstLabel, igst, theme),
+        ],
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text('Round Off', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+                  if (_customRoundOff != null)
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.blue),
+                      tooltip: 'Reset to Auto Round Off',
+                      onPressed: () {
+                        _customRoundOff = null;
+                        _recalculateTotals();
+                      },
+                    ),
+                ],
+              ),
+              SizedBox(
+                width: 90,
+                child: TextFormField(
+                  initialValue: _roundOff.toStringAsFixed(2),
+                  key: ValueKey('roundoff_${_customRoundOff}_$_roundOff'),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (val) {
+                    final parsed = double.tryParse(val);
+                    if (parsed != null) {
+                      _customRoundOff = parsed;
+                      _recalculateTotals();
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(),
+
+        _buildSummaryRow('GRAND TOTAL', _grandTotal, theme, isBold: true),
+        _buildSummaryRow('Pending Outstanding', pendingAmt < 0 ? 0.0 : pendingAmt, theme, isPending: true),
       ],
     );
   }
 
-  Widget _buildCartItemTile(BuildContext context, int index, CartItemState itemState) {
-    return ExpansionTile(
-      title: Text(itemState.item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text('Qty: ${itemState.quantity} ${itemState.unit} | Rate: ₹${itemState.rate}'),
-      trailing: IconButton(
-        icon: const Icon(Icons.delete, color: Colors.red),
-        onPressed: () {
-          ref.read(creditNoteCartProvider.notifier).removeItemAt(index);
-          ref.read(unsavedChangesProvider.notifier).state = true;
-        },
+  Widget _buildSummaryRow(String label, double val, ThemeData theme, {bool isBold = false, bool isPending = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
+              fontSize: (isBold || isPending) ? 15 : 13,
+            ),
+          ),
+          Text(
+            'Ã¢â€šÂ¹${val.toStringAsFixed(2)}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
+              fontSize: (isBold || isPending) ? 15 : 13,
+              color: isPending
+                  ? Colors.red
+                  : isBold
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface,
+            ),
+          ),
+        ],
       ),
-      childrenPadding: const EdgeInsets.all(16),
+    );
+  }
+}
+
+class PurchaseCartItemRow extends ConsumerStatefulWidget {
+  final int index;
+  final CreditNoteItem item;
+  final VoidCallback onDelete;
+  final Function(double qty, double rate, double discount, double gstRate) onChanged;
+
+  const PurchaseCartItemRow({
+    Key? key,
+    required this.index,
+    required this.item,
+    required this.onDelete,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  ConsumerState<PurchaseCartItemRow> createState() => _PurchaseCartItemRowState();
+}
+
+class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
+  late TextEditingController _qtyController;
+  late TextEditingController _rateExclController;
+  late TextEditingController _rateInclController;
+  late TextEditingController _discController;
+  late TextEditingController _gstController;
+  late TextEditingController _batchController;
+  late TextEditingController _mfgDateController;
+  late TextEditingController _expDateController;
+
+  bool _isUpdatingLocally = false;
+  bool _showMoreDetails = false;
+  Item? _resolvedDbItem;
+
+  @override
+  void initState() {
+    super.initState();
+    final item = widget.item;
+    final double excl = item.rate ?? 0.0;
+    final double gstPct = item.gstRate ?? 18.0;
+    final double incl = excl * (1 + gstPct / 100.0);
+
+    _qtyController = TextEditingController(text: item.quantity?.toInt().toString() ?? '1');
+    _rateExclController = TextEditingController(text: excl.toStringAsFixed(2));
+    _rateInclController = TextEditingController(text: incl.toStringAsFixed(2));
+    _discController = TextEditingController(text: item.discount?.toString() ?? '0.0');
+    _gstController = TextEditingController(text: gstPct.toString());
+    _batchController = TextEditingController(text: item.batchNumber ?? '');
+    _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
+    _expDateController = TextEditingController(text: item.expiryDate ?? '');
+
+    _loadDbItem();
+  }
+
+
+  Future<void> _loadDbItem() async {
+    final item = widget.item;
+    if (item.item.value != null) {
+      _resolvedDbItem = item.item.value;
+      if (_resolvedDbItem?.unit.value == null) {
+        try { await _resolvedDbItem?.unit.load(); } catch (_) {}
+      }
+      if (mounted) setState(() {});
+    } else if (item.itemId != null) {
+      try {
+        final isar = ref.read(databaseServiceProvider).isar;
+        final fetched = await isar.items.get(item.itemId!);
+        if (fetched != null) {
+          try { await fetched.unit.load(); } catch (_) {}
+          item.item.value = fetched;
+          if (mounted) {
+            setState(() {
+              _resolvedDbItem = fetched;
+            });
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  @override
+  void didUpdateWidget(PurchaseCartItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.itemId != widget.item.itemId || widget.item.item.value != _resolvedDbItem) {
+      _loadDbItem();
+    }
+    if (_isUpdatingLocally) return;
+
+    final item = widget.item;
+    final double excl = item.rate ?? 0.0;
+    final double gstPct = item.gstRate ?? 18.0;
+    final double incl = excl * (1 + gstPct / 100.0);
+
+    _updateIfChanged(_qtyController, item.quantity?.toInt().toString() ?? '1');
+    _updateIfChanged(_rateExclController, excl.toStringAsFixed(2));
+    _updateIfChanged(_rateInclController, incl.toStringAsFixed(2));
+    _updateIfChanged(_discController, item.discount?.toString() ?? '0.0');
+    _updateIfChanged(_gstController, gstPct.toString());
+  }
+
+  void _updateIfChanged(TextEditingController controller, String value) {
+    if (controller.text != value && double.tryParse(controller.text) != double.tryParse(value)) {
+      controller.text = value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _rateExclController.dispose();
+    _rateInclController.dispose();
+    _discController.dispose();
+    _gstController.dispose();
+    _batchController.dispose();
+    _mfgDateController.dispose();
+    _expDateController.dispose();
+    super.dispose();
+  }
+
+
+  void _triggerChanged({double? qty, double? exclRate, double? disc, double? gst}) {
+    final targetQty = qty ?? double.tryParse(_qtyController.text) ?? 1.0;
+    final targetExcl = exclRate ?? double.tryParse(_rateExclController.text) ?? 0.0;
+    final targetDisc = disc ?? double.tryParse(_discController.text) ?? 0.0;
+    final targetGst = gst ?? double.tryParse(_gstController.text) ?? 18.0;
+    
+    widget.onChanged(targetQty, targetExcl, targetDisc, targetGst);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final dbItem = _resolvedDbItem ?? item.item.value;
+    final primaryUnit = dbItem?.primaryUnitName ?? dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? item.unit ?? 'PCS';
+    final secondaryUnit = dbItem?.secondaryUnit;
+    final List<String> availableUnits = [
+      primaryUnit,
+      if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit) secondaryUnit,
+    ];
+    if (item.unit != null && item.unit!.isNotEmpty && !availableUnits.contains(item.unit)) {
+      availableUnits.add(item.unit!);
+    }
+    final selectedUnit = item.unit ?? primaryUnit;
+
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+    final theme = Theme.of(context);
+
+    if (!isDesktop) {
+      // Mobile-optimized creditNote item card
+      return Card(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Index, Item Name, Delete Button
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '#${widget.index + 1}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      item.itemName ?? '',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                    onPressed: widget.onDelete,
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+
+              // Qty Stepper & Unit Selector
+              Row(
+                children: [
+                  // Qty Stepper
+                  Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: theme.colorScheme.outlineVariant),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.remove, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 40),
+                          onPressed: () {
+                            final current = item.quantity ?? 1.0;
+                            if (current > 1) {
+                              final next = current - 1.0;
+                              _qtyController.text = next.toInt().toString();
+                              _triggerChanged(qty: next);
+                            }
+                          },
+                        ),
+                        SizedBox(
+                          width: 36,
+                          child: TextFormField(
+                            controller: _qtyController,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
+                            onChanged: (val) {
+                              final double? qtyVal = double.tryParse(val);
+                              if (qtyVal != null && qtyVal >= 0) {
+                                _triggerChanged(qty: qtyVal);
+                              }
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, size: 16),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 40),
+                          onPressed: () {
+                            final next = (item.quantity ?? 1.0) + 1.0;
+                            _qtyController.text = next.toInt().toString();
+                            _triggerChanged(qty: next);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Unit Selector
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                      decoration: const InputDecoration(
+                        labelText: 'Unit',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        border: OutlineInputBorder(),
+                      ),
+                      items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => item.unit = val);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Rate Excl & Disc
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextFormField(
+                      controller: _rateExclController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'CreditNote Rate (Ã¢â€šÂ¹)',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        final double? excl = double.tryParse(val);
+                        if (excl != null) {
+                          _triggerChanged(exclRate: excl);
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      controller: _discController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(
+                        labelText: 'Disc (Ã¢â€šÂ¹)',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (val) {
+                        final double? discVal = double.tryParse(val);
+                        if (discVal != null) {
+                          _triggerChanged(disc: discVal);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Expandable Batch, Mfg/Exp Date & Free Qty
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _showMoreDetails = !_showMoreDetails;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _showMoreDetails ? 'Ã¢â€“Â² Hide Batch, Free Qty & GST Details' : 'Ã¢â€“Â¼ More Inputs (Free Qty, Batch, Expiry, GST %)',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              if (_showMoreDetails) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _rateInclController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(labelText: 'Rate Incl (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final double? incl = double.tryParse(val);
+                                if (incl != null) {
+                                  final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                                  final excl = incl / (1 + gstPct / 100.0);
+                                  _triggerChanged(exclRate: excl);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _gstController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(labelText: 'GST %', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                final double? gstVal = double.tryParse(val);
+                                if (gstVal != null) {
+                                  _triggerChanged(gst: gstVal);
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _batchController,
+                              decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                item.batchNumber = val.trim();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mfgDateController,
+                              decoration: const InputDecoration(labelText: 'Mfg Date', isDense: true, border: OutlineInputBorder()),
+                              onChanged: (val) {
+                                item.mfgDate = val.trim();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _expDateController,
+                        decoration: const InputDecoration(labelText: 'Expiry Date (e.g. 12/28)', isDense: true, border: OutlineInputBorder()),
+                        onChanged: (val) {
+                          item.expiryDate = val.trim();
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              // Line Total Summary Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('GST: ${_gstController.text}%', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                    Text(
+                      'Total: Ã¢â€šÂ¹${(item.totalAmount ?? 0.0).toStringAsFixed(2)}',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '#${widget.index + 1}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                item.itemName ?? '',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: widget.onDelete,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: TextFormField(
-                initialValue: itemState.quantity.toString(),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                controller: _qtyController,
+                keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
-                  ref.read(creditNoteCartProvider.notifier).updateItemAt(index, quantity: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).state = true;
+                  final double? qtyVal = double.tryParse(val);
+                  if (qtyVal != null) {
+                    _triggerChanged(qty: qtyVal);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                isExpanded: true,
+                value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
+                decoration: const InputDecoration(
+                  labelText: 'Unit',
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  border: OutlineInputBorder(),
+                ),
+                items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    final oldUnit = selectedUnit;
+                    final newUnit = val;
+                    if (oldUnit != newUnit) {
+                      final conv = dbItem?.conversionFactor ?? 1.0;
+                      if (conv > 0 && conv != 1.0) {
+                        double currentRate = item.rate ?? 0.0;
+                        double newRate = currentRate;
+                        if (oldUnit == primaryUnit && newUnit == secondaryUnit) {
+                          newRate = currentRate / conv;
+                        } else if (oldUnit == secondaryUnit && newUnit == primaryUnit) {
+                          newRate = currentRate * conv;
+                        }
+
+                        final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                        final double rateIncl = newRate * (1 + gstPct / 100.0);
+
+                        _isUpdatingLocally = true;
+                        _rateExclController.text = newRate.toStringAsFixed(2);
+                        _rateInclController.text = rateIncl.toStringAsFixed(2);
+                        _isUpdatingLocally = false;
+
+                        setState(() {
+                          item.unit = newUnit;
+                          item.rate = newRate;
+                        });
+                        _triggerChanged(exclRate: newRate);
+                      } else {
+                        setState(() {
+                          item.unit = newUnit;
+                        });
+                      }
+                    }
+                  }
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: TextFormField(
-                initialValue: itemState.rate.toString(),
+                controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Rate (₹)', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Rate Excl (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
-                  ref.read(creditNoteCartProvider.notifier).updateItemAt(index, rate: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).state = true;
+                  final double? excl = double.tryParse(val);
+                  if (excl == null) return;
+                  
+                  final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                  final incl = excl * (1 + gstPct / 100.0);
+                  
+                  _isUpdatingLocally = true;
+                  _rateInclController.text = incl.toStringAsFixed(2);
+                  _isUpdatingLocally = false;
+                  
+                  _triggerChanged(exclRate: excl);
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
-                child: Text('${itemState.gstPercent.toInt()}%'),
+              child: TextFormField(
+                controller: _rateInclController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(labelText: 'Rate Incl (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  final double? incl = double.tryParse(val);
+                  if (incl == null) return;
+                  
+                  final gstPct = double.tryParse(_gstController.text) ?? 18.0;
+                  final excl = incl / (1 + gstPct / 100.0);
+                  
+                  _isUpdatingLocally = true;
+                  _rateExclController.text = excl.toStringAsFixed(2);
+                  _isUpdatingLocally = false;
+                  
+                  _triggerChanged(exclRate: excl);
+                },
               ),
             ),
           ],
@@ -862,24 +1582,69 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
           children: [
             Expanded(
               child: TextFormField(
-                initialValue: itemState.discountPercent.toString(),
+                controller: _discController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Disc %', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Disc (Ã¢â€šÂ¹)', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
-                  ref.read(creditNoteCartProvider.notifier).updateItemAt(index, discountPercent: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).state = true;
+                  final double? discVal = double.tryParse(val);
+                  if (discVal != null) {
+                    _triggerChanged(disc: discVal);
+                  }
                 },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: TextFormField(
-                initialValue: itemState.discountAmount.toString(),
+                controller: _gstController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
                 onChanged: (val) {
-                  ref.read(creditNoteCartProvider.notifier).updateItemAt(index, discountAmount: double.tryParse(val));
-                  ref.read(unsavedChangesProvider.notifier).state = true;
+                  final double? gstVal = double.tryParse(val);
+                  if (gstVal != null) {
+                    final excl = double.tryParse(_rateExclController.text) ?? 0.0;
+                    final incl = excl * (1 + gstVal / 100.0);
+                    
+                    _isUpdatingLocally = true;
+                    _rateInclController.text = incl.toStringAsFixed(2);
+                    _isUpdatingLocally = false;
+                    
+                    _triggerChanged(gst: gstVal);
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _batchController,
+                decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  widget.item.batchNumber = val.trim();
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _mfgDateController,
+                decoration: const InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  widget.item.mfgDate = val.trim();
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextFormField(
+                controller: _expDateController,
+                decoration: const InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                onChanged: (val) {
+                  widget.item.expiryDate = val.trim();
                 },
               ),
             ),
@@ -887,9 +1652,9 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         ),
       ],
     );
+
   }
 }
-
 
 
 
