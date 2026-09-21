@@ -662,8 +662,8 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
         ),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(vertical: 40.0),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40.0),
           child: Center(
             child: Column(
               children: [

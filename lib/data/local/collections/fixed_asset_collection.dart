@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 import 'isar_model.dart';
-import 'account_collection.dart';
+import 'fixed_asset_transaction_collection.dart';
 
 part 'fixed_asset_collection.g.dart';
 

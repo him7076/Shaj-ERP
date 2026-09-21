@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/features/vault/domain/models/vault_item.dart';
-import 'package:business_sahaj_erp/core/providers/shared_preferences_provider.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
 final vaultRepositoryProvider = Provider<VaultRepository>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);

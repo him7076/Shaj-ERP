@@ -145,6 +145,10 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,
+    List<double>? bundleComponentRates,
+    List<double>? bundleComponentBuyRates,
+    List<double>? bundleComponentGstPercents,
+    List<String>? bundleComponentDescriptions,
     String? selectedSubItemUuid,
     String? selectedSubItemName,
   }) {
@@ -180,6 +184,10 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       bundleComponentUuids: bundleComponentUuids ?? current.bundleComponentUuids,
       bundleComponentQuantities: bundleComponentQuantities ?? current.bundleComponentQuantities,
       bundleComponentUnits: bundleComponentUnits ?? current.bundleComponentUnits,
+      bundleComponentRates: bundleComponentRates ?? current.bundleComponentRates,
+      bundleComponentBuyRates: bundleComponentBuyRates ?? current.bundleComponentBuyRates,
+      bundleComponentGstPercents: bundleComponentGstPercents ?? current.bundleComponentGstPercents,
+      bundleComponentDescriptions: bundleComponentDescriptions ?? current.bundleComponentDescriptions,
       selectedSubItemUuid: selectedSubItemUuid ?? current.selectedSubItemUuid,
       selectedSubItemName: selectedSubItemName ?? current.selectedSubItemName,
     );
