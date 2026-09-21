@@ -16,9 +16,10 @@ class SelectedProductData {
 class ItemSearchPickerModal extends ConsumerStatefulWidget {
   final bool isPurchase;
   final bool onlyBundles;
-  const ItemSearchPickerModal({Key? key, this.isPurchase = false, this.onlyBundles = false}) : super(key: key);
+  final bool excludeBundles;
+  const ItemSearchPickerModal({Key? key, this.isPurchase = false, this.onlyBundles = false, this.excludeBundles = false}) : super(key: key);
 
-  static Future<SelectedProductData?> show(BuildContext context, {bool isPurchase = false, bool onlyBundles = false}) {
+  static Future<SelectedProductData?> show(BuildContext context, {bool isPurchase = false, bool onlyBundles = false, bool excludeBundles = false}) {
     return showDialog<SelectedProductData>(
       context: context,
       builder: (context) => Dialog(
@@ -27,7 +28,7 @@ class ItemSearchPickerModal extends ConsumerStatefulWidget {
         child: SizedBox(
           width: 550,
           height: 600,
-          child: ItemSearchPickerModal(isPurchase: isPurchase, onlyBundles: onlyBundles),
+          child: ItemSearchPickerModal(isPurchase: isPurchase, onlyBundles: onlyBundles, excludeBundles: excludeBundles),
         ),
       ),
     );
@@ -111,6 +112,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
               data: (allItems) {
                 final filteredList = allItems.where((item) {
                   if (widget.onlyBundles && !item.isBundle) return false;
+                  if (widget.excludeBundles && item.isBundle) return false;
                   if (_searchQuery.isEmpty) return true;
                   final name = item.itemName?.toLowerCase() ?? '';
                   final code = item.itemCode?.toLowerCase() ?? '';

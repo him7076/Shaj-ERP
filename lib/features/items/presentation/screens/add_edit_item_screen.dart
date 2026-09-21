@@ -1019,6 +1019,35 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
     );
   }
 
+
+  Widget _buildResponsiveRow(List<Widget> children) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: children.map((child) => Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: child,
+            )).toList(),
+          );
+        } else {
+          List<Widget> rowChildren = [];
+          for (int i = 0; i < children.length; i++) {
+            rowChildren.add(Expanded(child: children[i]));
+            if (i < children.length - 1) {
+              rowChildren.add(const SizedBox(width: 16));
+            }
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: rowChildren,
+          );
+        }
+      },
+    );
+  }
+
   Widget _buildSectionCard({
     required BuildContext context,
     required String title,
@@ -1431,10 +1460,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 builder: (context, constraints) {
                   final isNarrow = constraints.maxWidth < 500;
                   if (isNarrow) {
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
+                    return _buildResponsiveRow([
+            OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1449,10 +1476,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
+            ElevatedButton(
                             onPressed: _save,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: theme.colorScheme.primary,
@@ -1470,9 +1494,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    );
+          ]);
                   }
 
                   return Row(
@@ -1521,10 +1543,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       icon: Icons.info_outline,
       color: Colors.indigo,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
+        _buildResponsiveRow([
+            TextFormField(
                 controller: _codeController,
                 decoration: const InputDecoration(
                   labelText: 'Product Code *',
@@ -1533,10 +1553,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product code is required' : null,
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
+            TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Product Name *',
@@ -1545,24 +1562,17 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product name is required' : null,
               ),
-            ),
-          ],
-        ),
+          ]),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
+        _buildResponsiveRow([
+            TextFormField(
                 controller: _shortNameController,
                 decoration: const InputDecoration(
                   labelText: 'Short Name / Alias',
                   border: OutlineInputBorder(),
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: categoriesAsync.when(
+            categoriesAsync.when(
                 data: (list) {
                   final exists = _selectedCategory != null && list.any((c) => c.id == _selectedCategory!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedCategory != null) _selectedCategory!];
@@ -1589,9 +1599,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                         icon: const Icon(Icons.add),
                         tooltip: 'Add Category',
                         onPressed: _showCreateCategoryDialog,
-                      ),
-                    ],
-                  );
+          ]);
                 },
                 loading: () => const Center(child: LinearProgressIndicator()),
                 error: (e, _) => const Icon(Icons.error),
@@ -1600,10 +1608,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: brandsAsync.when(
+        _buildResponsiveRow([
+            brandsAsync.when(
                 data: (list) {
                   final exists = _selectedBrand != null && list.any((b) => b.id == _selectedBrand!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedBrand != null) _selectedBrand!];
@@ -2070,10 +2076,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   ],
                   onChanged: (v) => setState(() => _gstRate = v ?? 18.0),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: RawAutocomplete<HsnModel>(
+            RawAutocomplete<HsnModel>(
                   textEditingController: _hsnController,
                   focusNode: FocusNode(),
                   optionsBuilder: (TextEditingValue textEditingValue) {
@@ -2138,9 +2141,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                     );
                   },
                 ),
-              ),
-            ],
-          ),
+          ]),
           const SizedBox(height: 16),
           Card(
             color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
@@ -2259,10 +2260,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 data: (list) {
                   final exists = _selectedUnit != null && list.any((u) => u.id == _selectedUnit!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedUnit != null) _selectedUnit!];
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
+                  return _buildResponsiveRow([
+            InkWell(
                           onTap: () => _showSearchableUnitPicker(isSecondary: false, unitsList: dropdownItems),
                           borderRadius: BorderRadius.circular(4),
                           child: InputDecorator(
@@ -2373,32 +2372,25 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       icon: Icons.description_outlined,
       color: Colors.blue,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _weightController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
-                  labelText: 'Weight (KG)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.monitor_weight_outlined),
-                ),
-              ),
+        _buildResponsiveRow([
+          TextFormField(
+            controller: _weightController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Weight (KG)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.monitor_weight_outlined),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _dimensionsController,
-                decoration: const InputDecoration(
-                  labelText: 'Dimensions (L x W x H)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.straighten_outlined),
-                ),
-              ),
+          ),
+          TextFormField(
+            controller: _dimensionsController,
+            decoration: const InputDecoration(
+              labelText: 'Dimensions (L x W x H)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.straighten_outlined),
             ),
-          ],
-        ),
+          ),
+        ]),
         if (enableDescriptions) ...[
           const SizedBox(height: 16),
           TextFormField(

@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
@@ -28,8 +30,8 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
   final _serialNumberController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _googlePhotosLinkController = TextEditingController();
-  final _serviceIntervalMonthsController = TextEditingController();
-  final _serviceIntervalDaysController = TextEditingController();
+  final _serviceIntervalController = TextEditingController();
+  String _serviceIntervalType = 'Months';
 
   Party? _selectedParty;
   MachineryCategory? _selectedCategory;
@@ -37,6 +39,8 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
   DateTime? _nextServiceDate;
   Machinery? _existingMachinery;
   bool _isLoading = true;
+  List<String> _photos = [];
+  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -55,10 +59,18 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
         _serialNumberController.text = machinery.serialNumber ?? '';
         _descriptionController.text = machinery.description ?? '';
         _googlePhotosLinkController.text = machinery.googlePhotosLink ?? '';
-        _serviceIntervalMonthsController.text = machinery.serviceIntervalMonths?.toString() ?? '';
-        _serviceIntervalDaysController.text = machinery.serviceIntervalDays?.toString() ?? '';
+        
+        if ((machinery.serviceIntervalMonths ?? 0) > 0) {
+          _serviceIntervalController.text = machinery.serviceIntervalMonths.toString();
+          _serviceIntervalType = 'Months';
+        } else if ((machinery.serviceIntervalDays ?? 0) > 0) {
+          _serviceIntervalController.text = machinery.serviceIntervalDays.toString();
+          _serviceIntervalType = 'Days';
+        }
+
         _lastServiceDate = machinery.lastServiceDate;
         _nextServiceDate = machinery.nextServiceDate;
+        _photos = machinery.photos != null ? List<String>.from(machinery.photos!) : [];
 
         if (machinery.partyUuid != null) {
           final parties = await ref.read(partiesListProvider.future);
@@ -96,22 +108,45 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
     _serialNumberController.dispose();
     _descriptionController.dispose();
     _googlePhotosLinkController.dispose();
-    _serviceIntervalMonthsController.dispose();
-    _serviceIntervalDaysController.dispose();
+    _serviceIntervalController.dispose();
     super.dispose();
   }
 
   void _calculateNextServiceDate() {
     if (_lastServiceDate == null) return;
     
-    int months = int.tryParse(_serviceIntervalMonthsController.text) ?? 0;
-    int days = int.tryParse(_serviceIntervalDaysController.text) ?? 0;
+    int interval = int.tryParse(_serviceIntervalController.text) ?? 0;
     
-    if (months > 0 || days > 0) {
+    if (interval > 0) {
       setState(() {
-        _nextServiceDate = DateTime(_lastServiceDate!.year, _lastServiceDate!.month + months, _lastServiceDate!.day + days);
+        if (_serviceIntervalType == 'Months') {
+          _nextServiceDate = DateTime(_lastServiceDate!.year, _lastServiceDate!.month + interval, _lastServiceDate!.day);
+        } else {
+          _nextServiceDate = DateTime(_lastServiceDate!.year, _lastServiceDate!.month, _lastServiceDate!.day + interval);
+        }
       });
     }
+  }
+
+  Future<void> _pickPhotos() async {
+    try {
+      final List<XFile> images = await _imagePicker.pickMultiImage();
+      if (images.isNotEmpty) {
+        setState(() {
+          _photos.addAll(images.map((e) => e.path));
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking images: $e')),
+      );
+    }
+  }
+
+  void _removePhoto(int index) {
+    setState(() {
+      _photos.removeAt(index);
+    });
   }
 
   Future<void> _saveMachinery() async {
@@ -127,10 +162,19 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
     machinery.serialNumber = _serialNumberController.text.trim();
     machinery.description = _descriptionController.text.trim();
     machinery.googlePhotosLink = _googlePhotosLinkController.text.trim();
-    machinery.serviceIntervalMonths = int.tryParse(_serviceIntervalMonthsController.text);
-    machinery.serviceIntervalDays = int.tryParse(_serviceIntervalDaysController.text);
+    
+    int interval = int.tryParse(_serviceIntervalController.text) ?? 0;
+    if (_serviceIntervalType == 'Months') {
+      machinery.serviceIntervalMonths = interval;
+      machinery.serviceIntervalDays = 0;
+    } else {
+      machinery.serviceIntervalDays = interval;
+      machinery.serviceIntervalMonths = 0;
+    }
+    
     machinery.lastServiceDate = _lastServiceDate;
     machinery.nextServiceDate = _nextServiceDate;
+    machinery.photos = _photos;
 
     await ref.read(machineryProvider).saveMachinery(machinery);
 
@@ -173,65 +217,195 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
   }
 
   void _showPartySearchDialog(List<Party> parties) {
+    String searchQuery = '';
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.8,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Select Customer',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
+        return StatefulBuilder(
+          builder: (context, setStateSB) {
+            final filteredParties = parties.where((p) => (p.partyName ?? '').toLowerCase().contains(searchQuery.toLowerCase())).toList();
+            return DraggableScrollableSheet(
+              initialChildSize: 0.8,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Select Customer',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          TextButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: const Text('New'),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              context.push('/addEditParty').then((_) {
+                                // Reload to get new party
+                                ref.invalidate(partiesListProvider);
+                              });
+                            },
+                          ),
+                        ],
                       ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.add),
-                        label: const Text('New'),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          context.push('/addEditParty');
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: parties.length,
-                    itemBuilder: (context, index) {
-                      final p = parties[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          child: Text(p.partyName?.substring(0, 1).toUpperCase() ?? '?'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
-                        title: Text(p.partyName ?? 'Unknown'),
-                        subtitle: Text(p.mobileNumber ?? 'No Phone'),
-                        onTap: () {
-                          setState(() {
-                            _selectedParty = p;
+                        onChanged: (val) {
+                          setStateSB(() {
+                            searchQuery = val;
                           });
-                          Navigator.pop(context);
                         },
-                      );
-                    },
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (filteredParties.isEmpty)
+                      const Expanded(
+                        child: Center(
+                          child: Text('No customers found', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: filteredParties.length,
+                          itemBuilder: (context, index) {
+                            final p = filteredParties[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                child: Text(p.partyName?.substring(0, 1).toUpperCase() ?? '?'),
+                              ),
+                              title: Text(p.partyName ?? 'Unknown'),
+                              subtitle: Text(p.mobileNumber ?? 'No Phone'),
+                              onTap: () {
+                                setState(() {
+                                  _selectedParty = p;
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showCategorySearchDialog(List<MachineryCategory> categories) {
+    String searchQuery = '';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSB) {
+            final filteredCategories = categories.where((c) => (c.categoryName ?? '').toLowerCase().contains(searchQuery.toLowerCase())).toList();
+            return DraggableScrollableSheet(
+              initialChildSize: 0.8,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Select Category',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          TextButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: const Text('New'),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              context.push('/manageMachineryCategories').then((_) {
+                                // Reload to get new category
+                                ref.invalidate(machineryCategoryListProvider);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search categories...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                        onChanged: (val) {
+                          setStateSB(() {
+                            searchQuery = val;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (filteredCategories.isEmpty)
+                      const Expanded(
+                        child: Center(
+                          child: Text('No categories found', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: filteredCategories.length,
+                          itemBuilder: (context, index) {
+                            final c = filteredCategories[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                child: Text(c.categoryName?.substring(0, 1).toUpperCase() ?? '?'),
+                              ),
+                              title: Text(c.categoryName ?? 'Unknown'),
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategory = c;
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                );
+              },
+            );
+          }
         );
       },
     );
@@ -303,20 +477,34 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
               ),
               const SizedBox(height: 16),
               
-              // Machinery Category
+              // Searchable Machinery Category
               categoriesAsync.when(
                 data: (categories) {
-                  return DropdownButtonFormField<MachineryCategory>(
-                    value: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Machinery Category',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category_rounded),
+                  return InkWell(
+                    onTap: () => _showCategorySearchDialog(categories.cast<MachineryCategory>()),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.category_rounded, color: Colors.grey),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedCategory?.categoryName ?? 'Machinery Category',
+                              style: TextStyle(
+                                color: _selectedCategory == null ? Colors.grey.shade600 : null,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.search, color: Colors.grey),
+                        ],
+                      ),
                     ),
-                    items: categories.map((c) {
-                      return DropdownMenuItem(value: c, child: Text(c.categoryName ?? 'Unknown'));
-                    }).toList(),
-                    onChanged: (val) => setState(() => _selectedCategory = val),
                   );
                 },
                 loading: () => const CircularProgressIndicator(),
@@ -367,12 +555,85 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
               ),
               const SizedBox(height: 16),
               
+              // Photos Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.photo_library_rounded, color: Colors.grey),
+                            SizedBox(width: 8),
+                            Text('Photos', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                        TextButton.icon(
+                          onPressed: _pickPhotos,
+                          icon: const Icon(Icons.add_photo_alternate),
+                          label: const Text('Add Photos'),
+                        ),
+                      ],
+                    ),
+                    if (_photos.isNotEmpty) const SizedBox(height: 12),
+                    if (_photos.isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: List.generate(_photos.length, (index) {
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                  image: DecorationImage(
+                                    image: FileImage(File(_photos[index])),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: -8,
+                                top: -8,
+                                child: InkWell(
+                                  onTap: () => _removePhoto(index),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
               TextFormField(
                 controller: _googlePhotosLinkController,
                 decoration: const InputDecoration(
-                  labelText: 'Photos / Drive Link',
+                  labelText: 'Drive Link (Optional)',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.photo_library_rounded),
+                  prefixIcon: Icon(Icons.link_rounded),
                 ),
               ),
               const SizedBox(height: 24),
@@ -387,101 +648,112 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.build_circle, color: theme.colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Service Information',
-                            style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 16),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _serviceIntervalMonthsController,
-                              decoration: const InputDecoration(
-                                labelText: 'Interval (Months)',
-                                border: OutlineInputBorder(),
-                                filled: true,
-                                fillColor: Colors.white,
-                              ),
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculateNextServiceDate(),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _serviceIntervalDaysController,
-                              decoration: const InputDecoration(
-                                labelText: 'Interval (Days)',
-                                border: OutlineInputBorder(),
-                                filled: true,
-                                fillColor: Colors.white,
-                              ),
-                              keyboardType: TextInputType.number,
-                              onChanged: (_) => _calculateNextServiceDate(),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Column(
-                          children: [
-                            ListTile(
-                              title: const Text('Last Service Date', style: TextStyle(fontSize: 14)),
-                              subtitle: Text(_lastServiceDate == null ? 'Not set' : DateFormat('dd MMM yyyy').format(_lastServiceDate!), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                              trailing: const Icon(Icons.calendar_today_rounded, size: 20),
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: _lastServiceDate ?? DateTime.now(),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2100),
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    _lastServiceDate = picked;
-                                  });
-                                  _calculateNextServiceDate();
-                                }
-                              },
-                            ),
-                            const Divider(height: 1),
-                            ListTile(
-                              title: const Text('Next Service Due', style: TextStyle(fontSize: 14)),
-                              subtitle: Text(_nextServiceDate == null ? 'Not set' : DateFormat('dd MMM yyyy').format(_nextServiceDate!), style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.error)),
-                              trailing: const Icon(Icons.calendar_today_rounded, size: 20),
-                              onTap: () async {
-                                final picked = await showDatePicker(
-                                  context: context,
-                                  initialDate: _nextServiceDate ?? DateTime.now(),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2100),
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    _nextServiceDate = picked;
-                                  });
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       Row(
+                         children: [
+                           Icon(Icons.build_circle, color: theme.colorScheme.primary),
+                           const SizedBox(width: 8),
+                           Text(
+                             'Service Information',
+                             style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 16),
+                           ),
+                         ],
+                       ),
+                       const SizedBox(height: 16),
+                       Row(
+                         children: [
+                           Expanded(
+                             flex: 2,
+                             child: TextFormField(
+                               controller: _serviceIntervalController,
+                               decoration: InputDecoration(
+                                 labelText: 'Service Interval',
+                                 border: const OutlineInputBorder(),
+                                 filled: true,
+                                 fillColor: theme.cardColor,
+                               ),
+                               keyboardType: TextInputType.number,
+                               onChanged: (_) => _calculateNextServiceDate(),
+                             ),
+                           ),
+                           const SizedBox(width: 16),
+                           Expanded(
+                             flex: 3,
+                             child: DropdownButtonFormField<String>(
+                               value: _serviceIntervalType,
+                               decoration: InputDecoration(
+                                 border: const OutlineInputBorder(),
+                                 filled: true,
+                                 fillColor: theme.cardColor,
+                               ),
+                               items: const [
+                                 DropdownMenuItem(value: 'Months', child: Text('Months')),
+                                 DropdownMenuItem(value: 'Days', child: Text('Days')),
+                               ],
+                               onChanged: (val) {
+                                 if (val != null) {
+                                   setState(() {
+                                     _serviceIntervalType = val;
+                                     _calculateNextServiceDate();
+                                   });
+                                 }
+                               },
+                             ),
+                           ),
+                         ],
+                       ),
+                       const SizedBox(height: 16),
+                       Container(
+                         decoration: BoxDecoration(
+                           color: theme.cardColor,
+                           borderRadius: BorderRadius.circular(8),
+                           border: Border.all(color: Colors.grey.shade300),
+                         ),
+                         child: Column(
+                           children: [
+                             ListTile(
+                               title: const Text('Last Service Date', style: TextStyle(fontSize: 14)),
+                               subtitle: Text(_lastServiceDate == null ? 'Not set' : DateFormat('dd MMM yyyy').format(_lastServiceDate!), style: const TextStyle(fontWeight: FontWeight.bold)),
+                               trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                               onTap: () async {
+                                 final picked = await showDatePicker(
+                                   context: context,
+                                   initialDate: _lastServiceDate ?? DateTime.now(),
+                                   firstDate: DateTime(2000),
+                                   lastDate: DateTime(2100),
+                                 );
+                                 if (picked != null) {
+                                   setState(() {
+                                     _lastServiceDate = picked;
+                                   });
+                                   _calculateNextServiceDate();
+                                 }
+                               },
+                             ),
+                             const Divider(height: 1),
+                             ListTile(
+                               title: const Text('Next Service Due', style: TextStyle(fontSize: 14)),
+                               subtitle: Text(_nextServiceDate == null ? 'Not set' : DateFormat('dd MMM yyyy').format(_nextServiceDate!), style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.error)),
+                               trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                               onTap: () async {
+                                 final picked = await showDatePicker(
+                                   context: context,
+                                   initialDate: _nextServiceDate ?? DateTime.now(),
+                                   firstDate: DateTime(2000),
+                                   lastDate: DateTime(2100),
+                                 );
+                                 if (picked != null) {
+                                   setState(() {
+                                     _nextServiceDate = picked;
+                                   });
+                                 }
+                               },
+                             ),
+                           ],
+                         ),
+                       ),
+                     ],
                   ),
                 ),
               ),

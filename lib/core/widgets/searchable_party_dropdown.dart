@@ -51,7 +51,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
     return RawAutocomplete<Party>(
       textEditingController: _controller,
       focusNode: _focusNode,
-      displayStringForOption: (party) => party.uuid == 'NEW_ACTION' ? '' : (party.partyName ?? ''),
+      displayStringForOption: (party) => party.partyName ?? '',
       optionsBuilder: (TextEditingValue textEditingValue) {
         final query = textEditingValue.text.trim().toLowerCase();
         List<Party> filtered = [];
@@ -64,25 +64,9 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
             return name.contains(query) || phone.contains(query);
           }).toList();
         }
-
-        final createActionParty = Party()
-          ..uuid = 'NEW_ACTION'
-          ..partyName = query.isNotEmpty
-              ? '+ Create New Party "$query"'
-              : '+ Create New Party Account';
-
-        return [...filtered, createActionParty];
+        return filtered;
       },
       onSelected: (party) {
-        if (party.uuid == 'NEW_ACTION') {
-          final query = _controller.text.trim();
-          FocusScope.of(context).unfocus();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddEditPartyScreen(initialName: query.isNotEmpty ? query : null)),
-          );
-          return;
-        }
         widget.onChanged(party);
         FocusScope.of(context).unfocus();
       },
@@ -99,53 +83,66 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
             color: theme.colorScheme.surface,
             child: Container(
               width: dropdownWidth,
-              constraints: const BoxConstraints(maxHeight: 240),
+              constraints: const BoxConstraints(maxHeight: 280),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
               ),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final party = options.elementAt(index);
-                  if (party.uuid == 'NEW_ACTION') {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.12),
-                        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
-                      ),
-                      child: ListTile(
-                        dense: true,
-                        leading: Icon(Icons.person_add_alt_1_rounded, color: theme.colorScheme.primary, size: 18),
-                        title: Text(
-                          party.partyName ?? '+ Create New Party Account',
-                          style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.primary, fontSize: 12.5),
-                        ),
-                        onTap: () => onSelected(party),
-                      ),
-                    );
-                  }
-
-                  final double bal = party.outstandingBalance ?? 0.0;
-                  final Color balColor = bal > 0 ? Colors.green : (bal < 0 ? Colors.red : Colors.grey);
-                  final String balText = bal > 0 
-                      ? 'Receivable: ₹${bal.toStringAsFixed(2)}' 
-                      : (bal < 0 ? 'Payable: ₹${bal.abs().toStringAsFixed(2)}' : 'Balance: ₹0.00');
-
-                  return ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                    title: Text(party.partyName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                    subtitle: Text(
-                      balText,
-                      style: TextStyle(color: balColor, fontWeight: FontWeight.w600, fontSize: 11),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                      border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
                     ),
-                    onTap: () => onSelected(party),
-                  );
-                },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Select Party', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13)),
+                        InkWell(
+                          onTap: () {
+                            FocusScope.of(context).unfocus();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AddEditPartyScreen()),
+                            );
+                          },
+                          child: Text('+ Add New', style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final party = options.elementAt(index);
+                        final double bal = party.outstandingBalance ?? 0.0;
+                        final Color balColor = bal > 0 ? Colors.green : (bal < 0 ? Colors.red : Colors.grey);
+                        final String balText = bal > 0 
+                            ? 'Receivable: ₹${bal.toStringAsFixed(2)}' 
+                            : (bal < 0 ? 'Payable: ₹${bal.abs().toStringAsFixed(2)}' : 'Balance: ₹0.00');
+
+                        return ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                          title: Text(party.partyName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          subtitle: Text(
+                            balText,
+                            style: TextStyle(color: balColor, fontWeight: FontWeight.w600, fontSize: 11),
+                          ),
+                          onTap: () => onSelected(party),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

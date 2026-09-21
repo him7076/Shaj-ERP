@@ -1047,67 +1047,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 ],
               ),
         ),
-        bottomNavigationBar: !isDesktop
-            ? null
-            : Builder(
-                builder: (context) {
-            final cart = ref.watch(invoiceCartProvider);
-            return FutureBuilder<Settings?>(
-              future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
-              builder: (context, snapshot) {
-                final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(snapshot.data?.companyGST);
-                final grandTotal = totals['grandTotal'] ?? 0.0;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Grand Total (${cart.items.length} items)',
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                          ),
-                          Text(
-                            '₹${grandTotal.toStringAsFixed(2)}',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: const Text('Save Sales Invoice', style: TextStyle(fontWeight: FontWeight.bold)),
-                        onPressed: _saveInvoice,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-        ),
+        bottomNavigationBar: null,
       ),
     );
   }
@@ -1268,27 +1208,76 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   child: Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          isExpanded: true,
-                          value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
-                          decoration: const InputDecoration(
-                            labelText: 'Salesman Name',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            prefixIcon: Icon(Icons.badge_outlined),
-                          ),
-                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
-                          onChanged: (val) {
-                            if (val != null) setState(() => _selectedSalesman = val);
+                        child: RawAutocomplete<String>(
+                          textEditingController: TextEditingController(text: _selectedSalesman),
+                          focusNode: FocusNode(),
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            final query = textEditingValue.text.trim().toLowerCase();
+                            if (query.isEmpty) return _salesmenList;
+                            return _salesmenList.where((s) => s.toLowerCase().contains(query)).toList();
+                          },
+                          onSelected: (String s) {
+                            setState(() {
+                              _selectedSalesman = s;
+                            });
+                            FocusScope.of(context).unfocus();
+                          },
+                          optionsViewBuilder: (context, onSelected, options) {
+                            return Align(
+                              alignment: Alignment.topLeft,
+                              child: Material(
+                                elevation: 4,
+                                child: Container(
+                                  width: 250,
+                                  constraints: const BoxConstraints(maxHeight: 250),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        child: ListTile(
+                                          leading: const Icon(Icons.add, color: Colors.blue),
+                                          title: const Text('+ Add New', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                                          onTap: () {
+                                            FocusScope.of(context).unfocus();
+                                            _showAddSalesmanDialog();
+                                          },
+                                        ),
+                                      ),
+                                      Flexible(
+                                        child: ListView.builder(
+                                          padding: EdgeInsets.zero,
+                                          shrinkWrap: true,
+                                          itemCount: options.length,
+                                          itemBuilder: (context, index) {
+                                            final option = options.elementAt(index);
+                                            return ListTile(
+                                              title: Text(option),
+                                              onTap: () => onSelected(option),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                            return TextFormField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                labelText: 'Salesman Name',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                prefixIcon: Icon(Icons.badge_outlined),
+                              ),
+                            );
                           },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filledTonal(
-                        icon: const Icon(Icons.person_add_alt_1),
-                        tooltip: 'Add Salesman',
-                        onPressed: _showAddSalesmanDialog,
                       ),
                     ],
                   ),
@@ -1325,7 +1314,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () async {
-                        final selectedItem = await ItemSearchPickerModal.show(context);
+                        final selectedItem = await ItemSearchPickerModal.show(context, excludeBundles: true);
                         if (selectedItem != null) {
                           await _handleItemAdded(selectedItem);
                         }
@@ -1405,7 +1394,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final selectedItem = await ItemSearchPickerModal.show(context);
+                      final selectedItem = await ItemSearchPickerModal.show(context, excludeBundles: true);
                       if (selectedItem != null) {
                         await _handleItemAdded(selectedItem);
                       }
@@ -1693,10 +1682,9 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
 
   Future<void> _showBundleComponentsDialog() async {
     final item = widget.cartItem;
-    if (item.bundleComponentUuids == null || item.bundleComponentUuids!.isEmpty) return;
     
     // Create local copies of components to edit
-    List<String> uuids = List.from(item.bundleComponentUuids!);
+    List<String> uuids = item.bundleComponentUuids != null ? List.from(item.bundleComponentUuids!) : [];
     List<double> quantities = List.from(item.bundleComponentQuantities ?? []);
     List<String> units = List.from(item.bundleComponentUnits ?? []);
     List<double> rates = List.from(item.bundleComponentRates ?? []);
@@ -1877,7 +1865,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                       icon: const Icon(Icons.add),
                       label: const Text('Add Component to this Bundle'),
                       onPressed: () async {
-                        final selected = await ItemSearchPickerModal.show(ctx);
+                        final selected = await ItemSearchPickerModal.show(ctx, excludeBundles: true);
                         if (selected != null && selected.item.uuid != null) {
                           if (!uuids.contains(selected.item.uuid)) {
                             setSheetState(() {
@@ -2100,18 +2088,19 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                   ),
                 ],
               ),
-              if (enableBuyPrice) ...[
-                const SizedBox(height: 10),
-                Row(
-                  children: [
+              // Rate Input with Tax Mode & Unit Dropdowns
+              Row(
+                children: [
+                  if (enableBuyPrice) ...[
                     Expanded(
+                      flex: 3,
                       child: TextFormField(
                         controller: _buyRateController,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
-                          labelText: 'Buy Price (Cost)',
+                          labelText: 'Buy Price',
                           isDense: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (val) {
@@ -2122,14 +2111,8 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                         },
                       ),
                     ),
+                    const SizedBox(width: 6),
                   ],
-                ),
-              ],
-              const SizedBox(height: 10),
-
-              // Rate Input with Tax Mode & Unit Dropdowns
-              Row(
-                children: [
                   // Rate Input Box
                   Expanded(
                     flex: 3,
