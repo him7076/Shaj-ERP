@@ -20,6 +20,11 @@ class Task implements IsarModel {
   DateTime? dueDate;
   DateTime? completedAt;
 
+  // Enhancements
+  String? subtasksJson; // e.g. [{"title": "Fix bug", "isCompleted": false}]
+  int? estimatedTimeMinutes;
+  List<String>? linkedItemUuids;
+
   @override
   DateTime createdAt = DateTime.now();
   @override

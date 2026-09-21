@@ -2318,6 +2318,9 @@ class SyncService {
           'priority': e.priority,
           'dueDate': e.dueDate?.toIso8601String(),
           'completedAt': e.completedAt?.toIso8601String(),
+          'subtasksJson': e.subtasksJson,
+          'estimatedTimeMinutes': e.estimatedTimeMinutes,
+          'linkedItemUuids': e.linkedItemUuids,
           'createdAt': e.createdAt.toIso8601String(),
           'updatedAt': e.updatedAt.toIso8601String(),
           'isDeleted': e.isDeleted,
@@ -2338,6 +2341,16 @@ class SyncService {
           'serviceIntervalDays': e.serviceIntervalDays,
           'lastServiceDate': e.lastServiceDate?.toIso8601String(),
           'nextServiceDate': e.nextServiceDate?.toIso8601String(),
+          'createdAt': e.createdAt.toIso8601String(),
+          'updatedAt': e.updatedAt.toIso8601String(),
+          'isDeleted': e.isDeleted,
+        };
+      case 'MachineryCategory':
+        final e = entity as MachineryCategory;
+        return {
+          'uuid': e.uuid,
+          'categoryName': e.categoryName,
+          'description': e.description,
           'createdAt': e.createdAt.toIso8601String(),
           'updatedAt': e.updatedAt.toIso8601String(),
           'isDeleted': e.isDeleted,
@@ -2782,6 +2795,9 @@ class SyncService {
           ..priority = data['priority'] as String?
           ..dueDate = data['dueDate'] != null ? DateTime.parse(data['dueDate'] as String) : null
           ..completedAt = data['completedAt'] != null ? DateTime.parse(data['completedAt'] as String) : null
+          ..subtasksJson = data['subtasksJson'] as String?
+          ..estimatedTimeMinutes = data['estimatedTimeMinutes'] as int?
+          ..linkedItemUuids = (data['linkedItemUuids'] as List<dynamic>?)?.map((e) => e as String).toList()
           ..createdAt = DateTime.parse(data['createdAt'] as String)
           ..updatedAt = DateTime.parse(data['updatedAt'] as String)
           ..isDeleted = data['isDeleted'] as bool? ?? false
@@ -2802,6 +2818,16 @@ class SyncService {
           ..serviceIntervalDays = data['serviceIntervalDays'] as int?
           ..lastServiceDate = data['lastServiceDate'] != null ? DateTime.parse(data['lastServiceDate'] as String) : null
           ..nextServiceDate = data['nextServiceDate'] != null ? DateTime.parse(data['nextServiceDate'] as String) : null
+          ..createdAt = DateTime.parse(data['createdAt'] as String)
+          ..updatedAt = DateTime.parse(data['updatedAt'] as String)
+          ..isDeleted = data['isDeleted'] as bool? ?? false
+          ..isSynced = true;
+        break;
+      case 'MachineryCategory':
+        entity = MachineryCategory()
+          ..uuid = data['uuid'] as String?
+          ..categoryName = data['categoryName'] as String?
+          ..description = data['description'] as String?
           ..createdAt = DateTime.parse(data['createdAt'] as String)
           ..updatedAt = DateTime.parse(data['updatedAt'] as String)
           ..isDeleted = data['isDeleted'] as bool? ?? false
@@ -2950,6 +2976,7 @@ class SyncService {
         case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
         case 'Task': await _dbService.isar.tasks.put(entity as Task); break;
         case 'Machinery': await _dbService.isar.collection<Machinery>().put(entity as Machinery); break;
+        case 'MachineryCategory': await _dbService.isar.collection<MachineryCategory>().put(entity as MachineryCategory); break;
       }
     });
 

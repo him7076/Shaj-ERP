@@ -2,9 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/task_providers.dart';
-import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
+import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+
+class SubtaskItem {
+  String title;
+  bool isCompleted;
+  SubtaskItem({required this.title, this.isCompleted = false});
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'isCompleted': isCompleted,
+  };
+
+  factory SubtaskItem.fromJson(Map<String, dynamic> json) => SubtaskItem(
+    title: json['title'] ?? '',
+    isCompleted: json['isCompleted'] ?? false,
+  );
+}
 
 class AddEditTaskScreen extends ConsumerStatefulWidget {
   final int? taskId;
@@ -19,10 +37,14 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _estimatedTimeController = TextEditingController();
   
   String _status = 'Todo';
   String _priority = 'Medium';
   DateTime? _dueDate;
+  
+  List<SubtaskItem> _subtasks = [];
+  List<Item> _linkedItems = [];
   
   Task? _existingTask;
   bool _isLoading = true;
@@ -44,6 +66,22 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
         _status = task.status ?? 'Todo';
         _priority = task.priority ?? 'Medium';
         _dueDate = task.dueDate;
+        
+        if (task.estimatedTimeMinutes != null) {
+          _estimatedTimeController.text = task.estimatedTimeMinutes.toString();
+        }
+
+        if (task.subtasksJson != null && task.subtasksJson!.isNotEmpty) {
+          try {
+            final List<dynamic> decoded = jsonDecode(task.subtasksJson!);
+            _subtasks = decoded.map((e) => SubtaskItem.fromJson(e)).toList();
+          } catch (_) {}
+        }
+
+        if (task.linkedItemUuids != null && task.linkedItemUuids!.isNotEmpty) {
+          final allItems = await ref.read(itemsListProvider.future);
+          _linkedItems = allItems.where((i) => i.uuid != null && task.linkedItemUuids!.contains(i.uuid)).toList();
+        }
       }
     }
     setState(() {
@@ -55,6 +93,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _estimatedTimeController.dispose();
     super.dispose();
   }
 
@@ -63,6 +102,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
     
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
+    final estimatedTime = int.tryParse(_estimatedTimeController.text.trim());
 
     Task task;
     if (_existingTask != null) {
@@ -71,7 +111,10 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
         ..description = description
         ..status = _status
         ..priority = _priority
-        ..dueDate = _dueDate;
+        ..dueDate = _dueDate
+        ..estimatedTimeMinutes = estimatedTime
+        ..subtasksJson = jsonEncode(_subtasks.map((e) => e.toJson()).toList())
+        ..linkedItemUuids = _linkedItems.map((e) => e.uuid!).toList();
       
       if (_status == 'Done' && task.completedAt == null) {
         task.completedAt = DateTime.now();
@@ -86,7 +129,10 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
         ..description = description
         ..status = _status
         ..priority = _priority
-        ..dueDate = _dueDate;
+        ..dueDate = _dueDate
+        ..estimatedTimeMinutes = estimatedTime
+        ..subtasksJson = jsonEncode(_subtasks.map((e) => e.toJson()).toList())
+        ..linkedItemUuids = _linkedItems.map((e) => e.uuid!).toList();
         
       if (_status == 'Done') {
         task.completedAt = DateTime.now();
@@ -106,18 +152,105 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
     }
   }
 
-  Future<void> _pickDueDate() async {
-    final picked = await showDatePicker(
+  void _addSubtask() {
+    final tc = TextEditingController();
+    showDialog(
       context: context,
-      initialDate: _dueDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Subtask'),
+        content: TextField(
+          controller: tc,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Subtask title'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (tc.text.trim().isNotEmpty) {
+                setState(() {
+                  _subtasks.add(SubtaskItem(title: tc.text.trim()));
+                });
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          )
+        ],
+      ),
     );
-    if (picked != null) {
-      setState(() {
-        _dueDate = picked;
-      });
-    }
+  }
+
+  Future<void> _pickItems() async {
+    final allItems = await ref.read(itemsListProvider.future);
+    if (!mounted) return;
+
+    List<Item> tempSelected = List.from(_linkedItems);
+    
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.8,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    AppBar(
+                      title: const Text('Link Items/Bundles'),
+                      leading: const CloseButton(),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: allItems.length,
+                        itemBuilder: (context, index) {
+                          final item = allItems[index];
+                          final isSelected = tempSelected.any((e) => e.uuid == item.uuid);
+                          return CheckboxListTile(
+                            title: Text(item.itemName ?? ''),
+                            subtitle: Text(item.isBundle ? 'Bundle' : 'Item'),
+                            value: isSelected,
+                            onChanged: (val) {
+                              setModalState(() {
+                                if (val == true) {
+                                  tempSelected.add(item);
+                                } else {
+                                  tempSelected.removeWhere((e) => e.uuid == item.uuid);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Done'),
+                        ),
+                      ),
+                    )
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+
+    setState(() {
+      _linkedItems = tempSelected;
+    });
   }
 
   @override
@@ -199,16 +332,147 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Due Date'),
-                subtitle: Text(_dueDate == null ? 'No due date set' : DateFormat('EEE, MMM dd, yyyy').format(_dueDate!)),
-                trailing: TextButton.icon(
-                  icon: const Icon(Icons.calendar_month),
-                  label: const Text('Select Date'),
-                  onPressed: _pickDueDate,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _estimatedTimeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Est. Time (mins)',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.timer_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _dueDate ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _dueDate = picked;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_month, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _dueDate == null ? 'Due Date' : DateFormat('MMM dd, yyyy').format(_dueDate!),
+                                style: TextStyle(color: _dueDate == null ? Colors.grey.shade600 : null),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 24),
+
+              // Subtasks Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Subtasks', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  TextButton.icon(
+                    onPressed: _addSubtask,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add'),
+                  ),
+                ],
+              ),
+              if (_subtasks.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text('No subtasks added.', style: TextStyle(color: Colors.grey)),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _subtasks.length,
+                  itemBuilder: (context, index) {
+                    final sub = _subtasks[index];
+                    return CheckboxListTile(
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        sub.title,
+                        style: TextStyle(
+                          decoration: sub.isCompleted ? TextDecoration.lineThrough : null,
+                          color: sub.isCompleted ? Colors.grey : null,
+                        ),
+                      ),
+                      value: sub.isCompleted,
+                      onChanged: (val) {
+                        setState(() {
+                          sub.isCompleted = val ?? false;
+                        });
+                      },
+                      secondary: IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _subtasks.removeAt(index);
+                          });
+                        },
+                      ),
+                    );
+                  },
+                ),
+              
+              const SizedBox(height: 16),
+
+              // Linked Items Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Linked Items & Bundles', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  TextButton.icon(
+                    onPressed: _pickItems,
+                    icon: const Icon(Icons.link),
+                    label: const Text('Link Items'),
+                  ),
+                ],
+              ),
+              if (_linkedItems.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 16),
+                  child: Text('No items linked.', style: TextStyle(color: Colors.grey)),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _linkedItems.map((item) {
+                    return Chip(
+                      label: Text(item.itemName ?? ''),
+                      onDeleted: () {
+                        setState(() {
+                          _linkedItems.remove(item);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -218,7 +482,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: _saveTask,
-                  child: Text(isEdit ? 'Update Task' : 'Create Task', style: const TextStyle(fontSize: 16)),
+                  child: Text(isEdit ? 'Update Task' : 'Create Task', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

@@ -3,10 +3,10 @@ import 'package:uuid/uuid.dart';
 
 import 'isar_model.dart';
 
-part 'machinery_collection.g.dart';
+part 'machinery_category_collection.g.dart';
 
 @collection
-class Machinery implements IsarModel {
+class MachineryCategory implements IsarModel {
   @override
   Id id = Isar.autoIncrement;
 
@@ -15,26 +15,9 @@ class Machinery implements IsarModel {
   String? uuid = const Uuid().v4();
 
   @Index(type: IndexType.value)
-  String? partyUuid;
+  String? categoryName;
 
-  @Index(type: IndexType.value)
-  String? categoryUuid;
-
-  @Index(type: IndexType.value)
-  String? machineName;
-
-  String? brandName;
-  String? modelNumber;
-  String? serialNumber;
   String? description;
-  List<String>? photos;
-  String? googlePhotosLink;
-
-  int? serviceIntervalMonths;
-  int? serviceIntervalDays;
-
-  DateTime? lastServiceDate;
-  DateTime? nextServiceDate;
 
   @override
   DateTime createdAt = DateTime.now();

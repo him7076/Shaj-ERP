@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/screens/manage_machinery_categories_screen.dart';
 
 class OtherFeaturesScreen extends ConsumerStatefulWidget {
   const OtherFeaturesScreen({Key? key}) : super(key: key);
@@ -536,6 +537,25 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
                   onChanged: _toggleMachineryManagement,
                   activeColor: Colors.blueAccent,
                 ),
+                if (_enableMachineryManagement) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    title: const Text('Manage Machinery Categories', style: TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Add, edit, or delete categories for machinery.', style: TextStyle(fontSize: 12)),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(Icons.category_rounded, color: Colors.blueAccent),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ManageMachineryCategoriesScreen()),
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),

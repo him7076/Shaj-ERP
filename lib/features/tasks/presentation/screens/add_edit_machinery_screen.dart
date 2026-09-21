@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/machinery_providers.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/providers/machinery_category_providers.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 
@@ -30,6 +32,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
   final _serviceIntervalDaysController = TextEditingController();
 
   Party? _selectedParty;
+  MachineryCategory? _selectedCategory;
   DateTime? _lastServiceDate;
   DateTime? _nextServiceDate;
   Machinery? _existingMachinery;
@@ -61,6 +64,14 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
           final parties = await ref.read(partiesListProvider.future);
           _selectedParty = parties.cast<Party?>().firstWhere(
             (p) => p?.uuid == machinery.partyUuid,
+            orElse: () => null,
+          );
+        }
+        
+        if (machinery.categoryUuid != null) {
+          final categories = await ref.read(machineryCategoryListProvider.future);
+          _selectedCategory = categories.cast<MachineryCategory?>().firstWhere(
+            (c) => c?.uuid == machinery.categoryUuid,
             orElse: () => null,
           );
         }
@@ -110,6 +121,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
     
     machinery.machineName = _machineNameController.text.trim();
     machinery.partyUuid = _selectedParty?.uuid;
+    machinery.categoryUuid = _selectedCategory?.uuid;
     machinery.brandName = _brandNameController.text.trim();
     machinery.modelNumber = _modelNumberController.text.trim();
     machinery.serialNumber = _serialNumberController.text.trim();
@@ -143,7 +155,6 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
 
     String phone = _selectedParty!.mobileNumber!;
     if (!phone.startsWith('+')) {
-      // Basic assumption for testing, production would need country code selection
       phone = '+91$phone';
     }
 
@@ -161,6 +172,71 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
     }
   }
 
+  void _showPartySearchDialog(List<Party> parties) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Select Customer',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('New'),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push('/addEditParty');
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: parties.length,
+                    itemBuilder: (context, index) {
+                      final p = parties[index];
+                      return ListTile(
+                        leading: CircleAvatar(
+                          child: Text(p.partyName?.substring(0, 1).toUpperCase() ?? '?'),
+                        ),
+                        title: Text(p.partyName ?? 'Unknown'),
+                        subtitle: Text(p.mobileNumber ?? 'No Phone'),
+                        onTap: () {
+                          setState(() {
+                            _selectedParty = p;
+                          });
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -170,6 +246,8 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
     }
 
     final partiesAsync = ref.watch(partiesListProvider);
+    final categoriesAsync = ref.watch(machineryCategoryListProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -190,30 +268,66 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Searchable Customer Selection
               partiesAsync.when(
                 data: (parties) {
-                  return DropdownButtonFormField<Party>(
-                    value: _selectedParty,
-                    decoration: const InputDecoration(
-                      labelText: 'Customer / Party',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person_rounded),
+                  return InkWell(
+                    onTap: () => _showPartySearchDialog(parties),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person_rounded, color: Colors.grey),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedParty?.partyName ?? 'Select Customer / Party',
+                              style: TextStyle(
+                                color: _selectedParty == null ? Colors.grey.shade600 : null,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          const Icon(Icons.search, color: Colors.grey),
+                        ],
+                      ),
                     ),
-                    items: parties.map((p) {
-                      return DropdownMenuItem(value: p, child: Text(p.partyName ?? 'Unknown'));
-                    }).toList(),
-                    onChanged: (val) => setState(() => _selectedParty = val),
-                    validator: (val) => val == null ? 'Please select a customer' : null,
                   );
                 },
                 loading: () => const CircularProgressIndicator(),
                 error: (e, st) => Text('Error loading parties: $e'),
               ),
               const SizedBox(height: 16),
+              
+              // Machinery Category
+              categoriesAsync.when(
+                data: (categories) {
+                  return DropdownButtonFormField<MachineryCategory>(
+                    value: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: 'Machinery Category',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category_rounded),
+                    ),
+                    items: categories.map((c) {
+                      return DropdownMenuItem(value: c, child: Text(c.categoryName ?? 'Unknown'));
+                    }).toList(),
+                    onChanged: (val) => setState(() => _selectedCategory = val),
+                  );
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (e, st) => const Text('Error loading categories'),
+              ),
+              const SizedBox(height: 16),
+
               TextFormField(
                 controller: _machineNameController,
                 decoration: const InputDecoration(
-                  labelText: 'Machine Name',
+                  labelText: 'Machine Name *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.precision_manufacturing_rounded),
                 ),
@@ -252,79 +366,126 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Service Intervals', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _serviceIntervalMonthsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Months',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _calculateNextServiceDate(),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _serviceIntervalDaysController,
-                      decoration: const InputDecoration(
-                        labelText: 'Days',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (_) => _calculateNextServiceDate(),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Last Service Date'),
-                subtitle: Text(_lastServiceDate == null ? 'Not set' : DateFormat('EEE, MMM dd, yyyy').format(_lastServiceDate!)),
-                trailing: TextButton(
-                  child: const Text('Pick Date'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _lastServiceDate ?? DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _lastServiceDate = picked;
-                      });
-                      _calculateNextServiceDate();
-                    }
-                  },
+              
+              TextFormField(
+                controller: _googlePhotosLinkController,
+                decoration: const InputDecoration(
+                  labelText: 'Photos / Drive Link',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.photo_library_rounded),
                 ),
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Next Service Date'),
-                subtitle: Text(_nextServiceDate == null ? 'Not set' : DateFormat('EEE, MMM dd, yyyy').format(_nextServiceDate!)),
-                trailing: TextButton(
-                  child: const Text('Pick Date'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _nextServiceDate ?? DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _nextServiceDate = picked;
-                      });
-                    }
-                  },
+              const SizedBox(height: 24),
+
+              Card(
+                elevation: 0,
+                color: theme.colorScheme.primary.withOpacity(0.05),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.build_circle, color: theme.colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Service Information',
+                            style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _serviceIntervalMonthsController,
+                              decoration: const InputDecoration(
+                                labelText: 'Interval (Months)',
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => _calculateNextServiceDate(),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _serviceIntervalDaysController,
+                              decoration: const InputDecoration(
+                                labelText: 'Interval (Days)',
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              keyboardType: TextInputType.number,
+                              onChanged: (_) => _calculateNextServiceDate(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              title: const Text('Last Service Date', style: TextStyle(fontSize: 14)),
+                              subtitle: Text(_lastServiceDate == null ? 'Not set' : DateFormat('dd MMM yyyy').format(_lastServiceDate!), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                              trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _lastServiceDate ?? DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _lastServiceDate = picked;
+                                  });
+                                  _calculateNextServiceDate();
+                                }
+                              },
+                            ),
+                            const Divider(height: 1),
+                            ListTile(
+                              title: const Text('Next Service Due', style: TextStyle(fontSize: 14)),
+                              subtitle: Text(_nextServiceDate == null ? 'Not set' : DateFormat('dd MMM yyyy').format(_nextServiceDate!), style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.error)),
+                              trailing: const Icon(Icons.calendar_today_rounded, size: 20),
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _nextServiceDate ?? DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _nextServiceDate = picked;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
@@ -344,7 +505,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: _saveMachinery,
-                  child: Text(_existingMachinery == null ? 'Save Machinery' : 'Update Machinery', style: const TextStyle(fontSize: 16)),
+                  child: Text(_existingMachinery == null ? 'Save Machinery' : 'Update Machinery', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

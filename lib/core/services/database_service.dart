@@ -37,6 +37,8 @@ import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_colle
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -130,6 +132,8 @@ class DatabaseService {
             FixedAssetSchema,
             FixedAssetTransactionSchema,
             MachinerySchema,
+            MachineryCategorySchema,
+            TaskSchema,
           ],
           name: activeFirmId,
           directory: dirPath ?? '',
@@ -201,6 +205,8 @@ class DatabaseService {
               FixedAssetSchema,
               FixedAssetTransactionSchema,
               MachinerySchema,
+              MachineryCategorySchema,
+              TaskSchema,
             ],
             name: activeFirmId,
             directory: dirPath ?? '',
@@ -325,6 +331,7 @@ class DatabaseService {
       final settings = await isar.settings.where().exportJson();
       final users = await isar.users.where().exportJson();
       final machinerys = await isar.collection<Machinery>().where().exportJson();
+      final machineryCategorys = await isar.collection<MachineryCategory>().where().exportJson();
 
       result['partys'] = parties;
       result['items'] = items;
@@ -351,6 +358,7 @@ class DatabaseService {
       result['settings'] = settings;
       result['users'] = users;
       result['machinerys'] = machinerys;
+      result['machineryCategorys'] = machineryCategorys;
     } catch (e) {
       logger.warning('Failed to export collections to JSON: $e');
     }
@@ -448,6 +456,9 @@ class DatabaseService {
 
         final machinerys = _getList('machinerys');
         if (machinerys.isNotEmpty) await isar.collection<Machinery>().importJson(machinerys);
+
+        final machineryCategorys = _getList('machineryCategorys');
+        if (machineryCategorys.isNotEmpty) await isar.collection<MachineryCategory>().importJson(machineryCategorys);
 
         // Restore IsarLinks for items after all collections (including categories/brands/units) are imported
         if (items.isNotEmpty) {
