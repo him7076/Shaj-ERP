@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
-import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 import 'package:uuid/uuid.dart';
 
 final machineryCategoryProvider = Provider<MachineryCategoryNotifier>((ref) {

@@ -40,6 +40,7 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collec
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 
 enum SyncStatus { idle, syncing, success, failure }
 
