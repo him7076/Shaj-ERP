@@ -6,7 +6,8 @@ import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/task_providers.dart';
 
-import 'package:business_sahaj_erp/core/providers/shared_preferences_provider.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/widgets/machinery_list_tab.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
