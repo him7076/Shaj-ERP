@@ -4,7 +4,7 @@ import 'package:business_sahaj_erp/features/fixed_assets/presentation/providers/
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
-import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 
