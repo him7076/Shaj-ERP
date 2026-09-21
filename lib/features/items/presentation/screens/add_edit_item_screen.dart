@@ -1559,7 +1559,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   prefixIcon: Icon(Icons.tag),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product code is required' : null,
-              ),,
+              ),
         TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
@@ -1568,7 +1568,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   prefixIcon: Icon(Icons.shopping_bag),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product name is required' : null,
-              ),,
+              ),
       ]),
         const SizedBox(height: 16),
         Row(
@@ -1855,7 +1855,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       }),
                     ),
                 ],
-              ),,
+              ),
         TextFormField(
                 controller: _mrpController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -1865,7 +1865,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   prefixIcon: Icon(Icons.currency_rupee),
                   helperText: 'Max printed price',
                 ),
-              ),,
+              ),
       ]),
 
         const SizedBox(height: 16),
@@ -1938,7 +1938,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       }),
                     ),
                 ],
-              ),,
+              ),
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2004,7 +2004,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       }),
                     ),
                 ],
-              ),,
+              ),
       ]),
 
         const SizedBox(height: 16),
@@ -2376,7 +2376,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.monitor_weight_outlined),
                 ),
-              ),,
+              ),
         TextFormField(
                 controller: _dimensionsController,
                 decoration: const InputDecoration(
@@ -2384,7 +2384,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.straighten_outlined),
                 ),
-              ),,
+              ),
       ]),
         if (enableDescriptions) ...[
           const SizedBox(height: 16),
