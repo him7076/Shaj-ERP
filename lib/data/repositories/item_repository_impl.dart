@@ -161,7 +161,7 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
   Future<void> update(Item entity, {bool isSyncDownload = false}) async {
     try {
       if (entity.id == null) {
-        throw ValidationException('Cannot update $entityType without an ID');
+        throw DatabaseException('Cannot update $entityType without an ID');
       }
 
       entity.updatedAt = DateTime.now();
