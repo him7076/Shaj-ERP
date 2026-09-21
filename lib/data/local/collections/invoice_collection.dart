@@ -87,6 +87,12 @@ class Invoice implements IsarModel {
   bool isDeleted = false;
 
   @override
+  bool? isCashInvoice = false;
+
+  String? linkedMachineUuid; // Links the invoice to a specific machinery for servicing
+  bool? isServiceSameAsCurrent; // Flag to prevent resetting next service date for early inspections
+
+  @override
   bool isSynced = false;
 
   @override

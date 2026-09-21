@@ -13,6 +13,8 @@ import 'package:business_sahaj_erp/features/parties/presentation/providers/party
 import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edit_party_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/providers/machinery_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provider.dart';
@@ -549,6 +551,8 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         ..dueDate = _dueDate
         ..remarks = currentRemarks
         ..createdBy = _selectedSalesman
+        ..linkedMachineUuid = cart.linkedMachineUuid
+        ..isServiceSameAsCurrent = cart.isServiceSameAsCurrent
         ..updatedAt = DateTime.now()
         ..isDeleted = false;
 
@@ -634,6 +638,22 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           await isar.syncQueues.put(q);
         });
         ref.invalidate(filteredOrdersProvider);
+      }
+
+      if (cart.linkedMachineUuid != null && cart.isServiceSameAsCurrent != true) {
+        final isar = ref.read(databaseServiceProvider).isar;
+        final machinery = await isar.collection<Machinery>().filter().uuidEqualTo(cart.linkedMachineUuid).findFirst();
+        if (machinery != null) {
+          machinery.lastServiceDate = _invoiceDate;
+          if ((machinery.serviceIntervalMonths ?? 0) > 0 || (machinery.serviceIntervalDays ?? 0) > 0) {
+             machinery.nextServiceDate = DateTime(
+               _invoiceDate.year, 
+               _invoiceDate.month + (machinery.serviceIntervalMonths ?? 0), 
+               _invoiceDate.day + (machinery.serviceIntervalDays ?? 0)
+             );
+          }
+          await ref.read(machineryProvider).saveMachinery(machinery);
+        }
       }
 
       ref.invalidate(filteredInvoicesProvider);
@@ -1166,6 +1186,59 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   ],
                 ),
               ),
+              if (ref.read(sharedPreferencesProvider).getBool('enable_machinery_management') ?? false) ...[
+                const SizedBox(height: 12),
+                Consumer(
+                  builder: (context, ref, child) {
+                    final machineriesAsync = ref.watch(machineryListProvider);
+                    return machineriesAsync.when(
+                      data: (machineries) {
+                        final partyMachineries = machineries.where((m) => m.partyUuid == cart.selectedParty!.uuid).toList();
+                        if (partyMachineries.isEmpty) return const SizedBox.shrink();
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DropdownButtonFormField<String>(
+                              value: partyMachineries.any((m) => m.uuid == cart.linkedMachineUuid) ? cart.linkedMachineUuid : null,
+                              decoration: const InputDecoration(
+                                labelText: 'Link Machinery / Service',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.precision_manufacturing_rounded),
+                              ),
+                              items: [
+                                const DropdownMenuItem<String>(value: null, child: Text('No Machine Linked')),
+                                ...partyMachineries.map((m) => DropdownMenuItem(
+                                  value: m.uuid, 
+                                  child: Text('${m.machineName} (${m.modelNumber ?? 'No model'})'),
+                                )),
+                              ],
+                              onChanged: (val) {
+                                ref.read(invoiceCartProvider.notifier).setLinkedMachine(val, sameAsCurrent: false);
+                              },
+                            ),
+                            if (cart.linkedMachineUuid != null) ...[
+                              const SizedBox(height: 8),
+                              CheckboxListTile(
+                                title: const Text('Is this an early inspection / Same as current service?'),
+                                subtitle: const Text('Check this if you do not want the next service date to be rescheduled based on today.'),
+                                value: cart.isServiceSameAsCurrent ?? false,
+                                onChanged: (val) {
+                                  ref.read(invoiceCartProvider.notifier).setLinkedMachine(cart.linkedMachineUuid, sameAsCurrent: val);
+                                },
+                                controlAffinity: ListTileControlAffinity.leading,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ]
+                          ],
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (e, st) => const SizedBox.shrink(),
+                    );
+                  },
+                ),
+              ],
             ],
             const Divider(height: 24),
             Row(

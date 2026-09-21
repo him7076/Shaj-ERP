@@ -38,6 +38,8 @@ class InvoiceCart {
   final DateTime dueDate;
   final String remarks;
   final double? customRoundOff;
+  final String? linkedMachineUuid;
+  final bool? isServiceSameAsCurrent;
 
   InvoiceCart({
     this.selectedParty,
@@ -49,6 +51,8 @@ class InvoiceCart {
     this.paidAmount = 0.0,
     this.remarks = '',
     this.customRoundOff,
+    this.linkedMachineUuid,
+    this.isServiceSameAsCurrent,
     DateTime? dueDate,
   }) : dueDate = dueDate ?? DateTime.now().add(const Duration(days: 15)); // Default 15 days credit
 
@@ -63,6 +67,8 @@ class InvoiceCart {
     DateTime? dueDate,
     String? remarks,
     double? customRoundOff,
+    String? linkedMachineUuid,
+    bool? isServiceSameAsCurrent,
   }) {
     return InvoiceCart(
       selectedParty: selectedParty ?? this.selectedParty,
@@ -75,6 +81,8 @@ class InvoiceCart {
       dueDate: dueDate ?? this.dueDate,
       remarks: remarks ?? this.remarks,
       customRoundOff: customRoundOff ?? this.customRoundOff,
+      linkedMachineUuid: linkedMachineUuid ?? this.linkedMachineUuid,
+      isServiceSameAsCurrent: isServiceSameAsCurrent ?? this.isServiceSameAsCurrent,
     );
   }
 }
@@ -277,6 +285,13 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     );
   }
 
+  void setLinkedMachine(String? machineUuid, {bool? sameAsCurrent}) {
+    state = state.copyWith(
+      linkedMachineUuid: machineUuid,
+      isServiceSameAsCurrent: sameAsCurrent,
+    );
+  }
+
   void loadInvoice({
     required Party party,
     required Invoice invoice,
@@ -297,6 +312,8 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       dueDate: invoice.dueDate ?? DateTime.now(),
       remarks: invoice.remarks ?? '',
       customRoundOff: invoice.roundOff,
+      linkedMachineUuid: invoice.linkedMachineUuid,
+      isServiceSameAsCurrent: invoice.isServiceSameAsCurrent,
     );
   }
 

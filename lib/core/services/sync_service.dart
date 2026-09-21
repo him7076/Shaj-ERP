@@ -154,7 +154,7 @@ class SyncService {
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
       'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-      'StockAdjustment', 'WhatsAppMapping', 'Task',
+      'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
     for (final et in allEntityTypes) {
       await _prefs.remove('last_cloud_sync_timestamp_${firmId}_$et');
@@ -449,7 +449,7 @@ class SyncService {
         'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
         'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
         'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-        'StockAdjustment', 'WhatsAppMapping', 'Task',
+        'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
       ];
       for (final et in allEntityTypes) {
         // Clear both old non-firm-specific keys AND new firm-specific keys
@@ -593,6 +593,7 @@ class SyncService {
     await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<OrderItem>((o, l) => forceAll ? isar.orderItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orderItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'OrderItem', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (e) => e.uuid, (e) => e.id);
+    await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery', (e) => e.uuid, (e) => e.id);
   }
 
   /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
@@ -607,7 +608,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
     for (var entityType in entityTypes) {
@@ -686,7 +687,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
       'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
-      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task'
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
     for (var entityType in entityTypes) {
@@ -897,6 +898,7 @@ class SyncService {
           case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
           case 'WhatsAppMapping': entity = await isar.whatsAppMappings.get(entityId); break;
           case 'Task': entity = await isar.tasks.get(entityId); break;
+          case 'Machinery': entity = await isar.collection<Machinery>().get(entityId); break;
         }
 
         if (entity == null && queueItem.operation != 'Delete') {
@@ -1005,6 +1007,7 @@ class SyncService {
                 case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
                 case 'WhatsAppMapping': await isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
                 case 'Task': await isar.tasks.put(entity as Task); break;
+                case 'Machinery': await isar.collection<Machinery>().put(entity as Machinery); break;
               }
             }
           });
@@ -1042,7 +1045,7 @@ class SyncService {
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'Invoice', 'Settings', 'User',
       'Purchase', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
-      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping', 'Task'
+      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
     final activeFirmId = _dbService.activeFirmId;
     final companyId = _firebaseService.companyId;
@@ -1172,6 +1175,7 @@ class SyncService {
               case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
               case 'WhatsAppMapping': localRecord = await isar.whatsAppMappings.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Task': localRecord = await isar.tasks.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Machinery': localRecord = await isar.collection<Machinery>().filter().uuidEqualTo(uuid).findFirst(); break;
             }
 
             if (localRecord != null) {
@@ -1650,6 +1654,7 @@ class SyncService {
         case 'ExpenseItem': return await isar.collection<ExpenseItem>().count();
         case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
         case 'Task': return await isar.tasks.filter().idGreaterThan(-1).count();
+        case 'Machinery': return await isar.collection<Machinery>().filter().idGreaterThan(-1).count();
         default: return 0;
       }
     } catch (_) {
@@ -1723,6 +1728,7 @@ class SyncService {
       case 'StockAdjustment': return 'stock_adjustments';
       case 'WhatsAppMapping': return 'whatsapp_mappings';
       case 'Task': return 'tasks';
+      case 'Machinery': return 'machinerys';
       default: return entityType.toLowerCase();
     }
   }
@@ -2303,14 +2309,38 @@ class SyncService {
         });
       case 'Task':
         final e = entity as Task;
-        return baseMap..addAll({
+        return {
+          'uuid': e.uuid,
           'title': e.title,
           'description': e.description,
           'status': e.status,
           'priority': e.priority,
-          'dueDate': e.dueDate?.toUtc().toIso8601String(),
-          'completedAt': e.completedAt?.toUtc().toIso8601String(),
-        });
+          'dueDate': e.dueDate?.toIso8601String(),
+          'completedAt': e.completedAt?.toIso8601String(),
+          'createdAt': e.createdAt.toIso8601String(),
+          'updatedAt': e.updatedAt.toIso8601String(),
+          'isDeleted': e.isDeleted,
+        };
+      case 'Machinery':
+        final e = entity as Machinery;
+        return {
+          'uuid': e.uuid,
+          'partyUuid': e.partyUuid,
+          'machineName': e.machineName,
+          'brandName': e.brandName,
+          'modelNumber': e.modelNumber,
+          'serialNumber': e.serialNumber,
+          'description': e.description,
+          'photos': e.photos,
+          'googlePhotosLink': e.googlePhotosLink,
+          'serviceIntervalMonths': e.serviceIntervalMonths,
+          'serviceIntervalDays': e.serviceIntervalDays,
+          'lastServiceDate': e.lastServiceDate?.toIso8601String(),
+          'nextServiceDate': e.nextServiceDate?.toIso8601String(),
+          'createdAt': e.createdAt.toIso8601String(),
+          'updatedAt': e.updatedAt.toIso8601String(),
+          'isDeleted': e.isDeleted,
+        };
       default:
         return baseMap;
     }
@@ -2744,12 +2774,37 @@ class SyncService {
         break;
       case 'Task':
         entity = Task()
+          ..uuid = data['uuid'] as String?
           ..title = data['title'] as String?
           ..description = data['description'] as String?
           ..status = data['status'] as String?
           ..priority = data['priority'] as String?
-          ..dueDate = data['dueDate'] != null ? DateTime.tryParse(data['dueDate']) : null
-          ..completedAt = data['completedAt'] != null ? DateTime.tryParse(data['completedAt']) : null;
+          ..dueDate = data['dueDate'] != null ? DateTime.parse(data['dueDate'] as String) : null
+          ..completedAt = data['completedAt'] != null ? DateTime.parse(data['completedAt'] as String) : null
+          ..createdAt = DateTime.parse(data['createdAt'] as String)
+          ..updatedAt = DateTime.parse(data['updatedAt'] as String)
+          ..isDeleted = data['isDeleted'] as bool? ?? false
+          ..isSynced = true;
+        break;
+      case 'Machinery':
+        entity = Machinery()
+          ..uuid = data['uuid'] as String?
+          ..partyUuid = data['partyUuid'] as String?
+          ..machineName = data['machineName'] as String?
+          ..brandName = data['brandName'] as String?
+          ..modelNumber = data['modelNumber'] as String?
+          ..serialNumber = data['serialNumber'] as String?
+          ..description = data['description'] as String?
+          ..photos = (data['photos'] as List<dynamic>?)?.map((e) => e as String).toList()
+          ..googlePhotosLink = data['googlePhotosLink'] as String?
+          ..serviceIntervalMonths = data['serviceIntervalMonths'] as int?
+          ..serviceIntervalDays = data['serviceIntervalDays'] as int?
+          ..lastServiceDate = data['lastServiceDate'] != null ? DateTime.parse(data['lastServiceDate'] as String) : null
+          ..nextServiceDate = data['nextServiceDate'] != null ? DateTime.parse(data['nextServiceDate'] as String) : null
+          ..createdAt = DateTime.parse(data['createdAt'] as String)
+          ..updatedAt = DateTime.parse(data['updatedAt'] as String)
+          ..isDeleted = data['isDeleted'] as bool? ?? false
+          ..isSynced = true;
         break;
     }
 
@@ -2801,6 +2856,7 @@ class SyncService {
         case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
         case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
         case 'Task': await _dbService.isar.tasks.put(entity as Task); break;
+        case 'Machinery': await _dbService.isar.collection<Machinery>().put(entity as Machinery); break;
       }
     });
 
@@ -2892,6 +2948,7 @@ class SyncService {
         case 'StockAdjustment': await _dbService.isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
         case 'WhatsAppMapping': await _dbService.isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
         case 'Task': await _dbService.isar.tasks.put(entity as Task); break;
+        case 'Machinery': await _dbService.isar.collection<Machinery>().put(entity as Machinery); break;
       }
     });
 

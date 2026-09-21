@@ -36,6 +36,7 @@ import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_colle
 import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -128,6 +129,7 @@ class DatabaseService {
             WhatsAppMappingSchema,
             FixedAssetSchema,
             FixedAssetTransactionSchema,
+            MachinerySchema,
           ],
           name: activeFirmId,
           directory: dirPath ?? '',
@@ -198,6 +200,7 @@ class DatabaseService {
               WhatsAppMappingSchema,
               FixedAssetSchema,
               FixedAssetTransactionSchema,
+              MachinerySchema,
             ],
             name: activeFirmId,
             directory: dirPath ?? '',
@@ -321,6 +324,7 @@ class DatabaseService {
       final whatsAppMappings = await isar.whatsAppMappings.where().exportJson();
       final settings = await isar.settings.where().exportJson();
       final users = await isar.users.where().exportJson();
+      final machinerys = await isar.collection<Machinery>().where().exportJson();
 
       result['partys'] = parties;
       result['items'] = items;
@@ -346,6 +350,7 @@ class DatabaseService {
       result['whatsAppMappings'] = whatsAppMappings;
       result['settings'] = settings;
       result['users'] = users;
+      result['machinerys'] = machinerys;
     } catch (e) {
       logger.warning('Failed to export collections to JSON: $e');
     }
@@ -440,6 +445,9 @@ class DatabaseService {
 
         final users = _getList('users');
         if (users.isNotEmpty) await isar.users.importJson(users);
+
+        final machinerys = _getList('machinerys');
+        if (machinerys.isNotEmpty) await isar.collection<Machinery>().importJson(machinerys);
 
         // Restore IsarLinks for items after all collections (including categories/brands/units) are imported
         if (items.isNotEmpty) {

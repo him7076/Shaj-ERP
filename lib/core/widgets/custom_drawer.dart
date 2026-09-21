@@ -341,14 +341,15 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/expenses',
                     currentPath: location,
                   ),
-                  _buildDrawerItem(
-                    context: context,
-                    ref: ref,
-                    icon: Icons.domain_rounded,
-                    label: 'Fixed Assets',
-                    routePath: '/fixed-assets',
-                    currentPath: location,
-                  ),
+                  if (prefs.getBool('enable_fixed_assets') ?? false)
+                    _buildDrawerItem(
+                      context: context,
+                      ref: ref,
+                      icon: Icons.domain_rounded,
+                      label: 'Fixed Assets',
+                      routePath: '/fixed-assets',
+                      currentPath: location,
+                    ),
                   _buildDrawerItem(
                     context: context,
                     ref: ref,

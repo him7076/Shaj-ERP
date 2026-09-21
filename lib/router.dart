@@ -31,6 +31,7 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/bulk_item
 import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/tasks_screen.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_task_screen.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_machinery_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/screens/vault_screen.dart';
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/fixed_assets_dashboard_screen.dart';
 
@@ -282,6 +283,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) {
               final id = state.pathParameters['id'] ?? '';
               return AddEditTaskScreen(taskId: int.tryParse(id));
+            },
+          ),
+          GoRoute(
+            path: '/machinery/add',
+            name: 'add-machinery',
+            builder: (context, state) => const AddEditMachineryScreen(),
+          ),
+          GoRoute(
+            path: '/machinery/edit/:id',
+            name: 'edit-machinery',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return AddEditMachineryScreen(machineryId: int.tryParse(id));
             },
           ),
           GoRoute(

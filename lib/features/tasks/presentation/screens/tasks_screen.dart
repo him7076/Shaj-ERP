@@ -6,11 +6,36 @@ import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
 import 'package:business_sahaj_erp/core/widgets/custom_app_bar.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/task_providers.dart';
 
-class TasksScreen extends ConsumerWidget {
+import 'package:business_sahaj_erp/core/providers/shared_preferences_provider.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/widgets/machinery_list_tab.dart';
+
+class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TasksScreen> createState() => _TasksScreenState();
+}
+
+class _TasksScreenState extends ConsumerState<TasksScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _enableMachineryManagement = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = ref.read(sharedPreferencesProvider);
+    _enableMachineryManagement = prefs.getBool('enable_machinery_management') ?? false;
+    _tabController = TabController(length: _enableMachineryManagement ? 2 : 1, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tasksAsync = ref.watch(taskListProvider);
 
@@ -19,82 +44,109 @@ class TasksScreen extends ConsumerWidget {
         title: const Text('Tasks'),
         elevation: 0,
         backgroundColor: Colors.transparent,
+        bottom: _enableMachineryManagement
+            ? TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Tasks'),
+                  Tab(text: 'Machinery'),
+                ],
+              )
+            : null,
       ),
       backgroundColor: theme.colorScheme.background,
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/tasks/add'),
+        onPressed: () {
+          if (_enableMachineryManagement && _tabController.index == 1) {
+            context.push('/machinery/add');
+          } else {
+            context.push('/tasks/add');
+          }
+        },
         child: const Icon(Icons.add),
       ),
-      body: tasksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(child: Text('Error: $error')),
-        data: (tasks) {
-          if (tasks.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.task_alt_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
-                  const SizedBox(height: 16),
-                  const Text('No tasks found.', style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => context.push('/tasks/add'),
-                    child: const Text('Create New Task'),
-                  ),
-                ],
+      body: _enableMachineryManagement
+          ? TabBarView(
+              controller: _tabController,
+              children: [
+                _buildTasksList(tasksAsync, theme),
+                const MachineryListTab(),
+              ],
+            )
+          : _buildTasksList(tasksAsync, theme),
+    );
+  }
+
+  Widget _buildTasksList(AsyncValue<List<Task>> tasksAsync, ThemeData theme) {
+    return tasksAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(child: Text('Error: $error')),
+      data: (tasks) {
+        if (tasks.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.task_alt_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
+                const SizedBox(height: 16),
+                const Text('No tasks found.', style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () => context.push('/tasks/add'),
+                  child: const Text('Create New Task'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: tasks.length,
+          itemBuilder: (context, index) {
+            final task = tasks[index];
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(16),
+                title: Text(
+                  task.title ?? 'Untitled Task',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (task.description != null && task.description!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(task.description!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildChip(theme, task.status ?? 'Todo', _getStatusColor(task.status)),
+                        const SizedBox(width: 8),
+                        _buildChip(theme, task.priority ?? 'Medium', _getPriorityColor(task.priority)),
+                        const Spacer(),
+                        if (task.dueDate != null)
+                          Text(
+                            'Due: ${DateFormat('dd MMM').format(task.dueDate!)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: task.dueDate!.isBefore(DateTime.now()) && task.status != 'Done' ? Colors.red : Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+                onTap: () => context.push('/tasks/edit/${task.id}'),
               ),
             );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: tasks.length,
-            itemBuilder: (context, index) {
-              final task = tasks[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  contentPadding: const EdgeInsets.all(16),
-                  title: Text(
-                    task.title ?? 'Untitled Task',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (task.description != null && task.description!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(task.description!, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      ],
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          _buildChip(theme, task.status ?? 'Todo', _getStatusColor(task.status)),
-                          const SizedBox(width: 8),
-                          _buildChip(theme, task.priority ?? 'Medium', _getPriorityColor(task.priority)),
-                          const Spacer(),
-                          if (task.dueDate != null)
-                            Text(
-                              'Due: ${DateFormat('dd MMM').format(task.dueDate!)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: task.dueDate!.isBefore(DateTime.now()) && task.status != 'Done' ? Colors.red : Colors.grey,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  onTap: () => context.push('/tasks/edit/${task.id}'),
-                ),
-              );
-            },
-          );
-        },
-      ),
+          },
+        );
+      },
     );
   }
 

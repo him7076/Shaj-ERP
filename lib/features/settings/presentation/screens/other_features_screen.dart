@@ -17,6 +17,12 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
   bool _isAutoFillPaidAmount = false;
   bool _enableSubItems = false;
   bool _enableTaskManagement = false;
+  bool _enablePersonalVault = false;
+  bool _enableItemDescriptions = false;
+  bool _enableBundleDescriptions = false;
+  bool _enableSalesBuyPrice = false;
+  bool _enableFixedAssets = false;
+  bool _enableMachineryManagement = false;
 
   @override
   void initState() {
@@ -32,6 +38,12 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
       _isAutoFillPaidAmount = prefs.getBool('auto_fill_paid_amount') ?? false;
       _enableSubItems = prefs.getBool('enable_sub_items') ?? false;
       _enableTaskManagement = prefs.getBool('enable_task_management') ?? false;
+      _enablePersonalVault = prefs.getBool('enable_personal_vault') ?? false;
+      _enableItemDescriptions = prefs.getBool('enable_item_descriptions') ?? false;
+      _enableBundleDescriptions = prefs.getBool('enable_bundle_descriptions') ?? false;
+      _enableSalesBuyPrice = prefs.getBool('enable_sales_buy_price') ?? false;
+      _enableFixedAssets = prefs.getBool('enable_fixed_assets') ?? false;
+      _enableMachineryManagement = prefs.getBool('enable_machinery_management') ?? false;
     });
   }
 
@@ -98,6 +110,96 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
     }
   }
 
+  Future<void> _toggleMachineryManagement(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_machinery_management', value);
+    setState(() {
+      _enableMachineryManagement = value;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value 
+              ? 'Machinery Management Enabled' 
+              : 'Machinery Management Disabled'
+          ),
+          backgroundColor: value ? Colors.green : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _togglePersonalVault(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_personal_vault', value);
+    setState(() {
+      _enablePersonalVault = value;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            value 
+              ? 'Personal Vault Management Enabled' 
+              : 'Personal Vault Management Disabled'
+          ),
+          backgroundColor: value ? Colors.green : Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _toggleItemDescriptions(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_item_descriptions', value);
+    setState(() => _enableItemDescriptions = value);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(value ? 'Item-wise Description Enabled' : 'Item-wise Description Disabled'),
+        backgroundColor: value ? Colors.green : Colors.redAccent,
+      ));
+    }
+  }
+
+  Future<void> _toggleBundleDescriptions(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_bundle_descriptions', value);
+    setState(() => _enableBundleDescriptions = value);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(value ? 'Bundle-wise Description Enabled' : 'Bundle-wise Description Disabled'),
+        backgroundColor: value ? Colors.green : Colors.redAccent,
+      ));
+    }
+  }
+
+  Future<void> _toggleSalesBuyPrice(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_sales_buy_price', value);
+    setState(() => _enableSalesBuyPrice = value);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(value ? 'Sales Manage Buy Price Enabled' : 'Sales Manage Buy Price Disabled'),
+        backgroundColor: value ? Colors.green : Colors.redAccent,
+      ));
+    }
+  }
+
+  Future<void> _toggleFixedAssets(bool value) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool('enable_fixed_assets', value);
+    setState(() => _enableFixedAssets = value);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(value ? 'Maintain Fixed Assets Enabled' : 'Maintain Fixed Assets Disabled'),
+        backgroundColor: value ? Colors.green : Colors.redAccent,
+      ));
+    }
+  }
+
   Future<void> _toggleRestaurantMode(bool value) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool('enable_restaurant_mode', value);
@@ -152,6 +254,58 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
             ),
             child: Column(
               children: [
+                SwitchListTile(
+                  title: const Text('Item-wise Description', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable detailed descriptions and notes for items during transactions.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.description_rounded, color: Colors.teal),
+                  ),
+                  value: _enableItemDescriptions,
+                  onChanged: _toggleItemDescriptions,
+                  activeColor: Colors.teal,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Bundle-wise Description', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable detailed descriptions and notes for bundles during transactions.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.teal.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.library_books_rounded, color: Colors.teal),
+                  ),
+                  value: _enableBundleDescriptions,
+                  onChanged: _toggleBundleDescriptions,
+                  activeColor: Colors.teal,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Manage Buy Price While Entry', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable capturing and adjusting buy price directly during sales invoice entry.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.price_change_rounded, color: Colors.orange),
+                  ),
+                  value: _enableSalesBuyPrice,
+                  onChanged: _toggleSalesBuyPrice,
+                  activeColor: Colors.orange,
+                ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  title: const Text('Maintain Fixed Assets', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable management of Fixed Assets, including purchases, sales, and depreciation.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.domain_rounded, color: Colors.indigo),
+                  ),
+                  value: _enableFixedAssets,
+                  onChanged: _toggleFixedAssets,
+                  activeColor: Colors.indigo,
+                ),
+                const Divider(height: 1),
                 SwitchListTile(
                   title: const Text('Auto-fill Paid Amount', style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Automatically check the "Paid Amount" box and fill the grand total in all new Sales/Purchase transactions.', style: TextStyle(fontSize: 12)),
@@ -345,6 +499,78 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
                   value: _enableSubItems,
                   onChanged: _toggleSubItems,
                   activeColor: Colors.purple,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 4. Task Settings
+          Text(
+            'Task Settings',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Machinery / Recurring Service Management', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Enable managing customer machinery and scheduling recurring services. Accessible from Tasks tab.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.settings_applications_rounded, color: Colors.blueAccent),
+                  ),
+                  value: _enableMachineryManagement,
+                  onChanged: _toggleMachineryManagement,
+                  activeColor: Colors.blueAccent,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 5. Personal Vault Settings
+          Text(
+            'Personal Vault Settings',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Personal Vault Management', style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Store private notes and sensitive data locally on this device. Enabling this adds a vault to your drawer menu.', style: TextStyle(fontSize: 12)),
+                  secondary: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.blueGrey.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    child: const Icon(Icons.security, color: Colors.blueGrey),
+                  ),
+                  value: _enablePersonalVault,
+                  onChanged: _togglePersonalVault,
+                  activeColor: Colors.blueGrey,
                 ),
               ],
             ),

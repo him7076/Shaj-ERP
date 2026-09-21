@@ -10,6 +10,9 @@ import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
 import 'package:business_sahaj_erp/core/widgets/modern_text_field.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/providers/machinery_providers.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_machinery_screen.dart';
+import 'package:intl/intl.dart';
 
 class AddEditPartyScreen extends ConsumerStatefulWidget {
   final Party? party;
@@ -974,6 +977,70 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               ),
                             ],
                           ),
+                          if (_isEditMode && (ref.read(sharedPreferencesProvider).getBool('enable_machinery_management') ?? false)) ...[
+                            const SizedBox(height: 20),
+                            _buildFormSection(
+                              title: 'Linked Machinery & Services',
+                              icon: Icons.precision_manufacturing_outlined,
+                              children: [
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                    final machineriesAsync = ref.watch(machineryListProvider);
+                                    return machineriesAsync.when(
+                                      data: (allMachinery) {
+                                        final partyMachinery = allMachinery.where((m) => m.partyUuid == widget.party!.uuid).toList();
+                                        if (partyMachinery.isEmpty) {
+                                          return const Padding(
+                                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                                            child: Text('No machinery linked to this party yet.', style: TextStyle(color: Colors.grey)),
+                                          );
+                                        }
+                                        return ListView.separated(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          itemCount: partyMachinery.length,
+                                          separatorBuilder: (_, __) => const Divider(),
+                                          itemBuilder: (context, index) {
+                                            final m = partyMachinery[index];
+                                            return ListTile(
+                                              contentPadding: EdgeInsets.zero,
+                                              title: Text('${m.machineName} (${m.modelNumber ?? "No model"})', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                              subtitle: Text('Next Service: ${m.nextServiceDate != null ? DateFormat('dd-MM-yyyy').format(m.nextServiceDate!) : "Not Scheduled"}'),
+                                              trailing: IconButton(
+                                                icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                                                onPressed: () {
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(builder: (context) => AddEditMachineryScreen(machinery: m, party: widget.party!)),
+                                                  );
+                                                },
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                      loading: () => const Center(child: CircularProgressIndicator()),
+                                      error: (e, st) => Text('Error: $e'),
+                                    );
+                                  }
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => AddEditMachineryScreen(party: widget.party!)),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('Add Linked Machinery'),
+                                  ),
+                                ),
+                              ]
+                            )
+                          ],
                           const SizedBox(height: 30),
                         ],
                       ),
