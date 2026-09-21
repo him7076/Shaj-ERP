@@ -1011,7 +1011,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                                 onPressed: () {
                                                   Navigator.push(
                                                     context,
-                                                    MaterialPageRoute(builder: (context) => AddEditMachineryScreen(machinery: m, party: widget.party!)),
+                                                    MaterialPageRoute(builder: (context) => AddEditMachineryScreen(machineryId: m.id, partyUuid: widget.party!.uuid)),
                                                   );
                                                 },
                                               ),
@@ -1031,7 +1031,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                     onPressed: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (context) => AddEditMachineryScreen(party: widget.party!)),
+                                        MaterialPageRoute(builder: (context) => AddEditMachineryScreen(partyUuid: widget.party!.uuid)),
                                       );
                                     },
                                     icon: const Icon(Icons.add),

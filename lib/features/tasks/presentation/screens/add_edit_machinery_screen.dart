@@ -11,7 +11,8 @@ import 'package:business_sahaj_erp/data/local/collections/party_collection.dart'
 
 class AddEditMachineryScreen extends ConsumerStatefulWidget {
   final int? machineryId;
-  const AddEditMachineryScreen({Key? key, this.machineryId}) : super(key: key);
+  final String? partyUuid;
+  const AddEditMachineryScreen({Key? key, this.machineryId, this.partyUuid}) : super(key: key);
 
   @override
   ConsumerState<AddEditMachineryScreen> createState() => _AddEditMachineryScreenState();
@@ -57,13 +58,19 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
         _nextServiceDate = machinery.nextServiceDate;
 
         if (machinery.partyUuid != null) {
-          final parties = await ref.read(partyListProvider.future);
+          final parties = await ref.read(partiesListProvider.future);
           _selectedParty = parties.cast<Party?>().firstWhere(
             (p) => p?.uuid == machinery.partyUuid,
             orElse: () => null,
           );
         }
       }
+    } else if (widget.partyUuid != null) {
+      final parties = await ref.read(partiesListProvider.future);
+      _selectedParty = parties.cast<Party?>().firstWhere(
+        (p) => p?.uuid == widget.partyUuid,
+        orElse: () => null,
+      );
     }
     setState(() {
       _isLoading = false;
@@ -127,20 +134,20 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
   }
 
   Future<void> _sendReminder() async {
-    if (_selectedParty == null || _selectedParty!.phone == null || _selectedParty!.phone!.isEmpty) {
+    if (_selectedParty == null || _selectedParty!.mobileNumber == null || _selectedParty!.mobileNumber!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Customer phone number not available.')),
       );
       return;
     }
 
-    String phone = _selectedParty!.phone!;
+    String phone = _selectedParty!.mobileNumber!;
     if (!phone.startsWith('+')) {
       // Basic assumption for testing, production would need country code selection
       phone = '+91$phone';
     }
 
-    final message = 'Hello ${_selectedParty!.name},\n\nThis is a friendly reminder that the upcoming service for your ${_machineNameController.text} is due on ${DateFormat('dd MMM yyyy').format(_nextServiceDate!)}.\n\nPlease contact us to schedule the service.\n\nThank you!';
+    final message = 'Hello ${_selectedParty!.partyName},\n\nThis is a friendly reminder that the upcoming service for your ${_machineNameController.text} is due on ${DateFormat('dd MMM yyyy').format(_nextServiceDate!)}.\n\nPlease contact us to schedule the service.\n\nThank you!';
     final url = Uri.parse('https://wa.me/${phone.replaceAll('+', '')}?text=${Uri.encodeComponent(message)}');
 
     if (await canLaunchUrl(url)) {
@@ -162,11 +169,11 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
       );
     }
 
-    final partiesAsync = ref.watch(partyListProvider);
+    final partiesAsync = ref.watch(partiesListProvider);
 
     return Scaffold(
-      appBar: CustomAppBar(
-        title: _existingMachinery != null ? 'Edit Machinery' : 'Add Machinery',
+      appBar: AppBar(
+        title: Text(_existingMachinery != null ? 'Edit Machinery' : 'Add Machinery'),
         actions: [
           if (_existingMachinery != null && _nextServiceDate != null)
             IconButton(
@@ -193,7 +200,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                       prefixIcon: Icon(Icons.person_rounded),
                     ),
                     items: parties.map((p) {
-                      return DropdownMenuItem(value: p, child: Text(p.name ?? 'Unknown'));
+                      return DropdownMenuItem(value: p, child: Text(p.partyName ?? 'Unknown'));
                     }).toList(),
                     onChanged: (val) => setState(() => _selectedParty = val),
                     validator: (val) => val == null ? 'Please select a customer' : null,
