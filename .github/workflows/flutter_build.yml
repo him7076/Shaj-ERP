@@ -71,6 +71,7 @@ jobs:
 
       - name: Build Release APK
         run: |
+          flutter pub run build_runner build --delete-conflicting-outputs
           flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8 || true
           echo "=== Searching for APK files ==="
           find . -name "*.apk" -type f 2>/dev/null
