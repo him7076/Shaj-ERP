@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/providers/fixed_asset_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/fixed_asset_transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 
 class AddFixedAssetScreen extends ConsumerStatefulWidget {
@@ -59,10 +62,10 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
       // Additional transaction for GST if applicable
       if (_gstPercent > 0 && cost > 0) {
         final gstAmount = cost * (_gstPercent / 100);
-        final isar = ref.read(fixedAssetRepositoryProvider).isar;
+        final isar = ref.read(databaseServiceProvider).isar;
         await isar.writeTxn(() async {
            final gstTxn = Transaction()
-            ..uuid = const Uuid().v4()
+            ..uuid = Uuid().v4()
             ..transactionNumber = 'FA-GST-${DateTime.now().millisecondsSinceEpoch}'
             ..transactionDate = _purchaseDate
             ..transactionType = 'Expense' 
@@ -75,7 +78,7 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
       }
 
       // Update the payment mode of the main transaction
-      final isar = ref.read(fixedAssetRepositoryProvider).isar;
+      final isar = ref.read(databaseServiceProvider).isar;
       await isar.writeTxn(() async {
          final mainTxns = await isar.transactions.filter().referenceNumberEqualTo(txn.uuid).findAll();
          for (var t in mainTxns) {

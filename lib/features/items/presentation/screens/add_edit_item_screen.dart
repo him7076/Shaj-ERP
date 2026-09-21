@@ -895,7 +895,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             builder: (context, ref, child) {
               final itemsList = ref.watch(itemsListProvider).valueOrNull ?? [];
               return SearchableItemDropdown(
-                items: itemsList.where((i) => i.id != _editingItemId).toList(), // Prevent self-adding
+                items: itemsList.where((i) => i.id != _existingItem?.id).toList(), // Prevent self-adding
                 labelText: 'Search and add component...',
                 onSelected: (selected) {
                   final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.id);
