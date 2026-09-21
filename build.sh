@@ -31,6 +31,8 @@ flutter --version
 echo "Running build_runner to generate Isar schemas..."
 flutter pub get
 flutter pub run build_runner build --delete-conflicting-outputs
+echo "Fixing Isar large integer IDs for Web..."
+dart fix_isar_ids.dart
 
 echo "Compiling Flutter Web (Release mode)..."
 flutter build web --release --no-tree-shake-icons
