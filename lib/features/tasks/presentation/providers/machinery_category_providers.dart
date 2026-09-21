@@ -56,7 +56,7 @@ class MachineryCategoryNotifier {
     });
 
     try {
-      ref.read(syncManagerProvider).triggerUpload();
+      ref.read(syncManagerProvider).onLocalSave();
     } catch (_) {}
     
     ref.invalidate(machineryCategoryListProvider);
@@ -88,7 +88,7 @@ class MachineryCategoryNotifier {
     });
 
     try {
-      ref.read(syncManagerProvider).triggerUpload();
+      ref.read(syncManagerProvider).onLocalSave();
     } catch (_) {}
 
     ref.invalidate(machineryCategoryListProvider);
