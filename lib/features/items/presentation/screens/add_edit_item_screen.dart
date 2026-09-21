@@ -1460,8 +1460,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 builder: (context, constraints) {
                   final isNarrow = constraints.maxWidth < 500;
                   if (isNarrow) {
-                    return _buildResponsiveRow([
-            OutlinedButton(
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
                             onPressed: () => Navigator.pop(context),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1476,7 +1478,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                               ],
                             ),
                           ),
-            ElevatedButton(
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
                             onPressed: _save,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: theme.colorScheme.primary,
@@ -1494,7 +1499,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                               ],
                             ),
                           ),
-          ]);
+                        ),
+                      ],
+                    );
                   }
 
                   return Row(
@@ -1544,7 +1551,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       color: Colors.indigo,
       children: [
         _buildResponsiveRow([
-            TextFormField(
+        TextFormField(
                 controller: _codeController,
                 decoration: const InputDecoration(
                   labelText: 'Product Code *',
@@ -1552,8 +1559,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   prefixIcon: Icon(Icons.tag),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product code is required' : null,
-              ),
-            TextFormField(
+              ),,
+        TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Product Name *',
@@ -1561,18 +1568,23 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   prefixIcon: Icon(Icons.shopping_bag),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product name is required' : null,
-              ),
-          ]),
+              ),,
+      ]),
         const SizedBox(height: 16),
-        _buildResponsiveRow([
-            TextFormField(
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
                 controller: _shortNameController,
                 decoration: const InputDecoration(
                   labelText: 'Short Name / Alias',
                   border: OutlineInputBorder(),
                 ),
               ),
-            categoriesAsync.when(
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: categoriesAsync.when(
                 data: (list) {
                   final exists = _selectedCategory != null && list.any((c) => c.id == _selectedCategory!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedCategory != null) _selectedCategory!];
@@ -1599,7 +1611,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                         icon: const Icon(Icons.add),
                         tooltip: 'Add Category',
                         onPressed: _showCreateCategoryDialog,
-          ]);
+                      ),
+                    ],
+                  );
                 },
                 loading: () => const Center(child: LinearProgressIndicator()),
                 error: (e, _) => const Icon(Icons.error),
@@ -1608,8 +1622,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildResponsiveRow([
-            brandsAsync.when(
+        Row(
+          children: [
+            Expanded(
+              child: brandsAsync.when(
                 data: (list) {
                   final exists = _selectedBrand != null && list.any((b) => b.id == _selectedBrand!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedBrand != null) _selectedBrand!];
@@ -1720,15 +1736,11 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           const SizedBox(height: 12),
           extSkuField,
         ] else
-          Row(
-            children: [
-              Expanded(child: barcodeField),
-              const SizedBox(width: 16),
-              Expanded(child: skuField),
-              const SizedBox(width: 16),
-              Expanded(child: extSkuField),
-            ],
-          ),
+          _buildResponsiveRow([
+        barcodeField,
+        skuField,
+        extSkuField,
+      ]),
       ],
     );
   }
@@ -1777,13 +1789,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         ],
 
         // 1. Purchase Rate & MRP Row
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Purchase Price + Tax Mode Selector
-            Expanded(
-              flex: 3,
-              child: Column(
+        _buildResponsiveRow([
+        Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -1848,14 +1855,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       }),
                     ),
                 ],
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // MRP Input
-            Expanded(
-              flex: 2,
-              child: TextFormField(
+              ),,
+        TextFormField(
                 controller: _mrpController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
@@ -1864,20 +1865,14 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   prefixIcon: Icon(Icons.currency_rupee),
                   helperText: 'Max printed price',
                 ),
-              ),
-            ),
-          ],
-        ),
+              ),,
+      ]),
 
         const SizedBox(height: 16),
 
         // 2. Retail Selling Price & Wholesale Price Row
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Retail Selling Price + Tax Mode Selector
-            Expanded(
-              child: Column(
+        _buildResponsiveRow([
+        Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -1943,13 +1938,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       }),
                     ),
                 ],
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Wholesale Price + Tax Mode Selector
-            Expanded(
-              child: Column(
+              ),,
+        Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
@@ -2014,10 +2004,8 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       }),
                     ),
                 ],
-              ),
-            ),
-          ],
-        ),
+              ),,
+      ]),
 
         const SizedBox(height: 16),
 
@@ -2076,7 +2064,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   ],
                   onChanged: (v) => setState(() => _gstRate = v ?? 18.0),
                 ),
-            RawAutocomplete<HsnModel>(
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: RawAutocomplete<HsnModel>(
                   textEditingController: _hsnController,
                   focusNode: FocusNode(),
                   optionsBuilder: (TextEditingValue textEditingValue) {
@@ -2141,7 +2132,9 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                     );
                   },
                 ),
-          ]),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Card(
             color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
@@ -2260,8 +2253,10 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 data: (list) {
                   final exists = _selectedUnit != null && list.any((u) => u.id == _selectedUnit!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedUnit != null) _selectedUnit!];
-                  return _buildResponsiveRow([
-            InkWell(
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
                           onTap: () => _showSearchableUnitPicker(isSecondary: false, unitsList: dropdownItems),
                           borderRadius: BorderRadius.circular(4),
                           child: InputDecorator(
@@ -2373,24 +2368,24 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       color: Colors.blue,
       children: [
         _buildResponsiveRow([
-          TextFormField(
-            controller: _weightController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Weight (KG)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.monitor_weight_outlined),
-            ),
-          ),
-          TextFormField(
-            controller: _dimensionsController,
-            decoration: const InputDecoration(
-              labelText: 'Dimensions (L x W x H)',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.straighten_outlined),
-            ),
-          ),
-        ]),
+        TextFormField(
+                controller: _weightController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Weight (KG)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.monitor_weight_outlined),
+                ),
+              ),,
+        TextFormField(
+                controller: _dimensionsController,
+                decoration: const InputDecoration(
+                  labelText: 'Dimensions (L x W x H)',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.straighten_outlined),
+                ),
+              ),,
+      ]),
         if (enableDescriptions) ...[
           const SizedBox(height: 16),
           TextFormField(

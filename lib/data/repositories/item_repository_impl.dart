@@ -1,11 +1,11 @@
-﻿import 'package:isar/isar.dart';
+import 'package:isar/isar.dart';
 import 'dart:math';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/domain/repositories/item_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
-import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 
 class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemRepository {
@@ -17,7 +17,7 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
   String _generateUuid() {
     final random = Random();
     final parts = List.generate(4, (_) => random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0'));
-    return '\-\';
+    return '${parts[0]}-${parts[1]}-${parts[2]}-${parts[3]}';
   }
 
   @override
@@ -25,6 +25,7 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
     if (query.trim().isEmpty) {
       return await getAll();
     }
+
     try {
       final cleanQuery = query.trim();
       return await collection
@@ -45,7 +46,7 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
               .skuCodeContains(cleanQuery, caseSensitive: false))
           .findAll();
     } catch (e) {
-      throw DatabaseException('Failed to search items: \');
+      throw DatabaseException('Failed to search items: $e');
     }
   }
 
@@ -71,11 +72,11 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
       final currentNum = int.tryParse(numStr) ?? 0;
       final nextNum = currentNum + 1;
       
-      final nextCode = 'ITM\';
-      logger.debug('Generated next item code: \ (previous: \)');
+      final nextCode = 'ITM${nextNum.toString().padLeft(5, '0')}';
+      logger.debug('Generated next item code: $nextCode (previous: $code)');
       return nextCode;
     } catch (e) {
-      throw DatabaseException('Failed to generate next item code: \');
+      throw DatabaseException('Failed to generate next item code: $e');
     }
   }
 
@@ -90,7 +91,7 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
       }
       return items;
     } catch (e) {
-      throw DatabaseException('Failed to retrieve all active Item: \');
+      throw DatabaseException('Failed to retrieve all active Item: $e');
     }
   }
 
@@ -102,7 +103,7 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
       if (entity == null || entity.isDeleted) return null;
       return entity;
     } catch (e) {
-      throw DatabaseException('Failed to retrieve Item by uuid: \');
+      throw DatabaseException('Failed to retrieve Item by uuid: $e');
     }
   }
 
@@ -120,18 +121,6 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
         final id = await collection.put(entity);
         entity.id = id;
 
-        if (!isSyncDownload) {
-          final queueItem = SyncQueue()
-            ..uuid = _generateUuid()
-            ..entityType = 'Item'
-            ..entityId = id
-            ..entityUuid = entity.uuid
-            ..operation = 'Insert'
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now();
-          await isar.syncQueues.put(queueItem);
-        }
-
         final managedItem = await collection.get(id);
         if (managedItem != null) {
           managedItem.category.value = entity.category.value;
@@ -147,47 +136,42 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
             }
           }
         }
+
+        if (!isSyncDownload) {
+          final queueItem = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = entityType
+            ..entityId = id
+            ..entityUuid = entity.uuid
+            ..operation = 'Insert'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(queueItem);
+        }
       });
-      
-      logger.debug('Item created. isSyncDownload: \, UUID: \');
+
+      logger.debug('$entityType created. isSyncDownload: $isSyncDownload, UUID: ${entity.uuid}');
       if (!isSyncDownload) SyncManager.triggerUpload();
     } catch (e) {
-      throw DatabaseException('Failed to create Item: \');
+      throw DatabaseException('Failed to create $entityType: $e');
     }
   }
 
   @override
   Future<void> update(Item entity, {bool isSyncDownload = false}) async {
     try {
-      final existing = await collection.get(entity.id);
-      if (existing == null) {
-        throw RecordNotFoundException('Cannot update Item: Record not found.');
+      if (entity.id == null) {
+        throw ValidationException('Cannot update $entityType without an ID');
       }
 
-      if (!isSyncDownload) {
-        entity.updatedAt = DateTime.now();
-        entity.isSynced = false;
-        entity.version += 1;
-      } else {
-        entity.isSynced = true;
-      }
+      entity.updatedAt = DateTime.now();
+      entity.isSynced = isSyncDownload;
+      entity.version = (entity.version ?? 0) + 1;
 
       await isar.writeTxn(() async {
         await collection.put(entity);
 
-        if (!isSyncDownload) {
-          final queueItem = SyncQueue()
-            ..uuid = _generateUuid()
-            ..entityType = 'Item'
-            ..entityId = entity.id
-            ..entityUuid = entity.uuid
-            ..operation = 'Update'
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now();
-          await isar.syncQueues.put(queueItem);
-        }
-
-        final managedItem = await collection.get(entity.id);
+        final managedItem = await collection.get(entity.id!);
         if (managedItem != null) {
           managedItem.category.value = entity.category.value;
           managedItem.unit.value = entity.unit.value;
@@ -202,14 +186,24 @@ class ItemRepositoryImpl extends BaseIsarRepository<Item> implements ItemReposit
             }
           }
         }
+
+        if (!isSyncDownload) {
+          final queueItem = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = entityType
+            ..entityId = entity.id!
+            ..entityUuid = entity.uuid
+            ..operation = 'Update'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(queueItem);
+        }
       });
-      
-      logger.debug('Item updated. isSyncDownload: \, UUID: \');
+
+      logger.debug('$entityType updated. isSyncDownload: $isSyncDownload, UUID: ${entity.uuid}');
       if (!isSyncDownload) SyncManager.triggerUpload();
-    } on RecordNotFoundException {
-      rethrow;
     } catch (e) {
-      throw DatabaseException('Failed to update Item: \');
+      throw DatabaseException('Failed to update $entityType: $e');
     }
   }
 }
