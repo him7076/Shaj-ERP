@@ -8,6 +8,7 @@ import 'package:business_sahaj_erp/features/tasks/presentation/providers/task_pr
 
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/widgets/machinery_list_tab.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
@@ -24,8 +25,9 @@ class _TasksScreenState extends ConsumerState<TasksScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
+    final isPersonal = ref.read(vaultModeProvider) == VaultMode.personal;
     final prefs = ref.read(sharedPreferencesProvider);
-    _enableMachineryManagement = prefs.getBool('enable_machinery_management') ?? false;
+    _enableMachineryManagement = isPersonal ? false : (prefs.getBool('enable_machinery_management') ?? false);
     _tabController = TabController(length: _enableMachineryManagement ? 2 : 1, vsync: this);
   }
 

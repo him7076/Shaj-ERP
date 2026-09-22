@@ -7,6 +7,7 @@ import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/task_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 
 class SubtaskItem {
   String title;
@@ -440,38 +441,40 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
               
               const SizedBox(height: 16),
 
-              // Linked Items Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Linked Items & Bundles', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  TextButton.icon(
-                    onPressed: _pickItems,
-                    icon: const Icon(Icons.link),
-                    label: const Text('Link Items'),
-                  ),
-                ],
-              ),
-              if (_linkedItems.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Text('No items linked.', style: TextStyle(color: Colors.grey)),
-                )
-              else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _linkedItems.map((item) {
-                    return Chip(
-                      label: Text(item.itemName ?? ''),
-                      onDeleted: () {
-                        setState(() {
-                          _linkedItems.remove(item);
-                        });
-                      },
-                    );
-                  }).toList(),
+              if (ref.read(vaultModeProvider) == VaultMode.business) ...[
+                // Linked Items Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Linked Items & Bundles', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    TextButton.icon(
+                      onPressed: _pickItems,
+                      icon: const Icon(Icons.link),
+                      label: const Text('Link Items'),
+                    ),
+                  ],
                 ),
+                if (_linkedItems.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Text('No items linked.', style: TextStyle(color: Colors.grey)),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _linkedItems.map((item) {
+                      return Chip(
+                        label: Text(item.itemName ?? ''),
+                        onDeleted: () {
+                          setState(() {
+                            _linkedItems.remove(item);
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+              ],
 
               const SizedBox(height: 32),
               SizedBox(

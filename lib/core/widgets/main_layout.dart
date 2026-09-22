@@ -9,6 +9,7 @@ import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_personal_transaction_dialog.dart';
 
 class MainLayout extends ConsumerWidget {
   final Widget child;
@@ -117,7 +118,14 @@ class MainLayout extends ConsumerWidget {
                   shape: const CircleBorder(),
                   backgroundColor: Colors.transparent,
                   foregroundColor: Colors.white,
-                  onPressed: () => MobileBottomSheets.showQuickCreate(context),
+                  onPressed: () {
+                    final isPersonal = ref.read(vaultModeProvider) == VaultMode.personal;
+                    if (isPersonal) {
+                      AddEditPersonalTransactionDialog.show(context);
+                    } else {
+                      MobileBottomSheets.showQuickCreate(context);
+                    }
+                  },
                   child: const Icon(Icons.add_rounded, size: 34),
                   tooltip: 'Quick Action',
                 ),

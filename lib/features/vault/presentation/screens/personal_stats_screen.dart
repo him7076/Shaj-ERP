@@ -17,6 +17,16 @@ class PersonalStatsScreen extends ConsumerWidget {
         title: const Text('Personal Vault Stats'),
         backgroundColor: Colors.indigo.shade900,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.business_rounded),
+            tooltip: 'Switch to Business Vault',
+            onPressed: () {
+              ref.read(vaultModeProvider.notifier).setMode(VaultMode.business);
+              context.go('/dashboard');
+            },
+          ),
+        ],
       ),
       body: totalsAsync.when(
         data: (totals) {

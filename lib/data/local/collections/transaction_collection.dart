@@ -40,6 +40,14 @@ class Transaction implements IsarModel {
   String? targetPartyUuid;
   String? targetPartyName;
 
+  // Personal Vault Enhancements
+  String? categoryUuid;
+  String? categoryName;
+  String? subCategoryUuid;
+  String? subCategoryName;
+  List<String>? tags;
+  double? transferFee;
+
   final party = IsarLink<Party>();
 
   @Index()
