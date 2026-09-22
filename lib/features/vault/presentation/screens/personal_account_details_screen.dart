@@ -73,7 +73,7 @@ class _PersonalAccountDetailsScreenState extends ConsumerState<PersonalAccountDe
     );
 
     if (confirm == true) {
-      await ref.read(bankAccountRepositoryProvider).delete(account);
+      await ref.read(bankAccountRepositoryProvider).delete(account.id);
       ref.invalidate(bankAccountsListProvider);
       if (context.mounted) {
         context.pop();
