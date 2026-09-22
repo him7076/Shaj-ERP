@@ -141,12 +141,12 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
     }
     
     if (widget.transaction == null) {
-      await ref.read(transactionRepositoryProvider).insertTransaction(txn);
+      await ref.read(transactionRepositoryProvider).saveTransaction(txn);
     } else {
-      await ref.read(transactionRepositoryProvider).updateTransaction(txn);
+      await ref.read(transactionRepositoryProvider).saveTransaction(txn);
     }
     
-    ref.invalidate(transactionListProvider);
+    ref.invalidate(filteredTransactionsProvider);
     ref.invalidate(transactionTotalsProvider);
     ref.invalidate(recentTransactionsProvider);
     
@@ -179,7 +179,7 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
               if (parentUuid.isNotEmpty) {
                  // In a real app we'd link to parent. We will rely on categoryType and maybe description hack for now.
               }
-              await ref.read(categoryRepositoryProvider).insertCategory(newCat);
+              await ref.read(categoryRepositoryProvider).create(newCat);
               ref.invalidate(categoriesListProvider);
               Navigator.pop(ctx, true);
             },
