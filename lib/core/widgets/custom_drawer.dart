@@ -7,6 +7,7 @@ import 'package:business_sahaj_erp/presentation/providers/unsaved_changes_provid
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/theme/app_decorations.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 
 class CustomDrawer extends ConsumerWidget {
   final bool isPermanent;
