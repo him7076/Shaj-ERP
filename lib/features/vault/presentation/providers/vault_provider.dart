@@ -15,6 +15,10 @@ class VaultModeNotifier extends StateNotifier<VaultMode> {
   void toggleMode() {
     state = state == VaultMode.business ? VaultMode.personal : VaultMode.business;
   }
+
+  void setMode(VaultMode newMode) {
+    state = newMode;
+  }
 }
 
 final vaultModeProvider = StateNotifierProvider<VaultModeNotifier, VaultMode>((ref) {

@@ -42,7 +42,13 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () {
-          ref.read(vaultModeProvider.notifier).toggleMode();
+          final isCurrentlyPersonal = ref.read(vaultModeProvider) == VaultMode.personal;
+          ref.read(vaultModeProvider.notifier).setMode(isCurrentlyPersonal ? VaultMode.business : VaultMode.personal);
+          if (isCurrentlyPersonal) {
+            context.go('/dashboard');
+          } else {
+            context.go('/personal-stats');
+          }
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

@@ -231,7 +231,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
             tooltip: 'Edit Party Profile',
             icon: Icon(Icons.edit_outlined, size: isMobile ? 20 : 24),
             onPressed: () {
-              Navigator.of(context).push(
+              Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
                   builder: (context) => AddEditPartyScreen(party: _party),
                 ),

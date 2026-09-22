@@ -424,7 +424,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.of(context).push(
+          Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(
               builder: (context) => const AddEditPartyScreen(),
             ),

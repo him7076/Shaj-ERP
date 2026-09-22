@@ -472,12 +472,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
     final isMobile = ResponsiveLayout.isMobile(context);
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      elevation: 12,
-      insetPadding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 24, vertical: isMobile ? 12 : 24),
-      child: Container(
-        width: isMobile ? MediaQuery.of(context).size.width * 0.95 : 520,
+    Widget dialogContent = Container(
+        width: isMobile ? MediaQuery.of(context).size.width : 520,
         padding: EdgeInsets.all(isMobile ? 14 : 24),
         child: Form(
           key: _formKey,
@@ -838,7 +834,19 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             ),
           ),
         ),
-      ),
+      );
+
+    if (isMobile) {
+      return Dialog.fullscreen(
+        child: SafeArea(child: dialogContent),
+      );
+    }
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 12,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: dialogContent,
     );
   }
 

@@ -472,7 +472,7 @@ class CustomDrawer extends ConsumerWidget {
                       ref: ref,
                       icon: Icons.security,
                       label: 'Personal Vault',
-                      routePath: '/vault',
+                      routePath: '/personal-stats',
                       currentPath: location,
                     ),
                   _buildDrawerHeader('REPORTS & SYSTEM'),
@@ -749,6 +749,12 @@ class CustomDrawer extends ConsumerWidget {
 
               if (confirm != true) return;
               ref.read(unsavedChangesProvider.notifier).state = false;
+            }
+
+            if (routePath == '/personal-stats' || routePath == '/personal-management') {
+              ref.read(vaultModeProvider.notifier).setMode(VaultMode.personal);
+            } else if (routePath == '/dashboard') {
+              ref.read(vaultModeProvider.notifier).setMode(VaultMode.business);
             }
 
             if (!isPermanent) {
