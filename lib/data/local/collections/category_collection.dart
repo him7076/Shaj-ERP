@@ -14,6 +14,12 @@ class Category implements IsarModel {
 
   String? categoryName;
   String? description;
+  
+  @Index()
+  String? categoryType;
+
+  @Index()
+  bool isPersonalVault = false;
 
   // Self-referencing link for subcategories
   final parentCategory = IsarLink<Category>();

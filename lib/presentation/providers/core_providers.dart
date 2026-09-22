@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/core/services/snapshot_backup_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 
 // Repositories
 import 'package:business_sahaj_erp/domain/repositories/sync_queue_repository.dart';
@@ -131,7 +132,9 @@ final debitNoteRepositoryProvider = Provider<DebitNoteRepository>((ref) {
 // Bank Accounts List Provider
 final bankAccountsListProvider = FutureProvider<List<BankAccount>>((ref) async {
   final repo = ref.watch(bankAccountRepositoryProvider);
-  return await repo.getAll();
+  final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
+  final allAccounts = await repo.getAll();
+  return allAccounts.where((a) => a.isPersonalVault == isPersonal).toList();
 });
 
 // GST Lookup Service Provider

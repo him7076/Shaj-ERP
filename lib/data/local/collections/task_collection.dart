@@ -25,6 +25,9 @@ class Task implements IsarModel {
   int? estimatedTimeMinutes;
   List<String>? linkedItemUuids;
 
+  @Index()
+  bool isPersonalVault = false;
+
   @override
   DateTime createdAt = DateTime.now();
   @override

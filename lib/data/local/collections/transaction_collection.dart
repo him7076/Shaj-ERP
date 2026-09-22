@@ -42,6 +42,9 @@ class Transaction implements IsarModel {
 
   final party = IsarLink<Party>();
 
+  @Index()
+  bool isPersonalVault = false;
+
   @override
   DateTime createdAt = DateTime.now();
 

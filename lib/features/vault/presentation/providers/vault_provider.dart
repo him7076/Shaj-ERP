@@ -7,6 +7,20 @@ final vaultItemsProvider = StateNotifierProvider<VaultNotifier, List<VaultItem>>
   return VaultNotifier(repository);
 });
 
+enum VaultMode { business, personal }
+
+class VaultModeNotifier extends StateNotifier<VaultMode> {
+  VaultModeNotifier() : super(VaultMode.business);
+
+  void toggleMode() {
+    state = state == VaultMode.business ? VaultMode.personal : VaultMode.business;
+  }
+}
+
+final vaultModeProvider = StateNotifierProvider<VaultModeNotifier, VaultMode>((ref) {
+  return VaultModeNotifier();
+});
+
 class VaultNotifier extends StateNotifier<List<VaultItem>> {
   final VaultRepository _repository;
 

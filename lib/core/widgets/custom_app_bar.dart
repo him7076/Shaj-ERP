@@ -13,12 +13,62 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/widgets/pulsing_dot_widget.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 
 class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
   final String? title;
 
   const CustomAppBar({Key? key, this.onMenuPressed, this.title}) : super(key: key);
+
+  Widget _buildVaultSwitcher(BuildContext context, WidgetRef ref) {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final isVaultEnabled = prefs.getBool('enable_personal_vault') ?? false;
+    if (!isVaultEnabled) return const SizedBox.shrink();
+
+    final vaultMode = ref.watch(vaultModeProvider);
+    final isPersonal = vaultMode == VaultMode.personal;
+    final theme = Theme.of(context);
+
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: isPersonal ? Colors.purple.withOpacity(0.1) : theme.colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isPersonal ? Colors.purple.withOpacity(0.3) : theme.colorScheme.primary.withOpacity(0.3),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          ref.read(vaultModeProvider.notifier).toggleMode();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isPersonal ? Icons.lock_person_rounded : Icons.business_center_rounded,
+                size: 14,
+                color: isPersonal ? Colors.purple : theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                isPersonal ? 'Personal' : 'Business',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isPersonal ? Colors.purple : theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
@@ -200,6 +250,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
             if (isMobile) ...[
               const Spacer(),
+              _buildVaultSwitcher(context, ref),
               // Mobile Sync Progress Button — isolated in Consumer to avoid full AppBar rebuilds
               Consumer(
                 builder: (context, ref, _) {
@@ -418,6 +469,7 @@ class CustomAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 },
               ),
               const SizedBox(width: 8),
+              _buildVaultSwitcher(context, ref),
               // Desktop Sync Button — isolated in Consumer to avoid full AppBar rebuilds
               Consumer(
                 builder: (context, ref, _) {

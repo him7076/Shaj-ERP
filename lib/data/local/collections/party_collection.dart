@@ -62,6 +62,10 @@ class Party implements IsarModel {
   List<String>? shopPhotos;     // Local file paths
   List<String>? shopPhotoUrls;  // Remote Firebase Storage URLs
 
+  List<PartyMobile>? mobileNumbers;
+  List<PartyAddress>? addresses;
+  String? referenceName;
+
   @override
   DateTime createdAt = DateTime.now();
 
@@ -76,4 +80,18 @@ class Party implements IsarModel {
 
   @override
   int version = 1;
+}
+
+@embedded
+class PartyMobile {
+  String? label;
+  String? number;
+}
+
+@embedded
+class PartyAddress {
+  String? label;
+  String? fullAddress;
+  double? latitude;
+  double? longitude;
 }

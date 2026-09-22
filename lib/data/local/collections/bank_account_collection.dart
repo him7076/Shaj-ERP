@@ -22,6 +22,9 @@ class BankAccount implements IsarModel {
   double? openingBalance;
   double? currentBalance;
 
+  @Index()
+  bool isPersonalVault = false;
+
   @override
   DateTime createdAt = DateTime.now();
 

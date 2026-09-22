@@ -8,6 +8,9 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
+import 'package:business_sahaj_erp/features/auth/presentation/screens/auth_screen.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
+import 'dart:convert';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
@@ -1840,9 +1843,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               }
 
               final repo = ref.read(bankAccountRepositoryProvider);
+              final isPersonal = ref.read(vaultModeProvider) == VaultMode.personal;
               if (account == null) {
                 final newAccount = BankAccount()
                   ..uuid = '${DateTime.now().millisecondsSinceEpoch}'
+                  ..isPersonalVault = isPersonal
                   ..accountName = accName
                   ..bankName = bankName
                   ..accountNumber = accNum

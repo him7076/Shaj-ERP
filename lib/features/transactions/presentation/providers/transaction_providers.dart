@@ -11,6 +11,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:flutter/material.dart';
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
@@ -60,6 +61,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   final filter = ref.watch(transactionSearchFilterProvider);
   final isar = ref.watch(isarProvider);
   final repo = ref.watch(transactionRepositoryProvider);
+  final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
 
   // 0. Resolve filter party ID to avoid filtering blindly
   int? targetPartyId;
@@ -119,6 +121,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       }
       
       var results = await qb.findAll();
+      results = results.where((t) => t.isPersonalVault == isPersonal).toList();
       results.sort((a, b) => (b.transactionDate ?? b.createdAt).compareTo(a.transactionDate ?? a.createdAt));
       rawTransactions = results.take(queryLimit).toList();
     } catch (e, stack) {
@@ -128,7 +131,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
 
   // 2. Fetch Invoices (Sales)
   List<Transaction> invoiceTransactions = [];
-  if (filter.transactionType == 'All' || filter.transactionType == 'Sales') {
+  if (!isPersonal && (filter.transactionType == 'All' || filter.transactionType == 'Sales')) {
     try {
       var qb = isar.invoices.filter().isDeletedEqualTo(false);
       
@@ -212,7 +215,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
 
   // 3. Fetch Orders (Sales Orders)
   List<Transaction> orderTransactions = [];
-  if (filter.transactionType == 'All' || filter.transactionType == 'Sales Order') {
+  if (!isPersonal && (filter.transactionType == 'All' || filter.transactionType == 'Sales Order')) {
     try {
       var qb = isar.orders.filter().isDeletedEqualTo(false);
       
@@ -280,7 +283,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
 
   // 4. Fetch Purchases (Purchase Bills)
   List<Transaction> purchaseTransactions = [];
-  if (filter.transactionType == 'All' || filter.transactionType == 'Purchase') {
+  if (!isPersonal && (filter.transactionType == 'All' || filter.transactionType == 'Purchase')) {
     try {
       var qb = isar.purchases.filter().isDeletedEqualTo(false);
       
@@ -385,6 +388,7 @@ class TransactionTotals {
 final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async {
   final filter = ref.watch(transactionSearchFilterProvider);
   final isar = ref.watch(isarProvider);
+  final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
   
   int? targetPartyId;
   if (filter.partyUuid != null) {
@@ -432,23 +436,25 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
     }
 
     if (filter.transactionType != 'All') {
-      final amounts = await qb.transactionTypeEqualTo(filter.transactionType).amountProperty().findAll();
-      final sum = sumList(amounts);
+      final allMatching = await qb.transactionTypeEqualTo(filter.transactionType).findAll();
+      final sum = sumList(allMatching.where((t) => t.isPersonalVault == isPersonal).map((t) => t.amount).toList());
       lockedTotal += sum;
       if (['Receipt', 'Other Income'].contains(filter.transactionType)) totalIn += sum;
       if (['Payment', 'Expense'].contains(filter.transactionType)) totalOut += sum;
     } else {
       // Must query separately to know type if we want IN/OUT without loading objects
       var qbIn = qb.and().group((q) => q.transactionTypeEqualTo('Receipt').or().transactionTypeEqualTo('Other Income'));
-      totalIn += sumList(await qbIn.amountProperty().findAll());
+      var allIn = await qbIn.findAll();
+      totalIn += sumList(allIn.where((t) => t.isPersonalVault == isPersonal).map((t) => t.amount).toList());
       
       var qbOut = qb.and().group((q) => q.transactionTypeEqualTo('Payment').or().transactionTypeEqualTo('Expense'));
-      totalOut += sumList(await qbOut.amountProperty().findAll());
+      var allOut = await qbOut.findAll();
+      totalOut += sumList(allOut.where((t) => t.isPersonalVault == isPersonal).map((t) => t.amount).toList());
     }
   }
 
   // 2. Invoices (Sales -> IN)
-  if (filter.transactionType == 'All' || filter.transactionType == 'Sales') {
+  if (!isPersonal && (filter.transactionType == 'All' || filter.transactionType == 'Sales')) {
     var qb = isar.invoices.filter().isDeletedEqualTo(false);
     if (targetPartyId != null) qb = qb.partyIdEqualTo(targetPartyId);
     qb = qb.and().group((q) => q
@@ -469,7 +475,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
   }
 
   // 3. Purchases (Purchase Bills -> OUT)
-  if (filter.transactionType == 'All' || filter.transactionType == 'Purchase') {
+  if (!isPersonal && (filter.transactionType == 'All' || filter.transactionType == 'Purchase')) {
     var qb = isar.purchases.filter().isDeletedEqualTo(false);
     if (targetPartyId != null) qb = qb.partyIdEqualTo(targetPartyId);
     qb = qb.and().group((q) => q
@@ -490,7 +496,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
   }
   
   // 4. Orders, Credit Note, Debit Note (for lockedTotal only)
-  if (['Sales Order', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
+  if (!isPersonal && ['Sales Order', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
     if (filter.transactionType == 'Sales Order') {
       var qb = isar.orders.filter().isDeletedEqualTo(false);
       if (targetPartyId != null) qb = qb.partyIdEqualTo(targetPartyId);
@@ -519,12 +525,15 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
 final recentTransactionsProvider = FutureProvider<List<Transaction>>((ref) async {
   final isar = ref.watch(isarProvider);
 
+  final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
+  
   // Only fetch last 10 transactions sorted by date descending — instant response
-  final recent = await isar.transactions.filter()
+  var recent = await isar.transactions.filter()
       .isDeletedEqualTo(false)
       .sortByTransactionDateDesc()
-      .limit(10)
       .findAll();
+      
+  recent = recent.where((t) => t.isPersonalVault == isPersonal).take(10).toList();
 
   return recent;
 });

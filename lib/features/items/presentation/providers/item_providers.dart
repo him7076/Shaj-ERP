@@ -18,6 +18,7 @@ import 'package:business_sahaj_erp/core/services/image_service.dart';
 import 'package:business_sahaj_erp/core/services/stock_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 
 // Service Providers
 final barcodeServiceProvider = Provider<BarcodeService>((ref) {
@@ -57,7 +58,9 @@ final unitRepositoryProvider = Provider<UnitRepository>((ref) {
 // Category, Brand, Unit List Providers (helper for dropdowns/filters)
 final categoriesListProvider = FutureProvider<List<Category>>((ref) async {
   final repo = ref.watch(categoryRepositoryProvider);
-  return await repo.getAll();
+  final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
+  final allCategories = await repo.getAll();
+  return allCategories.where((c) => c.isPersonalVault == isPersonal).toList();
 });
 
 final brandsListProvider = FutureProvider<List<Brand>>((ref) async {

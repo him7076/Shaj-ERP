@@ -12,7 +12,9 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/machinery_providers.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_machinery_screen.dart';
+import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_machinery_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:geolocator/geolocator.dart';
 
 class AddEditPartyScreen extends ConsumerStatefulWidget {
   final Party? party;
@@ -52,6 +54,11 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
   final _dueDaysController = TextEditingController();
   final _contactPersonController = TextEditingController();
   final _notesController = TextEditingController();
+  final _referenceNameController = TextEditingController();
+
+  List<PartyMobile> _mobileNumbersList = [];
+  List<PartyAddress> _addressesList = [];
+  bool _isFetchingLocation = false;
 
   String _partyType = 'Customer';
   String _gstType = 'Unregistered';
@@ -124,6 +131,9 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
         _mobileController.text = widget.initialMobile!.trim();
         _whatsappController.text = widget.initialMobile!.trim();
       }
+      
+      _mobileNumbersList.add(PartyMobile()..label='Primary'..number='');
+      _addressesList.add(PartyAddress()..label='Office'..fullAddress='');
     }
   }
 
@@ -310,11 +320,17 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
             _nameController.text = details.tradeName.isNotEmpty ? details.tradeName : details.legalName;
             _contactPersonController.text = details.legalName;
             _panController.text = details.panNumber;
-            _stateController.text = details.stateName;
-            _addressLine1Controller.text = details.addressLine1;
-            _cityController.text = details.city;
-            _pincodeController.text = details.pincode;
             _gstType = 'Registered';
+            
+            if (_addressesList.isNotEmpty) {
+              _addressesList[0].fullAddress = '${details.addressLine1} ${details.city} ${details.stateName} ${details.pincode}'.trim();
+            } else {
+              _addressesList.add(PartyAddress()
+                ..label = 'Office'
+                ..fullAddress = '${details.addressLine1} ${details.city} ${details.stateName} ${details.pincode}'.trim()
+              );
+            }
+            
             if (details.entityType.isNotEmpty && !_categories.contains(details.entityType)) {
               _categories.add(details.entityType);
               _category = details.entityType;
@@ -436,6 +452,34 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
     _balanceType = p.balanceType ?? 'Dr';
     _paymentTerms = p.paymentTerms ?? 'Cash';
     _category = p.businessCategory ?? 'Retail';
+    
+    _referenceNameController.text = p.referenceName ?? '';
+    
+    _mobileNumbersList = List.from(p.mobileNumbers ?? []);
+    if (_mobileNumbersList.isEmpty && (p.mobileNumber != null || p.whatsappNumber != null)) {
+      if (p.mobileNumber != null && p.mobileNumber!.isNotEmpty) {
+        _mobileNumbersList.add(PartyMobile()..label='Primary'..number=p.mobileNumber);
+      }
+      if (p.whatsappNumber != null && p.whatsappNumber!.isNotEmpty && p.whatsappNumber != p.mobileNumber) {
+        _mobileNumbersList.add(PartyMobile()..label='WhatsApp'..number=p.whatsappNumber);
+      }
+    }
+    if (_mobileNumbersList.isEmpty) {
+      _mobileNumbersList.add(PartyMobile()..label='Primary'..number='');
+    }
+
+    _addressesList = List.from(p.addresses ?? []);
+    if (_addressesList.isEmpty && (p.addressLine1 != null && p.addressLine1!.isNotEmpty)) {
+      _addressesList.add(PartyAddress()
+        ..label='Office'
+        ..fullAddress='${p.addressLine1 ?? ''} ${p.addressLine2 ?? ''} ${p.city ?? ''} ${p.state ?? ''} ${p.pincode ?? ''}'.trim()
+        ..latitude=p.latitude
+        ..longitude=p.longitude
+      );
+    }
+    if (_addressesList.isEmpty) {
+      _addressesList.add(PartyAddress()..label='Office'..fullAddress='');
+    }
   }
 
   Future<void> _autoGenerateCode() async {
@@ -447,6 +491,39 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       });
     } catch (e) {
       logger.error('Failed to auto generate party code', e);
+    }
+  }
+
+  Future<void> _fetchCurrentLocation(int index) async {
+    setState(() => _isFetchingLocation = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services are disabled.')));
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are denied.')));
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location permissions are permanently denied.')));
+        return;
+      }
+      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _addressesList[index].latitude = position.latitude;
+        _addressesList[index].longitude = position.longitude;
+      });
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location fetched successfully!')));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error fetching location: $e')));
+    } finally {
+      if (mounted) setState(() => _isFetchingLocation = false);
     }
   }
 
@@ -486,6 +563,21 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
       party.contactPerson = _contactPersonController.text.trim();
       party.businessCategory = _category;
       party.notes = _notesController.text.trim();
+      
+      party.referenceName = _referenceNameController.text.trim();
+      party.mobileNumbers = _mobileNumbersList.where((m) => m.number != null && m.number!.trim().isNotEmpty).toList();
+      party.addresses = _addressesList.where((a) => a.fullAddress != null && a.fullAddress!.trim().isNotEmpty).toList();
+      
+      if (party.mobileNumbers != null && party.mobileNumbers!.isNotEmpty) {
+        party.mobileNumber = party.mobileNumbers!.first.number;
+        party.whatsappNumber = party.mobileNumbers!.first.number;
+      }
+      if (party.addresses != null && party.addresses!.isNotEmpty) {
+        party.addressLine1 = party.addresses!.first.fullAddress;
+        party.latitude = party.addresses!.first.latitude;
+        party.longitude = party.addresses!.first.longitude;
+      }
+
       party.updatedAt = DateTime.now();
 
       if (_isEditMode) {
@@ -711,6 +803,11 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _referenceNameController,
+                                decoration: const InputDecoration(labelText: 'Reference / Alias Name', prefixIcon: Icon(Icons.people_alt_outlined), border: OutlineInputBorder()),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),
@@ -720,36 +817,48 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             title: 'Contact Information',
                             icon: Icons.phone_outlined,
                             children: [
-                              TextFormField(
-                                controller: _mobileController,
-                                keyboardType: TextInputType.phone,
-                                maxLength: 10,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(10),
-                                ],
-                                decoration: const InputDecoration(
-                                  labelText: 'Mobile Number (10 Digits)',
-                                  prefixIcon: Icon(Icons.phone),
-                                  border: OutlineInputBorder(),
-                                  counterText: '',
-                                ),
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _mobileNumbersList.length,
+                                separatorBuilder: (context, index) => const SizedBox(height: 16),
+                                itemBuilder: (context, index) {
+                                  return Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 2,
+                                        child: TextFormField(
+                                          initialValue: _mobileNumbersList[index].label,
+                                          decoration: const InputDecoration(labelText: 'Label', border: OutlineInputBorder()),
+                                          onChanged: (val) => _mobileNumbersList[index].label = val,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 5,
+                                        child: TextFormField(
+                                          initialValue: _mobileNumbersList[index].number,
+                                          keyboardType: TextInputType.phone,
+                                          maxLength: 10,
+                                          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+                                          decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone), border: OutlineInputBorder(), counterText: ''),
+                                          onChanged: (val) => _mobileNumbersList[index].number = val,
+                                        ),
+                                      ),
+                                      if (_mobileNumbersList.length > 1)
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                          onPressed: () => setState(() => _mobileNumbersList.removeAt(index)),
+                                        ),
+                                    ],
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _whatsappController,
-                                keyboardType: TextInputType.phone,
-                                maxLength: 10,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  LengthLimitingTextInputFormatter(10),
-                                ],
-                                decoration: const InputDecoration(
-                                  labelText: 'WhatsApp Number (10 Digits)',
-                                  prefixIcon: Icon(Icons.chat_bubble_outline),
-                                  border: OutlineInputBorder(),
-                                  counterText: '',
-                                ),
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                onPressed: () => setState(() => _mobileNumbersList.add(PartyMobile()..label='Other'..number='')),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add Another Number'),
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
@@ -789,97 +898,69 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             title: 'Billing & Office Address',
                             icon: Icons.location_on_outlined,
                             children: [
-                              TextFormField(
-                                controller: _addressLine1Controller,
-                                decoration: const InputDecoration(labelText: 'Address Line 1 (Shop/Building/Street)', prefixIcon: Icon(Icons.location_on), border: OutlineInputBorder()),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Autocomplete<String>(
-                                      initialValue: TextEditingValue(text: _addressLine2Controller.text),
-                                      optionsBuilder: (textEditingValue) {
-                                        if (textEditingValue.text.isEmpty) return _localities;
-                                        return _localities.where((loc) => loc.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-                                      },
-                                      onSelected: (val) {
-                                        _addressLine2Controller.text = val;
-                                      },
-                                      fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                                        if (_addressLine2Controller.text != controller.text && controller.text.isNotEmpty) {
-                                          _addressLine2Controller.text = controller.text;
-                                        }
-                                        return TextFormField(
-                                          controller: controller,
-                                          focusNode: focusNode,
-                                          onEditingComplete: onEditingComplete,
-                                          onChanged: (v) => _addressLine2Controller.text = v,
-                                          decoration: const InputDecoration(
-                                            labelText: 'Locality / Area / Landmark',
-                                            prefixIcon: Icon(Icons.location_city),
-                                            border: OutlineInputBorder(),
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: _addressesList.length,
+                                separatorBuilder: (context, index) => const Divider(height: 32),
+                                itemBuilder: (context, index) {
+                                  final addr = _addressesList[index];
+                                  final hasLocation = addr.latitude != null && addr.longitude != null;
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextFormField(
+                                              initialValue: addr.label,
+                                              decoration: const InputDecoration(labelText: 'Address Label (e.g. Office, Godown)', border: OutlineInputBorder()),
+                                              onChanged: (val) => addr.label = val,
+                                            ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  IconButton.filledTonal(
-                                    icon: const Icon(Icons.add_location_alt_outlined),
-                                    tooltip: 'Add New Locality',
-                                    onPressed: _showAddLocalityDialog,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: TextFormField(
-                                      controller: _cityController,
-                                      decoration: const InputDecoration(labelText: 'City', border: OutlineInputBorder()),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Autocomplete<String>(
-                                      initialValue: TextEditingValue(text: _stateController.text),
-                                      optionsBuilder: (textEditingValue) {
-                                        if (textEditingValue.text.isEmpty) return _indianStates;
-                                        return _indianStates.where((st) => st.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-                                      },
-                                      onSelected: (val) {
-                                        setState(() {
-                                          _stateController.text = val;
-                                        });
-                                      },
-                                      fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                                        if (_stateController.text != controller.text && _stateController.text.isNotEmpty && controller.text.isEmpty) {
-                                          controller.text = _stateController.text;
-                                        }
-                                        return TextFormField(
-                                          controller: controller,
-                                          focusNode: focusNode,
-                                          onEditingComplete: onEditingComplete,
-                                          onChanged: (v) => _stateController.text = v,
-                                          decoration: const InputDecoration(
-                                            labelText: 'State *',
-                                            hintText: 'Select or type state',
-                                            prefixIcon: Icon(Icons.map_outlined),
-                                            border: OutlineInputBorder(),
+                                          if (_addressesList.length > 1)
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                              onPressed: () => setState(() => _addressesList.removeAt(index)),
+                                            ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextFormField(
+                                        initialValue: addr.fullAddress,
+                                        maxLines: 2,
+                                        decoration: const InputDecoration(labelText: 'Full Address', border: OutlineInputBorder()),
+                                        onChanged: (val) => addr.fullAddress = val,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              hasLocation 
+                                                ? '📍 GPS: ${addr.latitude!.toStringAsFixed(4)}, ${addr.longitude!.toStringAsFixed(4)}'
+                                                : 'No GPS Location Set',
+                                              style: TextStyle(color: hasLocation ? Colors.green : Colors.grey, fontSize: 13),
+                                            ),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
+                                          OutlinedButton.icon(
+                                            onPressed: _isFetchingLocation ? null : () => _fetchCurrentLocation(index),
+                                            icon: _isFetchingLocation 
+                                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                                                : const Icon(Icons.my_location, size: 16),
+                                            label: const Text('Auto Fetch', style: TextStyle(fontSize: 12)),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _pincodeController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Pincode', border: OutlineInputBorder()),
+                              const SizedBox(height: 12),
+                              TextButton.icon(
+                                onPressed: () => setState(() => _addressesList.add(PartyAddress()..label='Branch'..fullAddress='')),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Add Another Address'),
                               ),
                             ],
                           ),

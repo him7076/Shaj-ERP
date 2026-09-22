@@ -8,6 +8,7 @@ import 'package:business_sahaj_erp/core/widgets/custom_drawer.dart';
 import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 
 class MainLayout extends ConsumerWidget {
   final Widget child;
@@ -19,10 +20,15 @@ class MainLayout extends ConsumerWidget {
   }) : super(key: key);
 
   int _calculateSelectedIndex(BuildContext context) {
-    final location = GoRouterState.of(context).matchedLocation;
+    final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
+    
     if (location.startsWith('/dashboard')) return 0;
-    if (location.startsWith('/transactions')) return 1;
-    if (location.startsWith('/parties') || location.startsWith('/tasks')) return 2;
+    if (location.startsWith('/transactions')) return isPersonal ? 0 : 1;
+    if (location.startsWith('/personal-stats')) return 1;
+    if (location.startsWith('/tasks')) return isPersonal ? 2 : 2;
+    if (location.startsWith('/personal-management')) return 3;
+    
+    if (location.startsWith('/parties')) return 2;
     if (location.startsWith('/reports') || location.startsWith('/settings')) return 3;
     return 0;
   }
@@ -152,53 +158,89 @@ class MainLayout extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(
-                        context,
-                        icon: Icons.dashboard_outlined,
-                        activeIcon: Icons.dashboard_rounded,
-                        label: 'Home',
-                        isSelected: selectedIndex == 0,
-                        onTap: () => context.go('/dashboard'),
-                      ),
-                      _buildNavItem(
-                        context,
-                        icon: Icons.receipt_long_outlined,
-                        activeIcon: Icons.receipt_long_rounded,
-                        label: 'Transactions',
-                        isSelected: selectedIndex == 1,
-                        onTap: () => context.go('/transactions'),
-                      ),
-                      const SizedBox(width: 36), // Space for central FAB notch
-                      if (enableTasks)
-                        _buildNavItem(
-                          context,
-                          icon: Icons.task_alt_rounded,
-                          activeIcon: Icons.task_alt_rounded,
-                          label: 'Tasks',
-                          isSelected: selectedIndex == 2,
-                          onTap: () => context.go('/tasks'),
-                        )
-                      else
-                        _buildNavItem(
-                          context,
-                          icon: Icons.people_outline_rounded,
-                          activeIcon: Icons.people_rounded,
-                          label: 'Parties',
-                          isSelected: selectedIndex == 2,
-                          onTap: () => context.go('/parties'),
-                        ),
-                      _buildNavItem(
-                        context,
-                        icon: Icons.grid_view_outlined,
-                        activeIcon: Icons.grid_view_rounded,
-                        label: 'More',
-                        isSelected: selectedIndex == 3,
-                        onTap: () {
-                          scaffoldKey.currentState?.openDrawer();
-                        },
-                      ),
-                    ],
+                    children: ref.watch(vaultModeProvider) == VaultMode.personal
+                      ? [
+                          _buildNavItem(
+                            context,
+                            icon: Icons.receipt_long_outlined,
+                            activeIcon: Icons.receipt_long_rounded,
+                            label: 'Transactions',
+                            isSelected: selectedIndex == 0,
+                            onTap: () => context.go('/transactions'),
+                          ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.pie_chart_outline,
+                            activeIcon: Icons.pie_chart_rounded,
+                            label: 'Stats',
+                            isSelected: selectedIndex == 1,
+                            onTap: () => context.go('/personal-stats'),
+                          ),
+                          const SizedBox(width: 36), // Space for central FAB notch
+                          _buildNavItem(
+                            context,
+                            icon: Icons.task_alt_rounded,
+                            activeIcon: Icons.task_alt_rounded,
+                            label: 'Tasks',
+                            isSelected: selectedIndex == 2,
+                            onTap: () => context.go('/tasks'),
+                          ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.settings_outlined,
+                            activeIcon: Icons.settings_rounded,
+                            label: 'Manage',
+                            isSelected: selectedIndex == 3,
+                            onTap: () => context.go('/personal-management'),
+                          ),
+                        ]
+                      : [
+                          _buildNavItem(
+                            context,
+                            icon: Icons.dashboard_outlined,
+                            activeIcon: Icons.dashboard_rounded,
+                            label: 'Home',
+                            isSelected: selectedIndex == 0,
+                            onTap: () => context.go('/dashboard'),
+                          ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.receipt_long_outlined,
+                            activeIcon: Icons.receipt_long_rounded,
+                            label: 'Transactions',
+                            isSelected: selectedIndex == 1,
+                            onTap: () => context.go('/transactions'),
+                          ),
+                          const SizedBox(width: 36), // Space for central FAB notch
+                          if (enableTasks)
+                            _buildNavItem(
+                              context,
+                              icon: Icons.task_alt_rounded,
+                              activeIcon: Icons.task_alt_rounded,
+                              label: 'Tasks',
+                              isSelected: selectedIndex == 2,
+                              onTap: () => context.go('/tasks'),
+                            )
+                          else
+                            _buildNavItem(
+                              context,
+                              icon: Icons.people_outline_rounded,
+                              activeIcon: Icons.people_rounded,
+                              label: 'Parties',
+                              isSelected: selectedIndex == 2,
+                              onTap: () => context.go('/parties'),
+                            ),
+                          _buildNavItem(
+                            context,
+                            icon: Icons.grid_view_outlined,
+                            activeIcon: Icons.grid_view_rounded,
+                            label: 'More',
+                            isSelected: selectedIndex == 3,
+                            onTap: () {
+                              scaffoldKey.currentState?.openDrawer();
+                            },
+                          ),
+                        ],
                   ),
                 ),
               ),

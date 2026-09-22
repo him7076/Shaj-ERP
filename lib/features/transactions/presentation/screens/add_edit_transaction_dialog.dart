@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_collection.da
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
@@ -372,8 +373,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     setState(() => _isSaving = true);
     try {
       final repo = ref.read(transactionRepositoryProvider);
+      final isPersonal = ref.read(vaultModeProvider) == VaultMode.personal;
       
       final txn = widget.transaction ?? Transaction();
+      txn.isPersonalVault = isPersonal;
       txn.transactionType = _transactionType;
       txn.transactionDate = _transactionDate;
       txn.amount = totalTxn;

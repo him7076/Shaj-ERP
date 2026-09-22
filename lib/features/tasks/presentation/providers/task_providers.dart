@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/data/repositories/task_repository_impl.dart';
 import 'package:business_sahaj_erp/domain/repositories/task_repository.dart';
@@ -11,7 +12,9 @@ final taskRepositoryProvider = Provider<TaskRepository>((ref) {
 
 final taskListProvider = FutureProvider<List<Task>>((ref) async {
   final repository = ref.watch(taskRepositoryProvider);
-  return await repository.getAll();
+  final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
+  final allTasks = await repository.getAll();
+  return allTasks.where((t) => t.isPersonalVault == isPersonal).toList();
 });
 
 class TaskNotifier extends StateNotifier<AsyncValue<void>> {
@@ -23,6 +26,8 @@ class TaskNotifier extends StateNotifier<AsyncValue<void>> {
   Future<void> addTask(Task task) async {
     state = const AsyncValue.loading();
     try {
+      final isPersonal = _ref.read(vaultModeProvider) == VaultMode.personal;
+      task.isPersonalVault = isPersonal;
       await _repository.create(task);
       _ref.invalidate(taskListProvider);
       state = const AsyncValue.data(null);
