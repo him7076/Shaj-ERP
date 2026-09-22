@@ -10,6 +10,7 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/calculator_dialog.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_bottom_sheet.dart';
 import 'package:isar/isar.dart';
 
 class AddEditPersonalTransactionDialog extends ConsumerStatefulWidget {
@@ -153,42 +154,93 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
     if (mounted) Navigator.pop(context);
   }
 
-  Future<void> _addCategory(String parentUuid) async {
-    // A quick way to add category without leaving the screen
+  Future<Category?> _addCategory(String parentUuid, {bool isTag = false}) async {
     final tc = TextEditingController();
-    final added = await showDialog<bool>(
+    final addedCat = await showDialog<Category?>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(parentUuid.isEmpty ? 'New Category' : 'New Sub-Category'),
+        title: Text(isTag ? 'New Tag' : (parentUuid.isEmpty ? 'New Category' : 'New Sub-Category')),
         content: TextField(
           controller: tc,
           autofocus: true,
           decoration: const InputDecoration(hintText: 'Name'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               if (tc.text.trim().isEmpty) return;
               final newCat = Category()
                 ..uuid = const Uuid().v4()
                 ..categoryName = tc.text.trim()
-                ..categoryType = _type == 'Income' ? 'Income' : 'Expense'
+                ..categoryType = isTag ? 'Tag' : (_type == 'Income' ? 'Income' : 'Expense')
                 ..isPersonalVault = true;
               
-              if (parentUuid.isNotEmpty) {
-                 // In a real app we'd link to parent. We will rely on categoryType and maybe description hack for now.
+              if (parentUuid.isNotEmpty && _selectedCategory != null) {
+                 newCat.parentCategory.value = _selectedCategory;
               }
               await ref.read(categoryRepositoryProvider).create(newCat);
+              if (parentUuid.isNotEmpty && _selectedCategory != null) {
+                 await newCat.parentCategory.save();
+              }
               ref.invalidate(categoriesListProvider);
-              Navigator.pop(ctx, true);
+              Navigator.pop(ctx, newCat);
             },
             child: const Text('Add'),
           )
         ],
       ),
     );
-    if (added == true) setState(() {});
+    if (addedCat != null) setState(() {});
+    return addedCat;
+  }
+
+  Future<BankAccount?> _addAccount() async {
+    final tcName = TextEditingController();
+    final tcBal = TextEditingController();
+    final addedAcc = await showDialog<BankAccount?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: tcName,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: 'Account Name (e.g. HDFC Bank)'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: tcBal,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(hintText: 'Opening Balance (₹)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, null), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (tcName.text.trim().isEmpty) return;
+              final newAcc = BankAccount()
+                ..uuid = const Uuid().v4()
+                ..accountName = tcName.text.trim()
+                ..openingBalance = double.tryParse(tcBal.text.trim()) ?? 0.0
+                ..currentBalance = double.tryParse(tcBal.text.trim()) ?? 0.0
+                ..isPersonalVault = true;
+              
+              await ref.read(bankAccountRepositoryProvider).create(newAcc);
+              ref.invalidate(bankAccountsListProvider);
+              Navigator.pop(ctx, newAcc);
+            },
+            child: const Text('Add'),
+          )
+        ],
+      ),
+    );
+    if (addedAcc != null) setState(() {});
+    return addedAcc;
   }
 
   @override
@@ -345,34 +397,8 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
                     onDeleted: () => setState(() => _tags.remove(t)),
                   )).toList(),
                 ),
-                subtitle: TextFormField(
-                  controller: _tagsController,
-                  decoration: InputDecoration(
-                    hintText: 'Add tag...',
-                    border: InputBorder.none,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.add),
-                      onPressed: () {
-                        if (_tagsController.text.trim().isNotEmpty) {
-                          setState(() {
-                            if (!_tags.contains(_tagsController.text.trim())) {
-                              _tags.add(_tagsController.text.trim());
-                            }
-                            _tagsController.clear();
-                          });
-                        }
-                      },
-                    ),
-                  ),
-                  onFieldSubmitted: (val) {
-                    if (val.trim().isNotEmpty) {
-                      setState(() {
-                        if (!_tags.contains(val.trim())) _tags.add(val.trim());
-                        _tagsController.clear();
-                      });
-                    }
-                  },
-                ),
+                subtitle: const Text('Tap to add/manage tags', style: TextStyle(color: Colors.blue)),
+                onTap: _openTagsSelector,
               ),
               const SizedBox(height: 40),
             ],
@@ -382,36 +408,88 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
     );
   }
 
+  Future<void> _openTagsSelector() async {
+    final categoriesAsync = ref.read(categoriesListProvider);
+    categoriesAsync.whenData((categories) async {
+      final tagCategories = categories.where((c) => c.isPersonalVault && c.categoryType == 'Tag').toList();
+      
+      final selectedTags = await SearchableBottomSheet.showMulti<Category>(
+        context: context,
+        title: 'Select Tags',
+        items: tagCategories,
+        itemAsString: (c) => c.categoryName ?? '',
+        initialSelectedItems: tagCategories.where((c) => _tags.contains(c.categoryName)).toList(),
+        onAddPressed: () async {
+          final newTag = await _addCategory('', isTag: true);
+          if (newTag != null && mounted) {
+            Navigator.pop(context); // Close current sheet
+            setState(() {
+              if (newTag.categoryName != null && !_tags.contains(newTag.categoryName)) {
+                 _tags.add(newTag.categoryName!);
+              }
+            });
+            _openTagsSelector(); // Reopen updated sheet
+          }
+        },
+      );
+      
+      if (selectedTags != null) {
+        setState(() {
+          _tags = selectedTags.map((c) => c.categoryName ?? '').toList();
+        });
+      }
+    });
+  }
+
   Widget _buildCategoryDropdown(String label, {required bool isSub}) {
     final categoriesAsync = ref.watch(categoriesListProvider);
     return categoriesAsync.when(
       data: (categories) {
-        // Filter for personal vault and type
-        final filtered = categories.where((c) => c.isPersonalVault && c.categoryType == (_type == 'Income' ? 'Income' : 'Expense')).toList();
+        List<Category> filtered = [];
+        if (isSub) {
+           filtered = categories.where((c) => c.isPersonalVault && c.categoryType == (_type == 'Income' ? 'Income' : 'Expense') && c.parentCategory.value?.uuid == _selectedCategory?.uuid).toList();
+        } else {
+           // Parent categories shouldn't have a parent assigned
+           filtered = categories.where((c) => c.isPersonalVault && c.categoryType == (_type == 'Income' ? 'Income' : 'Expense') && c.parentCategory.value == null).toList();
+        }
         
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(isSub ? Icons.subdirectory_arrow_right : Icons.category),
-          title: DropdownButtonHideUnderline(
-            child: DropdownButton<Category>(
-              isExpanded: true,
-              hint: Text('Select $label'),
-              value: isSub ? _selectedSubCategory : _selectedCategory,
-              items: filtered.map((c) => DropdownMenuItem(value: c, child: Text(c.categoryName ?? ''))).toList(),
-              onChanged: (val) {
-                setState(() {
-                  if (isSub) {
-                    _selectedSubCategory = val;
-                  } else {
-                    _selectedCategory = val;
-                  }
-                });
+        final selectedVal = isSub ? _selectedSubCategory : _selectedCategory;
+        
+        return InkWell(
+          onTap: () async {
+            if (isSub && _selectedCategory == null) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a Category first.')));
+              return;
+            }
+            final res = await SearchableBottomSheet.showSingle<Category>(
+              context: context,
+              title: 'Select $label',
+              items: filtered,
+              selectedItem: selectedVal,
+              itemAsString: (c) => c.categoryName ?? '',
+              onAddPressed: () async {
+                final newCat = await _addCategory(isSub ? 'sub' : '');
+                if (newCat != null && mounted) {
+                  Navigator.pop(context, newCat);
+                }
               },
-            ),
-          ),
-          trailing: IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () => _addCategory(isSub ? 'sub' : ''),
+            );
+            if (res != null) {
+              setState(() {
+                if (isSub) {
+                  _selectedSubCategory = res;
+                } else {
+                  _selectedCategory = res;
+                  _selectedSubCategory = null; // reset subcat on parent change
+                }
+              });
+            }
+          },
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(isSub ? Icons.subdirectory_arrow_right : Icons.category),
+            title: Text(selectedVal?.categoryName ?? 'Select $label', style: TextStyle(color: selectedVal == null ? Colors.grey : null)),
+            trailing: const Icon(Icons.arrow_drop_down),
           ),
         );
       },
@@ -425,26 +503,30 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
     return accountsAsync.when(
       data: (accounts) {
         final filtered = accounts.where((a) => a.isPersonalVault).toList();
-        return ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.account_balance),
-          title: DropdownButtonHideUnderline(
-            child: DropdownButton<BankAccount>(
-              isExpanded: true,
-              hint: Text('Select $label'),
-              value: selected,
-              items: filtered.map((a) => DropdownMenuItem(value: a, child: Text(a.accountName ?? ''))).toList(),
-              onChanged: (val) {
-                if (val != null) onChanged(val);
+        return InkWell(
+          onTap: () async {
+            final res = await SearchableBottomSheet.showSingle<BankAccount>(
+              context: context,
+              title: 'Select $label',
+              items: filtered,
+              selectedItem: selected,
+              itemAsString: (a) => a.accountName ?? '',
+              onAddPressed: () async {
+                final newAcc = await _addAccount();
+                if (newAcc != null && mounted) {
+                  Navigator.pop(context, newAcc);
+                }
               },
-            ),
-          ),
-          trailing: IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            onPressed: () {
-               // In real app, route to add account, but for now we'll notify user to add via bank accounts screen.
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add accounts from the Bank Accounts menu.')));
-            },
+            );
+            if (res != null) {
+              onChanged(res);
+            }
+          },
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.account_balance),
+            title: Text(selected?.accountName ?? 'Select $label', style: TextStyle(color: selected == null ? Colors.grey : null)),
+            trailing: const Icon(Icons.arrow_drop_down),
           ),
         );
       },
