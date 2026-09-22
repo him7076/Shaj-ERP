@@ -19,7 +19,7 @@ class MainLayout extends ConsumerWidget {
     required this.child,
   }) : super(key: key);
 
-  int _calculateSelectedIndex(BuildContext context) {
+  int _calculateSelectedIndex(BuildContext context, WidgetRef ref, String location) {
     final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
     
     if (location.startsWith('/dashboard')) return 0;
@@ -37,7 +37,8 @@ class MainLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
     final theme = Theme.of(context);
-    final selectedIndex = _calculateSelectedIndex(context);
+    final location = GoRouterState.of(context).matchedLocation;
+    final selectedIndex = _calculateSelectedIndex(context, ref, location);
 
     if (isDesktop) {
       // Desktop Layout: Permanent side drawer + Appbar + Main content body

@@ -8,7 +8,6 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 import 'package:business_sahaj_erp/features/auth/presentation/providers/auth_provider.dart';
-import 'package:business_sahaj_erp/features/auth/presentation/screens/auth_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'dart:convert';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';

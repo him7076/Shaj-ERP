@@ -17,7 +17,6 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/services/hsn_service.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
-import 'package:business_sahaj_erp/core/widgets/responsive_app_bar.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
