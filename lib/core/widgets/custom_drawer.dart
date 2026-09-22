@@ -276,7 +276,61 @@ class CustomDrawer extends ConsumerWidget {
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
+                children: ref.watch(vaultModeProvider) == VaultMode.personal
+                 ? [
+                  _buildDrawerHeader('PERSONAL VAULT'),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
+                    icon: Icons.pie_chart_rounded,
+                    label: 'Personal Stats',
+                    routePath: '/personal-stats',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Transactions',
+                    routePath: '/transactions',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
+                    icon: Icons.task_alt_rounded,
+                    label: 'Tasks',
+                    routePath: '/tasks',
+                    currentPath: location,
+                  ),
+                  _buildDrawerItem(
+                    context: context,
+                    ref: ref,
+                    icon: Icons.settings_rounded,
+                    label: 'Accounts & Manage',
+                    routePath: '/personal-management',
+                    currentPath: location,
+                  ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo.shade50,
+                        foregroundColor: Colors.indigo.shade900,
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.business_rounded),
+                      label: const Text('Back to Business Vault'),
+                      onPressed: () {
+                        ref.read(vaultModeProvider.notifier).setMode(VaultMode.business);
+                        if (!isPermanent) Navigator.pop(context);
+                        context.go('/dashboard');
+                      },
+                    ),
+                  ),
+                 ]
+                 : [
                   _buildDrawerItem(
                     context: context,
                     ref: ref,

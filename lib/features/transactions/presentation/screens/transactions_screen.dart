@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/add_edit_order_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
@@ -449,6 +450,29 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ),
         ),
         actions: [
+          if (ref.watch(vaultModeProvider) == VaultMode.personal)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.brightness == Brightness.dark 
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.indigo.withOpacity(0.1),
+                  foregroundColor: theme.brightness == Brightness.dark 
+                      ? Colors.white
+                      : Colors.indigo.shade900,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                icon: const Icon(Icons.business_rounded, size: 18),
+                label: const Text('Switch to Business', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                onPressed: () {
+                  ref.read(vaultModeProvider.notifier).setMode(VaultMode.business);
+                  context.go('/dashboard');
+                },
+              ),
+            ),
           // Search Toggle Icon
           IconButton(
             tooltip: 'Search Transactions',

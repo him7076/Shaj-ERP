@@ -36,6 +36,8 @@ import 'package:business_sahaj_erp/features/vault/presentation/screens/vault_scr
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/fixed_assets_dashboard_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_stats_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_management_screen.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_accounts_screen.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_account_details_screen.dart';
 
 // Shell components
 import 'package:business_sahaj_erp/core/widgets/main_layout.dart';
@@ -319,6 +321,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/personal-management',
             name: 'personal-management',
             builder: (context, state) => const PersonalManagementScreen(),
+          ),
+          GoRoute(
+            path: '/personal-accounts',
+            name: 'personal-accounts',
+            builder: (context, state) => const PersonalAccountsScreen(),
+          ),
+          GoRoute(
+            path: '/personal-account-details/:id',
+            name: 'personal-account-details',
+            builder: (context, state) {
+              final id = state.pathParameters['id'] ?? '';
+              return PersonalAccountDetailsScreen(accountUuid: id);
+            },
           ),
         ],
       ),

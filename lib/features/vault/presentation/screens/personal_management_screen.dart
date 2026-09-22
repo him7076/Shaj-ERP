@@ -13,6 +13,26 @@ class PersonalManagementScreen extends ConsumerWidget {
         title: const Text('Personal Vault Hub'),
         backgroundColor: Colors.indigo.shade900,
         foregroundColor: Colors.white,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              icon: const Icon(Icons.business_rounded, size: 18),
+              label: const Text('Switch to Business', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              onPressed: () {
+                ref.read(vaultModeProvider.notifier).setMode(VaultMode.business);
+                context.go('/dashboard');
+              },
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -35,11 +55,11 @@ class PersonalManagementScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildActionCard(
               context,
-              title: 'Bank Accounts & Cash',
+              title: 'Accounts Management',
               subtitle: 'Manage personal accounts and balances',
               icon: Icons.account_balance_rounded,
               color: Colors.teal,
-              onTap: () => context.push('/bank-accounts'),
+              onTap: () => context.push('/personal-accounts'),
             ),
             const SizedBox(height: 12),
             _buildActionCard(
