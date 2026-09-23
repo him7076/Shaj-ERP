@@ -23,6 +23,7 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/uuid.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 class AddEditDebitNoteScreen extends ConsumerStatefulWidget {
   final String? parentDebitNoteUuid;
   final String? initialInvoiceNumber;
@@ -412,7 +413,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       ],
     );
 
-    final summaryContent = Card(
+    final summaryContent = NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -545,7 +546,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   Widget _buildPartyAndHeaderCard(ThemeData theme) {
     final partiesAsync = ref.watch(partiesListProvider);
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -656,7 +657,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
 
   Widget _buildCartItemsTable(ThemeData theme) {
     if (_draftItems.isEmpty) {
-      return Card(
+      return NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -718,7 +719,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       );
     }
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -1097,7 +1098,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
 
     if (!isDesktop) {
       // Mobile-optimized debitNote item card
-      return Card(
+      return NeuCard(
         margin: const EdgeInsets.symmetric(vertical: 4),
         elevation: 0,
         shape: RoundedRectangleBorder(

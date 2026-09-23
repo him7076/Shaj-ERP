@@ -22,6 +22,7 @@ import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
 import 'package:uuid/uuid.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 class AddEditPurchaseScreen extends ConsumerStatefulWidget {
   final String? purchaseUuid;
   const AddEditPurchaseScreen({Key? key, this.purchaseUuid}) : super(key: key);
@@ -432,7 +433,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       ],
     );
 
-    final summaryContent = Card(
+    final summaryContent = NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -688,7 +689,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   Widget _buildPartyAndHeaderCard(ThemeData theme) {
     final partiesAsync = ref.watch(partiesListProvider);
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -799,7 +800,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
   Widget _buildCartItemsTable(ThemeData theme) {
     if (_draftItems.isEmpty) {
-      return Card(
+      return NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -861,7 +862,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       );
     }
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -1240,7 +1241,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
 
     if (!isDesktop) {
       // Mobile-optimized purchase item card
-      return Card(
+      return NeuCard(
         margin: const EdgeInsets.symmetric(vertical: 4),
         elevation: 0,
         shape: RoundedRectangleBorder(

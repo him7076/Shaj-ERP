@@ -23,6 +23,7 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 
 
 class AddEditOrderScreen extends ConsumerStatefulWidget {
@@ -408,7 +409,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       ],
     );
 
-    final summaryContent = Card(
+    final summaryContent = NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -572,7 +573,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     final partiesAsync = ref.watch(partiesListProvider);
     final cart = ref.watch(cartProvider);
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -696,7 +697,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
   Widget _buildProductSearchAndCatalog(ThemeData theme) {
     final itemsAsync = ref.watch(filteredItemsProvider);
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -809,7 +810,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
   Widget _buildCartItemsTable(ThemeData theme, OrderCart cart) {
     if (cart.items.isEmpty) {
-      return Card(
+      return NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -830,7 +831,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       );
     }
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -1086,7 +1087,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
 
     if (!isDesktop) {
       // Mobile-optimized order item card
-      return Card(
+      return NeuCard(
         margin: const EdgeInsets.symmetric(vertical: 4),
         elevation: 0,
         shape: RoundedRectangleBorder(

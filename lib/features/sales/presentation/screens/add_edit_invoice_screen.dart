@@ -33,6 +33,7 @@ import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 
 
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
@@ -732,7 +733,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             ],
           );
 
-    final summaryContent = Card(
+    final summaryContent = NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -1109,7 +1110,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     final partiesAsync = ref.watch(partiesListProvider);
     final cart = ref.watch(invoiceCartProvider);
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -1371,7 +1372,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
   Widget _buildCartItemsTable(ThemeData theme, InvoiceCart cart) {
     if (cart.items.isEmpty) {
-      return Card(
+      return NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -1431,7 +1432,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       );
     }
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
@@ -1820,7 +1821,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                           final cItem = allItems.where((i) => i.uuid == cUuid).firstOrNull;
                           if (cItem == null) return const SizedBox.shrink();
                           
-                          return Card(
+                          return NeuCard(
                             margin: const EdgeInsets.only(bottom: 12),
                             child: Padding(
                               padding: const EdgeInsets.all(12.0),
@@ -2013,7 +2014,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
 
     if (!isDesktop) {
       // Mobile-optimized item card layout with expandable advanced inputs
-      return Card(
+      return NeuCard(
         margin: const EdgeInsets.symmetric(vertical: 4),
         elevation: 0,
         shape: RoundedRectangleBorder(

@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/widgets/expense_category_dialog.dart';
 import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 
 class ExpenseLineItem {
   String name;
@@ -619,7 +620,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 
   Widget _buildHeaderCard(ThemeData theme, bool isMobile, bool isDark) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -775,7 +776,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       _createNewItemTag,
     ];
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1061,7 +1062,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
   }
 
   Widget _buildSummaryCard(ThemeData theme, bool isMobile, bool isDark) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
