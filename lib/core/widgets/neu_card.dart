@@ -9,6 +9,7 @@ class NeuCard extends ConsumerWidget {
   final ShapeBorder? shape;
   final Color? color;
   final BoxDecoration? decoration;
+  final EdgeInsetsGeometry? margin;
 
   const NeuCard({
     Key? key,
@@ -18,6 +19,7 @@ class NeuCard extends ConsumerWidget {
     this.shape,
     this.color,
     this.decoration,
+    this.margin,
   }) : super(key: key);
 
   @override
@@ -29,6 +31,7 @@ class NeuCard extends ConsumerWidget {
 
     if (!isNeumorphic) {
       return Card(
+        margin: margin,
         elevation: elevation,
         clipBehavior: clipBehavior,
         shape: shape,
@@ -57,7 +60,7 @@ class NeuCard extends ConsumerWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.all(4.0), // Need margin for shadows to be visible
+      margin: margin ?? const EdgeInsets.all(4.0),
       decoration: BoxDecoration(
         color: baseColor,
         borderRadius: borderRadius,
