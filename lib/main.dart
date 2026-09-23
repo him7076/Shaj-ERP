@@ -370,12 +370,16 @@ class _MyAppState extends ConsumerState<MyApp> {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      theme: AppTheme.getLightTheme(
+      theme: AppTheme.getTheme(
+        ThemeMode.light,
+        themeState.themeType,
         themeState.themePreset,
         customPrimary: themeState.customPrimaryColor,
         customSecondary: themeState.customSecondaryColor,
       ),
-      darkTheme: AppTheme.getDarkTheme(
+      darkTheme: AppTheme.getTheme(
+        ThemeMode.dark,
+        themeState.themeType,
         themeState.themePreset,
         customPrimary: themeState.customPrimaryColor,
         customSecondary: themeState.customSecondaryColor,

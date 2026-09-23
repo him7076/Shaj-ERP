@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/constants/app_constants.dart';
 
+enum ThemeType {
+  standard,
+  neumorphism,
+}
+
 enum AppThemePreset {
   // 8 Dual-Tone Gradients
   executiveIndigo, // #4F46E5 -> #818CF8
@@ -30,12 +35,14 @@ enum AppThemePreset {
 
 class ThemeState {
   final ThemeMode themeMode;
+  final ThemeType themeType;
   final AppThemePreset themePreset;
   final Color? customPrimaryColor;
   final Color? customSecondaryColor;
 
   const ThemeState({
     this.themeMode = ThemeMode.system,
+    this.themeType = ThemeType.standard,
     this.themePreset = AppThemePreset.executiveIndigo,
     this.customPrimaryColor,
     this.customSecondaryColor,
@@ -43,12 +50,14 @@ class ThemeState {
 
   ThemeState copyWith({
     ThemeMode? themeMode,
+    ThemeType? themeType,
     AppThemePreset? themePreset,
     Color? customPrimaryColor,
     Color? customSecondaryColor,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
+      themeType: themeType ?? this.themeType,
       themePreset: themePreset ?? this.themePreset,
       customPrimaryColor: customPrimaryColor ?? this.customPrimaryColor,
       customSecondaryColor: customSecondaryColor ?? this.customSecondaryColor,
@@ -74,6 +83,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
   void _loadTheme() {
     final themeString = _prefs.getString(AppConstants.keyThemeMode);
+    final typeString = _prefs.getString('key_theme_type');
     final presetString = _prefs.getString('key_theme_preset');
     final primaryValue = _prefs.getInt('key_custom_primary_color');
     final secondaryValue = _prefs.getInt('key_custom_secondary_color');
@@ -86,6 +96,11 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
         case 'system':
         default: mode = ThemeMode.system; break;
       }
+    }
+
+    ThemeType type = ThemeType.standard;
+    if (typeString == 'neumorphism') {
+      type = ThemeType.neumorphism;
     }
 
     AppThemePreset preset = AppThemePreset.executiveIndigo;
@@ -103,10 +118,16 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
 
     state = ThemeState(
       themeMode: mode,
+      themeType: type,
       themePreset: preset,
       customPrimaryColor: customPrimary,
       customSecondaryColor: customSecondary,
     );
+  }
+
+  Future<void> setThemeType(ThemeType type) async {
+    state = state.copyWith(themeType: type);
+    await _prefs.setString('key_theme_type', type.name);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

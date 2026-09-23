@@ -6,6 +6,36 @@ class AppTheme {
   static ThemeData get lightTheme => getLightTheme(AppThemePreset.executiveIndigo);
   static ThemeData get darkTheme => getDarkTheme(AppThemePreset.executiveIndigo);
 
+  static ThemeData getTheme(ThemeMode mode, ThemeType type, AppThemePreset preset, {Color? customPrimary, Color? customSecondary}) {
+    if (type == ThemeType.neumorphism) {
+      if (mode == ThemeMode.light) {
+        return getNeumorphicLightTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary);
+      } else if (mode == ThemeMode.dark) {
+        return getNeumorphicDarkTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary);
+      } else {
+        // System
+        final window = WidgetsBinding.instance.window;
+        final brightness = window.platformDispatcher.platformBrightness;
+        return brightness == Brightness.dark 
+            ? getNeumorphicDarkTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary)
+            : getNeumorphicLightTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary);
+      }
+    } else {
+      if (mode == ThemeMode.light) {
+        return getLightTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary);
+      } else if (mode == ThemeMode.dark) {
+        return getDarkTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary);
+      } else {
+        // System
+        final window = WidgetsBinding.instance.window;
+        final brightness = window.platformDispatcher.platformBrightness;
+        return brightness == Brightness.dark 
+            ? getDarkTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary)
+            : getLightTheme(preset, customPrimary: customPrimary, customSecondary: customSecondary);
+      }
+    }
+  }
+
   // Light Theme Builder
   static ThemeData getLightTheme(AppThemePreset preset, {Color? customPrimary, Color? customSecondary}) {
     final primary = customPrimary ?? ColorConstants.getPrimary(preset, Brightness.light);
@@ -213,6 +243,225 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: ColorConstants.errorDark, width: 1),
+        ),
+        labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantDark, fontSize: 13, fontWeight: FontWeight.w500),
+        floatingLabelStyle: TextStyle(color: primary, fontSize: 13, fontWeight: FontWeight.w700),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+    );
+  }
+
+  // Neumorphic Light Theme Builder
+  static ThemeData getNeumorphicLightTheme(AppThemePreset preset, {Color? customPrimary, Color? customSecondary}) {
+    final primary = customPrimary ?? ColorConstants.getPrimary(preset, Brightness.light);
+    final secondary = customSecondary ?? ColorConstants.getSecondary(preset, Brightness.light);
+
+    const bgColor = Color(0xFFE0E5EC); // Classic Neumorphic Light Background
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      fontFamily: 'Inter',
+      scaffoldBackgroundColor: bgColor,
+      canvasColor: bgColor,
+      dialogBackgroundColor: bgColor,
+      colorScheme: ColorScheme.light(
+        primary: primary,
+        onPrimary: Colors.white,
+        primaryContainer: primary.withOpacity(0.12),
+        onPrimaryContainer: primary,
+        secondary: secondary,
+        onSecondary: Colors.white,
+        secondaryContainer: secondary.withOpacity(0.12),
+        onSecondaryContainer: secondary,
+        tertiary: const Color(0xFF8B5CF6),
+        onTertiary: Colors.white,
+        error: ColorConstants.errorLight,
+        onError: ColorConstants.onErrorLight,
+        background: bgColor,
+        onBackground: ColorConstants.onBackgroundLight,
+        surface: bgColor,
+        onSurface: ColorConstants.onSurfaceLight,
+        surfaceVariant: const Color(0xFFD1D9E6), // slightly darker for inputs
+        onSurfaceVariant: ColorConstants.onSurfaceVariantLight,
+        outline: Colors.transparent,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bgColor,
+        foregroundColor: ColorConstants.onSurfaceLight,
+        elevation: 0,
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        color: bgColor,
+        elevation: 8,
+        shadowColor: const Color(0xFFA3B1C6).withOpacity(0.6), // Darker shadow for depth
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: bgColor,
+        elevation: 12,
+        shadowColor: const Color(0xFFA3B1C6).withOpacity(0.8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          minimumSize: const Size(88, 48),
+          elevation: 6,
+          shadowColor: primary.withOpacity(0.4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          minimumSize: const Size(88, 48),
+          side: BorderSide(color: primary, width: 1.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFD1D9E6), // Inner shadow simulation using darker color
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: ColorConstants.errorLight, width: 1),
+        ),
+        labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantLight, fontSize: 13, fontWeight: FontWeight.w500),
+        floatingLabelStyle: TextStyle(color: primary, fontSize: 13, fontWeight: FontWeight.w700),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+    );
+  }
+
+  // Neumorphic Dark Theme Builder
+  static ThemeData getNeumorphicDarkTheme(AppThemePreset preset, {Color? customPrimary, Color? customSecondary}) {
+    final primary = customPrimary ?? ColorConstants.getPrimary(preset, Brightness.dark);
+    final secondary = customSecondary ?? ColorConstants.getSecondary(preset, Brightness.dark);
+
+    const bgColor = Color(0xFF1E1E24); // Dark Neumorphic Background
+    const surfaceVariant = Color(0xFF18181D); // Darker inner shade
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      fontFamily: 'Inter',
+      scaffoldBackgroundColor: bgColor,
+      canvasColor: bgColor,
+      dialogBackgroundColor: bgColor,
+      colorScheme: ColorScheme.dark(
+        primary: primary,
+        onPrimary: Colors.white,
+        primaryContainer: primary.withOpacity(0.2),
+        onPrimaryContainer: primary,
+        secondary: secondary,
+        onSecondary: Colors.white,
+        secondaryContainer: secondary.withOpacity(0.2),
+        onSecondaryContainer: secondary,
+        tertiary: const Color(0xFFA78BFA),
+        onTertiary: const Color(0xFF4C1D95),
+        error: ColorConstants.errorDark,
+        onError: ColorConstants.onErrorDark,
+        background: bgColor,
+        onBackground: ColorConstants.onBackgroundDark,
+        surface: bgColor,
+        onSurface: ColorConstants.onSurfaceDark,
+        surfaceVariant: surfaceVariant,
+        onSurfaceVariant: ColorConstants.onSurfaceVariantDark,
+        outline: Colors.transparent,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: bgColor,
+        foregroundColor: ColorConstants.onSurfaceDark,
+        elevation: 0,
+        centerTitle: false,
+        scrolledUnderElevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        color: bgColor,
+        elevation: 8,
+        shadowColor: Colors.black.withOpacity(0.6), // strong dark shadow
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: bgColor,
+        elevation: 12,
+        shadowColor: Colors.black.withOpacity(0.8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
+          foregroundColor: const Color(0xFF0F172A),
+          minimumSize: const Size(88, 48),
+          elevation: 6,
+          shadowColor: Colors.black.withOpacity(0.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primary,
+          minimumSize: const Size(88, 48),
+          side: BorderSide(color: primary, width: 1.2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: surfaceVariant, // darker to simulate inner shadow
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primary, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: ColorConstants.errorDark, width: 1),
         ),
         labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantDark, fontSize: 13, fontWeight: FontWeight.w500),

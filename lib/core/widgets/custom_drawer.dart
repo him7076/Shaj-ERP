@@ -555,6 +555,7 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/backup',
                     currentPath: location,
                   ),
+                  _buildThemesDrawerItem(context: context, ref: ref),
                   _buildDrawerItem(
                     context: context,
                     ref: ref,
@@ -819,6 +820,142 @@ class CustomDrawer extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildThemesDrawerItem({
+    required BuildContext context,
+    required WidgetRef ref,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
+      child: ListTile(
+        dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        leading: Container(
+          padding: const EdgeInsets.all(6),
+          child: Icon(
+            Icons.color_lens_rounded,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            size: 18,
+          ),
+        ),
+        title: Text(
+          'Themes & Appearance',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13.0,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+        minLeadingWidth: 24,
+        onTap: () {
+          if (!isPermanent) Navigator.pop(context);
+          _showThemeSettingsDialog(context, ref);
+        },
+      ),
+    );
+  }
+
+  void _showThemeSettingsDialog(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final themeState = ref.watch(themeProvider);
+            final notifier = ref.read(themeProvider.notifier);
+            
+            return Container(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Themes & Appearance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  
+                  const Text('Theme Mode', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: RadioListTile<ThemeMode>(
+                          title: const Text('Light', style: TextStyle(fontSize: 13)),
+                          value: ThemeMode.light,
+                          groupValue: themeState.themeMode,
+                          onChanged: (val) => notifier.setThemeMode(val!),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      Expanded(
+                        child: RadioListTile<ThemeMode>(
+                          title: const Text('Dark', style: TextStyle(fontSize: 13)),
+                          value: ThemeMode.dark,
+                          groupValue: themeState.themeMode,
+                          onChanged: (val) => notifier.setThemeMode(val!),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                      Expanded(
+                        child: RadioListTile<ThemeMode>(
+                          title: const Text('System', style: TextStyle(fontSize: 13)),
+                          value: ThemeMode.system,
+                          groupValue: themeState.themeMode,
+                          onChanged: (val) => notifier.setThemeMode(val!),
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  const Text('Theme Type', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                    ),
+                    child: Column(
+                      children: [
+                        RadioListTile<ThemeType>(
+                          title: const Text('Standard (Material)'),
+                          subtitle: const Text('Classic flat material design', style: TextStyle(fontSize: 11)),
+                          value: ThemeType.standard,
+                          groupValue: themeState.themeType,
+                          onChanged: (val) => notifier.setThemeType(val!),
+                        ),
+                        const Divider(height: 1),
+                        RadioListTile<ThemeType>(
+                          title: const Text('Neumorphism (3D Soft UI)'),
+                          subtitle: const Text('Soft UI with blending backgrounds', style: TextStyle(fontSize: 11)),
+                          value: ThemeType.neumorphism,
+                          groupValue: themeState.themeType,
+                          onChanged: (val) => notifier.setThemeType(val!),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
