@@ -1,134 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
-import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
-import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/personal_stats_provider.dart';
+import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
+import 'package:business_sahaj_erp/core/utils/currency_format.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 
-class PersonalStatsScreen extends ConsumerWidget {
+class PersonalStatsScreen extends ConsumerStatefulWidget {
   const PersonalStatsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final totalsAsync = ref.watch(transactionTotalsProvider);
+  ConsumerState<PersonalStatsScreen> createState() => _PersonalStatsScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Personal Vault Stats'),
-        backgroundColor: Colors.indigo.shade900,
-        foregroundColor: Colors.white,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.2),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-              ),
-              icon: const Icon(Icons.business_rounded, size: 18),
-              label: const Text('Switch to Business', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              onPressed: () {
-                ref.read(vaultModeProvider.notifier).setMode(VaultMode.business);
-                context.go('/dashboard');
-              },
-            ),
-          ),
-        ],
-      ),
-      body: totalsAsync.when(
-        data: (totals) {
-          final balance = totals.totalIn - totals.totalOut;
-          
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildSummaryCard(
-                  context,
-                  title: 'Net Balance',
-                  amount: balance,
-                  icon: Icons.account_balance_wallet,
-                  color: balance >= 0 ? Colors.green : Colors.red,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildSummaryCard(
-                        context,
-                        title: 'Total Income',
-                        amount: totals.totalIn,
-                        icon: Icons.arrow_downward_rounded,
-                        color: Colors.green,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildSummaryCard(
-                        context,
-                        title: 'Total Expense',
-                        amount: totals.totalOut,
-                        icon: Icons.arrow_upward_rounded,
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                _buildPieChartsSection(ref),
-                const SizedBox(height: 24),
-                const Text(
-                  'Recent Transactions',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                _buildRecentTransactions(ref),
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error loading stats: $e')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Open add transaction dialog with personal vault context
-          // Since we switch VaultMode globally, the global Add Transaction Dialog will automatically inherit it
-          // Wait, there is no generic dialog route. We must use the custom dialog.
-          // But I can just route to transactions which handles this.
-          context.push('/transactions');
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Entry'),
-        backgroundColor: Colors.indigo.shade900,
-      ),
-    );
+class _PersonalStatsScreenState extends ConsumerState<PersonalStatsScreen> {
+  final Map<String, Color> _categoryColors = {};
+  final List<Color> _availableColors = [
+    const Color(0xFF4ADE80), // Green
+    const Color(0xFFF87171), // Red
+    const Color(0xFF818CF8), // Indigo
+    const Color(0xFFFBBF24), // Yellow
+    const Color(0xFFA78BFA), // Purple
+    const Color(0xFF38BDF8), // Light Blue
+    const Color(0xFFFB923C), // Orange
+  ];
+
+  Color _getColorForCategory(String category, int index) {
+    if (_categoryColors.containsKey(category)) return _categoryColors[category]!;
+    final color = _availableColors[index % _availableColors.length];
+    _categoryColors[category] = color;
+    return color;
   }
 
-  Widget _buildSummaryCard(BuildContext context, {required String title, required double amount, required IconData icon, required Color color}) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(personalStatsStateProvider);
+    final notifier = ref.read(personalStatsStateProvider.notifier);
+    final dataAsync = ref.watch(personalStatsDataProvider);
+
+    const bgColor = Color(0xFF18181B); // Dark background
+    const cardColor = Color(0xFF27272A); // Darker card
+
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
         child: Column(
           children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-            const SizedBox(height: 4),
-            Text(
-              '₹${amount.toStringAsFixed(2)}',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: color,
+            _buildTopBar(context, ref),
+            _buildTypeToggle(state, notifier),
+            _buildTimeFilters(state, notifier),
+            Expanded(
+              child: dataAsync.when(
+                data: (data) {
+                  return ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    children: [
+                      _buildChartSection(state, notifier, data, cardColor),
+                      const SizedBox(height: 16),
+                      _buildLegendSection(state, notifier, data, cardColor),
+                      const SizedBox(height: 16),
+                      if (state.selectedCategory != null)
+                        _buildTransactionsSection(state, notifier, data, cardColor),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.white))),
               ),
             ),
           ],
@@ -137,178 +76,428 @@ class PersonalStatsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentTransactions(WidgetRef ref) {
-    final recentAsync = ref.watch(recentTransactionsProvider);
-    
-    return recentAsync.when(
-      data: (transactions) {
-        if (transactions.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Text('No recent entries.'),
+  Widget _buildTopBar(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => context.go('/dashboard'),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF27272A),
+              borderRadius: BorderRadius.circular(30),
             ),
-          );
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                _buildVaultToggleBtn('BUSINESS', false, ref),
+                _buildVaultToggleBtn('PERSONAL', true, ref),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.shield_outlined, color: Color(0xFFE879F9)),
+            onPressed: () {},
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVaultToggleBtn(String text, bool isPersonal, WidgetRef ref) {
+    final isSelected = ref.watch(vaultModeProvider) == (isPersonal ? VaultMode.personal : VaultMode.business);
+    return GestureDetector(
+      onTap: () {
+        if (!isSelected) {
+          ref.read(vaultModeProvider.notifier).setMode(isPersonal ? VaultMode.personal : VaultMode.business);
+          context.go('/dashboard');
         }
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: transactions.length,
-          itemBuilder: (context, index) {
-            final txn = transactions[index];
-            final isCredit = txn.transactionType == 'Receipt' || txn.transactionType == 'Other Income';
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 4),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: isCredit ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                  child: Icon(
-                    isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                    color: isCredit ? Colors.green : Colors.red,
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE879F9) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeToggle(PersonalStatsState state, PersonalStatsNotifier notifier) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF27272A),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => notifier.setType('Expense'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: state.type == 'Expense' ? const Color(0xFF3F3F46) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Expenses',
+                      style: TextStyle(
+                        color: state.type == 'Expense' ? Colors.white : Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-                title: Text(txn.remarks?.isNotEmpty == true ? txn.remarks! : (txn.transactionType ?? 'Entry')),
-                subtitle: Text(txn.transactionDate != null ? txn.transactionDate!.toString().split(' ')[0] : ''),
-                trailing: Text(
-                  '${isCredit ? '+' : '-'}₹${(txn.amount ?? 0).toStringAsFixed(2)}',
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => notifier.setType('Income'),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: state.type == 'Income' ? const Color(0xFF3F3F46) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Income',
+                      style: TextStyle(
+                        color: state.type == 'Income' ? Colors.white : Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeFilters(PersonalStatsState state, PersonalStatsNotifier notifier) {
+    final filters = ['TODAY', 'WEEKLY', 'MONTHLY', 'YEARLY', 'CUSTOM'];
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: filters.map((f) {
+            final isSelected = state.timeRange == f;
+            return GestureDetector(
+              onTap: () async {
+                if (f == 'CUSTOM') {
+                  final range = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    builder: (context, child) {
+                      return Theme(
+                        data: ThemeData.dark().copyWith(
+                          colorScheme: const ColorScheme.dark(
+                            primary: Color(0xFF818CF8),
+                            onPrimary: Colors.white,
+                            surface: Color(0xFF27272A),
+                            onSurface: Colors.white,
+                          ),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (range != null) {
+                    notifier.setTimeRange(f, customRange: range);
+                  }
+                } else {
+                  notifier.setTimeRange(f);
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF818CF8) : const Color(0xFF27272A),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  f,
                   style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.grey,
+                    fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: isCredit ? Colors.green : Colors.red,
                   ),
                 ),
               ),
             );
-          },
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error loading transactions: $e')),
-    );
-  }
-
-  Widget _buildPieChartsSection(WidgetRef ref) {
-    final transactionsAsync = ref.watch(filteredTransactionsProvider);
-    return transactionsAsync.when(
-      data: (transactions) {
-        if (transactions.isEmpty) return const SizedBox.shrink();
-
-        final incomeData = <String, double>{};
-        final expenseData = <String, double>{};
-
-        for (final txn in transactions) {
-          final amt = txn.amount ?? 0.0;
-          if (amt == 0) continue;
-          
-          final type = txn.transactionType;
-          final cat = txn.categoryName?.isNotEmpty == true ? txn.categoryName! : 'Other';
-
-          if (type == 'Income' || type == 'Other Income' || type == 'Receipt') {
-            incomeData[cat] = (incomeData[cat] ?? 0.0) + amt;
-          } else if (type == 'Expense' || type == 'Payment') {
-            expenseData[cat] = (expenseData[cat] ?? 0.0) + amt;
-          }
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (expenseData.isNotEmpty) ...[
-              const Text(
-                'Expenses by Category',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 220,
-                child: _buildPieChart(expenseData, Colors.red),
-              ),
-              const SizedBox(height: 32),
-            ],
-            if (incomeData.isNotEmpty) ...[
-              const Text(
-                'Income by Category',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 220,
-                child: _buildPieChart(incomeData, Colors.green),
-              ),
-              const SizedBox(height: 16),
-            ]
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildPieChart(Map<String, double> data, MaterialColor baseColor) {
-    final sortedEntries = data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    if (sortedEntries.isEmpty) return const SizedBox();
-
-    final List<Color> colors = [
-      baseColor.shade400,
-      baseColor.shade600,
-      baseColor.shade300,
-      baseColor.shade700,
-      baseColor.shade200,
-      baseColor.shade800,
-    ];
-
-    double total = data.values.fold(0, (sum, val) => sum + val);
-
-    return Row(
-      children: [
-        Expanded(
-          flex: 3,
-          child: PieChart(
-            PieChartData(
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
-              sections: sortedEntries.asMap().entries.map((entry) {
-                final index = entry.key;
-                final val = entry.value.value;
-                final pct = (val / total * 100);
-                return PieChartSectionData(
-                  color: colors[index % colors.length],
-                  value: val,
-                  title: '${pct.toStringAsFixed(1)}%',
-                  radius: 50,
-                  titleStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                );
-              }).toList(),
-            ),
-          ),
+          }).toList(),
         ),
-        Expanded(
-          flex: 2,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: sortedEntries.length,
-            itemBuilder: (context, index) {
-              final cat = sortedEntries[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
+      ),
+    );
+  }
+
+  Widget _buildChartSection(PersonalStatsState state, PersonalStatsNotifier notifier, PersonalStatsData data, Color cardColor) {
+    if (data.categoryTotals.isEmpty) {
+      return Container(
+        height: 250,
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: Text('No data for selected period', style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+
+    // Prepare chart data
+    final entries = data.categoryTotals.entries.toList();
+    int index = 0;
+    
+    String? hoverCategory;
+    if (state.selectedCategory != null && data.categoryTotals.containsKey(state.selectedCategory)) {
+      hoverCategory = state.selectedCategory;
+    }
+
+    final sections = entries.map((e) {
+      final isTouched = e.key == hoverCategory;
+      final radius = isTouched ? 30.0 : 25.0;
+      final color = _getColorForCategory(e.key, index++);
+      return PieChartSectionData(
+        color: color,
+        value: e.value,
+        title: '',
+        radius: radius,
+        badgeWidget: null,
+      );
+    }).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Column(
+        children: [
+          SizedBox(
+            height: 200,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    pieTouchData: PieTouchData(
+                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                        if (!event.isInterestedForInteractions || pieTouchResponse == null || pieTouchResponse.touchedSection == null) {
+                          return;
+                        }
+                        final touchIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                        if (touchIndex >= 0 && touchIndex < entries.length) {
+                          final selectedKey = entries[touchIndex].key;
+                          if (event.runtimeType != FlPanEndEvent && event.runtimeType != FlLongPressEnd) {
+                             notifier.selectCategory(selectedKey);
+                          }
+                        }
+                      },
+                    ),
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 60,
+                    sections: sections,
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(width: 12, height: 12, color: colors[index % colors.length]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        cat.key,
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      currencyFormat.format(data.totalAmount),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                    const Text(
+                      'TOTAL',
+                      style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
-              );
-            },
+              ],
+            ),
           ),
-        )
+          if (hoverCategory != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF3F3F46),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                '$hoverCategory : ${currencyFormat.format(data.categoryTotals[hoverCategory]!)} (${(data.categoryTotals[hoverCategory]! / data.totalAmount * 100).toStringAsFixed(1)}%)',
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendSection(PersonalStatsState state, PersonalStatsNotifier notifier, PersonalStatsData data, Color cardColor) {
+    if (data.categoryTotals.isEmpty) return const SizedBox();
+
+    final entries = data.categoryTotals.entries.toList();
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: entries.length,
+        itemBuilder: (context, index) {
+          final e = entries[index];
+          final color = _getColorForCategory(e.key, index);
+          final isSelected = state.selectedCategory == e.key;
+
+          return GestureDetector(
+            onTap: () {
+               notifier.selectCategory(isSelected ? null : e.key);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF3F3F46) : Colors.transparent,
+                borderRadius: isSelected ? BorderRadius.circular(12) : BorderRadius.zero,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      e.key,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Text(
+                    currencyFormat.format(e.value),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTransactionsSection(PersonalStatsState state, PersonalStatsNotifier notifier, PersonalStatsData data, Color cardColor) {
+    final filtered = data.allTransactions.where((t) {
+      final cat = t.categoryName?.isNotEmpty == true ? t.categoryName! : 'Other';
+      return cat == state.selectedCategory;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.folder, color: Colors.amber, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Filters: ${state.selectedCategory}',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ],
+            ),
+            TextButton(
+              onPressed: () => notifier.selectCategory(null),
+              child: const Text('Clear Filter', style: TextStyle(color: Color(0xFF818CF8))),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (filtered.isEmpty)
+          const Text('No transactions found.', style: TextStyle(color: Colors.grey))
+        else
+          ...filtered.map((t) {
+             final isExpense = t.transactionType == 'Expense' || t.transactionType == 'Payment';
+             final dateStr = t.transactionDate != null ? DateFormat('dd MMM yy').format(t.transactionDate!) : '';
+             final accStr = t.paymentMode ?? 'Cash';
+             
+             return Container(
+               margin: const EdgeInsets.only(bottom: 8),
+               padding: const EdgeInsets.all(16),
+               decoration: BoxDecoration(
+                 color: cardColor,
+                 borderRadius: BorderRadius.circular(16),
+               ),
+               child: Row(
+                 crossAxisAlignment: CrossAxisAlignment.center,
+                 children: [
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Text(
+                           t.remarks?.isNotEmpty == true ? t.remarks! : (t.transactionType ?? 'Entry'),
+                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                         const SizedBox(height: 4),
+                         Text(
+                           '$accStr • $dateStr',
+                           style: const TextStyle(color: Colors.grey, fontSize: 12),
+                         ),
+                       ],
+                     ),
+                   ),
+                   Text(
+                     '${isExpense ? '-' : ''}${currencyFormat.format(t.amount ?? 0)}',
+                     style: TextStyle(
+                       color: isExpense ? const Color(0xFFF87171) : const Color(0xFF4ADE80),
+                       fontWeight: FontWeight.bold,
+                       fontSize: 16,
+                     ),
+                   ),
+                 ],
+               ),
+             );
+          }).toList(),
       ],
     );
   }
