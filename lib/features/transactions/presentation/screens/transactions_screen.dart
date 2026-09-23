@@ -74,36 +74,31 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
   void _openTransaction(BuildContext context, Transaction txn) {
     if (txn.transactionType == 'Sales') {
-      Navigator.of(context, rootNavigator: true).push<bool>(
-        context,
+      Navigator.of(context,  rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: txn.uuid ?? txn.id.toString())),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
     } else if (txn.transactionType == 'Sales Order') {
-      Navigator.of(context, rootNavigator: true).push<bool>(
-        context,
+      Navigator.of(context,  rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => OrderDetailScreen(orderUuid: txn.uuid ?? txn.id.toString())),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
     } else if (txn.transactionType == 'Purchase') {
-      Navigator.of(context, rootNavigator: true).push<bool>(
-        context,
+      Navigator.of(context,  rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: txn.uuid)),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
     } else if (txn.transactionType == 'Credit Note') {
-      Navigator.of(context, rootNavigator: true).push<bool>(
-        context,
+      Navigator.of(context,  rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
     } else if (txn.transactionType == 'Debit Note') {
-      Navigator.of(context, rootNavigator: true).push<bool>(
-        context,
+      Navigator.of(context,  rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
@@ -1402,4 +1397,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     );
   }
 }
+
+
 

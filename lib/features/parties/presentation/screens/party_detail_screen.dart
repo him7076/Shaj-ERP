@@ -338,8 +338,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                         label: 'Invoice',
                         isMobile: isMobile,
                         onTap: () {
-                          Navigator.of(context, rootNavigator: true).push(
-                            context,
+                          Navigator.of(context,  rootNavigator: true).push(
                             MaterialPageRoute(builder: (context) => const AddEditInvoiceScreen()),
                           );
                         },
@@ -669,13 +668,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
                 onTap: () {
                   final targetUuid = (txn.uuid != null && txn.uuid!.isNotEmpty) ? txn.uuid! : txn.id.toString();
                   if (txn.type == 'Sales Invoice') {
-                    Navigator.of(context, rootNavigator: true).push(
-                      context,
+                    Navigator.of(context,  rootNavigator: true).push(
                       MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: targetUuid)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.type == 'Purchase Bill') {
-                    Navigator.of(context, rootNavigator: true).push(
-                      context,
+                    Navigator.of(context,  rootNavigator: true).push(
                       MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: targetUuid)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.rawTxn != null) {
@@ -905,3 +902,5 @@ class _PartyActivityItem {
     this.rawTxn,
   });
 }
+
+

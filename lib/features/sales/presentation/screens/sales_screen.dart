@@ -47,8 +47,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context, rootNavigator: true).push(
-          context,
+        Navigator.of(context,  rootNavigator: true).push(
           MaterialPageRoute(
             builder: (context) => const AddEditInvoiceScreen(),
           ),
@@ -586,8 +585,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                           icon: const Icon(Icons.add),
                           label: const Text('Record Direct Sales Invoice'),
                           onPressed: () {
-                            Navigator.of(context, rootNavigator: true).push(
-                              context,
+                            Navigator.of(context,  rootNavigator: true).push(
                               MaterialPageRoute(
                                 builder: (context) => const AddEditInvoiceScreen(),
                               ),
@@ -659,8 +657,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Direct Invoice'),
         onPressed: () {
-          Navigator.of(context, rootNavigator: true).push(
-            context,
+          Navigator.of(context,  rootNavigator: true).push(
             MaterialPageRoute(
               builder: (context) => const AddEditInvoiceScreen(),
             ),
@@ -939,8 +936,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                             final isar = dbService.isar;
 
                             if (val == 'edit') {
-                              Navigator.of(context, rootNavigator: true).push(
-                                context,
+                              Navigator.of(context,  rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (context) => AddEditInvoiceScreen(invoiceUuid: invoice.uuid),
                                 ),
@@ -1124,3 +1120,5 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     );
   }
 }
+
+
