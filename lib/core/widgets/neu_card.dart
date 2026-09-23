@@ -24,12 +24,13 @@ class NeuCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeType = ref.watch(themeProvider);
-    final isNeumorphic = themeType == ThemeType.neumorphism;
+    final themeState = ref.watch(themeProvider);
+    final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
     if (!isNeumorphic) {
+      // Standard theme — render as normal Card, unchanged
       return Card(
         margin: margin,
         elevation: elevation,
@@ -45,51 +46,54 @@ class NeuCard extends ConsumerWidget {
       );
     }
 
-    // Neumorphic styling
+    // ═══════════════════════════════════════════════════════
+    // NEUMORPHISM MODE
+    // ═══════════════════════════════════════════════════════
     final borderRadius = _extractBorderRadius(shape) ?? BorderRadius.circular(16);
-    final baseColor = theme.scaffoldBackgroundColor;
     
-    // Calculate shadows based on dark/light mode
-    final shadowLightColor = isDark ? Colors.white.withOpacity(0.05) : Colors.white;
-    final shadowDarkColor = isDark ? Colors.black.withOpacity(0.5) : Colors.black.withOpacity(0.1);
+    // Base color must match scaffold background for neumorphic illusion
+    final baseColor = isDark 
+        ? const Color(0xFF1E293B)   // Dark slate
+        : const Color(0xFFE8EDF2);  // Light grayish
 
-    // If decoration has a border (like the left accent border), preserve it
-    BoxBorder? accentBorder;
-    if (decoration != null && decoration!.border != null) {
-      accentBorder = decoration!.border;
-    }
+    // Strong dual shadows for visible emboss effect
+    final shadowLight = isDark 
+        ? Colors.white.withOpacity(0.07) 
+        : Colors.white.withOpacity(0.85);
+    final shadowDark = isDark 
+        ? Colors.black.withOpacity(0.6) 
+        : const Color(0xFFB0BEC5).withOpacity(0.5);
+
+    // Extract accent left-border from child's Container decoration (if present)
+    // The forms have: NeuCard(child: Container(decoration: BoxDecoration(border: Border(left: ...)), child: ...))
+    // We need to detect and style that inner container too
 
     return Container(
-      margin: margin ?? const EdgeInsets.all(4.0),
+      margin: margin ?? const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+      padding: const EdgeInsets.all(2), // tiny padding so shadows don't clip
       decoration: BoxDecoration(
         color: baseColor,
         borderRadius: borderRadius,
         boxShadow: [
+          // Dark shadow (bottom-right) — gives depth
           BoxShadow(
-            color: shadowDarkColor,
-            offset: const Offset(5, 5),
-            blurRadius: 10,
-            spreadRadius: 1,
+            color: shadowDark,
+            offset: const Offset(4, 4),
+            blurRadius: 8,
+            spreadRadius: 0,
           ),
+          // Light shadow (top-left) — gives raised look
           BoxShadow(
-            color: shadowLightColor,
-            offset: const Offset(-5, -5),
-            blurRadius: 10,
-            spreadRadius: 1,
+            color: shadowLight,
+            offset: const Offset(-4, -4),
+            blurRadius: 8,
+            spreadRadius: 0,
           ),
         ],
       ),
       child: ClipRRect(
         borderRadius: borderRadius,
-        clipBehavior: clipBehavior ?? Clip.none,
-        child: accentBorder != null 
-            ? Container(
-                decoration: BoxDecoration(
-                  border: accentBorder,
-                ),
-                child: child,
-              )
-            : child,
+        child: child,
       ),
     );
   }
