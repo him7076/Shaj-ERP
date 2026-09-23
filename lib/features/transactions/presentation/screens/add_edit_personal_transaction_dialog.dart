@@ -181,7 +181,10 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
               }
               await ref.read(categoryRepositoryProvider).create(newCat);
               if (parentUuid.isNotEmpty && _selectedCategory != null) {
-                 await newCat.parentCategory.save();
+                 final isar = ref.read(databaseServiceProvider).isar;
+                 await isar.writeTxn(() async {
+                   await newCat.parentCategory.save();
+                 });
               }
               ref.invalidate(categoriesListProvider);
               Navigator.pop(ctx, newCat);

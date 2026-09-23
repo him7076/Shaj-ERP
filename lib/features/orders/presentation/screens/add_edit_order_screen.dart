@@ -428,14 +428,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             children: [
             Text('Order settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('GST Inclusive Pricing'),
-              value: cart.isGstInclusive,
-              onChanged: (val) {
-                ref.read(cartProvider.notifier).toggleGstInclusive(val);
-              },
-            ),
+
             const Divider(height: 24),
             Row(
               children: [
@@ -998,6 +991,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
   late TextEditingController _batchController;
   late TextEditingController _mfgDateController;
   late TextEditingController _expDateController;
+  late TextEditingController _descController;
 
   bool _isUpdatingLocally = false;
 
@@ -1023,6 +1017,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     _batchController = TextEditingController(text: item.batchNumber ?? '');
     _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
     _expDateController = TextEditingController(text: item.expiryDate ?? '');
+    _descController = TextEditingController(text: item.description ?? '');
   }
 
   
@@ -1047,6 +1042,10 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     _updateIfChanged(_rateInclController, rateIncl.toStringAsFixed(2));
     _updateIfChanged(_discPercentController, item.discountPercent.toString());
     _updateIfChanged(_discAmountController, item.discountAmount.toString());
+
+    if (_descController.text != (item.description ?? '')) {
+      _descController.text = item.description ?? '';
+    }
   }
 
   void _updateIfChanged(TextEditingController controller, String value) {
@@ -1066,6 +1065,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
     _batchController.dispose();
     _mfgDateController.dispose();
     _expDateController.dispose();
+    _descController.dispose();
     super.dispose();
   }
 
@@ -1566,6 +1566,17 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             ),
           ],
         ),
+        if (ref.read(sharedPreferencesProvider).getBool('enable_item_descriptions') ?? false) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _descController,
+            maxLines: 2,
+            decoration: const InputDecoration(labelText: 'Item Description', isDense: true, border: OutlineInputBorder()),
+            onChanged: (val) {
+              ref.read(cartProvider.notifier).updateItemAt(widget.index, description: val.trim());
+            },
+          ),
+        ],
       ],
     );
 

@@ -47,6 +47,7 @@ class CartItemState {
   final String? mfgDate;
   final String? selectedSubItemUuid;
   final String? selectedSubItemName;
+  final String? description;
   final List<String>? bundleComponentUuids;
   final List<double>? bundleComponentQuantities;
   final List<String>? bundleComponentUnits;
@@ -70,6 +71,7 @@ class CartItemState {
     this.mfgDate,
     this.selectedSubItemUuid,
     this.selectedSubItemName,
+    this.description,
     this.bundleComponentUuids,
     this.bundleComponentQuantities,
     this.bundleComponentUnits,
@@ -105,6 +107,7 @@ class CartItemState {
     String? mfgDate,
     String? selectedSubItemUuid,
     String? selectedSubItemName,
+    String? description,
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,
@@ -128,6 +131,7 @@ class CartItemState {
       mfgDate: mfgDate ?? this.mfgDate,
       selectedSubItemUuid: selectedSubItemUuid ?? this.selectedSubItemUuid,
       selectedSubItemName: selectedSubItemName ?? this.selectedSubItemName,
+      description: description ?? this.description,
       bundleComponentUuids: bundleComponentUuids ?? this.bundleComponentUuids,
       bundleComponentQuantities: bundleComponentQuantities ?? this.bundleComponentQuantities,
       bundleComponentUnits: bundleComponentUnits ?? this.bundleComponentUnits,
@@ -230,6 +234,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
     String? batchNumber,
     String? expiryDate,
     String? mfgDate,
+    String? description,
   }) {
     if (index < 0 || index >= state.items.length) return;
 
@@ -260,6 +265,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
       batchNumber: batchNumber,
       expiryDate: expiryDate,
       mfgDate: mfgDate,
+      description: description ?? current.description,
     );
 
 

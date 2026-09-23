@@ -47,7 +47,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
+        Navigator.of(context, rootNavigator: true).push(
           context,
           MaterialPageRoute(
             builder: (context) => const AddEditInvoiceScreen(),
@@ -586,7 +586,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                           icon: const Icon(Icons.add),
                           label: const Text('Record Direct Sales Invoice'),
                           onPressed: () {
-                            Navigator.push(
+                            Navigator.of(context, rootNavigator: true).push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const AddEditInvoiceScreen(),
@@ -659,7 +659,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Direct Invoice'),
         onPressed: () {
-          Navigator.push(
+          Navigator.of(context, rootNavigator: true).push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddEditInvoiceScreen(),
@@ -939,7 +939,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                             final isar = dbService.isar;
 
                             if (val == 'edit') {
-                              Navigator.push(
+                              Navigator.of(context, rootNavigator: true).push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => AddEditInvoiceScreen(invoiceUuid: invoice.uuid),

@@ -32,7 +32,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
+        Navigator.of(context, rootNavigator: true).push(
           context,
           MaterialPageRoute(
             builder: (context) => const AddEditOrderScreen(),
@@ -170,7 +170,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                           icon: const Icon(Icons.add),
                           label: const Text('Create New Sales Order'),
                           onPressed: () {
-                            Navigator.push(
+                            Navigator.of(context, rootNavigator: true).push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const AddEditOrderScreen(),
@@ -232,7 +232,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Create Order'),
         onPressed: () {
-          Navigator.push(
+          Navigator.of(context, rootNavigator: true).push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddEditOrderScreen(),
@@ -456,7 +456,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                   final isar = dbService.isar;
 
                   if (val == 'edit') {
-                    Navigator.push(
+                    Navigator.of(context, rootNavigator: true).push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => AddEditOrderScreen(orderUuid: order.uuid),

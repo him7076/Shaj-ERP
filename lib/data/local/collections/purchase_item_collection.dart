@@ -24,6 +24,7 @@ class PurchaseItem implements IsarModel {
   String? hsnCode;
   String? selectedSubItemUuid;
   String? selectedSubItemName;
+  String? description;
 
   double? quantity;
   String? unit;

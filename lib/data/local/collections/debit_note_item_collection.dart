@@ -19,6 +19,7 @@ class DebitNoteItem implements IsarModel {
   String? hsnCode;
   String? selectedSubItemUuid;
   String? selectedSubItemName;
+  String? description;
 
   // Helper field to track parent for Web mock queries
   int? parentDebitNoteId;

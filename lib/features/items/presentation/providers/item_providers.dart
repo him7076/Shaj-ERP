@@ -60,6 +60,9 @@ final categoriesListProvider = FutureProvider<List<Category>>((ref) async {
   final repo = ref.watch(categoryRepositoryProvider);
   final isPersonal = ref.watch(vaultModeProvider) == VaultMode.personal;
   final allCategories = await repo.getAll();
+  for (var c in allCategories) {
+    try { await c.parentCategory.load(); } catch (_) {}
+  }
   return allCategories.where((c) => c.isPersonalVault == isPersonal).toList();
 });
 

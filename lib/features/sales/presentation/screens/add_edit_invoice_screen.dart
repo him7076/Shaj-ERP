@@ -772,16 +772,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 if (val != null) setState(() => _invoiceType = val);
               },
             ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              title: const Text('GST Inclusive Pricing', style: TextStyle(fontSize: 13)),
-              value: cart.isGstInclusive,
-              onChanged: (val) {
-                ref.read(invoiceCartProvider.notifier).toggleGstInclusive(val);
-              },
-            ),
+
 
             // ── Section B: Payment & Discounts ──
             Padding(
@@ -1259,103 +1250,116 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               ],
             ],
             const Divider(height: 20),
-            // Invoice Date
-            InkWell(
-              onTap: () async {
-                final selected = await showDatePicker(
-                  context: context,
-                  initialDate: _invoiceDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (selected != null) {
-                  setState(() => _invoiceDate = selected);
-                }
-              },
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Invoice Date',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
-                ),
-                child: Text(DateFormat('dd MMM yyyy').format(_invoiceDate)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            // Salesman
-            RawAutocomplete<String>(
-              textEditingController: TextEditingController(text: _selectedSalesman),
-              focusNode: FocusNode(),
-              optionsBuilder: (TextEditingValue textEditingValue) {
-                final query = textEditingValue.text.trim().toLowerCase();
-                if (query.isEmpty) return _salesmenList;
-                return _salesmenList.where((s) => s.toLowerCase().contains(query)).toList();
-              },
-              onSelected: (String s) {
-                setState(() {
-                  _selectedSalesman = s;
-                });
-                FocusScope.of(context).unfocus();
-              },
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      width: 280,
-                      constraints: const BoxConstraints(maxHeight: 250),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            color: Colors.blue.withOpacity(0.1),
-                            child: ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.add, color: Colors.blue, size: 20),
-                              title: const Text('+ Add New Salesman', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
-                              onTap: () {
-                                FocusScope.of(context).unfocus();
-                                _showAddSalesmanDialog();
-                              },
-                            ),
-                          ),
-                          Flexible(
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (context, index) {
-                                final option = options.elementAt(index);
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(option, style: const TextStyle(fontSize: 13)),
-                                  onTap: () => onSelected(option),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+            Row(
+              children: [
+                // Invoice Date
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _invoiceDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _invoiceDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Invoice Date',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
                       ),
+                      child: Text(DateFormat('dd MMM yyyy').format(_invoiceDate)),
                     ),
                   ),
-                );
-              },
-              fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                return TextFormField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: const InputDecoration(
-                    labelText: 'Salesman',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    prefixIcon: Icon(Icons.badge_outlined, size: 18),
+                ),
+                const SizedBox(width: 12),
+                // Salesman
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return RawAutocomplete<String>(
+                        textEditingController: TextEditingController(text: _selectedSalesman),
+                        focusNode: FocusNode(),
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          final query = textEditingValue.text.trim().toLowerCase();
+                          if (query.isEmpty) return _salesmenList;
+                          return _salesmenList.where((s) => s.toLowerCase().contains(query)).toList();
+                        },
+                        onSelected: (String s) {
+                          setState(() {
+                            _selectedSalesman = s;
+                          });
+                          FocusScope.of(context).unfocus();
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 4,
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                width: constraints.maxWidth,
+                                constraints: const BoxConstraints(maxHeight: 250),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      color: Colors.blue.withOpacity(0.1),
+                                      child: ListTile(
+                                        dense: true,
+                                        leading: const Icon(Icons.add, color: Colors.blue, size: 20),
+                                        title: const Text('+ Add New Salesman', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        onTap: () {
+                                          FocusScope.of(context).unfocus();
+                                          _showAddSalesmanDialog();
+                                        },
+                                      ),
+                                    ),
+                                    Flexible(
+                                      child: ListView.builder(
+                                        padding: EdgeInsets.zero,
+                                        shrinkWrap: true,
+                                        itemCount: options.length,
+                                        itemBuilder: (context, index) {
+                                          final option = options.elementAt(index);
+                                          return ListTile(
+                                            dense: true,
+                                            title: Text(option, style: const TextStyle(fontSize: 13)),
+                                            onTap: () => onSelected(option),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextFormField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              labelText: 'Salesman',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              prefixIcon: Icon(Icons.badge_outlined, size: 18),
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ],
         ),
@@ -1678,6 +1682,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
   late TextEditingController _batchController;
   late TextEditingController _mfgDateController;
   late TextEditingController _expDateController;
+  late TextEditingController _descController;
 
   bool _isUpdatingLocally = false;
   bool _showMoreDetails = false;
@@ -1705,6 +1710,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _batchController = TextEditingController(text: item.batchNumber ?? '');
     _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
     _expDateController = TextEditingController(text: item.expiryDate ?? '');
+    _descController = TextEditingController(text: item.description ?? '');
   }
 
   
@@ -1730,6 +1736,10 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _updateIfChanged(_buyRateController, (item.buyRate ?? 0.0).toStringAsFixed(2));
     _updateIfChanged(_discPercentController, item.discountPercent.toString());
     _updateIfChanged(_discAmountController, item.discountAmount.toString());
+    
+    if (_descController.text != (item.description ?? '')) {
+      _descController.text = item.description ?? '';
+    }
   }
 
   void _updateIfChanged(TextEditingController controller, String value) {
@@ -1750,6 +1760,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     _batchController.dispose();
     _mfgDateController.dispose();
     _expDateController.dispose();
+    _descController.dispose();
     super.dispose();
   }
 
@@ -1781,13 +1792,14 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
               child: Container(
-                height: MediaQuery.of(ctx).size.height * 0.7,
+                height: MediaQuery.of(ctx).size.height,
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2339,6 +2351,17 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                             ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                           },
                         ),
+                        if (ref.read(sharedPreferencesProvider).getBool('enable_item_descriptions') ?? false) ...[
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _descController,
+                            maxLines: 2,
+                            decoration: const InputDecoration(labelText: 'Item Description', isDense: true, border: OutlineInputBorder()),
+                            onChanged: (val) {
+                              ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, description: val.trim());
+                            },
+                          ),
+                        ],
                       ],
                     ),
                   ),

@@ -40,7 +40,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
     });
     if (widget.createImmediately) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.push(
+        Navigator.of(context, rootNavigator: true).push(
           context,
           MaterialPageRoute(
             builder: (context) => const AddEditPurchaseScreen(),
@@ -372,7 +372,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(
+          Navigator.of(context, rootNavigator: true).push(
             context,
             MaterialPageRoute(
               builder: (context) => const AddEditPurchaseScreen(),
@@ -410,7 +410,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                         const SizedBox(height: 12),
                         ElevatedButton.icon(
                           onPressed: () {
-                            Navigator.push(
+                            Navigator.of(context, rootNavigator: true).push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => const AddEditPurchaseScreen(),
@@ -576,7 +576,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                       child: ListTile(
                                         contentPadding: const EdgeInsets.all(16),
                                         onTap: () {
-                                          Navigator.push(
+                                          Navigator.of(context, rootNavigator: true).push(
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
@@ -671,7 +671,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                                 final isar = dbService.isar;
 
                                                 if (val == 'edit') {
-                                                  Navigator.push(
+                                                  Navigator.of(context, rootNavigator: true).push(
                                                     context,
                                                     MaterialPageRoute(
                                                       builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
