@@ -81,6 +81,9 @@ class MainLayout extends ConsumerWidget {
       final prefs = ref.watch(sharedPreferencesProvider);
       final enableTasks = prefs.getBool('enable_task_management') ?? false;
 
+      final themeState = ref.watch(themeProvider);
+      final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
+
       return Scaffold(
         key: scaffoldKey,
         appBar: null, // CustomAppBar is now handled by DashboardScreen on mobile
@@ -98,19 +101,35 @@ class MainLayout extends ConsumerWidget {
                 margin: const EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF6366F1), Color(0xFF3B82F6)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF6366F1).withOpacity(0.45),
-                      blurRadius: 16,
-                      spreadRadius: 2,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  color: isNeumorphic ? theme.colorScheme.primary : null,
+                  gradient: isNeumorphic 
+                      ? null
+                      : const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF6366F1), Color(0xFF3B82F6)],
+                        ),
+                  boxShadow: isNeumorphic 
+                      ? [
+                          BoxShadow(
+                            color: isDark ? Colors.black.withOpacity(0.6) : const Color(0xFFA3B1C6).withOpacity(0.6),
+                            offset: const Offset(4, 4),
+                            blurRadius: 10,
+                          ),
+                          BoxShadow(
+                            color: isDark ? const Color(0xFF2D2D36).withOpacity(0.5) : Colors.white.withOpacity(0.9),
+                            offset: const Offset(-4, -4),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withOpacity(0.45),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
                 child: FloatingActionButton(
                   elevation: 0,
@@ -136,27 +155,44 @@ class MainLayout extends ConsumerWidget {
           margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.40 : 0.10),
-                blurRadius: 24,
-                spreadRadius: 1,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: isNeumorphic 
+                ? [
+                    BoxShadow(
+                      color: isDark ? Colors.black.withOpacity(0.6) : const Color(0xFFA3B1C6).withOpacity(0.6),
+                      offset: const Offset(6, 6),
+                      blurRadius: 12,
+                    ),
+                    BoxShadow(
+                      color: isDark ? const Color(0xFF2D2D36).withOpacity(0.5) : Colors.white.withOpacity(0.9),
+                      offset: const Offset(-6, -6),
+                      blurRadius: 12,
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.40 : 0.10),
+                      blurRadius: 24,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(28),
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(28),
-                color: isDark
-                    ? const Color(0xFF1E293B).withOpacity(0.95)
-                    : Colors.white.withOpacity(0.97),
-                border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.14) : Colors.white.withOpacity(0.65),
-                  width: 1.2,
-                ),
+                color: isNeumorphic 
+                    ? theme.scaffoldBackgroundColor
+                    : (isDark
+                        ? const Color(0xFF1E293B).withOpacity(0.95)
+                        : Colors.white.withOpacity(0.97)),
+                border: isNeumorphic 
+                    ? null
+                    : Border.all(
+                        color: isDark ? Colors.white.withOpacity(0.14) : Colors.white.withOpacity(0.65),
+                        width: 1.2,
+                      ),
               ),
                 child: BottomAppBar(
                   height: 64,
@@ -270,7 +306,12 @@ class MainLayout extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Expanded(
+    return Consumer(
+      builder: (context, ref, _) {
+        final themeState = ref.watch(themeProvider);
+        final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
+        
+        return Expanded(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -278,19 +319,31 @@ class MainLayout extends ConsumerWidget {
           duration: const Duration(milliseconds: 250),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           decoration: isSelected
-              ? BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF6366F1).withOpacity(0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                )
+              ? (isNeumorphic
+                  ? BoxDecoration(
+                      color: isDark ? const Color(0xFF18181D) : const Color(0xFFD1D9E6),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFA3B1C6).withOpacity(0.4),
+                          blurRadius: 4,
+                          offset: const Offset(2, 2),
+                        ),
+                      ],
+                    )
+                  : BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withOpacity(0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ))
               : null,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -298,7 +351,9 @@ class MainLayout extends ConsumerWidget {
             children: [
               Icon(
                 isSelected ? activeIcon : icon,
-                color: isSelected ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                color: isSelected 
+                    ? (isNeumorphic ? theme.colorScheme.primary : Colors.white) 
+                    : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                 size: 20,
               ),
               const SizedBox(height: 2),
@@ -311,7 +366,9 @@ class MainLayout extends ConsumerWidget {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    color: isSelected ? Colors.white : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                    color: isSelected 
+                        ? (isNeumorphic ? theme.colorScheme.primary : Colors.white) 
+                        : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                   ),
                 ),
               ),
@@ -319,6 +376,8 @@ class MainLayout extends ConsumerWidget {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

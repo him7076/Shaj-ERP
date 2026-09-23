@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ModernFormSection extends StatelessWidget {
+class ModernFormSection extends ConsumerWidget {
   final String title;
   final String? subtitle;
   final IconData icon;
@@ -19,27 +20,46 @@ class ModernFormSection extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final effectiveColor = iconColor ?? theme.colorScheme.primary;
+    final themeState = ref.watch(themeProvider);
+    final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF131B2E) : Colors.white,
+        color: isNeumorphic 
+            ? theme.scaffoldBackgroundColor 
+            : (isDark ? const Color(0xFF131B2E) : Colors.white),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: isNeumorphic 
+            ? null 
+            : Border.all(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                width: 1.0,
+              ),
+        boxShadow: isNeumorphic 
+            ? [
+                BoxShadow(
+                  color: isDark ? Colors.black.withOpacity(0.7) : const Color(0xFFA3B1C6).withOpacity(0.6),
+                  offset: const Offset(6, 6),
+                  blurRadius: 12,
+                ),
+                BoxShadow(
+                  color: isDark ? const Color(0xFF2D2D36).withOpacity(0.5) : Colors.white.withOpacity(0.9),
+                  offset: const Offset(-6, -6),
+                  blurRadius: 12,
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -88,7 +108,9 @@ class ModernFormSection extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 0.5,
-            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            color: isNeumorphic 
+                ? (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
+                : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
           ),
           const SizedBox(height: 18),
 

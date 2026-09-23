@@ -296,17 +296,16 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: bgColor,
-        elevation: 8,
-        shadowColor: const Color(0xFFA3B1C6).withOpacity(0.6), // Darker shadow for depth
+        elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: BorderSide.none,
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: bgColor,
-        elevation: 12,
-        shadowColor: const Color(0xFFA3B1C6).withOpacity(0.8),
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
@@ -316,8 +315,7 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           minimumSize: const Size(88, 48),
-          elevation: 6,
-          shadowColor: primary.withOpacity(0.4),
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -406,17 +404,16 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: bgColor,
-        elevation: 8,
-        shadowColor: Colors.black.withOpacity(0.6), // strong dark shadow
+        elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: BorderSide.none,
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: bgColor,
-        elevation: 12,
-        shadowColor: Colors.black.withOpacity(0.8),
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
@@ -426,8 +423,7 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: const Color(0xFF0F172A),
           minimumSize: const Size(88, 48),
-          elevation: 6,
-          shadowColor: Colors.black.withOpacity(0.5),
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

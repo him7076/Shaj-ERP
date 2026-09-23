@@ -27,6 +27,9 @@ class CustomDrawer extends ConsumerWidget {
     final firmName = prefs.getString('firm_name_$activeFirmId') ?? (activeFirmId == 'firm_default' ? 'Default Company' : 'New Company');
     final enableTasks = prefs.getBool('enable_task_management') ?? false;
 
+    final themeState = ref.watch(themeProvider);
+    final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
+
     return Drawer(
       elevation: isPermanent ? 0 : 8,
       shape: const RoundedRectangleBorder(
@@ -34,11 +37,15 @@ class CustomDrawer extends ConsumerWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          color: isNeumorphic 
+              ? theme.scaffoldBackgroundColor
+              : (isDark ? const Color(0xFF0F172A) : Colors.white),
           border: isPermanent
               ? Border(
                   right: BorderSide(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    color: isNeumorphic 
+                        ? (isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05))
+                        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
                     width: 1.0,
                   ),
                 )
@@ -570,10 +577,11 @@ class CustomDrawer extends ConsumerWidget {
 
             Divider(height: 1, thickness: 0.5, color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
 
-            // Quick Control Actions Footer (Theme, Sync & Logout)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
+              color: isNeumorphic 
+                  ? theme.scaffoldBackgroundColor
+                  : (isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC)),
               child: Column(
                 children: [
                   Row(
@@ -589,9 +597,27 @@ class CustomDrawer extends ConsumerWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              color: isNeumorphic 
+                                  ? theme.scaffoldBackgroundColor
+                                  : (isDark ? const Color(0xFF1E293B) : Colors.white),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                              border: isNeumorphic
+                                  ? null
+                                  : Border.all(color: isDark ? Colors.white12 : Colors.black12),
+                              boxShadow: isNeumorphic 
+                                  ? [
+                                      BoxShadow(
+                                        color: isDark ? Colors.black.withOpacity(0.6) : const Color(0xFFA3B1C6).withOpacity(0.6),
+                                        offset: const Offset(4, 4),
+                                        blurRadius: 8,
+                                      ),
+                                      BoxShadow(
+                                        color: isDark ? const Color(0xFF2D2D36).withOpacity(0.5) : Colors.white.withOpacity(0.9),
+                                        offset: const Offset(-4, -4),
+                                        blurRadius: 8,
+                                      ),
+                                    ]
+                                  : null,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -718,6 +744,9 @@ class CustomDrawer extends ConsumerWidget {
     final isActive = currentPath == routePath;
     final itemColor = _getItemColor(routePath);
 
+    final themeState = ref.watch(themeProvider);
+    final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 2.0),
       child: AnimatedContainer(
@@ -725,8 +754,19 @@ class CustomDrawer extends ConsumerWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           color: isActive 
-              ? itemColor.withOpacity(isDark ? 0.18 : 0.1) 
+              ? (isNeumorphic 
+                  ? (isDark ? const Color(0xFF18181D) : const Color(0xFFD1D9E6)) 
+                  : itemColor.withOpacity(isDark ? 0.18 : 0.1))
               : Colors.transparent,
+          boxShadow: isActive && isNeumorphic
+              ? [
+                  BoxShadow(
+                    color: isDark ? Colors.black.withOpacity(0.4) : const Color(0xFFA3B1C6).withOpacity(0.4),
+                    blurRadius: 4,
+                    offset: const Offset(2, 2),
+                  ),
+                ]
+              : null,
         ),
         child: ListTile(
           dense: true,
@@ -734,7 +774,7 @@ class CustomDrawer extends ConsumerWidget {
           leading: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: isActive ? itemColor.withOpacity(0.2) : Colors.transparent,
+              color: isActive ? (isNeumorphic ? Colors.transparent : itemColor.withOpacity(0.2)) : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -749,11 +789,11 @@ class CustomDrawer extends ConsumerWidget {
               fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
               fontSize: 13.0,
               color: isActive 
-                  ? (isDark ? Colors.white : itemColor)
+                  ? (isDark || isNeumorphic ? (isNeumorphic ? theme.colorScheme.onSurface : Colors.white) : itemColor)
                   : theme.colorScheme.onSurface.withOpacity(0.85),
             ),
           ),
-          trailing: isActive
+          trailing: isActive && !isNeumorphic
               ? Container(
                   width: 6,
                   height: 18,
