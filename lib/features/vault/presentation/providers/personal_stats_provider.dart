@@ -97,7 +97,7 @@ final personalStatsDataProvider = FutureProvider<PersonalStatsData>((ref) async 
       break;
     case 'CUSTOM':
       startDate = filter.customDateRange?.start ?? DateTime(2000);
-      endDate = filter.customDateRange?.end.add(const Duration(hours: 23, 59, 59)) ?? now;
+      endDate = filter.customDateRange?.end.add(const Duration(hours: 23, minutes: 59, seconds: 59)) ?? now;
       break;
     default:
       startDate = DateTime(2000);
