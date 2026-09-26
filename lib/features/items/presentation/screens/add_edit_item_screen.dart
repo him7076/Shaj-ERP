@@ -1794,7 +1794,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         ],
 
         // 1. Purchase Rate & MRP Row
-        _buildResponsiveResponsiveFormRow([
+        _buildResponsiveRow([
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1876,7 +1876,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         const SizedBox(height: 16),
 
         // 2. Retail Selling Price & Wholesale Price Row
-        _buildResponsiveResponsiveFormRow([
+        _buildResponsiveRow([
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

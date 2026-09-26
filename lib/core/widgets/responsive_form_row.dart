@@ -4,12 +4,14 @@ class ResponsiveFormRow extends StatelessWidget {
   final List<Widget> children;
   final CrossAxisAlignment crossAxisAlignment;
   final MainAxisAlignment mainAxisAlignment;
+  final MainAxisSize mainAxisSize;
 
   const ResponsiveFormRow({
     Key? key,
     required this.children,
     this.crossAxisAlignment = CrossAxisAlignment.start,
     this.mainAxisAlignment = MainAxisAlignment.start,
+    this.mainAxisSize = MainAxisSize.max,
   }) : super(key: key);
 
   @override
@@ -51,6 +53,7 @@ class ResponsiveFormRow extends StatelessWidget {
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: mainAxisSize,
             children: columnChildren,
           );
         } else {
@@ -58,6 +61,7 @@ class ResponsiveFormRow extends StatelessWidget {
           return Row(
             crossAxisAlignment: crossAxisAlignment,
             mainAxisAlignment: mainAxisAlignment,
+            mainAxisSize: mainAxisSize,
             children: children,
           );
         }
