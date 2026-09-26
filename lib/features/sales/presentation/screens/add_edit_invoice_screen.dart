@@ -433,7 +433,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
     super.dispose();
   }
 
-  Future<void> _saveInvoice() async {
+  Future<void> _saveInvoice({bool isSaveAndNew = false}) async {
     final cart = ref.read(invoiceCartProvider);
     if (cart.selectedParty == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -668,7 +668,16 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       } catch (_) {}
 
       if (mounted) {
-        Navigator.pop(context, true);
+        
+        if (isSaveAndNew) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AddEditInvoiceScreen()),
+          );
+        } else {
+          Navigator.pop(context, true);
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_sourceOrder != null
@@ -985,10 +994,8 @@ ref.listen(invoiceCartProvider, (prev, next) {
             const SizedBox(height: 10),
             _buildTotalsSummaryPanel(theme),
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text('Save & Print Invoice'),
-              onPressed: _saveInvoice,
+            const SizedBox.shrink(), // old save button
+        // 
               style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1092,7 +1099,42 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 ],
               ),
         ),
-        bottomNavigationBar: null,
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isSaving ? null : () => _saveInvoice(isSaveAndNew: true),
+                    icon: const Icon(Icons.add_task),
+                    label: const Text('Save & New'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : () => _saveInvoice(isSaveAndNew: false),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save & Close'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2088,8 +2130,11 @@ final theme = Theme.of(context);
                       label: const Text('Components'),
                       onPressed: _showBundleComponentsDialog,
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                                    Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+
+                                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
                     onPressed: () {
                       ref.read(invoiceCartProvider.notifier).removeItemAt(widget.index);
                     },

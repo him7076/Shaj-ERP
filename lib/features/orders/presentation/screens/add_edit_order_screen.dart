@@ -215,7 +215,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     super.dispose();
   }
 
-  Future<void> _saveOrder() async {
+  Future<void> _saveOrder({bool isSaveAndNew = false}) async {
     final cart = ref.read(cartProvider);
     if (cart.selectedParty == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -395,7 +395,43 @@ final theme = Theme.of(context);
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
     if (_isSaving) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(bottomNavigationBar: SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isSaving ? null : () => _saveOrder(isSaveAndNew: true),
+                    icon: const Icon(Icons.add_task),
+                    label: const Text('Save & New'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : () => _saveOrder(isSaveAndNew: false),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save & Close'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      body: Center(child: CircularProgressIndicator()));
     }
 
     final mainContent = Column(
@@ -466,10 +502,8 @@ final theme = Theme.of(context);
             const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.check_circle_outline),
-              label: Text(widget.orderUuid != null ? 'Update Sales Order' : 'Save Sales Order'),
-              onPressed: _saveOrder,
+            const SizedBox.shrink(), // old save button
+        // 
               style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(55),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1126,7 +1160,10 @@ final theme = Theme.of(context);
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                  const SizedBox(width: 8),
                   IconButton(
+
                     icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
                     onPressed: () {
                       ref.read(cartProvider.notifier).removeItemAt(widget.index);

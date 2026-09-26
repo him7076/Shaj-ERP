@@ -1156,7 +1156,12 @@ final item = widget.item;
                       ],
                     ),
                   ),
+                  Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                  const SizedBox(width: 8),
+                  Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                  const SizedBox(width: 8),
                   IconButton(
+
                     icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
                     onPressed: widget.onDelete,
                   ),
