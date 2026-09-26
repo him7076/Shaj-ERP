@@ -272,19 +272,19 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             TextField(
               controller: nameCtrl,
               autofocus: true,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Expense Item Name *',
                 hintText: 'e.g. Printer Cartridge, Tea, Courier',
-                border: OutlineInputBorder(),
+                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: rateCtrl,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Default Rate / Cost (₹)',
-                border: OutlineInputBorder(),
+                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
               ),
             ),
           ],
@@ -496,6 +496,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isMobile = ResponsiveLayout.isMobile(context);
@@ -563,7 +564,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               // Save Action Button
               ElevatedButton.icon(
                 onPressed: _isSaving ? null : _saveExpense,
-                style: ElevatedButton.styleFrom(
+                style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
@@ -596,10 +597,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         content: TextField(
           controller: editCtrl,
           autofocus: true,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Voucher Number',
             hintText: 'e.g. EXP-1, EXP-2',
-            border: OutlineInputBorder(),
+            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -683,10 +684,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               const SizedBox(height: 14),
               TextFormField(
                 controller: _partyNameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Vendor / Payee Name (Optional)',
                   prefixIcon: Icon(Icons.storefront_rounded),
-                  border: OutlineInputBorder(),
+                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -706,10 +707,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _partyNameController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Vendor / Payee Name (Optional)',
                         prefixIcon: Icon(Icons.storefront_rounded),
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -756,10 +757,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         }
       },
       child: InputDecorator(
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           labelText: 'Expense Date',
           prefixIcon: Icon(Icons.calendar_today_outlined),
-          border: OutlineInputBorder(),
+          border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
           isDense: true,
         ),
         child: Text(
@@ -834,10 +835,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   return TextField(
                     controller: controller,
                     focusNode: focusNode,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Expense Item Description *',
                       prefixIcon: Icon(Icons.shopping_bag_outlined),
-                      border: OutlineInputBorder(),
+                      border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       isDense: true,
                     ),
                     onChanged: (val) {
@@ -864,9 +865,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     child: TextField(
                       controller: _itemQtyController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Qty',
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -876,9 +877,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     child: TextField(
                       controller: _itemRateController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Rate (₹)',
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -886,7 +887,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _addLineItem,
-                    style: ElevatedButton.styleFrom(
+                    style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -913,10 +914,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                         return TextField(
                           controller: controller,
                           focusNode: focusNode,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Expense Item Description *',
                             prefixIcon: Icon(Icons.shopping_bag_outlined),
-                            border: OutlineInputBorder(),
+                            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                             isDense: true,
                           ),
                           onChanged: (val) {
@@ -943,9 +944,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     child: TextField(
                       controller: _itemQtyController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Qty',
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -956,9 +957,9 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     child: TextField(
                       controller: _itemRateController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Rate (₹)',
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -966,7 +967,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: _addLineItem,
-                    style: ElevatedButton.styleFrom(
+                    style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1098,10 +1099,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Expense Total Amount (INR) *',
                   prefixIcon: Icon(Icons.currency_rupee_rounded),
-                  border: OutlineInputBorder(),
+                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                 ),
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1133,10 +1134,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
                 return DropdownButtonFormField<String>(
                   value: _selectedPaymentMode,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Payment Method',
                     prefixIcon: Icon(Icons.payment_rounded),
-                    border: OutlineInputBorder(),
+                    border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                     isDense: true,
                   ),
                   items: dropdownItems,
@@ -1152,10 +1153,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => DropdownButtonFormField<String>(
                 value: _selectedPaymentMode,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Payment Method',
                   prefixIcon: Icon(Icons.payment_rounded),
-                  border: OutlineInputBorder(),
+                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                 ),
                 items: const [
@@ -1202,10 +1203,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                     textAlign: TextAlign.end,
                     style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      border: OutlineInputBorder(),
+                      border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                     ),
                     onChanged: (val) {
                       final parsed = double.tryParse(val);
@@ -1257,10 +1258,10 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
             TextFormField(
               controller: _remarksController,
               maxLines: 2,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Remarks / Notes (Optional)',
                 prefixIcon: Icon(Icons.edit_note_rounded),
-                border: OutlineInputBorder(),
+                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
               ),
             ),
           ],
@@ -1315,6 +1316,7 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final optionsList = [
       ...widget.categories,
       widget.createNewTag,
@@ -1381,11 +1383,11 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
           onTap: () {
             controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
           },
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Expense Category *',
             hintText: 'Search or Select Category',
             prefixIcon: Icon(Icons.category_outlined),
-            border: OutlineInputBorder(),
+            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
             isDense: true,
           ),
         );

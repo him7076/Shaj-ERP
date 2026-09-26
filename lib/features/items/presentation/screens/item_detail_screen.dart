@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -475,6 +477,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final theme = Theme.of(context);
     final stockService = ref.watch(stockServiceProvider);
 
@@ -569,12 +572,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                   const SizedBox(height: 20),
 
                   // Stock Level Card with Dual Unit Conversion
-                  Card(
+                  NeuCard(
                     color: theme.colorScheme.primaryContainer.withOpacity(0.3),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+                      side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
                     ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -706,12 +709,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
                             final isAdj = tx.type == 'Adjustment';
                             final isAddAdj = isAdj && (tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In');
 
-                            return Card(
+                            return NeuCard(
                               elevation: 0,
                               margin: const EdgeInsets.only(bottom: 8),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                                side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                               ),
                               child: ListTile(
                                 onTap: () => _openTransactionDetail(tx),

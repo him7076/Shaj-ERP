@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -272,6 +273,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
 
@@ -492,16 +494,16 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   }
 
   Widget _buildPartyBillingCard(Invoice invoice, ThemeData theme) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(left: BorderSide(color: Color(0xFF1E88E5), width: 5)),
+        decoration: BoxDecoration(
+          border: isNeu ? null : const Border(left: BorderSide(color: Color(0xFF1E88E5), width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -585,16 +587,16 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   }
 
   Widget _buildModernItemsTable(Invoice invoice, ThemeData theme) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(left: BorderSide(color: Color(0xFF43A047), width: 5)),
+        decoration: BoxDecoration(
+          border: isNeu ? null : const Border(left: BorderSide(color: Color(0xFF43A047), width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -737,16 +739,16 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   Widget _buildTotalsCard(Invoice invoice, ThemeData theme) {
     final words = AmountToWordsService().convertToWords(invoice.grandTotal ?? 0.0);
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(left: BorderSide(color: Color(0xFFFB8C00), width: 5)),
+        decoration: BoxDecoration(
+          border: isNeu ? null : const Border(left: BorderSide(color: Color(0xFFFB8C00), width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -855,11 +857,11 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
   Widget _buildPaymentCard(Invoice invoice, ThemeData theme) {
     final dueStr = invoice.dueDate != null ? DateFormat('dd MMM yyyy').format(invoice.dueDate!) : 'N/A';
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -879,11 +881,11 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
   }
 
   Widget _buildTimelineCard(Invoice invoice, ThemeData theme) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

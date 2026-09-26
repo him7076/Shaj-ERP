@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -192,6 +194,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
 
@@ -460,11 +463,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     required IconData icon,
     bool isMobile = false,
   }) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
@@ -658,11 +661,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
             final color = isIncoming ? Colors.green : Colors.red;
             final statusStr = txn.status;
 
-            return Card(
+            return NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
               ),
               child: ListTile(
                 onTap: () {
@@ -773,11 +776,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
     required IconData icon,
     required Map<String, String> data,
   }) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -811,11 +814,11 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
   Widget _buildGPSLocationTab(ThemeData theme) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
-      child: Card(
+      child: NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+          side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -84,6 +86,7 @@ class _PersonalAccountDetailsScreenState extends ConsumerState<PersonalAccountDe
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final accountsAsync = ref.watch(bankAccountsListProvider);
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
@@ -179,7 +182,7 @@ class _PersonalAccountDetailsScreenState extends ConsumerState<PersonalAccountDe
                                            txn.transactionType == 'Receipt' ||
                                            (txn.transactionType == 'Transfer' && txn.targetPartyUuid == account.uuid);
                         
-                        return Card(
+                        return NeuCard(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                           child: ListTile(
                             leading: CircleAvatar(

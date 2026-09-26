@@ -52,9 +52,7 @@ class NeuCard extends ConsumerWidget {
     final borderRadius = _extractBorderRadius(shape) ?? BorderRadius.circular(16);
     
     // Base color must match scaffold background for neumorphic illusion
-    final baseColor = isDark 
-        ? const Color(0xFF1E293B)   // Dark slate
-        : const Color(0xFFE8EDF2);  // Light grayish
+    final baseColor = theme.scaffoldBackgroundColor;
 
     // Strong dual shadows for visible emboss effect
     final shadowLight = isDark 

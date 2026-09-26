@@ -95,9 +95,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             key: formKey,
             child: TextFormField(
               controller: nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Salesman Name',
-                border: OutlineInputBorder(),
+                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person_add),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
@@ -145,9 +145,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             key: formKey,
             child: TextFormField(
               controller: modeController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Payment Mode Name (e.g. Finance, EMI)',
-                border: OutlineInputBorder(),
+                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.account_balance_wallet),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
@@ -494,7 +494,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
+                style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
                 child: const Text('Save Anyway'),
               ),
             ],
@@ -695,6 +695,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     ref.listen(invoiceCartProvider, (prev, next) {
       if (_isPaidAmountAutoFill) {
         final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(null);
@@ -762,7 +763,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: _invoiceType,
-              decoration: const InputDecoration(labelText: 'Billing Type', border: OutlineInputBorder(), isDense: true),
+              decoration: InputDecoration(labelText: 'Billing Type', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
               items: const [
                 DropdownMenuItem(value: 'Tax Invoice', child: Text('Tax Invoice')),
                 DropdownMenuItem(value: 'Retail Invoice', child: Text('Retail Invoice')),
@@ -819,9 +820,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Paid Amount (\u20b9)',
-                      border: OutlineInputBorder(),
+                      border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                     ),
@@ -853,9 +854,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 }
               },
               child: InputDecorator(
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Due Date',
-                  border: OutlineInputBorder(),
+                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                   prefixIcon: Icon(Icons.event_outlined, size: 18),
                 ),
@@ -886,9 +887,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _paymentMode,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Payment Mode',
-                          border: OutlineInputBorder(),
+                          border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                           isDense: true,
                           prefixIcon: Icon(Icons.payment, size: 18),
                         ),
@@ -912,9 +913,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               loading: () => const LinearProgressIndicator(),
               error: (e, _) => DropdownButtonFormField<String>(
                 value: _paymentMode,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Payment Mode',
-                  border: OutlineInputBorder(),
+                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                   prefixIcon: Icon(Icons.payment, size: 18),
                 ),
@@ -938,7 +939,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Disc %', border: OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(labelText: 'Disc %', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                     onChanged: (val) {
                       final double? pct = double.tryParse(val);
                       ref.read(invoiceCartProvider.notifier).setDiscounts(pct, null);
@@ -950,7 +951,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                   child: TextFormField(
                     controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(labelText: 'Disc \u20b9', border: OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(labelText: 'Disc \u20b9', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                     onChanged: (val) {
                       final double? amt = double.tryParse(val);
                       ref.read(invoiceCartProvider.notifier).setDiscounts(null, amt);
@@ -962,9 +963,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
             const SizedBox(height: 10),
             TextFormField(
               controller: _remarksController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Remarks / Terms',
-                border: OutlineInputBorder(),
+                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 isDense: true,
                 prefixIcon: Icon(Icons.notes_rounded, size: 18),
               ),
@@ -989,7 +990,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               icon: const Icon(Icons.check_circle_outline),
               label: const Text('Save & Print Invoice'),
               onPressed: _saveInvoice,
-              style: ElevatedButton.styleFrom(
+              style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -1021,7 +1022,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 child: const Text('Continue Editing'),
               ),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(backgroundColor: Colors.red),
                 onPressed: () => Navigator.of(ctx).pop(true),
                 child: const Text('Discard & Exit'),
               ),
@@ -1210,9 +1211,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                           children: [
                             DropdownButtonFormField<String>(
                               value: partyMachineries.any((m) => m.uuid == cart.linkedMachineUuid) ? cart.linkedMachineUuid : null,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Link Machinery / Service',
-                                border: OutlineInputBorder(),
+                                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                                 prefixIcon: Icon(Icons.precision_manufacturing_rounded),
                               ),
                               items: [
@@ -1268,9 +1269,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       }
                     },
                     child: InputDecorator(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Invoice Date',
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                         prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
@@ -1347,9 +1348,9 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                           return TextFormField(
                             controller: controller,
                             focusNode: focusNode,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Salesman',
-                              border: OutlineInputBorder(),
+                              border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                               isDense: true,
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                               prefixIcon: Icon(Icons.badge_outlined, size: 18),
@@ -1399,7 +1400,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
                       label: const Text('Add Item'),
-                      style: ElevatedButton.styleFrom(
+                      style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -1415,7 +1416,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                         },
                         icon: const Icon(Icons.extension_rounded, size: 18),
                         label: const Text('Add Bundle'),
-                        style: ElevatedButton.styleFrom(
+                        style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                           backgroundColor: Colors.orange.shade100,
                           foregroundColor: Colors.orange.shade900,
@@ -1600,10 +1601,10 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                       textAlign: TextAlign.end,
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       onChanged: (val) {
                         final parsed = double.tryParse(val);
@@ -1860,7 +1861,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: TextFormField(
                                           initialValue: quantities[index].toString(),
                                           keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(labelText: 'Qty', border: OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'Qty', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                                           onChanged: (val) {
                                             final parsed = double.tryParse(val);
                                             if (parsed != null) quantities[index] = parsed;
@@ -1872,7 +1873,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: DropdownButtonFormField<String>(
                                           value: units[index],
                                           isExpanded: true,
-                                          decoration: const InputDecoration(labelText: 'Unit', border: OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'Unit', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                                           items: [
                                             if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) cItem.primaryUnitName!,
                                             if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) cItem.secondaryUnit!,
@@ -1895,7 +1896,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: TextFormField(
                                           initialValue: rates[index].toString(),
                                           keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(labelText: 'Selling Rate', border: OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'Selling Rate', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                                           onChanged: (val) {
                                             final parsed = double.tryParse(val);
                                             if (parsed != null) rates[index] = parsed;
@@ -1907,7 +1908,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: TextFormField(
                                           initialValue: gstRates[index].toString(),
                                           keyboardType: TextInputType.number,
-                                          decoration: const InputDecoration(labelText: 'GST %', border: OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'GST %', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                                           onChanged: (val) {
                                             final parsed = double.tryParse(val);
                                             if (parsed != null) gstRates[index] = parsed;
@@ -1923,7 +1924,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                       child: TextFormField(
                                         initialValue: buyRates[index].toString(),
                                         keyboardType: TextInputType.number,
-                                        decoration: const InputDecoration(labelText: 'Buy Price', border: OutlineInputBorder(), isDense: true),
+                                        decoration: InputDecoration(labelText: 'Buy Price', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                                         onChanged: (val) {
                                           final parsed = double.tryParse(val);
                                           if (parsed != null) buyRates[index] = parsed;
@@ -1934,7 +1935,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                     TextFormField(
                                       initialValue: descriptions[index],
                                       maxLines: 2,
-                                      decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder(), isDense: true),
+                                      decoration: InputDecoration(labelText: 'Description', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                                       onChanged: (val) {
                                         descriptions[index] = val;
                                       },
@@ -1998,6 +1999,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
     final theme = Theme.of(context);
     final prefs = ref.watch(sharedPreferencesProvider);
     final bool enableBuyPrice = prefs.getBool('enable_sales_buy_price') ?? false;
@@ -2130,7 +2132,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            decoration: const InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
+                            decoration: InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
                             onChanged: (val) {
                               final double? qty = double.tryParse(val);
                               if (qty != null && qty >= 0) {
@@ -2158,11 +2160,11 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                     child: DropdownButtonFormField<String>(
                       isExpanded: true,
                       value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                       onChanged: (val) {
@@ -2188,7 +2190,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                         labelText: widget.isGstInclusive ? 'Rate Incl (\u20b9)' : 'Rate Excl (\u20b9)',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        border: const OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         prefixIcon: const Icon(Icons.currency_rupee, size: 16),
                       ),
                       onChanged: (val) {
@@ -2206,11 +2208,11 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                     child: DropdownButtonFormField<bool>(
                       isExpanded: true,
                       value: widget.isGstInclusive,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Tax',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        border: OutlineInputBorder(),
+                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(value: false, child: Text('Excl', style: TextStyle(fontSize: 12))),
@@ -2231,11 +2233,11 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                 TextFormField(
                   controller: _buyRateController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Buy / Cost Price (\u20b9)',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    border: OutlineInputBorder(),
+                    border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                     prefixIcon: Icon(Icons.shopping_bag_outlined, size: 16),
                   ),
                   onChanged: (val) {
@@ -2295,7 +2297,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                               child: TextFormField(
                                 controller: _freeQtyController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Free Qty', isDense: true, border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                                 onChanged: (val) {
                                   final double? fq = double.tryParse(val);
                                   if (fq != null) {
@@ -2309,7 +2311,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                               child: TextFormField(
                                 controller: _discAmountController,
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: const InputDecoration(labelText: 'Disc \u20b9', isDense: true, border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: 'Disc \u20b9', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                                 onChanged: (val) {
                                   final double? da = double.tryParse(val);
                                   if (da != null) {
@@ -2326,7 +2328,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                             Expanded(
                               child: TextFormField(
                                 controller: _batchController,
-                                decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                                 onChanged: (val) {
                                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
                                 },
@@ -2336,7 +2338,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                             Expanded(
                               child: TextFormField(
                                 controller: _mfgDateController,
-                                decoration: const InputDecoration(labelText: 'Mfg Date', isDense: true, border: OutlineInputBorder()),
+                                decoration: InputDecoration(labelText: 'Mfg Date', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                                 onChanged: (val) {
                                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
                                 },
@@ -2347,7 +2349,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _expDateController,
-                          decoration: const InputDecoration(labelText: 'Expiry (e.g. 12/28)', isDense: true, border: OutlineInputBorder()),
+                          decoration: InputDecoration(labelText: 'Expiry (e.g. 12/28)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                           onChanged: (val) {
                             ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                           },
@@ -2357,7 +2359,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                           TextFormField(
                             controller: _descController,
                             maxLines: 2,
-                            decoration: const InputDecoration(labelText: 'Item Description', isDense: true, border: OutlineInputBorder()),
+                            decoration: InputDecoration(labelText: 'Item Description', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                             onChanged: (val) {
                               ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, description: val.trim());
                             },
@@ -2483,7 +2485,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
               child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Qty', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
@@ -2497,11 +2499,11 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
               child: DropdownButtonFormField<String>(
                 isExpanded: true,
                 value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Unit',
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: OutlineInputBorder(),
+                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
@@ -2553,7 +2555,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -2578,7 +2580,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -2607,7 +2609,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
               child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Disc %', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Disc %', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? pct = double.tryParse(val);
                   if (pct != null) {
@@ -2621,7 +2623,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {
@@ -2633,7 +2635,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             const SizedBox(width: 8),
             Expanded(
               child: InputDecorator(
-                decoration: const InputDecoration(labelText: 'GST Tax %', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 child: Text('${item.gstPercent.toInt()}%'),
               ),
             ),
@@ -2643,7 +2645,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                 child: TextFormField(
                   controller: _buyRateController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Buy Price', isDense: true, border: OutlineInputBorder()),
+                  decoration: InputDecoration(labelText: 'Buy Price', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                   onChanged: (val) {
                     final double? parsed = double.tryParse(val);
                     if (parsed != null) {
@@ -2661,7 +2663,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _batchController,
-                decoration: const InputDecoration(labelText: 'Batch No.', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
                 },
@@ -2671,7 +2673,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _mfgDateController,
-                decoration: const InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
                 },
@@ -2681,7 +2683,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _expDateController,
-                decoration: const InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: OutlineInputBorder()),
+                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                 },
