@@ -11,6 +11,22 @@ import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 
+class ImportValidationResult {
+  final Set<String> missingCategories;
+  final Set<String> missingBrands;
+  final Set<String> missingUnits;
+  final List<String> errors;
+
+  ImportValidationResult({
+    required this.missingCategories,
+    required this.missingBrands,
+    required this.missingUnits,
+    required this.errors,
+  });
+
+  bool get hasMissingEntities => missingCategories.isNotEmpty || missingBrands.isNotEmpty || missingUnits.isNotEmpty;
+}
+
 class ImportItemResult {
   final int totalItemsImported;
   final int totalItemsUpdated;
@@ -134,6 +150,76 @@ class ItemExcelImportService {
     ]);
 
     return excel.encode();
+  }
+
+  static Future<ImportValidationResult> validateImport(
+    Uint8List bytes,
+    DatabaseService dbService,
+  ) async {
+    final Set<String> missingCategories = {};
+    final Set<String> missingBrands = {};
+    final Set<String> missingUnits = {};
+    final List<String> errors = [];
+
+    try {
+      final excel = Excel.decodeBytes(bytes);
+      final isar = dbService.isar;
+
+      final sheetKeys = excel.tables.keys.toList();
+      if (sheetKeys.isEmpty) return ImportValidationResult(missingCategories: {}, missingBrands: {}, missingUnits: {}, errors: ['No worksheets']);
+
+      final Sheet? sheet = excel.tables['Sheet1'] ?? excel.tables[sheetKeys.first];
+      if (sheet == null || sheet.rows.length <= 1) return ImportValidationResult(missingCategories: {}, missingBrands: {}, missingUnits: {}, errors: ['No data rows']);
+
+      final colMap = _buildColumnMap(sheet.rows[0]);
+      final colCategory = _findCol(colMap, ['category', 'item category', 'group'], 3);
+      final colBrand = _findCol(colMap, ['brand', 'manufacturer', 'company'], 4);
+      final colUnit = _findCol(colMap, ['primary unit', 'unit', 'uom', 'pack'], 6);
+      final colSecUnit = _findCol(colMap, ['secondary unit', 'sec unit', 'sub unit'], 7);
+      final colTerUnit = _findCol(colMap, ['3rd unit', 'tertiary unit', 'ter unit'], 9);
+
+      final allCategories = await isar.categorys.filter().isDeletedEqualTo(false).findAll();
+      final allBrands = await isar.brands.filter().isDeletedEqualTo(false).findAll();
+      final allUnits = await isar.units.filter().isDeletedEqualTo(false).findAll();
+
+      for (int r = 1; r < sheet.rows.length; r++) {
+        final row = sheet.rows[r];
+        if (row.isEmpty) continue;
+
+        final categoryStr = _getCellValue(row, colCategory).trim();
+        final brandStr = _getCellValue(row, colBrand).trim();
+        final primaryUnitStr = _getCellValue(row, colUnit).trim();
+        final secUnitStr = _getCellValue(row, colSecUnit).trim();
+        final terUnitStr = _getCellValue(row, colTerUnit).trim();
+
+        if (categoryStr.isNotEmpty && !allCategories.any((c) => c.categoryName?.trim().toLowerCase() == categoryStr.toLowerCase())) {
+          missingCategories.add(categoryStr);
+        }
+        if (brandStr.isNotEmpty && !allBrands.any((b) => b.brandName?.trim().toLowerCase() == brandStr.toLowerCase())) {
+          missingBrands.add(brandStr);
+        }
+        
+        final unitName = primaryUnitStr.isNotEmpty ? primaryUnitStr : 'PCS';
+        if (!allUnits.any((u) => u.unitName?.trim().toLowerCase() == unitName.toLowerCase() || u.shortName?.trim().toLowerCase() == unitName.toLowerCase())) {
+          missingUnits.add(unitName);
+        }
+        if (secUnitStr.isNotEmpty && !allUnits.any((u) => u.unitName?.trim().toLowerCase() == secUnitStr.toLowerCase() || u.shortName?.trim().toLowerCase() == secUnitStr.toLowerCase())) {
+          missingUnits.add(secUnitStr);
+        }
+        if (terUnitStr.isNotEmpty && !allUnits.any((u) => u.unitName?.trim().toLowerCase() == terUnitStr.toLowerCase() || u.shortName?.trim().toLowerCase() == terUnitStr.toLowerCase())) {
+          missingUnits.add(terUnitStr);
+        }
+      }
+    } catch (e) {
+      errors.add(e.toString());
+    }
+
+    return ImportValidationResult(
+      missingCategories: missingCategories,
+      missingBrands: missingBrands,
+      missingUnits: missingUnits,
+      errors: errors,
+    );
   }
 
   /// Imports Products & Stock details supporting flexible column headers and Price Tax Mode calculation
@@ -353,6 +439,34 @@ class ItemExcelImportService {
             unitObj!.id = await isar.units.put(unitObj!);
           });
           allUnits.add(unitObj!);
+        }
+
+        if (secUnitStr.isNotEmpty) {
+           Unit? secUnitObj = allUnits.where((u) => u.unitName?.trim().toLowerCase() == secUnitStr.toLowerCase() || u.shortName?.trim().toLowerCase() == secUnitStr.toLowerCase()).firstOrNull;
+           if (secUnitObj == null) {
+              secUnitObj = Unit()
+                ..uuid = const Uuid().v4()
+                ..unitName = secUnitStr
+                ..shortName = secUnitStr
+                ..createdAt = DateTime.now()
+                ..updatedAt = DateTime.now();
+              await isar.writeTxn(() async { secUnitObj!.id = await isar.units.put(secUnitObj!); });
+              allUnits.add(secUnitObj!);
+           }
+        }
+        
+        if (terUnitStr.isNotEmpty) {
+           Unit? terUnitObj = allUnits.where((u) => u.unitName?.trim().toLowerCase() == terUnitStr.toLowerCase() || u.shortName?.trim().toLowerCase() == terUnitStr.toLowerCase()).firstOrNull;
+           if (terUnitObj == null) {
+              terUnitObj = Unit()
+                ..uuid = const Uuid().v4()
+                ..unitName = terUnitStr
+                ..shortName = terUnitStr
+                ..createdAt = DateTime.now()
+                ..updatedAt = DateTime.now();
+              await isar.writeTxn(() async { terUnitObj!.id = await isar.units.put(terUnitObj!); });
+              allUnits.add(terUnitObj!);
+           }
         }
 
         try {

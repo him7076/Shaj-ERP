@@ -135,6 +135,62 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         return;
       }
 
+      final dbService = ref.read(databaseServiceProvider);
+      
+      final validationResult = await ItemExcelImportService.validateImport(fileBytes, dbService);
+      if (validationResult.errors.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Validation Error: ${validationResult.errors.first}')));
+        }
+        return;
+      }
+      
+      if (validationResult.hasMissingEntities && mounted) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Missing Entities Found'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('The following items were found in the Excel file but are missing in your database. They will be auto-created if you proceed:'),
+                  if (validationResult.missingCategories.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Categories:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(validationResult.missingCategories.join(', ')),
+                  ],
+                  if (validationResult.missingBrands.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Brands:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(validationResult.missingBrands.join(', ')),
+                  ],
+                  if (validationResult.missingUnits.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Text('Units:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(validationResult.missingUnits.join(', ')),
+                  ],
+                  const SizedBox(height: 16),
+                  const Text('Do you want to proceed and auto-create them?'),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Proceed & Auto-Create')),
+            ],
+          )
+        );
+        if (proceed != true) return;
+      }
+
       final progressController = StreamController<ImportProgressState>.broadcast();
       BuildContext? progressDialogContext;
 
@@ -152,7 +208,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         );
       }
 
-      final dbService = ref.read(databaseServiceProvider);
       final importResult = await ItemExcelImportService.importItemsFromBytes(
         fileBytes,
         dbService,
