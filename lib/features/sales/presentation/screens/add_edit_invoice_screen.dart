@@ -995,12 +995,6 @@ ref.listen(invoiceCartProvider, (prev, next) {
             _buildTotalsSummaryPanel(theme),
             const SizedBox(height: 16),
             const SizedBox.shrink(), // old save button
-        // 
-              style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
           ],
         ),
       ),

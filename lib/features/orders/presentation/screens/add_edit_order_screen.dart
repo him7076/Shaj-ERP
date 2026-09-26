@@ -503,12 +503,6 @@ final theme = Theme.of(context);
             _buildTotalsSummaryPanel(theme),
             const SizedBox(height: 20),
             const SizedBox.shrink(), // old save button
-        // 
-              style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
           ],
         ),
       ),
