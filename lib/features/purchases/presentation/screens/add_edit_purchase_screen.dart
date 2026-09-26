@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -453,7 +454,7 @@ if (_isPaidAmountAutoFill) {
             children: [
             Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
+            ResponsiveFormRow(
               children: [
                 Checkbox(
                   value: _isPaidAmountAutoFill,
@@ -526,7 +527,7 @@ if (_isPaidAmountAutoFill) {
                       if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
                         dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                       }
-                      return Row(
+                      return ResponsiveFormRow(
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
@@ -751,7 +752,7 @@ if (_isPaidAmountAutoFill) {
               ),
             ],
             const Divider(height: 24),
-            Row(
+            ResponsiveFormRow(
               children: [
                 Expanded(
                   child: InkWell(
@@ -1254,7 +1255,7 @@ final item = widget.item;
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header: Index, Item Name, Delete Button
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1310,7 +1311,7 @@ final item = widget.item;
               const Divider(height: 16),
 
               // Qty Stepper & Unit Selector
-              Row(
+              ResponsiveFormRow(
                 children: [
                   // Qty Stepper
                   Container(
@@ -1388,7 +1389,7 @@ final item = widget.item;
               const SizedBox(height: 10),
 
               // Rate Excl & Disc
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Expanded(
                     flex: 3,
@@ -1463,7 +1464,7 @@ final item = widget.item;
                   ),
                   child: Column(
                     children: [
-                      Row(
+                      ResponsiveFormRow(
                         children: [
                           Expanded(
                             child: TextFormField(
@@ -1497,7 +1498,7 @@ final item = widget.item;
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Row(
+                      ResponsiveFormRow(
                         children: [
                           Expanded(
                             child: TextFormField(
@@ -1561,7 +1562,7 @@ final item = widget.item;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        ResponsiveFormRow(
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1612,7 +1613,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(
@@ -1722,7 +1723,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(
@@ -1761,7 +1762,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(

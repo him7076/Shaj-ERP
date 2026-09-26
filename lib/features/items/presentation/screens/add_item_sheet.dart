@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
@@ -190,7 +191,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
               const SizedBox(height: 16),
 
               // Item Code & Name row
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Expanded(
                     flex: 2,
@@ -223,7 +224,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
               const SizedBox(height: 16),
 
               // Pricing and GST
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Expanded(
                     child: TextFormField(
@@ -263,7 +264,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
               const SizedBox(height: 16),
 
               // Unit & Category Row
-              Row(
+              ResponsiveFormRow(
                 children: [
                   // Unit Selection
                   Expanded(
@@ -326,7 +327,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
               const SizedBox(height: 16),
 
               // 3rd Unit & Conversion Factor Row (Optional)
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Expanded(
                     child: TextFormField(

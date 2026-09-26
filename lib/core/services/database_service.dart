@@ -508,6 +508,29 @@ class DatabaseService {
   }
 
   /// Purges all data in all collections for active firm
+  
+  /// Deletes the local Isar database files for a specific firm
+  Future<void> deleteFirmData(String firmId) async {
+    try {
+      if (kIsWeb) return;
+      
+      final instance = Isar.getInstance(firmId);
+      if (instance != null && instance.isOpen) {
+        await instance.close();
+      }
+      
+      final dir = await getApplicationDocumentsDirectory();
+      final dbFile = File('${dir.path}/$firmId.isar');
+      final lockFile = File('${dir.path}/$firmId.isar.lock');
+      
+      if (await dbFile.exists()) await dbFile.delete();
+      if (await lockFile.exists()) await lockFile.delete();
+      logger.info('Deleted local database files for firm $firmId');
+    } catch (e) {
+      logger.error('Failed to delete firm data', e);
+    }
+  }
+
   Future<void> clearDatabase() async {
     logger.warning('Purging local database for $_activeFirmId...');
     try {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -699,7 +700,7 @@ final theme = Theme.of(context);
                 ],
               ),
               const SizedBox(height: 14),
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Expanded(child: _buildDatePicker(context)),
                   const SizedBox(width: 12),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -712,7 +713,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
               const SizedBox(height: 16),
 
               // Quantity & Unit
-              Row(
+              ResponsiveFormRow(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
@@ -769,7 +770,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
               const SizedBox(height: 16),
 
               // Rate per Unit & Live Total Valuation
-              Row(
+              ResponsiveFormRow(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -824,7 +825,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                 itemCount: _mobileNumbersList.length,
                                 separatorBuilder: (context, index) => const SizedBox(height: 16),
                                 itemBuilder: (context, index) {
-                                  return Row(
+                                  return ResponsiveFormRow(
                                     children: [
                                       Expanded(
                                         flex: 2,
@@ -910,7 +911,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Row(
+                                      ResponsiveFormRow(
                                         children: [
                                           Expanded(
                                             child: TextFormField(
@@ -972,7 +973,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             title: 'Accounting & Credit Limits',
                             icon: Icons.account_balance_outlined,
                             children: [
-                              Row(
+                              ResponsiveFormRow(
                                 children: [
                                   Expanded(
                                     flex: 7,
@@ -1031,7 +1032,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                 decoration: const InputDecoration(labelText: 'Contact Person Name', ),
                               ),
                               const SizedBox(height: 16),
-                              Row(
+                              ResponsiveFormRow(
                                 children: [
                                   Expanded(
                                     child: DropdownButtonFormField<String>(

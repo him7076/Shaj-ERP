@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -470,10 +471,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                            await db.switchFirm(firmId, prefs);
                                            ref.read(activeFirmIdProvider.notifier).state = firmId;
 
-                                           try {
-                                             // handleFirmSwitch clears stale timestamps first, then does full cloud download
-                                             await ref.read(syncManagerProvider).handleFirmSwitch(firmId);
-                                          } catch (_) {}
+                                           // Run handleFirmSwitch in background without awaiting
+                                            ref.read(syncManagerProvider).handleFirmSwitch(firmId).catchError((_) {});
 
                                            // 2. Invalidate all local data providers
                                            ref.invalidate(sharedPreferencesProvider);
@@ -1290,7 +1289,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    ResponsiveFormRow(
                       children: [
                         Expanded(
                           child: TextFormField(
@@ -1318,7 +1317,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    ResponsiveFormRow(
                       children: [
                         Expanded(
                           child: TextFormField(
@@ -1359,7 +1358,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    ResponsiveFormRow(
                       children: [
                         Expanded(
                           child: TextFormField(
@@ -1398,7 +1397,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // Banking Details
                     Text('Banking & Payment Info', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                     const SizedBox(height: 10),
-                    Row(
+                    ResponsiveFormRow(
                       children: [
                         Expanded(
                           child: TextFormField(
@@ -1424,7 +1423,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    ResponsiveFormRow(
                       children: [
                         Expanded(
                           child: TextFormField(
@@ -1521,10 +1520,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               await db.switchFirm(id, prefs);
                               ref.read(activeFirmIdProvider.notifier).state = id;
                               
-                              try {
-                                // handleFirmSwitch clears stale timestamps first, then does full cloud download
-                                await ref.read(syncManagerProvider).handleFirmSwitch(id);
-                              } catch (_) {}
+                              // Run handleFirmSwitch in background without awaiting
+                                            ref.read(syncManagerProvider).handleFirmSwitch(id).catchError((_) {});
 
                               // Invalidate all local data providers to guarantee clean multi-firm isolation
                               ref.invalidate(sharedPreferencesProvider);

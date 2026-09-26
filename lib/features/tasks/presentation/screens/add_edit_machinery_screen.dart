@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -523,7 +524,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              Row(
+              ResponsiveFormRow(
                 children: [
                   Expanded(
                     child: TextFormField(
@@ -662,7 +663,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                          ],
                        ),
                        const SizedBox(height: 16),
-                       Row(
+                       ResponsiveFormRow(
                          children: [
                            Expanded(
                              flex: 2,

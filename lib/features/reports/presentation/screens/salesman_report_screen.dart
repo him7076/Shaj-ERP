@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -135,7 +136,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Row(
+                child: ResponsiveFormRow(
                   children: [
                     const Icon(Icons.badge_outlined, color: Colors.teal),
                     const SizedBox(width: 12),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -579,7 +580,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  ResponsiveFormRow(
                     children: [
                       Expanded(
                         child: TextField(

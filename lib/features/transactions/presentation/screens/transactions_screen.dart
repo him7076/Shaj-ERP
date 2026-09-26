@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -749,7 +750,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                             ],
                           ],
                         )
-                    : Row(
+                    : ResponsiveFormRow(
                         children: [
                           // Search Query
                           Expanded(

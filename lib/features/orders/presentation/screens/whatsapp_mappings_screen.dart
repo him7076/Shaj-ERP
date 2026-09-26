@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
@@ -255,7 +256,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                     ],
                   ),
                   const SizedBox(height: 14),
-                  Row(
+                  ResponsiveFormRow(
                     children: [
                       Expanded(
                         child: TextField(

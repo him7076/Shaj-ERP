@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -244,7 +245,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                   ),
                   const SizedBox(height: 6),
                   // Quantity Selector & Add Button
-                  Row(
+                  ResponsiveFormRow(
                     children: [
                       // Minus Button
                       InkWell(

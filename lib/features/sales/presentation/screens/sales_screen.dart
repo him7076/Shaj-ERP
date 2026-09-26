@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
@@ -776,7 +777,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             )
           : Column(
               children: [
-                Row(
+                ResponsiveFormRow(
                   children: [
                     Expanded(child: paymentStatusDropdown),
                     const SizedBox(width: 8),
@@ -784,7 +785,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
+                ResponsiveFormRow(
                   children: [
                     Expanded(child: partyDropdown),
                     const SizedBox(width: 8),

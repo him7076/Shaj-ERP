@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
@@ -647,7 +648,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          ResponsiveFormRow(
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(

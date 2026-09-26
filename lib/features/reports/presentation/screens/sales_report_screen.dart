@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -187,7 +188,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  Row(
+                  ResponsiveFormRow(
                     children: [
                       // Date Preset
                       Expanded(
@@ -236,7 +237,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  ResponsiveFormRow(
                     children: [
                       // Party Selector Dropdown
                       Expanded(

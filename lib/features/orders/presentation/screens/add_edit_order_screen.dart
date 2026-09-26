@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -467,7 +468,7 @@ final theme = Theme.of(context);
             const SizedBox(height: 16),
 
             const Divider(height: 24),
-            Row(
+            ResponsiveFormRow(
               children: [
                 Expanded(
                   child: TextFormField(
@@ -661,7 +662,7 @@ final theme = Theme.of(context);
               ),
             ],
             const Divider(height: 24),
-            Row(
+            ResponsiveFormRow(
               children: [
                 Expanded(
                   child: InkWell(
@@ -1168,7 +1169,7 @@ final theme = Theme.of(context);
               const Divider(height: 16),
 
               // Qty Stepper & Unit Selector
-              Row(
+              ResponsiveFormRow(
                 children: [
                   // Qty Stepper
                   Container(
@@ -1246,7 +1247,7 @@ final theme = Theme.of(context);
               const SizedBox(height: 10),
 
               // Rate Input with Tax Mode & Unit Dropdowns
-              Row(
+              ResponsiveFormRow(
                 children: [
                   // Rate Input Box
                   Expanded(
@@ -1388,7 +1389,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(
@@ -1526,7 +1527,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(
@@ -1565,7 +1566,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(

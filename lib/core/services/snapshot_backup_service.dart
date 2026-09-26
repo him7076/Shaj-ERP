@@ -41,7 +41,7 @@ class SnapshotBackupService {
     final timestamp = DateFormat('yyyyMMdd_HHmmss').format(now);
     final fileName = 'Sahaj_ERP_Pro_Backup_$timestamp.sahaj';
     final activeFirmId = prefs.getString('active_firm_id') ?? 'firm_default';
-    final firmsToExport = selectedFirmIds ?? prefs.getStringList('firms_list') ?? [activeFirmId];
+    final firmsToExport = [activeFirmId]; // ONLY export active firm
 
     logger.info('Starting full database snapshot backup for firms: $firmsToExport');
 
@@ -230,8 +230,18 @@ class SnapshotBackupService {
       try {
         final prefJsonStr = utf8.decode(prefFile.content as List<int>);
         final prefMap = jsonDecode(prefJsonStr) as Map<String, dynamic>;
+        
+        final sourceFirmId = (manifest['exportedFirms'] as List<dynamic>?)?.map((e) => e.toString()).toList().first ?? activeFirmId;
+        
         for (final entry in prefMap.entries) {
-          final key = entry.key;
+          String key = entry.key;
+          
+          if (sourceFirmId != activeFirmId && key.endsWith(sourceFirmId)) {
+             key = key.substring(0, key.length - sourceFirmId.length) + activeFirmId;
+          }
+          
+          if (key == 'firms_list' || key == 'active_firm_id') continue;
+          
           final val = entry.value;
           if (val is bool) await prefs.setBool(key, val);
           else if (val is int) await prefs.setInt(key, val);
@@ -239,6 +249,7 @@ class SnapshotBackupService {
           else if (val is String) await prefs.setString(key, val);
           else if (val is List) await prefs.setStringList(key, val.map((e) => e.toString()).toList());
         }
+
       } catch (e) {
         logger.warning('Could not restore preferences from snapshot: $e');
       }
@@ -265,62 +276,61 @@ class SnapshotBackupService {
     try {
       if (kIsWeb) {
         // Web Restoration
-        for (final firmId in exportedFirms) {
-          ArchiveFile? jsonFile;
-          for (final f in archive) {
-            if (f.name == 'database_$firmId.json') {
-              jsonFile = f;
-              break;
-            }
-          }
-
-          if (jsonFile != null) {
-            final jsonStr = utf8.decode(jsonFile.content as List<int>);
-            final collectionsData = jsonDecode(jsonStr) as Map<String, dynamic>;
-            final isarInstance = dbService.isar;
-            if (isarInstance is WebMockIsar) {
-              isarInstance.importCollectionsJson(collectionsData);
-              await isarInstance.saveToPrefs(prefs);
-            }
+        
+        final sourceFirmId = exportedFirms.isNotEmpty ? exportedFirms.first : activeFirmId;
+        ArchiveFile? jsonFile;
+        for (final f in archive) {
+          if (f.name == 'database_$sourceFirmId.json') {
+            jsonFile = f;
+            break;
           }
         }
+
+        if (jsonFile != null) {
+          final jsonStr = utf8.decode(jsonFile.content as List<int>);
+          final collectionsData = jsonDecode(jsonStr) as Map<String, dynamic>;
+          final isarInstance = dbService.isar;
+          if (isarInstance is WebMockIsar) {
+            isarInstance.clearAllData();
+            isarInstance.importCollectionsJson(collectionsData);
+            await isarInstance.saveToPrefs(prefs);
+          }
+        }
+
       } else {
         // Native Restoration
         await dbService.close();
 
         final appDocsDir = await getApplicationDocumentsDirectory();
 
-        for (final firmId in exportedFirms) {
-          ArchiveFile? binaryIsarFile;
-          ArchiveFile? jsonFile;
+        
+        final sourceFirmId = exportedFirms.isNotEmpty ? exportedFirms.first : activeFirmId;
+        ArchiveFile? binaryIsarFile;
+        ArchiveFile? jsonFile;
 
-          for (final f in archive) {
-            if (f.name == 'database_$firmId.isar') {
-              binaryIsarFile = f;
-            } else if (f.name == 'database_$firmId.json') {
-              jsonFile = f;
-            }
-          }
-
-          final targetDbFile = File('${appDocsDir.path}/$firmId.isar');
-          if (await targetDbFile.exists()) {
-            await targetDbFile.delete();
-          }
-
-          if (binaryIsarFile != null) {
-            // Restore from raw binary Isar file
-            final isarBytes = binaryIsarFile.content as List<int>;
-            await targetDbFile.writeAsBytes(isarBytes, flush: true);
-          } else if (jsonFile != null) {
-            // Fallback: Restore from JSON collection dump
-            final jsonStr = utf8.decode(jsonFile.content as List<int>);
-            final collectionsData = jsonDecode(jsonStr) as Map<String, dynamic>;
-            // Must init DB first since we closed it above for binary restore
-            await prefs.setString('active_firm_id', firmId);
-            await dbService.init(prefs);
-            await dbService.importCollectionsFromJson(firmId, collectionsData);
+        for (final f in archive) {
+          if (f.name == 'database_$sourceFirmId.isar') {
+            binaryIsarFile = f;
+          } else if (f.name == 'database_$sourceFirmId.json') {
+            jsonFile = f;
           }
         }
+
+        final targetDbFile = File('${appDocsDir.path}/$activeFirmId.isar');
+        if (await targetDbFile.exists()) {
+          await targetDbFile.delete();
+        }
+
+        if (binaryIsarFile != null) {
+          final isarBytes = binaryIsarFile.content as List<int>;
+          await targetDbFile.writeAsBytes(isarBytes, flush: true);
+        } else if (jsonFile != null) {
+          final jsonStr = utf8.decode(jsonFile.content as List<int>);
+          final collectionsData = jsonDecode(jsonStr) as Map<String, dynamic>;
+          await dbService.init(prefs);
+          await dbService.importCollectionsFromJson(activeFirmId, collectionsData);
+        }
+
 
         // Re-open active firm Isar database
         await prefs.setString('active_firm_id', activeFirmId);

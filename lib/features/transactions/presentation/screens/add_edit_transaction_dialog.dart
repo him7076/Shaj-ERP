@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
@@ -948,7 +949,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                                   borderRadius: BorderRadius.circular(8),
                                   color: isLinked ? theme.colorScheme.primaryContainer.withOpacity(0.1) : Colors.transparent,
                                 ),
-                                child: Row(
+                                child: ResponsiveFormRow(
                                   children: [
                                     Checkbox(
                                       value: isLinked,

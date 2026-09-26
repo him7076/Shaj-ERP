@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -177,7 +178,7 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
+                    ResponsiveFormRow(
                       children: [
                         Expanded(
                           child: SizedBox(

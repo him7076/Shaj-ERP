@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
@@ -256,7 +257,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       ),
       child: Column(
         children: [
-          Row(
+          ResponsiveFormRow(
             children: [
               // Status filter
               Expanded(

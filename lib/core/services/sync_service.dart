@@ -442,6 +442,17 @@ class SyncService {
       return;
     }
 
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) {
+      logger.info('Cloud sync is OFF for active firm ($activeFirmId). Skipping download.');
+      _updateState(SyncState(
+        status: SyncStatus.idle,
+        message: 'Firm Cloud Sync OFF for firm ($activeFirmId)',
+      ));
+      return;
+    }
+
     if (_currentState.status == SyncStatus.syncing) return;
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;
@@ -693,6 +704,64 @@ class SyncService {
   }
 
   /// Deletes all documents belonging to the active firm from Firestore
+  
+  /// Deletes all documents belonging to a specific firm from Firestore (Hard Delete)
+  Future<void> clearCloudDataForFirm(String firmId) async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    final companyId = _firebaseService.companyId;
+    logger.info('Wiping all remote Firestore documents for firm: $firmId');
+
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: firmId)
+            .get();
+      } catch (e1) {
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .where('firmId', isEqualTo: firmId)
+              .get();
+        } catch (_) {}
+      }
+
+      if (querySnapshot != null && querySnapshot.docs.isNotEmpty) {
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.delete(doc.reference); // Hard delete
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50));
+          }
+        } catch (e) {
+          logger.error('Failed to hard delete chunk for $entityType', e);
+        }
+      }
+    }
+    
+    // Also delete the firm document itself
+    try {
+       await _firebaseService.firestore.collection('firms').doc(firmId).delete();
+    } catch (_) {}
+  }
+
   Future<void> clearCloudDataForActiveFirm() async {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;

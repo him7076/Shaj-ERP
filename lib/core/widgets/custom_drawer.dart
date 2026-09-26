@@ -148,42 +148,18 @@ class CustomDrawer extends ConsumerWidget {
                         }
                         if (selectedFirmId == activeFirmId) return;
                         
-                        // Show switching indicator dialog
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (ctx) => AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            content: Row(
-                              children: [
-                                const CircularProgressIndicator(),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    'Switching firm & loading data...',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-
                         try {
                           final db = ref.read(databaseServiceProvider);
                           await db.switchFirm(selectedFirmId, prefs);
                           ref.read(activeFirmIdProvider.notifier).state = selectedFirmId;
                           
-                          // Sync Manager clears stale timestamps and downloads data
-                          try {
-                            await ref.read(syncManagerProvider).handleFirmSwitch(selectedFirmId);
-                          } catch (_) {}
+                          // Sync Manager clears stale timestamps and downloads data in background
+                          ref.read(syncManagerProvider).handleFirmSwitch(selectedFirmId).catchError((_) {});
 
                           // Invalidate providers to force refresh UI
                           ref.invalidate(sharedPreferencesProvider);
                           
                           if (context.mounted) {
-                            Navigator.of(context, rootNavigator: true).pop(); // Close dialog
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('⚡ Firm switched successfully!'),

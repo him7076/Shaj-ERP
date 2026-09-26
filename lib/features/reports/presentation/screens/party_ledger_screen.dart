@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:isar/isar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -155,7 +156,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
                           },
                         ),
                   const SizedBox(height: 12),
-                  Row(
+                  ResponsiveFormRow(
                     children: [
                       Expanded(
                         child: DropdownButtonFormField<ReportDatePreset>(

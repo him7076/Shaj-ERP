@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
@@ -971,7 +972,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
               child: ListTile(
                 title: Text(cItem.itemName ?? 'Unknown'),
                 subtitle: Text('Default Unit: ${cItem.primaryUnitName ?? "PCS"}'),
-                trailing: Row(
+                trailing: ResponsiveFormRow(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(
@@ -1575,7 +1576,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
               ),
       ]),
         const SizedBox(height: 16),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(
@@ -1626,7 +1627,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: brandsAsync.when(
@@ -1684,7 +1685,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
   Widget _buildIdentificationSection() {
     final isMobile = ResponsiveLayout.isMobile(context);
-    final barcodeField = Row(
+    final barcodeField = ResponsiveFormRow(
       children: [
         Expanded(
           child: TextFormField(
@@ -1793,7 +1794,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         ],
 
         // 1. Purchase Rate & MRP Row
-        _buildResponsiveRow([
+        _buildResponsiveResponsiveFormRow([
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1875,7 +1876,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         const SizedBox(height: 16),
 
         // 2. Retail Selling Price & Wholesale Price Row
-        _buildResponsiveRow([
+        _buildResponsiveResponsiveFormRow([
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2014,7 +2015,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         const SizedBox(height: 16),
 
         // 3. Minimum Selling Price Threshold Row
-        Row(
+        ResponsiveFormRow(
           children: [
             Expanded(
               child: TextFormField(
@@ -2050,7 +2051,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         ),
         if (_gstApplicable) ...[
           const SizedBox(height: 16),
-          Row(
+          ResponsiveFormRow(
             children: [
               Expanded(
                 child: DropdownButtonFormField<double>(
@@ -2257,7 +2258,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 data: (list) {
                   final exists = _selectedUnit != null && list.any((u) => u.id == _selectedUnit!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedUnit != null) _selectedUnit!];
-                  return Row(
+                  return ResponsiveFormRow(
                     children: [
                       Expanded(
                         child: InkWell(
@@ -2302,7 +2303,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 data: (list) {
                   final exists = _selectedSecUnit != null && list.any((u) => u.id == _selectedSecUnit!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedSecUnit != null) _selectedSecUnit!];
-                  return Row(
+                  return ResponsiveFormRow(
                     children: [
                       Expanded(
                         child: InkWell(
