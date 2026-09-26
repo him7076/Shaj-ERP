@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -414,11 +414,11 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF5E35B1), width: 5),
           ),
         ),
@@ -578,11 +578,11 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF1E88E5), width: 5),
           ),
         ),
@@ -702,11 +702,11 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF43A047), width: 5),
           ),
         ),
@@ -836,11 +836,11 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFFFB8C00), width: 5),
           ),
         ),
@@ -1092,7 +1092,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12.0),

@@ -501,7 +501,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? theme.scaffoldBackgroundColor : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
       appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(_existingExpense == null ? 'New Expense Voucher' : 'Edit Expense Voucher'),
         elevation: 0,
@@ -624,7 +624,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
       ),
       color: isDark ? const Color(0xFF1E293B) : Colors.white,
       child: Padding(
@@ -780,7 +780,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
       ),
       color: isDark ? const Color(0xFF1E293B) : Colors.white,
       child: Padding(
@@ -1066,7 +1066,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
       ),
       color: isDark ? const Color(0xFF1E293B) : Colors.white,
       child: Padding(

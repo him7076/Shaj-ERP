@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:business_sahaj_erp/features/sales/presentation/widgets/pos_product_grid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -738,11 +738,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF5E35B1), width: 4),
           ),
         ),
@@ -1115,11 +1115,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF1E88E5), width: 5),
           ),
         ),
@@ -1437,11 +1437,11 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: const BoxDecoration(
-          border: Border(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFFFB8C00), width: 5),
           ),
         ),
@@ -2019,7 +2019,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+          side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(12.0),
