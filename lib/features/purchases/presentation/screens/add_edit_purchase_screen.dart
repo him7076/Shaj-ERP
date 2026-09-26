@@ -441,7 +441,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF5E35B1), width: 5),
           ),
@@ -697,7 +697,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFF1E88E5), width: 5),
           ),
@@ -870,7 +870,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
             left: BorderSide(color: Color(0xFFFB8C00), width: 5),
           ),
