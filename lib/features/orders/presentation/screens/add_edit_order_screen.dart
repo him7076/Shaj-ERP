@@ -395,7 +395,7 @@ final theme = Theme.of(context);
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
     if (_isSaving) {
-      return const Scaffold(bottomNavigationBar: SafeArea(
+      return Scaffold(bottomNavigationBar: SafeArea(
           child: Container(
             padding: const EdgeInsets.all(8.0),
             decoration: BoxDecoration(
