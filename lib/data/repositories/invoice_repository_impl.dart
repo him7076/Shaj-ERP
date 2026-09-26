@@ -360,6 +360,13 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
 
         // 7. Auto-create Payment Transaction if paidAmount > 0
         if (isNew && invoice.paidAmount != null && invoice.paidAmount! > 0) {
+          String extPaymentMode = 'Cash';
+          if (invoice.remarks != null) {
+            final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(invoice.remarks!);
+            if (match != null) {
+              extPaymentMode = match.group(1) ?? 'Cash';
+            }
+          }
           final t = Transaction()
             ..uuid = _generateUuid()
             ..transactionType = 'Receipt'
@@ -368,7 +375,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             ..partyUuid = invoice.party.value?.uuid
             ..partyName = invoice.partyName
             ..remarks = 'Payment for Invoice #${invoice.invoiceNumber}'
-            ..paymentMode = 'Cash'
+            ..paymentMode = extPaymentMode
             ..paymentStatus = 'Paid'
             ..linkedBillUuid = invoice.uuid
             ..linkedBillNumber = invoice.invoiceNumber
