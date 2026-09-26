@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -124,7 +125,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
           Column(
             children: [
               // Filter status
-              Card(
+              NeuCard(
                 margin: const EdgeInsets.all(16.0),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -138,7 +139,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
                     decoration: const InputDecoration(
                       labelText: 'Filter Stock Status',
                       contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      border: OutlineInputBorder(),
+                      
                     ),
                     items: const [
                       DropdownMenuItem(value: 'All', child: Text('All Stock Levels')),
@@ -213,7 +214,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
                           badgeColor = Colors.orange[700]!;
                         }
 
-                        return Card(
+                        return NeuCard(
                           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -281,7 +282,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
           Column(
             children: [
               // Product selector
-              Card(
+              NeuCard(
                 margin: const EdgeInsets.all(16.0),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -297,7 +298,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
                           decoration: const InputDecoration(
                             labelText: 'Select Product Item',
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: _itemsList.map((item) {
                             return DropdownMenuItem<String?>(
@@ -335,7 +336,7 @@ class _StockReportScreenState extends ConsumerState<StockReportScreen> with Sing
                                   final changeText = isStockIn ? '+${log.qtyIn}' : '-${log.qtyOut}';
                                   final changeColor = isStockIn ? Colors.green[700] : Colors.red[700];
 
-                                  return Card(
+                                  return NeuCard(
                                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(

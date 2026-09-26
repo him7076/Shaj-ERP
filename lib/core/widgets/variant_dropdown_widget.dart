@@ -120,14 +120,14 @@ class _VariantSelectionDialogState extends ConsumerState<_VariantSelectionDialog
           children: [
             TextFormField(
               initialValue: name,
-              decoration: const InputDecoration(labelText: 'Variant Name', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Variant Name', ),
               readOnly: true,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: rateController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Price (₹)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Price (₹)', ),
             ),
           ],
         ),

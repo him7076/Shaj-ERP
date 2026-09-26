@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/providers/fixed_asset_providers.dart';
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/add_fixed_asset_screen.dart';
@@ -37,7 +38,7 @@ class FixedAssetsDashboardScreen extends ConsumerWidget {
             itemCount: assets.length,
             itemBuilder: (context, index) {
               final asset = assets[index];
-              return Card(
+              return NeuCard(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: ListTile(
                   leading: const Icon(Icons.domain),

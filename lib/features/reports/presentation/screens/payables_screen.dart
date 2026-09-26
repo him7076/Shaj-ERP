@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:isar/isar.dart';
@@ -188,7 +189,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                               style: const TextStyle(fontSize: 12, color: Colors.black87),
                               decoration: const InputDecoration(
                                 labelText: 'Filter City',
-                                border: OutlineInputBorder(),
+                                
                                 isDense: true,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               ),
@@ -208,7 +209,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                               style: const TextStyle(fontSize: 12, color: Colors.black87),
                               decoration: const InputDecoration(
                                 labelText: 'Sort By',
-                                border: OutlineInputBorder(),
+                                
                                 isDense: true,
                                 contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               ),
@@ -251,7 +252,7 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
                           final due = getPartyDue(party);
                           final initial = (party.partyName?.isNotEmpty == true) ? party.partyName![0].toUpperCase() : 'S';
 
-                          return Card(
+                          return NeuCard(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

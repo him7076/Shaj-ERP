@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -290,7 +291,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                 style: const TextStyle(fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search purchase #, supplier...',
-                  border: InputBorder.none,
+                  
                   isDense: true,
                 ),
                 onChanged: (val) {
@@ -552,7 +553,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                               break;
                           }
 
-                          return Card(
+                          return NeuCard(
                             elevation: 0,
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(

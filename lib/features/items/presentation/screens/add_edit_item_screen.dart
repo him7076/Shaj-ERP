@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
@@ -419,7 +420,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   controller: nameCont,
                   decoration: const InputDecoration(
                     labelText: 'Category Name *',
-                    border: OutlineInputBorder(),
+                    
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
@@ -428,7 +429,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   controller: descCont,
                   decoration: const InputDecoration(
                     labelText: 'Description',
-                    border: OutlineInputBorder(),
+                    
                   ),
                 ),
               ],
@@ -493,7 +494,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
               controller: nameCont,
               decoration: const InputDecoration(
                 labelText: 'Brand Name *',
-                border: OutlineInputBorder(),
+                
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
@@ -555,7 +556,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   controller: nameCont,
                   decoration: const InputDecoration(
                     labelText: 'Unit Name (e.g. Pieces) *',
-                    border: OutlineInputBorder(),
+                    
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
@@ -564,7 +565,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   controller: shortCont,
                   decoration: const InputDecoration(
                     labelText: 'Unit Code (e.g. PCS) *',
-                    border: OutlineInputBorder(),
+                    
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                 ),
@@ -776,7 +777,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       decoration: const InputDecoration(
                         hintText: 'Search unit (e.g. PCS, BOX, KGS, LTR)...',
                         prefixIcon: Icon(Icons.search),
-                        border: OutlineInputBorder(),
+                        
                       ),
                       onChanged: (val) {
                         setDialogState(() => query = val);
@@ -965,7 +966,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             if (availableUnits.isEmpty) availableUnits.add('PCS');
             if (!availableUnits.contains(cUnit)) availableUnits.add(cUnit); // Fallback to avoid dropdown errors
 
-            return Card(
+            return NeuCard(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 title: Text(cItem.itemName ?? 'Unknown'),
@@ -1209,7 +1210,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
           itemCount: _subItems.length,
           itemBuilder: (context, index) {
             final sub = _subItems[index];
-            return Card(
+            return NeuCard(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 leading: sub.localPhotoPath != null && sub.localPhotoPath!.isNotEmpty
@@ -1558,7 +1559,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 controller: _codeController,
                 decoration: const InputDecoration(
                   labelText: 'Product Code *',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.tag),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product code is required' : null,
@@ -1567,7 +1568,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Product Name *',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.shopping_bag),
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Product name is required' : null,
@@ -1581,7 +1582,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 controller: _shortNameController,
                 decoration: const InputDecoration(
                   labelText: 'Short Name / Alias',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
             ),
@@ -1598,7 +1599,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           value: _selectedCategory,
                           decoration: const InputDecoration(
                             labelText: 'Category',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: dropdownItems.map((cat) {
                             return DropdownMenuItem<Category>(
@@ -1639,7 +1640,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           value: _selectedBrand,
                           decoration: const InputDecoration(
                             labelText: 'Brand',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: dropdownItems.map((br) {
                             return DropdownMenuItem<Brand>(
@@ -1670,7 +1671,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   controller: _descController,
                   decoration: const InputDecoration(
                     labelText: 'Description',
-                    border: OutlineInputBorder(),
+                    
                   ),
                 ),
               ),
@@ -1690,7 +1691,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             controller: _barcodeController,
             decoration: const InputDecoration(
               labelText: 'Barcode (UPC/EAN)',
-              border: OutlineInputBorder(),
+              
               prefixIcon: Icon(Icons.qr_code),
             ),
           ),
@@ -1714,7 +1715,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       controller: _skuController,
       decoration: const InputDecoration(
         labelText: 'SKU Code',
-        border: OutlineInputBorder(),
+        
       ),
     );
 
@@ -1722,7 +1723,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
       controller: _skuCodeController,
       decoration: const InputDecoration(
         labelText: 'Catalog / Ext SKU Code',
-        border: OutlineInputBorder(),
+        
       ),
     );
 
@@ -1805,7 +1806,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           onChanged: (_) => setState(() {}),
                           decoration: const InputDecoration(
                             labelText: 'Purchase Rate (₹)',
-                            border: OutlineInputBorder(),
+                            
                             prefixIcon: Icon(Icons.currency_rupee),
                           ),
                         ),
@@ -1864,7 +1865,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'MRP (Max Retail Price)',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.currency_rupee),
                   helperText: 'Max printed price',
                 ),
@@ -1887,7 +1888,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           onChanged: (_) => setState(() {}),
                           decoration: const InputDecoration(
                             labelText: 'Retail Selling Price *',
-                            border: OutlineInputBorder(),
+                            
                             prefixIcon: Icon(Icons.currency_rupee),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'Selling rate is required' : null,
@@ -1954,7 +1955,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           onChanged: (_) => setState(() {}),
                           decoration: const InputDecoration(
                             labelText: 'Wholesale Price',
-                            border: OutlineInputBorder(),
+                            
                             prefixIcon: Icon(Icons.currency_rupee),
                           ),
                         ),
@@ -2021,7 +2022,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Minimum Selling Price Threshold',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.currency_rupee),
                   helperText: 'Prevents staff from discounting below this price threshold',
                 ),
@@ -2056,7 +2057,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   value: _gstRate,
                   decoration: const InputDecoration(
                     labelText: 'GST Percentage',
-                    border: OutlineInputBorder(),
+                    
                   ),
                   items: const [
                     DropdownMenuItem(value: 0.0, child: Text('0% (Exempt)')),
@@ -2095,7 +2096,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       onEditingComplete: onEditingComplete,
                       decoration: const InputDecoration(
                         labelText: 'HSN / SAC Code (Auto Suggest)',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.history_edu),
                         hintText: 'e.g. 8471, 6109, 1006',
                       ),
@@ -2139,7 +2140,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Card(
+          NeuCard(
             color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
@@ -2202,7 +2203,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Opening Stock',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
             ),
@@ -2215,7 +2216,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
                   labelText: 'Current Stock',
-                  border: const OutlineInputBorder(),
+                  
                   helperText: widget.itemUuid != null ? 'Adjust stock in stock logs' : null,
                 ),
               ),
@@ -2228,7 +2229,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Reorder Level',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
             ),
@@ -2240,7 +2241,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Minimum Stock Warning',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
             ),
@@ -2265,7 +2266,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Primary Unit *',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.search),
                               suffixIcon: Icon(Icons.arrow_drop_down),
                             ),
@@ -2310,7 +2311,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Secondary Unit',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.search),
                               suffixIcon: Icon(Icons.arrow_drop_down),
                             ),
@@ -2348,7 +2349,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     labelText: 'Conversion Factor',
-                    border: OutlineInputBorder(),
+                    
                     helperText: 'E.g. If 1 BOX = 10 PCS, enter 10.0',
                   ),
                 ),
@@ -2376,7 +2377,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
                   labelText: 'Weight (KG)',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.monitor_weight_outlined),
                 ),
               ),
@@ -2384,7 +2385,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 controller: _dimensionsController,
                 decoration: const InputDecoration(
                   labelText: 'Dimensions (L x W x H)',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.straighten_outlined),
                 ),
               ),
@@ -2396,7 +2397,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
             maxLines: 3,
             decoration: const InputDecoration(
               labelText: 'Operational Notes / Custom Specs',
-              border: OutlineInputBorder(),
+              
             ),
           ),
         ],

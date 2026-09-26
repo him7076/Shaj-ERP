@@ -281,7 +281,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                 controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Task Title',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.title),
                 ),
                 validator: (val) => val == null || val.trim().isEmpty ? 'Title is required' : null,
@@ -292,7 +292,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                 maxLines: 4,
                 decoration: const InputDecoration(
                   labelText: 'Description (Optional)',
-                  border: OutlineInputBorder(),
+                  
                   alignLabelWithHint: true,
                 ),
               ),
@@ -304,7 +304,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                       value: _status,
                       decoration: const InputDecoration(
                         labelText: 'Status',
-                        border: OutlineInputBorder(),
+                        
                       ),
                       items: ['Todo', 'In Progress', 'Done'].map((s) {
                         return DropdownMenuItem(value: s, child: Text(s));
@@ -320,7 +320,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                       value: _priority,
                       decoration: const InputDecoration(
                         labelText: 'Priority',
-                        border: OutlineInputBorder(),
+                        
                       ),
                       items: ['Low', 'Medium', 'High'].map((p) {
                         return DropdownMenuItem(value: p, child: Text(p));
@@ -341,7 +341,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Est. Time (mins)',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.timer_outlined),
                       ),
                     ),

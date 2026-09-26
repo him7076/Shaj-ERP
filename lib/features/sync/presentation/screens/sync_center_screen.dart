@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -104,7 +105,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                   final prefs = ref.watch(sharedPreferencesProvider);
                   final isCloudSyncEnabled = prefs.getBool('enable_firebase_cloud_sync') ?? true;
 
-                  return Card(
+                  return NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -348,7 +349,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 builder: (context, ref, _) {
                   final prefs = ref.watch(sharedPreferencesProvider);
 
-                  return Card(
+                  return NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -460,7 +461,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
               _isLoadingQueue
                   ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: CircularProgressIndicator()))
                   : _totalPending == 0
-                      ? Card(
+                      ? NeuCard(
                           child: Padding(
                             padding: const EdgeInsets.all(32.0),
                             child: Center(
@@ -529,7 +530,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                                 color = Colors.grey;
                             }
 
-                            return Card(
+                            return NeuCard(
                               margin: const EdgeInsets.symmetric(vertical: 6.0),
                               child: ListTile(
                                 leading: Icon(icon, color: color),
@@ -586,7 +587,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 controller: apiKeyController,
                 decoration: const InputDecoration(
                   labelText: 'API Key *',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -594,7 +595,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 controller: projectIdController,
                 decoration: const InputDecoration(
                   labelText: 'Project ID *',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -602,7 +603,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 controller: appIdController,
                 decoration: const InputDecoration(
                   labelText: 'App ID *',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -610,7 +611,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 controller: senderIdController,
                 decoration: const InputDecoration(
                   labelText: 'Messaging Sender ID (Optional)',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -618,7 +619,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                 controller: storageBucketController,
                 decoration: const InputDecoration(
                   labelText: 'Storage Bucket (Optional)',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
             ],
@@ -716,7 +717,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
     required Color iconColor,
   }) {
     final theme = Theme.of(context);
-    return Card(
+    return NeuCard(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Row(

@@ -154,7 +154,7 @@ class _BulkItemEditScreenState extends ConsumerState<BulkItemEditScreen> {
           autofocus: true,
           decoration: const InputDecoration(
             labelText: 'Unit Symbol (e.g. BTL, PACK, KG)',
-            border: OutlineInputBorder(),
+            
           ),
         ),
         actions: [

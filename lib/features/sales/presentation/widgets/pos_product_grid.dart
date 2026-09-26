@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
@@ -175,7 +176,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
     final price = item.sellRate ?? 0.0;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
+    return NeuCard(
       elevation: 1.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -277,7 +278,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                             decoration: const InputDecoration(
                               contentPadding: EdgeInsets.zero,
-                              border: InputBorder.none,
+                              
                             ),
                             onChanged: (val) {
                               final parsed = double.tryParse(val);
@@ -411,7 +412,7 @@ class _POSProductGridState extends ConsumerState<POSProductGrid> {
   Widget _buildCreateNewCard(ThemeData theme, BuildContext context) {
     final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
+    return NeuCard(
       elevation: 1.5,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),

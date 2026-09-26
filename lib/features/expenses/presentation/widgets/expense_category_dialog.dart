@@ -127,7 +127,7 @@ class _ExpenseCategoryDialogState extends State<ExpenseCategoryDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Category Name *',
                   hintText: 'e.g. Office Rent, Freight, Refreshments',
-                  border: OutlineInputBorder(),
+                  
                 ),
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -516,7 +517,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 controller: _machineNameController,
                 decoration: const InputDecoration(
                   labelText: 'Machine Name *',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.precision_manufacturing_rounded),
                 ),
                 validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
@@ -529,7 +530,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                       controller: _brandNameController,
                       decoration: const InputDecoration(
                         labelText: 'Brand',
-                        border: OutlineInputBorder(),
+                        
                       ),
                     ),
                   ),
@@ -539,7 +540,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                       controller: _modelNumberController,
                       decoration: const InputDecoration(
                         labelText: 'Model No.',
-                        border: OutlineInputBorder(),
+                        
                       ),
                     ),
                   ),
@@ -550,7 +551,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 controller: _serialNumberController,
                 decoration: const InputDecoration(
                   labelText: 'Serial No.',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 16),
@@ -632,13 +633,13 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 controller: _googlePhotosLinkController,
                 decoration: const InputDecoration(
                   labelText: 'Drive Link (Optional)',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.link_rounded),
                 ),
               ),
               const SizedBox(height: 24),
 
-              Card(
+              NeuCard(
                 elevation: 0,
                 color: theme.colorScheme.primary.withOpacity(0.05),
                 shape: RoundedRectangleBorder(
@@ -669,7 +670,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                                controller: _serviceIntervalController,
                                decoration: InputDecoration(
                                  labelText: 'Service Interval',
-                                 border: const OutlineInputBorder(),
+                                 
                                  filled: true,
                                  fillColor: theme.cardColor,
                                ),
@@ -683,7 +684,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                              child: DropdownButtonFormField<String>(
                                value: _serviceIntervalType,
                                decoration: InputDecoration(
-                                 border: const OutlineInputBorder(),
+                                 
                                  filled: true,
                                  fillColor: theme.cardColor,
                                ),
@@ -764,7 +765,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Description / Notes',
-                  border: OutlineInputBorder(),
+                  
                   alignLabelWithHint: true,
                 ),
               ),

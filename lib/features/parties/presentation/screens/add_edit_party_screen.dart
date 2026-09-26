@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
@@ -169,7 +170,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
               controller: typeController,
               decoration: const InputDecoration(
                 labelText: 'Party Type Name',
-                border: OutlineInputBorder(),
+                
                 prefixIcon: Icon(Icons.badge),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Type name is required' : null,
@@ -220,7 +221,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
               controller: locController,
               decoration: const InputDecoration(
                 labelText: 'Locality Name (e.g. Sector 12, Subhash Nagar)',
-                border: OutlineInputBorder(),
+                
                 prefixIcon: Icon(Icons.location_city),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Locality is required' : null,
@@ -399,7 +400,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
           decoration: const InputDecoration(
             labelText: 'Category Name',
             hintText: 'e.g. Distributor, Textile, Pharma',
-            border: OutlineInputBorder(),
+            
           ),
         ),
         actions: [
@@ -691,7 +692,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                           const SizedBox(height: 20),
 
                           // ⚡ Prominent 1-Click GSTIN Auto-Fetch Section
-                          Card(
+                          NeuCard(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -732,7 +733,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                             hintText: 'e.g. 27AAAAA1111A1Z1',
                                             filled: true,
                                             fillColor: Colors.white,
-                                            border: OutlineInputBorder(),
+                                            
                                           ),
                                           onChanged: (val) {
                                             if (val.trim().length == 15 && !_isFetchingGst) {
@@ -770,7 +771,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             children: [
                               DropdownButtonFormField<String>(
                                 value: _partyTypes.contains(_partyType) ? _partyType : _partyTypes.first,
-                                decoration: const InputDecoration(labelText: 'Party Type *', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Party Type *', ),
                                 items: [
                                   ..._partyTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))),
                                   const DropdownMenuItem(
@@ -790,13 +791,13 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _codeController,
-                                decoration: const InputDecoration(labelText: 'Party Code (Auto Generated)', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Party Code (Auto Generated)', ),
                                 readOnly: true,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _nameController,
-                                decoration: const InputDecoration(labelText: 'Party Trade Name *', prefixIcon: Icon(Icons.business), border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Party Trade Name *', prefixIcon: Icon(Icons.business), ),
                                 onChanged: (_) => setState(() {}),
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) return 'Please enter party name';
@@ -806,7 +807,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _referenceNameController,
-                                decoration: const InputDecoration(labelText: 'Reference / Alias Name', prefixIcon: Icon(Icons.people_alt_outlined), border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Reference / Alias Name', prefixIcon: Icon(Icons.people_alt_outlined), ),
                               ),
                             ],
                           ),
@@ -829,7 +830,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                         flex: 2,
                                         child: TextFormField(
                                           initialValue: _mobileNumbersList[index].label,
-                                          decoration: const InputDecoration(labelText: 'Label', border: OutlineInputBorder()),
+                                          decoration: const InputDecoration(labelText: 'Label', ),
                                           onChanged: (val) => _mobileNumbersList[index].label = val,
                                         ),
                                       ),
@@ -841,7 +842,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                           keyboardType: TextInputType.phone,
                                           maxLength: 10,
                                           inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
-                                          decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone), border: OutlineInputBorder(), counterText: ''),
+                                          decoration: const InputDecoration(labelText: 'Phone Number', prefixIcon: Icon(Icons.phone),  counterText: ''),
                                           onChanged: (val) => _mobileNumbersList[index].number = val,
                                         ),
                                       ),
@@ -864,7 +865,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               TextFormField(
                                 controller: _emailController,
                                 keyboardType: TextInputType.emailAddress,
-                                decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined), border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined), ),
                               ),
                             ],
                           ),
@@ -877,7 +878,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             children: [
                               DropdownButtonFormField<String>(
                                 value: _gstType,
-                                decoration: const InputDecoration(labelText: 'GST Type', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'GST Type', ),
                                 items: _gstTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                                 onChanged: (val) {
                                   if (val != null) setState(() => _gstType = val);
@@ -887,7 +888,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               TextFormField(
                                 controller: _panController,
                                 textCapitalization: TextCapitalization.characters,
-                                decoration: const InputDecoration(labelText: 'PAN Number (Permanent Account Number)', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'PAN Number (Permanent Account Number)', ),
                               ),
                             ],
                           ),
@@ -914,7 +915,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                           Expanded(
                                             child: TextFormField(
                                               initialValue: addr.label,
-                                              decoration: const InputDecoration(labelText: 'Address Label (e.g. Office, Godown)', border: OutlineInputBorder()),
+                                              decoration: const InputDecoration(labelText: 'Address Label (e.g. Office, Godown)', ),
                                               onChanged: (val) => addr.label = val,
                                             ),
                                           ),
@@ -929,7 +930,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                       TextFormField(
                                         initialValue: addr.fullAddress,
                                         maxLines: 2,
-                                        decoration: const InputDecoration(labelText: 'Full Address', border: OutlineInputBorder()),
+                                        decoration: const InputDecoration(labelText: 'Full Address', ),
                                         onChanged: (val) => addr.fullAddress = val,
                                       ),
                                       const SizedBox(height: 12),
@@ -978,7 +979,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                     child: TextFormField(
                                       controller: _openingBalanceController,
                                       keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(labelText: 'Opening Balance', prefixText: '₹ ', border: OutlineInputBorder()),
+                                      decoration: const InputDecoration(labelText: 'Opening Balance', prefixText: '₹ ', ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -986,7 +987,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                     flex: 3,
                                     child: DropdownButtonFormField<String>(
                                       value: _balanceType,
-                                      decoration: const InputDecoration(labelText: 'Type', border: OutlineInputBorder()),
+                                      decoration: const InputDecoration(labelText: 'Type', ),
                                       items: _balanceTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                                       onChanged: (val) {
                                         if (val != null) setState(() => _balanceType = val);
@@ -999,12 +1000,12 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               TextFormField(
                                 controller: _creditLimitController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Credit Limit Amount', prefixText: '₹ ', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Credit Limit Amount', prefixText: '₹ ', ),
                               ),
                               const SizedBox(height: 16),
                               DropdownButtonFormField<String>(
                                 value: _paymentTerms,
-                                decoration: const InputDecoration(labelText: 'Payment Terms', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Payment Terms', ),
                                 items: _paymentTermsList.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
                                 onChanged: (val) {
                                   if (val != null) setState(() => _paymentTerms = val);
@@ -1014,7 +1015,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               TextFormField(
                                 controller: _dueDaysController,
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'Payment Due Days', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Payment Due Days', ),
                               ),
                             ],
                           ),
@@ -1027,7 +1028,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                             children: [
                               TextFormField(
                                 controller: _contactPersonController,
-                                decoration: const InputDecoration(labelText: 'Contact Person Name', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Contact Person Name', ),
                               ),
                               const SizedBox(height: 16),
                               Row(
@@ -1035,7 +1036,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                   Expanded(
                                     child: DropdownButtonFormField<String>(
                                       value: _categories.contains(_category) ? _category : _categories.first,
-                                      decoration: const InputDecoration(labelText: 'Business Category', border: OutlineInputBorder()),
+                                      decoration: const InputDecoration(labelText: 'Business Category', ),
                                       items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                                       onChanged: (val) {
                                         if (val != null) setState(() => _category = val);
@@ -1054,7 +1055,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                               TextFormField(
                                 controller: _notesController,
                                 maxLines: 3,
-                                decoration: const InputDecoration(labelText: 'Business Notes & Reminders', border: OutlineInputBorder()),
+                                decoration: const InputDecoration(labelText: 'Business Notes & Reminders', ),
                               ),
                             ],
                           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
@@ -66,7 +67,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                 style: const TextStyle(fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search order #, customer, mobile...',
-                  border: InputBorder.none,
+                  
                   isDense: true,
                 ),
                 onChanged: (val) {
@@ -265,7 +266,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     labelText: 'Order Status',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    border: OutlineInputBorder(),
+                    
                   ),
                   items: const [
                     DropdownMenuItem(value: 'All', child: Text('All Statuses')),
@@ -292,7 +293,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                     labelText: 'Sort By',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    border: OutlineInputBorder(),
+                    
                   ),
                   items: const [
                     DropdownMenuItem(value: 'Recent', child: Text('Recent Date')),
@@ -321,7 +322,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
                         labelText: 'Customer Account',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(),
+                        
                       ),
                       items: [
                         const DropdownMenuItem<int?>(value: null, child: Text('All Customers')),
@@ -383,7 +384,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
     final dateStr = order.orderDate?.toIso8601String().substring(0, 10) ?? 'N/A';
 
-    return Card(
+    return NeuCard(
       margin: const EdgeInsets.symmetric(vertical: 6),
       elevation: 0.5,
       shape: RoundedRectangleBorder(

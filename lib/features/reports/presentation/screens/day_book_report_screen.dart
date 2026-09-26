@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -274,7 +275,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           return Column(
             children: [
               // Header Date & Export Toolbar Card
-              Card(
+              NeuCard(
                 margin: const EdgeInsets.all(16.0),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
@@ -416,7 +417,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                           final v = vouchers[index];
                           final isDebit = v.debit > 0;
 
-                          return Card(
+                          return NeuCard(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

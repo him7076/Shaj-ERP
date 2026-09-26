@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -233,7 +234,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 style: const TextStyle(fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search remarks or category...',
-                  border: InputBorder.none,
+                  
                   isDense: true,
                 ),
                 onChanged: (val) {
@@ -478,7 +479,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                           
                           final isSelected = _selectedExpenseIds.contains(expense.id);
 
-                          return Card(
+                          return NeuCard(
                             elevation: isSelected ? 2 : 0,
                             margin: const EdgeInsets.only(bottom: 12),
                             color: isSelected ? theme.colorScheme.primaryContainer.withOpacity(0.3) : null,

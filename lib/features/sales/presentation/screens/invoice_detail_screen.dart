@@ -153,7 +153,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               decoration: const InputDecoration(
                 labelText: 'Cancellation Reason',
                 hintText: 'Enter reason for cancellation',
-                border: OutlineInputBorder(),
+                
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Reason is required' : null,
             ),

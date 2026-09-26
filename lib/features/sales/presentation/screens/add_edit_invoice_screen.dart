@@ -97,7 +97,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'Salesman Name',
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
                 prefixIcon: Icon(Icons.person_add),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
@@ -147,7 +147,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
               controller: modeController,
               decoration: InputDecoration(
                 labelText: 'Payment Mode Name (e.g. Finance, EMI)',
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
                 prefixIcon: Icon(Icons.account_balance_wallet),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
@@ -762,7 +762,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: _invoiceType,
-              decoration: InputDecoration(labelText: 'Billing Type', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+              decoration: InputDecoration(labelText: 'Billing Type',  isDense: true),
               items: const [
                 DropdownMenuItem(value: 'Tax Invoice', child: Text('Tax Invoice')),
                 DropdownMenuItem(value: 'Retail Invoice', child: Text('Retail Invoice')),
@@ -821,7 +821,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       labelText: 'Paid Amount (\u20b9)',
-                      border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                      
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                     ),
@@ -855,7 +855,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
               child: InputDecorator(
                 decoration: InputDecoration(
                   labelText: 'Due Date',
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                   isDense: true,
                   prefixIcon: Icon(Icons.event_outlined, size: 18),
                 ),
@@ -888,7 +888,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                         value: _paymentMode,
                         decoration: InputDecoration(
                           labelText: 'Payment Mode',
-                          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                          
                           isDense: true,
                           prefixIcon: Icon(Icons.payment, size: 18),
                         ),
@@ -914,7 +914,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 value: _paymentMode,
                 decoration: InputDecoration(
                   labelText: 'Payment Mode',
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                   isDense: true,
                   prefixIcon: Icon(Icons.payment, size: 18),
                 ),
@@ -938,7 +938,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc %', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(labelText: 'Disc %',  isDense: true),
                     onChanged: (val) {
                       final double? pct = double.tryParse(val);
                       ref.read(invoiceCartProvider.notifier).setDiscounts(pct, null);
@@ -950,7 +950,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   child: TextFormField(
                     controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc \u20b9', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(labelText: 'Disc \u20b9',  isDense: true),
                     onChanged: (val) {
                       final double? amt = double.tryParse(val);
                       ref.read(invoiceCartProvider.notifier).setDiscounts(null, amt);
@@ -964,7 +964,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
               controller: _remarksController,
               decoration: InputDecoration(
                 labelText: 'Remarks / Terms',
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
                 isDense: true,
                 prefixIcon: Icon(Icons.notes_rounded, size: 18),
               ),
@@ -1212,7 +1212,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                               value: partyMachineries.any((m) => m.uuid == cart.linkedMachineUuid) ? cart.linkedMachineUuid : null,
                               decoration: InputDecoration(
                                 labelText: 'Link Machinery / Service',
-                                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                                
                                 prefixIcon: Icon(Icons.precision_manufacturing_rounded),
                               ),
                               items: [
@@ -1270,7 +1270,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: 'Invoice Date',
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                         prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
@@ -1349,7 +1349,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                             focusNode: focusNode,
                             decoration: InputDecoration(
                               labelText: 'Salesman',
-                              border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                              
                               isDense: true,
                               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                               prefixIcon: Icon(Icons.badge_outlined, size: 18),
@@ -1603,7 +1603,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       decoration: InputDecoration(
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       onChanged: (val) {
                         final parsed = double.tryParse(val);
@@ -1860,7 +1860,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: TextFormField(
                                           initialValue: quantities[index].toString(),
                                           keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(labelText: 'Qty', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'Qty',  isDense: true),
                                           onChanged: (val) {
                                             final parsed = double.tryParse(val);
                                             if (parsed != null) quantities[index] = parsed;
@@ -1872,7 +1872,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: DropdownButtonFormField<String>(
                                           value: units[index],
                                           isExpanded: true,
-                                          decoration: InputDecoration(labelText: 'Unit', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'Unit',  isDense: true),
                                           items: [
                                             if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) cItem.primaryUnitName!,
                                             if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) cItem.secondaryUnit!,
@@ -1895,7 +1895,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: TextFormField(
                                           initialValue: rates[index].toString(),
                                           keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(labelText: 'Selling Rate', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'Selling Rate',  isDense: true),
                                           onChanged: (val) {
                                             final parsed = double.tryParse(val);
                                             if (parsed != null) rates[index] = parsed;
@@ -1907,7 +1907,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                         child: TextFormField(
                                           initialValue: gstRates[index].toString(),
                                           keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(labelText: 'GST %', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                                          decoration: InputDecoration(labelText: 'GST %',  isDense: true),
                                           onChanged: (val) {
                                             final parsed = double.tryParse(val);
                                             if (parsed != null) gstRates[index] = parsed;
@@ -1923,7 +1923,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                       child: TextFormField(
                                         initialValue: buyRates[index].toString(),
                                         keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(labelText: 'Buy Price', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                                        decoration: InputDecoration(labelText: 'Buy Price',  isDense: true),
                                         onChanged: (val) {
                                           final parsed = double.tryParse(val);
                                           if (parsed != null) buyRates[index] = parsed;
@@ -1934,7 +1934,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                     TextFormField(
                                       initialValue: descriptions[index],
                                       maxLines: 2,
-                                      decoration: InputDecoration(labelText: 'Description', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                                      decoration: InputDecoration(labelText: 'Description',  isDense: true),
                                       onChanged: (val) {
                                         descriptions[index] = val;
                                       },
@@ -2130,7 +2130,7 @@ final theme = Theme.of(context);
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            decoration: InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
+                            decoration: InputDecoration( isDense: true, contentPadding: EdgeInsets.zero),
                             onChanged: (val) {
                               final double? qty = double.tryParse(val);
                               if (qty != null && qty >= 0) {
@@ -2162,7 +2162,7 @@ final theme = Theme.of(context);
                         labelText: 'Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                       onChanged: (val) {
@@ -2188,7 +2188,7 @@ final theme = Theme.of(context);
                         labelText: widget.isGstInclusive ? 'Rate Incl (\u20b9)' : 'Rate Excl (\u20b9)',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         prefixIcon: const Icon(Icons.currency_rupee, size: 16),
                       ),
                       onChanged: (val) {
@@ -2210,7 +2210,7 @@ final theme = Theme.of(context);
                         labelText: 'Tax',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       items: const [
                         DropdownMenuItem(value: false, child: Text('Excl', style: TextStyle(fontSize: 12))),
@@ -2235,7 +2235,7 @@ final theme = Theme.of(context);
                     labelText: 'Buy / Cost Price (\u20b9)',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                    
                     prefixIcon: Icon(Icons.shopping_bag_outlined, size: 16),
                   ),
                   onChanged: (val) {
@@ -2295,7 +2295,7 @@ final theme = Theme.of(context);
                               child: TextFormField(
                                 controller: _freeQtyController,
                                 keyboardType: TextInputType.number,
-                                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, ),
                                 onChanged: (val) {
                                   final double? fq = double.tryParse(val);
                                   if (fq != null) {
@@ -2309,7 +2309,7 @@ final theme = Theme.of(context);
                               child: TextFormField(
                                 controller: _discAmountController,
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: InputDecoration(labelText: 'Disc \u20b9', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                                decoration: InputDecoration(labelText: 'Disc \u20b9', isDense: true, ),
                                 onChanged: (val) {
                                   final double? da = double.tryParse(val);
                                   if (da != null) {
@@ -2326,7 +2326,7 @@ final theme = Theme.of(context);
                             Expanded(
                               child: TextFormField(
                                 controller: _batchController,
-                                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                                 onChanged: (val) {
                                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
                                 },
@@ -2336,7 +2336,7 @@ final theme = Theme.of(context);
                             Expanded(
                               child: TextFormField(
                                 controller: _mfgDateController,
-                                decoration: InputDecoration(labelText: 'Mfg Date', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                                decoration: InputDecoration(labelText: 'Mfg Date', isDense: true, ),
                                 onChanged: (val) {
                                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
                                 },
@@ -2347,7 +2347,7 @@ final theme = Theme.of(context);
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _expDateController,
-                          decoration: InputDecoration(labelText: 'Expiry (e.g. 12/28)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                          decoration: InputDecoration(labelText: 'Expiry (e.g. 12/28)', isDense: true, ),
                           onChanged: (val) {
                             ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                           },
@@ -2357,7 +2357,7 @@ final theme = Theme.of(context);
                           TextFormField(
                             controller: _descController,
                             maxLines: 2,
-                            decoration: InputDecoration(labelText: 'Item Description', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                            decoration: InputDecoration(labelText: 'Item Description', isDense: true, ),
                             onChanged: (val) {
                               ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, description: val.trim());
                             },
@@ -2483,7 +2483,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
@@ -2501,7 +2501,7 @@ final theme = Theme.of(context);
                   labelText: 'Unit',
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                 ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
@@ -2553,7 +2553,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -2578,7 +2578,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -2607,7 +2607,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc %', isDense: true, ),
                 onChanged: (val) {
                   final double? pct = double.tryParse(val);
                   if (pct != null) {
@@ -2621,7 +2621,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {
@@ -2633,7 +2633,7 @@ final theme = Theme.of(context);
             const SizedBox(width: 8),
             Expanded(
               child: InputDecorator(
-                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, ),
                 child: Text('${item.gstPercent.toInt()}%'),
               ),
             ),
@@ -2643,7 +2643,7 @@ final theme = Theme.of(context);
                 child: TextFormField(
                   controller: _buyRateController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: 'Buy Price', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                  decoration: InputDecoration(labelText: 'Buy Price', isDense: true, ),
                   onChanged: (val) {
                     final double? parsed = double.tryParse(val);
                     if (parsed != null) {
@@ -2661,7 +2661,7 @@ final theme = Theme.of(context);
             Expanded(
               child: TextFormField(
                 controller: _batchController,
-                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                 onChanged: (val) {
                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
                 },
@@ -2671,7 +2671,7 @@ final theme = Theme.of(context);
             Expanded(
               child: TextFormField(
                 controller: _mfgDateController,
-                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, ),
                 onChanged: (val) {
                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
                 },
@@ -2681,7 +2681,7 @@ final theme = Theme.of(context);
             Expanded(
               child: TextFormField(
                 controller: _expDateController,
-                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, ),
                 onChanged: (val) {
                   ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                 },

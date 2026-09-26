@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 
@@ -31,7 +32,7 @@ class NeuCard extends ConsumerWidget {
 
     if (!isNeumorphic) {
       // Standard theme — render as normal Card, unchanged
-      return Card(
+      return NeuCard(
         margin: margin,
         elevation: elevation,
         clipBehavior: clipBehavior,

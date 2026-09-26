@@ -306,7 +306,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                         focusNode: focusNode,
                         decoration: InputDecoration(
                           labelText: 'Select Product *',
-                          border: const OutlineInputBorder(),
+                          
                           prefixIcon: const Icon(Icons.inventory_2_outlined),
                           suffixIcon: controller.text.isNotEmpty
                               ? IconButton(
@@ -359,7 +359,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Quantity *',
-                        border: OutlineInputBorder(),
+                        
                       ),
                       onChanged: (_) => setState(() {}),
                       validator: (v) {
@@ -391,7 +391,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                           value: _selectedUnit,
                           decoration: const InputDecoration(
                             labelText: 'Unit *',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: unitOptions.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                           onChanged: (val) {
@@ -415,7 +415,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Rate per Unit (₹)',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.currency_rupee_rounded),
                       ),
                       onChanged: (_) => setState(() {}),
@@ -462,7 +462,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Adjustment Date',
-                    border: OutlineInputBorder(),
+                    
                     prefixIcon: Icon(Icons.calendar_today_rounded),
                   ),
                   child: Text(DateFormat('dd MMMM yyyy').format(_adjustmentDate)),
@@ -475,7 +475,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 controller: _reasonController,
                 decoration: const InputDecoration(
                   labelText: 'Reason for Adjustment *',
-                  border: OutlineInputBorder(),
+                  
                   hintText: 'e.g. Audit, Damage, Manual Addition...',
                   prefixIcon: Icon(Icons.note_alt_outlined),
                 ),
@@ -489,7 +489,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 maxLines: 2,
                 decoration: const InputDecoration(
                   labelText: 'Internal Notes (Optional)',
-                  border: OutlineInputBorder(),
+                  
                   prefixIcon: Icon(Icons.comment_outlined),
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -104,7 +105,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 28),
             
             // Appearance Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -240,7 +241,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 
             // Company / Firm Manager Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -527,7 +528,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
             // FIREBASE CLOUD CONNECTION STATUS & QUOTA ERROR INDICATOR CARD
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -675,7 +676,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
             // Consolidated Snapshot Backup & Restore Center (.sahaj) Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -732,7 +733,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
             // INSTANT LOCAL & CLOUD DATA MAINTENANCE (WIPE CONTROLS) CARD
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -880,7 +881,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 
             // Testing & Demo Data Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -945,7 +946,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
             // Safe Wipe Data Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1003,7 +1004,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             // Diagnostics & Repair Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1087,7 +1088,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
             // App Version Info Card
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -1256,7 +1257,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 hintText: 'Enter GSTIN (e.g. 27AAAAA1111A1Z1)',
                                 labelText: 'GSTIN Number',
                                 isDense: true,
-                                border: InputBorder.none,
+                                
                               ),
                             ),
                           ),
@@ -1284,7 +1285,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       controller: nameController,
                       decoration: const InputDecoration(
                         labelText: 'Company / Firm Name *',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.store),
                       ),
                     ),
@@ -1297,7 +1298,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
                               labelText: 'Mobile Number',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.phone),
                             ),
                           ),
@@ -1309,7 +1310,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
                               labelText: 'WhatsApp Number',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.chat),
                             ),
                           ),
@@ -1325,7 +1326,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
                               labelText: 'Email Address',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.email),
                             ),
                           ),
@@ -1337,7 +1338,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             textCapitalization: TextCapitalization.characters,
                             decoration: const InputDecoration(
                               labelText: 'PAN Number',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.badge),
                             ),
                           ),
@@ -1353,7 +1354,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       controller: addressController,
                       decoration: const InputDecoration(
                         labelText: 'Full Address / Street',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.location_on),
                       ),
                     ),
@@ -1365,7 +1366,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: cityController,
                             decoration: const InputDecoration(
                               labelText: 'City / District',
-                              border: OutlineInputBorder(),
+                              
                             ),
                           ),
                         ),
@@ -1375,7 +1376,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: stateController,
                             decoration: const InputDecoration(
                               labelText: 'State',
-                              border: OutlineInputBorder(),
+                              
                             ),
                           ),
                         ),
@@ -1386,7 +1387,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Pincode',
-                              border: OutlineInputBorder(),
+                              
                             ),
                           ),
                         ),
@@ -1404,7 +1405,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: bankNameController,
                             decoration: const InputDecoration(
                               labelText: 'Bank Name',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.account_balance),
                             ),
                           ),
@@ -1415,7 +1416,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: bankAccController,
                             decoration: const InputDecoration(
                               labelText: 'Account Number',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.numbers),
                             ),
                           ),
@@ -1431,7 +1432,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             textCapitalization: TextCapitalization.characters,
                             decoration: const InputDecoration(
                               labelText: 'IFSC Code',
-                              border: OutlineInputBorder(),
+                              
                             ),
                           ),
                         ),
@@ -1441,7 +1442,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: upiController,
                             decoration: const InputDecoration(
                               labelText: 'UPI ID (e.g. business@upi)',
-                              border: OutlineInputBorder(),
+                              
                               prefixIcon: Icon(Icons.qr_code),
                             ),
                           ),
@@ -1789,33 +1790,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               TextField(
                 controller: accountNameController,
-                decoration: const InputDecoration(labelText: 'Account Display Name *', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Account Display Name *', ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: bankNameController,
-                decoration: const InputDecoration(labelText: 'Bank Name *', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Bank Name *', ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: accountNumberController,
-                decoration: const InputDecoration(labelText: 'Account Number *', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Account Number *', ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: ifscController,
-                decoration: const InputDecoration(labelText: 'IFSC Code *', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'IFSC Code *', ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: branchController,
-                decoration: const InputDecoration(labelText: 'Branch Name', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Branch Name', ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: openingController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Opening Balance', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Opening Balance', ),
               ),
             ],
           ),
@@ -1924,7 +1925,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 controller: apiKeyController,
                 decoration: const InputDecoration(
                   labelText: 'API Key *',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -1932,7 +1933,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 controller: projectIdController,
                 decoration: const InputDecoration(
                   labelText: 'Project ID *',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -1940,7 +1941,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 controller: appIdController,
                 decoration: const InputDecoration(
                   labelText: 'App ID *',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -1948,7 +1949,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 controller: senderIdController,
                 decoration: const InputDecoration(
                   labelText: 'Messaging Sender ID (Optional)',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 12),
@@ -1956,7 +1957,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 controller: storageBucketController,
                 decoration: const InputDecoration(
                   labelText: 'Storage Bucket (Optional)',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
             ],

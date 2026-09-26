@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -93,7 +94,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
             autofocus: true,
             decoration: InputDecoration(
               labelText: labelText,
-              border: const OutlineInputBorder(),
+              
             ),
             validator: (v) => v == null || v.trim().isEmpty ? 'Value is required' : null,
           ),
@@ -144,7 +145,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
             autofocus: true,
             decoration: const InputDecoration(
               labelText: 'Updated Name',
-              border: OutlineInputBorder(),
+              
             ),
             validator: (v) => v == null || v.trim().isEmpty ? 'Value is required' : null,
           ),
@@ -359,7 +360,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
     required Color iconBg,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -432,7 +433,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                   final item = items[index];
                   final isDefault = defaultItems.contains(item);
 
-                  return Card(
+                  return NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -505,7 +506,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                   final salesman = _salesmen[index];
                   final isDefault = _defaultSalesmen.contains(salesman);
 
-                  return Card(
+                  return NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -584,7 +585,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final unit = _units[index];
-                  return Card(
+                  return NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -643,7 +644,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                                           const SizedBox(height: 10),
                                           DropdownButtonFormField<String>(
                                             value: replacementUnit,
-                                            decoration: const InputDecoration(border: OutlineInputBorder(), labelText: 'Replacement Unit'),
+                                            decoration: const InputDecoration( labelText: 'Replacement Unit'),
                                             items: otherUnits.map((u) => DropdownMenuItem(value: u.shortName, child: Text('${u.unitName ?? u.shortName} (${u.shortName})'))).toList(),
                                             onChanged: (val) => setDlgState(() => replacementUnit = val),
                                           ),
@@ -722,12 +723,12 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Unit Full Name (e.g. Pieces, Kilograms)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Unit Full Name (e.g. Pieces, Kilograms)', ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: shortController,
-              decoration: const InputDecoration(labelText: 'Short Symbol (e.g. Pcs, Kg)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Short Symbol (e.g. Pcs, Kg)', ),
             ),
           ],
         ),
@@ -771,12 +772,12 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Unit Full Name', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Unit Full Name', ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: shortController,
-              decoration: const InputDecoration(labelText: 'Short Symbol', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Short Symbol', ),
             ),
           ],
         ),
@@ -940,7 +941,7 @@ class _ManageCategoriesScreenState extends ConsumerState<ManageCategoriesScreen>
                   final cat = _expenseCategories[index];
                   final isDirect = cat.type == 'Direct Expense';
 
-                  return Card(
+                  return NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),

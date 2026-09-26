@@ -336,7 +336,7 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
                 style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   labelText: 'Amount (₹)',
-                  border: InputBorder.none,
+                  
                   prefixIcon: const Icon(Icons.currency_rupee, size: 32),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.calculate, color: Colors.blue, size: 32),
@@ -367,7 +367,7 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Transfer Fee (₹)',
-                    border: InputBorder.none,
+                    
                     prefixIcon: const Icon(Icons.money_off),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.calculate, color: Colors.blue),
@@ -383,7 +383,7 @@ class _AddEditPersonalTransactionDialogState extends ConsumerState<AddEditPerson
                 controller: _remarksController,
                 decoration: const InputDecoration(
                   labelText: 'Note',
-                  border: InputBorder.none,
+                  
                   prefixIcon: Icon(Icons.notes),
                 ),
               ),

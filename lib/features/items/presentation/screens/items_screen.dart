@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
@@ -292,7 +293,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 style: const TextStyle(fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search name, code, HSN, barcode...',
-                  border: InputBorder.none,
+                  
                   isDense: true,
                 ),
                 onChanged: (val) {
@@ -655,7 +656,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                     labelText: 'Stock Level',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    border: OutlineInputBorder(),
+                    
                   ),
                   items: const [
                     DropdownMenuItem(value: 'All', child: Text('All')),
@@ -678,7 +679,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                     labelText: 'Sort By',
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                    border: OutlineInputBorder(),
+                    
                   ),
                   items: const [
                     DropdownMenuItem(value: 'Name A-Z', child: Text('Name (A-Z)')),
@@ -709,7 +710,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                         labelText: 'Brand',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        border: OutlineInputBorder(),
+                        
                       ),
                       items: [
                         const DropdownMenuItem<int?>(value: null, child: Text('All Brands')),
@@ -772,7 +773,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       stockIcon = Icons.warning;
     }
 
-    return Card(
+    return NeuCard(
       key: ValueKey(item.uuid),
       elevation: 0,
       shape: RoundedRectangleBorder(

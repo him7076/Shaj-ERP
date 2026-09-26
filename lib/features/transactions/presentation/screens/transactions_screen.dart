@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
@@ -676,7 +677,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           if (_showSearch || _showFilter || !isMobile)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-              child: Card(
+              child: NeuCard(
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -693,7 +694,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 decoration: const InputDecoration(
                                   hintText: 'Search transaction no, party, remarks...',
                                   prefixIcon: Icon(Icons.search, size: 18),
-                                  border: InputBorder.none,
+                                  
                                   isDense: true,
                                 ),
                                 onChanged: (val) {
@@ -757,7 +758,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               decoration: const InputDecoration(
                                 hintText: 'Search transaction no, party, remarks...',
                                 prefixIcon: Icon(Icons.search),
-                                border: InputBorder.none,
+                                
                               ),
                               onChanged: (val) {
                                 ref.read(transactionSearchFilterProvider.notifier).state =
@@ -897,7 +898,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     if (isIncoming) badgeColor = Colors.green;
                     if (isOutgoing) badgeColor = Colors.red;
 
-                    return Card(
+                    return NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1333,7 +1334,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       );
     }
 
-    return Card(
+    return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),

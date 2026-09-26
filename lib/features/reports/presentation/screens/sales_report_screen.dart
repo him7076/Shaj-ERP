@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -175,7 +176,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
       body: Column(
         children: [
           // Filters Panel Card
-          Card(
+          NeuCard(
             margin: const EdgeInsets.all(16.0),
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -195,7 +196,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Date Preset',
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: ReportDatePreset.values.map((preset) {
                             final filter = ReportDateFilter.fromPreset(preset);
@@ -217,7 +218,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Payment Status',
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: const [
                             DropdownMenuItem(value: 'All', child: Text('All Payments')),
@@ -246,7 +247,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                                 decoration: const InputDecoration(
                                   labelText: 'Select Party',
                                   contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  border: OutlineInputBorder(),
+                                  
                                 ),
                                 items: [
                                   const DropdownMenuItem<String?>(
@@ -306,7 +307,7 @@ class _SalesReportScreenState extends ConsumerState<SalesReportScreen> {
                               ? DateFormat('yyyy-MM-dd').format(inv.invoiceDate!)
                               : 'N/A';
 
-                          return Card(
+                          return NeuCard(
                             margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
                             elevation: 0,
                             shape: RoundedRectangleBorder(

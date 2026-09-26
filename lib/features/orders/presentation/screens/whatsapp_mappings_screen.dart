@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 
@@ -88,7 +89,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                   decoration: const InputDecoration(
                     labelText: 'Raw WhatsApp Shop Name',
                     hintText: 'e.g. Shri Krishna Traders',
-                    border: OutlineInputBorder(),
+                    
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -115,7 +116,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                         labelText: 'Search ERP Customer Party',
                         hintText: 'Type name or mobile to filter...',
                         suffixIcon: Icon(Icons.search_rounded),
-                        border: OutlineInputBorder(),
+                        
                       ),
                     );
                   },
@@ -187,7 +188,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                     decoration: const InputDecoration(
                       labelText: 'Raw WhatsApp Item String',
                       hintText: 'e.g. Creamland Strawberry 5/ 144',
-                      border: OutlineInputBorder(),
+                      
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -220,7 +221,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           labelText: 'Search ERP Product',
                           hintText: 'Type product name to filter...',
                           suffixIcon: Icon(Icons.search_rounded),
-                          border: OutlineInputBorder(),
+                          
                         ),
                       );
                     },
@@ -235,7 +236,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           decoration: InputDecoration(
                             labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
                             hintText: 'e.g. 12',
-                            border: const OutlineInputBorder(),
+                            
                           ),
                         ),
                       ),
@@ -247,7 +248,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           decoration: InputDecoration(
                             labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
                             hintText: 'e.g. 144',
-                            border: const OutlineInputBorder(),
+                            
                           ),
                         ),
                       ),
@@ -263,7 +264,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           decoration: const InputDecoration(
                             labelText: 'Custom Sale Rate (₹)',
                             hintText: 'Override sell rate',
-                            border: OutlineInputBorder(),
+                            
                           ),
                         ),
                       ),
@@ -273,7 +274,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                           value: selectedRateUnit,
                           decoration: const InputDecoration(
                             labelText: 'Rate Unit',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: availableUnits
                               .map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 12))))
@@ -290,7 +291,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                     value: isTaxInclusive,
                     decoration: const InputDecoration(
                       labelText: 'Tax Mode',
-                      border: OutlineInputBorder(),
+                      
                     ),
                     items: const [
                       DropdownMenuItem(value: false, child: Text('Without Tax (Exclusive of GST)')),
@@ -362,7 +363,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                   decoration: const InputDecoration(
                     labelText: 'Raw WhatsApp Sales Rep Name',
                     hintText: 'e.g. Rahul or Rahul Salesman',
-                    border: OutlineInputBorder(),
+                    
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -387,7 +388,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
                         labelText: 'Search ERP Salesman',
                         hintText: 'Type salesman name to filter...',
                         suffixIcon: Icon(Icons.search_rounded),
-                        border: OutlineInputBorder(),
+                        
                       ),
                     );
                   },
@@ -546,7 +547,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
         final mapping = list[index];
         final party = _allParties.firstWhereOrNull((p) => p.uuid == mapping.partyUuid);
 
-        return Card(
+        return NeuCard(
           margin: const EdgeInsets.symmetric(vertical: 4),
           elevation: 0.5,
           shape: RoundedRectangleBorder(
@@ -613,7 +614,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
         final secUnit = item?.secondaryUnit ?? "Bundle";
         final primUnit = item?.primaryUnitName ?? "Carton";
 
-        return Card(
+        return NeuCard(
           margin: const EdgeInsets.symmetric(vertical: 4),
           elevation: 0.5,
           shape: RoundedRectangleBorder(
@@ -711,7 +712,7 @@ class _WhatsAppMappingsScreenState extends ConsumerState<WhatsAppMappingsScreen>
       itemBuilder: (context, index) {
         final mapping = list[index];
 
-        return Card(
+        return NeuCard(
           margin: const EdgeInsets.symmetric(vertical: 4),
           elevation: 0.5,
           shape: RoundedRectangleBorder(

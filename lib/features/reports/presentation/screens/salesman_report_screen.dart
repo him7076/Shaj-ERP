@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -126,7 +127,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Filter Bar
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -144,7 +145,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
                       child: DropdownButtonFormField<String>(
                         value: _selectedSalesman,
                         isDense: true,
-                        decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true),
+                        decoration: const InputDecoration( isDense: true),
                         items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _selectedSalesman = val);
@@ -180,7 +181,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
               style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            Card(
+            NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -228,7 +229,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
             ),
             const SizedBox(height: 12),
             if (filteredOrders.isEmpty && filteredInvoices.isEmpty)
-              const Card(
+              const NeuCard(
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Center(child: Text('No orders or invoices recorded for this salesman.')),
@@ -243,7 +244,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
                 itemBuilder: (context, index) {
                   if (index < filteredOrders.length) {
                     final order = filteredOrders[index];
-                    return Card(
+                    return NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -264,7 +265,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
                     );
                   } else {
                     final inv = filteredInvoices[index - filteredOrders.length];
-                    return Card(
+                    return NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -293,7 +294,7 @@ class _SalesmanReportScreenState extends ConsumerState<SalesmanReportScreen> {
   }
 
   Widget _buildStatCard(String title, String val, IconData icon, Color color) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       color: color.withOpacity(0.06),
       shape: RoundedRectangleBorder(

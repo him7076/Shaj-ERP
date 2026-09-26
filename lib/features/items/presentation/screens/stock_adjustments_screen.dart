@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -331,7 +332,7 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
           // Filter Bar Card
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            child: Card(
+            child: NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -459,7 +460,7 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
                           final totalVal = adj.totalValue ?? ((adj.quantity ?? 0.0) * rate);
                           final color = isAdd ? Colors.green : Colors.red;
 
-                          return Card(
+                          return NeuCard(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -532,7 +533,7 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
     required IconData icon,
     required Color color,
   }) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       color: color.withOpacity(0.08),
       shape: RoundedRectangleBorder(
@@ -721,7 +722,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Quantity *',
-                        border: OutlineInputBorder(),
+                        
                       ),
                       onChanged: (_) => setState(() {}),
                       validator: (v) {
@@ -753,7 +754,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                           value: _selectedUnit,
                           decoration: const InputDecoration(
                             labelText: 'Unit *',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: unitOptions.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                           onChanged: (val) {
@@ -777,7 +778,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Rate per Unit (₹)',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.currency_rupee_rounded),
                       ),
                       onChanged: (_) => setState(() {}),
@@ -824,7 +825,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                 child: InputDecorator(
                   decoration: const InputDecoration(
                     labelText: 'Adjustment Date',
-                    border: OutlineInputBorder(),
+                    
                     prefixIcon: Icon(Icons.calendar_today_rounded),
                   ),
                   child: Text(DateFormat('dd MMMM yyyy').format(_adjustmentDate)),
@@ -837,7 +838,7 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
                 controller: _reasonController,
                 decoration: const InputDecoration(
                   labelText: 'Reason for Adjustment *',
-                  border: OutlineInputBorder(),
+                  
                   hintText: 'e.g. Audit, Damage, Manual Addition...',
                 ),
                 validator: (v) => v == null || v.trim().isEmpty ? 'Please enter a reason' : null,

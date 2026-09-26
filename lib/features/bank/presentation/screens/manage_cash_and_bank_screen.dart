@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
@@ -199,7 +200,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                   const SizedBox(height: 12),
 
                   // 1. System Cash in Hand Card
-                  Card(
+                  NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -238,7 +239,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                   const SizedBox(height: 12),
 
                   // 2. Cheques & Uncleared Drafts Card
-                  Card(
+                  NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -295,7 +296,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                         final acc = _accounts[index];
                         final balance = acc.currentBalance ?? acc.openingBalance ?? 0.0;
 
-                        return Card(
+                        return NeuCard(
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
@@ -373,36 +374,36 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
               children: [
                 TextFormField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Account Display Name *', hintText: 'e.g. HDFC Primary A/C', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Account Display Name *', hintText: 'e.g. HDFC Primary A/C', ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: bankCtrl,
-                  decoration: const InputDecoration(labelText: 'Bank Name', hintText: 'e.g. HDFC Bank, State Bank of India', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Bank Name', hintText: 'e.g. HDFC Bank, State Bank of India', ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: numCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Account Number', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Account Number', ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: ifscCtrl,
                   textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(labelText: 'IFSC Code', hintText: 'e.g. HDFC0001234', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'IFSC Code', hintText: 'e.g. HDFC0001234', ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: branchCtrl,
-                  decoration: const InputDecoration(labelText: 'Branch Name', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Branch Name', ),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: balCtrl,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Opening Balance (₹)', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Opening Balance (₹)', ),
                 ),
               ],
             ),
@@ -763,7 +764,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _typeFilter,
-                        decoration: const InputDecoration(labelText: 'Type Filter', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                        decoration: const InputDecoration(labelText: 'Type Filter',  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
                         items: const [
                           DropdownMenuItem(value: 'All', child: Text('All Types')),
                           DropdownMenuItem(value: 'Receipt', child: Text('Receipt / Inflows (+)')),
@@ -776,7 +777,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _sortBy,
-                        decoration: const InputDecoration(labelText: 'Sorting', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
+                        decoration: const InputDecoration(labelText: 'Sorting',  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
                         items: const [
                           DropdownMenuItem(value: 'Newest First', child: Text('Newest First')),
                           DropdownMenuItem(value: 'Oldest First', child: Text('Oldest First')),
@@ -805,7 +806,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                           final t = txns[index];
                           final isCredit = t.isCredit;
 
-                          return Card(
+                          return NeuCard(
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -933,7 +934,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
                       value: accountOptions.contains(selectedAccount) ? selectedAccount : accountOptions.first,
                       decoration: const InputDecoration(
                         labelText: 'Deposit To Account',
-                        border: OutlineInputBorder(),
+                        
                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       items: accountOptions.map((acc) => DropdownMenuItem(value: acc, child: Text(acc))).toList(),
@@ -948,7 +949,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
                       controller: remarksCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Clearing Description / Bank Notes',
-                        border: OutlineInputBorder(),
+                        
                         hintText: 'e.g. Deposited at main branch desk 2',
                       ),
                     ),
@@ -1187,7 +1188,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
                                 style: const TextStyle(fontSize: 12, color: Colors.black87),
                                 decoration: const InputDecoration(
                                   labelText: 'Status Filter',
-                                  border: OutlineInputBorder(),
+                                  
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 ),
@@ -1211,7 +1212,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
                                 style: const TextStyle(fontSize: 12, color: Colors.black87),
                                 decoration: const InputDecoration(
                                   labelText: 'Sort By',
-                                  border: OutlineInputBorder(),
+                                  
                                   isDense: true,
                                   contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 ),
@@ -1246,7 +1247,7 @@ class _ChequeManagementScreenState extends ConsumerState<ChequeManagementScreen>
                             final c = filtered[index];
                             final isClosed = (c.paymentStatus ?? 'Open').toLowerCase() == 'closed';
 
-                            return Card(
+                            return NeuCard(
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),

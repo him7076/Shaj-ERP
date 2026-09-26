@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/providers/machinery_category_providers.dart';
@@ -43,7 +44,7 @@ class _ManageMachineryCategoriesScreenState extends ConsumerState<ManageMachiner
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Category Name',
-                  border: OutlineInputBorder(),
+                  
                 ),
               ),
               const SizedBox(height: 16),
@@ -51,7 +52,7 @@ class _ManageMachineryCategoriesScreenState extends ConsumerState<ManageMachiner
                 controller: _descController,
                 decoration: const InputDecoration(
                   labelText: 'Description (Optional)',
-                  border: OutlineInputBorder(),
+                  
                 ),
                 maxLines: 2,
               ),
@@ -150,7 +151,7 @@ class _ManageMachineryCategoriesScreenState extends ConsumerState<ManageMachiner
             padding: const EdgeInsets.all(8),
             itemBuilder: (context, index) {
               final category = categories[index];
-              return Card(
+              return NeuCard(
                 elevation: 2,
                 margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

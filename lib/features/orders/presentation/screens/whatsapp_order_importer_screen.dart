@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -200,7 +201,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
           decoration: const InputDecoration(
             labelText: 'Sales Representative Name',
             hintText: 'e.g. Vikram Singh',
-            border: OutlineInputBorder(),
+            
           ),
         ),
         actions: [
@@ -400,7 +401,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                       decoration: const InputDecoration(
                         labelText: 'Select Target ERP Customer Party',
                         hintText: 'Type party name or mobile...',
-                        border: OutlineInputBorder(),
+                        
                         suffixIcon: Icon(Icons.search_rounded),
                       ),
                     );
@@ -546,7 +547,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                           labelText: 'Search ERP Product',
                           hintText: 'Type item name to filter...',
                           suffixIcon: Icon(Icons.search_rounded),
-                          border: OutlineInputBorder(),
+                          
                         ),
                       );
                     },
@@ -560,7 +561,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: 'Pcs / ${selectedItem?.secondaryUnit ?? "Bundle"}',
-                            border: const OutlineInputBorder(),
+                            
                           ),
                         ),
                       ),
@@ -571,7 +572,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: 'Pcs / ${selectedItem?.primaryUnitName ?? "Carton"}',
-                            border: const OutlineInputBorder(),
+                            
                           ),
                         ),
                       ),
@@ -584,14 +585,14 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                         child: TextField(
                           controller: rateCtrl,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(labelText: 'Custom Sale Rate (₹)', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(labelText: 'Custom Sale Rate (₹)', ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           value: selectedRateUnit,
-                          decoration: const InputDecoration(labelText: 'Rate Unit', border: OutlineInputBorder()),
+                          decoration: const InputDecoration(labelText: 'Rate Unit', ),
                           items: availableUnits
                               .map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 12))))
                               .toList(),
@@ -605,7 +606,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                   const SizedBox(height: 12),
                   DropdownButtonFormField<bool>(
                     value: isTaxInclusive,
-                    decoration: const InputDecoration(labelText: 'Tax Mode', border: OutlineInputBorder()),
+                    decoration: const InputDecoration(labelText: 'Tax Mode', ),
                     items: const [
                       DropdownMenuItem(value: false, child: Text('Without Tax (Exclusive of GST)')),
                       DropdownMenuItem(value: true, child: Text('With Tax (Inclusive of GST)')),
@@ -882,7 +883,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. Text Input Card
-                  Card(
+                  NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1000,7 +1001,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     const SizedBox(height: 16),
 
                     // 3. Customer Selection Dropdown
-                    Card(
+                    NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1089,7 +1090,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                     labelText: 'Search Customer Account',
                                     hintText: 'Type name or mobile to filter...',
                                     suffixIcon: Icon(Icons.search_rounded),
-                                    border: OutlineInputBorder(),
+                                    
                                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   ),
                                 );
@@ -1102,7 +1103,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     const SizedBox(height: 16),
 
                     // 3b. Salesman Selection Dropdown
-                    Card(
+                    NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1155,7 +1156,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                               decoration: const InputDecoration(
                                 labelText: 'Select Sales Representative',
                                 prefixIcon: Icon(Icons.badge_outlined),
-                                border: OutlineInputBorder(),
+                                
                                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               ),
                               items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
@@ -1217,7 +1218,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                     const SizedBox(height: 16),
 
                     // 5. Items Mapping Table
-                    Card(
+                    NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -1338,7 +1339,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                             isDense: true,
                                             suffixIcon: Icon(Icons.search_rounded, size: 18),
                                             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                            border: OutlineInputBorder(),
+                                            
                                           ),
                                         );
                                       },
@@ -1360,7 +1361,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                   style: const TextStyle(fontSize: 12),
                                                   decoration: const InputDecoration(
                                                     labelText: 'Qty',
-                                                    border: OutlineInputBorder(),
+                                                    
                                                     isDense: true,
                                                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                                   ),
@@ -1383,7 +1384,7 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                   style: const TextStyle(fontSize: 12),
                                                   decoration: const InputDecoration(
                                                     labelText: 'Rate (₹)',
-                                                    border: OutlineInputBorder(),
+                                                    
                                                     isDense: true,
                                                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                                   ),

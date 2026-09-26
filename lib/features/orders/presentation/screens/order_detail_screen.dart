@@ -120,7 +120,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               decoration: const InputDecoration(
                 labelText: 'Cancellation Reason',
                 hintText: 'Enter why this order is cancelled',
-                border: OutlineInputBorder(),
+                
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Reason is required' : null,
             ),

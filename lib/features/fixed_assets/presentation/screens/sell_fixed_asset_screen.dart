@@ -94,14 +94,14 @@ class _SellFixedAssetScreenState extends ConsumerState<SellFixedAssetScreen> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Sell Amount (₹)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Sell Amount (₹)', ),
                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _remarksController,
                 maxLines: 2,
-                decoration: const InputDecoration(labelText: 'Remarks', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Remarks', ),
               ),
             ],
           ),

@@ -77,7 +77,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'Salesman Name',
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
                 prefixIcon: Icon(Icons.person_add),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
@@ -437,7 +437,7 @@ final theme = Theme.of(context);
                   child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc %', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                    decoration: InputDecoration(labelText: 'Disc %', ),
                     onChanged: (val) {
                       final double? pct = double.tryParse(val);
                       ref.read(cartProvider.notifier).setOrderDiscounts(pct, null);
@@ -449,7 +449,7 @@ final theme = Theme.of(context);
                   child: TextFormField(
                     controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc Amt (₹)', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                    decoration: InputDecoration(labelText: 'Disc Amt (₹)', ),
                     onChanged: (val) {
                       final double? amt = double.tryParse(val);
                       ref.read(cartProvider.notifier).setOrderDiscounts(null, amt);
@@ -461,7 +461,7 @@ final theme = Theme.of(context);
             const SizedBox(height: 12),
             TextFormField(
               controller: _remarksController,
-              decoration: InputDecoration(labelText: 'Remarks / Terms', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+              decoration: InputDecoration(labelText: 'Remarks / Terms', ),
             ),
             const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
@@ -649,7 +649,7 @@ final theme = Theme.of(context);
                       }
                     },
                     child: InputDecorator(
-                      decoration: InputDecoration(labelText: 'Order Date', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                      decoration: InputDecoration(labelText: 'Order Date',  isDense: true),
                       child: Text(DateFormat('dd-MM-yyyy').format(_orderDate), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                   ),
@@ -665,7 +665,7 @@ final theme = Theme.of(context);
                           value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
                           decoration: InputDecoration(
                             labelText: 'Salesman Name',
-                            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                            
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             prefixIcon: Icon(Icons.badge_outlined),
@@ -777,7 +777,7 @@ final theme = Theme.of(context);
                             decoration: InputDecoration(
                               labelText: 'Type product name to add...',
                               prefixIcon: Icon(Icons.search),
-                              border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                              
                             ),
                           );
                         },
@@ -1168,7 +1168,7 @@ final theme = Theme.of(context);
                             keyboardType: TextInputType.number,
                             textAlign: TextAlign.center,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                            decoration: InputDecoration(border: InputBorder.none, isDense: true, contentPadding: EdgeInsets.zero),
+                            decoration: InputDecoration( isDense: true, contentPadding: EdgeInsets.zero),
                             onChanged: (val) {
                               final double? qty = double.tryParse(val);
                               if (qty != null && qty >= 0) {
@@ -1200,7 +1200,7 @@ final theme = Theme.of(context);
                         labelText: 'Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                       onChanged: (val) {
@@ -1227,7 +1227,7 @@ final theme = Theme.of(context);
                         labelText: widget.isGstInclusive ? 'Rate Incl (₹)' : 'Rate Excl (₹)',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       onChanged: (val) {
                         final double? parsed = double.tryParse(val);
@@ -1249,7 +1249,7 @@ final theme = Theme.of(context);
                         labelText: 'Tax Mode',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       items: const [
                         DropdownMenuItem(value: false, child: Text('Excl Tax', style: TextStyle(fontSize: 11))),
@@ -1274,7 +1274,7 @@ final theme = Theme.of(context);
                         labelText: 'Rate Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11)))).toList(),
                       onChanged: (val) {
@@ -1363,7 +1363,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
@@ -1381,7 +1381,7 @@ final theme = Theme.of(context);
                   labelText: 'Unit',
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                 ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
@@ -1433,7 +1433,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _freeQtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, ),
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null) {
@@ -1447,7 +1447,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1472,7 +1472,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1501,7 +1501,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc %', isDense: true, ),
                 onChanged: (val) {
                   final double? pct = double.tryParse(val);
                   if (pct != null) {
@@ -1515,7 +1515,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {
@@ -1527,7 +1527,7 @@ final theme = Theme.of(context);
             const SizedBox(width: 8),
             Expanded(
               child: InputDecorator(
-                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, ),
                 child: Text('${item.gstPercent.toInt()}%'),
               ),
             ),
@@ -1539,7 +1539,7 @@ final theme = Theme.of(context);
             Expanded(
               child: TextFormField(
                 controller: _batchController,
-                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                 onChanged: (val) {
                   ref.read(cartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
                 },
@@ -1549,7 +1549,7 @@ final theme = Theme.of(context);
             Expanded(
               child: TextFormField(
                 controller: _mfgDateController,
-                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, ),
                 onChanged: (val) {
                   ref.read(cartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
                 },
@@ -1559,7 +1559,7 @@ final theme = Theme.of(context);
             Expanded(
               child: TextFormField(
                 controller: _expDateController,
-                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, ),
                 onChanged: (val) {
                   ref.read(cartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                 },
@@ -1572,7 +1572,7 @@ final theme = Theme.of(context);
           TextFormField(
             controller: _descController,
             maxLines: 2,
-            decoration: InputDecoration(labelText: 'Item Description', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+            decoration: InputDecoration(labelText: 'Item Description', isDense: true, ),
             onChanged: (val) {
               ref.read(cartProvider.notifier).updateItemAt(widget.index, description: val.trim());
             },

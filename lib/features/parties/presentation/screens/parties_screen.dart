@@ -277,7 +277,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
                 style: const TextStyle(fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search name, code, phone, city...',
-                  border: InputBorder.none,
+                  
                   isDense: true,
                 ),
                 onChanged: (value) {

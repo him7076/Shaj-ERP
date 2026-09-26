@@ -120,13 +120,13 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Asset Name', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Asset Name', ),
                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _assetType,
-                decoration: const InputDecoration(labelText: 'Asset Type', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Asset Type', ),
                 items: ['Machinery', 'Vehicles', 'Computers', 'Furniture', 'Building', 'Other']
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
@@ -136,7 +136,7 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
               TextFormField(
                 controller: _costController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Purchase Cost (₹)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Purchase Cost (₹)', ),
                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
@@ -161,7 +161,7 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _depreciationMethod,
-                decoration: const InputDecoration(labelText: 'Depreciation Method', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Depreciation Method', ),
                 items: ['Straight Line', 'Written Down Value (WDV)', 'None']
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
@@ -170,7 +170,7 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _paymentMode,
-                decoration: const InputDecoration(labelText: 'Payment Account / Mode', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Payment Account / Mode', ),
                 items: ['Bank', 'Cash', 'Credit', 'UPI']
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
@@ -179,7 +179,7 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<double>(
                 value: _gstPercent,
-                decoration: const InputDecoration(labelText: 'GST Rate (%)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'GST Rate (%)', ),
                 items: [0.0, 5.0, 12.0, 18.0, 28.0]
                     .map((e) => DropdownMenuItem(value: e, child: Text('${e.toInt()}%')))
                     .toList(),
@@ -189,7 +189,7 @@ class _AddFixedAssetScreenState extends ConsumerState<AddFixedAssetScreen> {
               TextFormField(
                 controller: _descController,
                 maxLines: 3,
-                decoration: const InputDecoration(labelText: 'Remarks / Description', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Remarks / Description', ),
               ),
             ],
           ),

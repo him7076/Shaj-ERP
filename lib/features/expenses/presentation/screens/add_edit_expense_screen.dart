@@ -275,7 +275,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               decoration: InputDecoration(
                 labelText: 'Expense Item Name *',
                 hintText: 'e.g. Printer Cartridge, Tea, Courier',
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
               ),
             ),
             const SizedBox(height: 12),
@@ -284,7 +284,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Default Rate / Cost (₹)',
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
               ),
             ),
           ],
@@ -599,7 +599,7 @@ final theme = Theme.of(context);
           decoration: InputDecoration(
             labelText: 'Voucher Number',
             hintText: 'e.g. EXP-1, EXP-2',
-            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+            
           ),
         ),
         actions: [
@@ -686,7 +686,7 @@ final theme = Theme.of(context);
                 decoration: InputDecoration(
                   labelText: 'Vendor / Payee Name (Optional)',
                   prefixIcon: Icon(Icons.storefront_rounded),
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                   isDense: true,
                 ),
               ),
@@ -709,7 +709,7 @@ final theme = Theme.of(context);
                       decoration: InputDecoration(
                         labelText: 'Vendor / Payee Name (Optional)',
                         prefixIcon: Icon(Icons.storefront_rounded),
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         isDense: true,
                       ),
                     ),
@@ -759,7 +759,7 @@ final theme = Theme.of(context);
         decoration: InputDecoration(
           labelText: 'Expense Date',
           prefixIcon: Icon(Icons.calendar_today_outlined),
-          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+          
           isDense: true,
         ),
         child: Text(
@@ -837,7 +837,7 @@ final theme = Theme.of(context);
                     decoration: InputDecoration(
                       labelText: 'Expense Item Description *',
                       prefixIcon: Icon(Icons.shopping_bag_outlined),
-                      border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                      
                       isDense: true,
                     ),
                     onChanged: (val) {
@@ -866,7 +866,7 @@ final theme = Theme.of(context);
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Qty',
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         isDense: true,
                       ),
                     ),
@@ -878,7 +878,7 @@ final theme = Theme.of(context);
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Rate (₹)',
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         isDense: true,
                       ),
                     ),
@@ -916,7 +916,7 @@ final theme = Theme.of(context);
                           decoration: InputDecoration(
                             labelText: 'Expense Item Description *',
                             prefixIcon: Icon(Icons.shopping_bag_outlined),
-                            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                            
                             isDense: true,
                           ),
                           onChanged: (val) {
@@ -945,7 +945,7 @@ final theme = Theme.of(context);
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Qty',
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         isDense: true,
                       ),
                     ),
@@ -958,7 +958,7 @@ final theme = Theme.of(context);
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Rate (₹)',
-                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        
                         isDense: true,
                       ),
                     ),
@@ -1101,7 +1101,7 @@ final theme = Theme.of(context);
                 decoration: InputDecoration(
                   labelText: 'Expense Total Amount (INR) *',
                   prefixIcon: Icon(Icons.currency_rupee_rounded),
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                   isDense: true,
                 ),
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1136,7 +1136,7 @@ final theme = Theme.of(context);
                   decoration: InputDecoration(
                     labelText: 'Payment Method',
                     prefixIcon: Icon(Icons.payment_rounded),
-                    border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                    
                     isDense: true,
                   ),
                   items: dropdownItems,
@@ -1155,7 +1155,7 @@ final theme = Theme.of(context);
                 decoration: InputDecoration(
                   labelText: 'Payment Method',
                   prefixIcon: Icon(Icons.payment_rounded),
-                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  
                   isDense: true,
                 ),
                 items: const [
@@ -1205,7 +1205,7 @@ final theme = Theme.of(context);
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                      
                     ),
                     onChanged: (val) {
                       final parsed = double.tryParse(val);
@@ -1260,7 +1260,7 @@ final theme = Theme.of(context);
               decoration: InputDecoration(
                 labelText: 'Remarks / Notes (Optional)',
                 prefixIcon: Icon(Icons.edit_note_rounded),
-                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                
               ),
             ),
           ],
@@ -1385,7 +1385,7 @@ final optionsList = [
             labelText: 'Expense Category *',
             hintText: 'Search or Select Category',
             prefixIcon: Icon(Icons.category_outlined),
-            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+            
             isDense: true,
           ),
         );

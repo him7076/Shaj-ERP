@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -202,7 +203,7 @@ class _DeletedVouchersScreenState extends ConsumerState<DeletedVouchersScreen> {
                               ? DateFormat('dd MMM yyyy, hh:mm a').format(v.deletedAt!)
                               : 'Unknown Date';
 
-                          return Card(
+                          return NeuCard(
                             elevation: 0,
                             margin: const EdgeInsets.only(bottom: 10),
                             shape: RoundedRectangleBorder(

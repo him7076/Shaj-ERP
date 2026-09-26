@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
@@ -94,7 +95,7 @@ class PersonalAccountsScreen extends ConsumerWidget {
             itemCount: personalAccounts.length,
             itemBuilder: (context, index) {
               final acc = personalAccounts[index];
-              return Card(
+              return NeuCard(
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

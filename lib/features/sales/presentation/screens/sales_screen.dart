@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' hide Border;
@@ -264,7 +265,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                           decoration: const InputDecoration(
                                             hintText: 'Search item...',
                                             prefixIcon: Icon(Icons.search),
-                                            border: OutlineInputBorder(),
+                                            
                                           ),
                                           onChanged: (v) => setState(() => query = v),
                                         ),
@@ -435,7 +436,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 style: const TextStyle(fontSize: 14),
                 decoration: const InputDecoration(
                   hintText: 'Search invoice #, customer, GST...',
-                  border: InputBorder.none,
+                  
                   isDense: true,
                 ),
                 onChanged: (val) {
@@ -680,7 +681,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         labelText: 'Payment Status',
         isDense: true,
         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        border: OutlineInputBorder(),
+        
       ),
       items: const [
         DropdownMenuItem(value: 'All', child: Text('All Payments')),
@@ -702,7 +703,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         labelText: 'Sort By',
         isDense: true,
         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        border: OutlineInputBorder(),
+        
       ),
       items: const [
         DropdownMenuItem(value: 'Date', child: Text('Invoice Date')),
@@ -725,7 +726,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             labelText: 'Customer Account',
             isDense: true,
             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            border: OutlineInputBorder(),
+            
           ),
           items: [
             const DropdownMenuItem<int?>(value: null, child: Text('All Customers')),
@@ -820,7 +821,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
 
     final dateStr = invoice.invoiceDate?.toIso8601String().substring(0, 10) ?? 'N/A';
 
-    return Card(
+    return NeuCard(
       margin: const EdgeInsets.symmetric(vertical: 6),
       elevation: 0,
       shape: RoundedRectangleBorder(

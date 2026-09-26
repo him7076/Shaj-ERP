@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
@@ -71,7 +72,7 @@ class OutstandingReportScreen extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final entry = summary.entries[index];
 
-                    return Card(
+                    return NeuCard(
                       margin: const EdgeInsets.symmetric(vertical: 8.0),
                       elevation: 0,
                       shape: RoundedRectangleBorder(

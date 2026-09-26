@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -133,7 +134,7 @@ class _TasksScreenState extends ConsumerState<TasksScreen> with SingleTickerProv
           itemCount: tasks.length,
           itemBuilder: (context, index) {
             final task = tasks[index];
-            return Card(
+            return NeuCard(
               margin: const EdgeInsets.only(bottom: 12),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: ListTile(

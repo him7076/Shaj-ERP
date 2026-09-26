@@ -198,7 +198,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       controller: _codeController,
                       decoration: const InputDecoration(
                         labelText: 'Code',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.tag_rounded),
                       ),
                       validator: (v) => v == null || v.isEmpty ? 'Required' : null,
@@ -212,7 +212,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       autofocus: true,
                       decoration: const InputDecoration(
                         labelText: 'Product Name',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.shopping_bag_outlined),
                       ),
                       validator: (v) => v == null || v.isEmpty ? 'Required' : null,
@@ -231,7 +231,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Sell Price',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.currency_rupee),
                       ),
                       validator: (v) => v == null || v.isEmpty ? 'Required' : null,
@@ -243,7 +243,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       value: _selectedGstRate,
                       decoration: const InputDecoration(
                         labelText: 'GST Rate',
-                        border: OutlineInputBorder(),
+                        
                       ),
                       items: _gstRates.map((rate) {
                         return DropdownMenuItem<double>(
@@ -277,7 +277,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                           value: _selectedUnit,
                           decoration: const InputDecoration(
                             labelText: 'Unit',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: units.map((u) {
                             return DropdownMenuItem<Unit>(
@@ -304,7 +304,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                           value: _selectedCategory,
                           decoration: const InputDecoration(
                             labelText: 'Category',
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: categories.map((c) {
                             return DropdownMenuItem<Category>(
@@ -333,7 +333,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       controller: _tertiaryUnitController,
                       decoration: const InputDecoration(
                         labelText: '3rd Unit (Optional, e.g. Candies)',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.inventory_2_outlined),
                       ),
                     ),
@@ -345,7 +345,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: '2nd to 3rd Factor (e.g. 50)',
-                        border: OutlineInputBorder(),
+                        
                         helperText: 'E.g. 1 Jar = 50 Candies',
                       ),
                     ),

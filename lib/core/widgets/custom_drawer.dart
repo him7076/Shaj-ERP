@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -963,7 +964,7 @@ class CustomDrawer extends ConsumerWidget {
                   
                   const Text('Theme Type', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
                   const SizedBox(height: 8),
-                  Card(
+                  NeuCard(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -104,7 +105,7 @@ class PersonalManagementScreen extends ConsumerWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return NeuCard(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
@@ -226,7 +227,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Filter Date preset
-                Card(
+                NeuCard(
                   margin: const EdgeInsets.all(16.0),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -243,7 +244,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
                             decoration: const InputDecoration(
                               labelText: 'Filing Period Preset',
                               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              border: OutlineInputBorder(),
+                              
                             ),
                             items: ReportDatePreset.values.map((preset) {
                               final filter = ReportDateFilter.fromPreset(preset);
@@ -409,7 +410,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
                         itemCount: summary.hsnSummaries.length,
                         itemBuilder: (context, index) {
                           final hsn = summary.hsnSummaries[index];
-                          return Card(
+                          return NeuCard(
                             margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -466,7 +467,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
   }
 
   Widget _buildTaxCard(String label, double amount, Color color, ThemeData theme) {
-    return Card(
+    return NeuCard(
       elevation: 0,
       color: color.withOpacity(0.06),
       shape: RoundedRectangleBorder(

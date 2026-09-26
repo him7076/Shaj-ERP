@@ -163,7 +163,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
                         },
                       )
                     : null,
-                border: const OutlineInputBorder(),
+                
               ),
             );
           },

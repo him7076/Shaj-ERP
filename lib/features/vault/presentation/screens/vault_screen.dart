@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/features/vault/domain/models/vault_item.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
@@ -28,7 +29,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   controller: titleController,
                   decoration: const InputDecoration(
                     labelText: 'Title',
-                    border: OutlineInputBorder(),
+                    
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -37,7 +38,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
                   maxLines: 5,
                   decoration: const InputDecoration(
                     labelText: 'Secret Content / Note',
-                    border: OutlineInputBorder(),
+                    
                   ),
                 ),
               ],
@@ -108,7 +109,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final item = items[index];
-                return Card(
+                return NeuCard(
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: ExpansionTile(

@@ -648,7 +648,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
                           labelText: 'Amount (₹) *',
-                          border: OutlineInputBorder(),
+                          
                           prefixIcon: Icon(Icons.currency_rupee_rounded),
                         ),
                         onChanged: (val) {
@@ -712,7 +712,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   child: InputDecorator(
                     decoration: const InputDecoration(
                       labelText: 'Transaction Date',
-                      border: OutlineInputBorder(),
+                      
                       prefixIcon: Icon(Icons.calendar_today),
                     ),
                     child: Text(DateFormat('dd MMMM yyyy').format(_transactionDate)),
@@ -744,7 +744,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                       value: _paymentMode,
                       decoration: const InputDecoration(
                         labelText: 'Payment Mode',
-                        border: OutlineInputBorder(),
+                        
                         prefixIcon: Icon(Icons.account_balance_wallet),
                       ),
                       items: dropdownItems,
@@ -762,7 +762,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                     value: _paymentMode,
                     decoration: const InputDecoration(
                       labelText: 'Payment Mode',
-                      border: OutlineInputBorder(),
+                      
                       prefixIcon: Icon(Icons.account_balance_wallet),
                     ),
                     items: [
@@ -787,7 +787,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   controller: _referenceController,
                   decoration: const InputDecoration(
                     labelText: 'Reference Number / Cheque No.',
-                    border: OutlineInputBorder(),
+                    
                     prefixIcon: Icon(Icons.numbers),
                   ),
                 ),
@@ -799,7 +799,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   maxLines: 2,
                   decoration: const InputDecoration(
                     labelText: 'Remarks / Internal Notes',
-                    border: OutlineInputBorder(),
+                    
                     prefixIcon: Icon(Icons.note),
                   ),
                 ),
@@ -993,7 +993,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                                           prefixText: '₹',
                                           hintText: '0.00',
                                           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          border: OutlineInputBorder(),
+                                          
                                         ),
                                         onChanged: (val) {
                                           final parsed = double.tryParse(val) ?? 0.0;

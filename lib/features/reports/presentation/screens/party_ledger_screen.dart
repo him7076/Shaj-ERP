@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:isar/isar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -121,7 +122,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
       body: Column(
         children: [
           // Select Customer and Date preset
-          Card(
+          NeuCard(
             margin: const EdgeInsets.all(16.0),
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -139,7 +140,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Select Customer Account',
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: _partiesList.map((p) {
                             return DropdownMenuItem<String?>(
@@ -162,7 +163,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
                           decoration: const InputDecoration(
                             labelText: 'Filing Period Preset',
                             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            border: OutlineInputBorder(),
+                            
                           ),
                           items: ReportDatePreset.values.map((preset) {
                             final filter = ReportDateFilter.fromPreset(preset);
@@ -245,7 +246,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
                                               : '-${currencyFormat.format(entry.credit)}';
                                           final color = isDebit ? Colors.red[700] : Colors.green[700];
 
-                                          return Card(
+                                          return NeuCard(
                                             margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
                                             elevation: 0,
                                             shape: RoundedRectangleBorder(

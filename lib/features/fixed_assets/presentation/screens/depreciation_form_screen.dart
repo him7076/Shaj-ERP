@@ -91,14 +91,14 @@ class _DepreciationFormScreenState extends ConsumerState<DepreciationFormScreen>
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Depreciation Amount (₹)', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Depreciation Amount (₹)', ),
                 validator: (val) => val == null || val.isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _remarksController,
                 maxLines: 2,
-                decoration: const InputDecoration(labelText: 'Remarks', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'Remarks', ),
               ),
             ],
           ),

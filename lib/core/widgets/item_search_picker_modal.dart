@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
@@ -235,7 +236,7 @@ class _ItemSearchPickerModalState extends ConsumerState<ItemSearchPickerModal> {
                             final item = filteredList[index];
                             final rate = widget.isPurchase ? (item.buyRate ?? item.sellRate ?? 0.0) : (item.sellRate ?? 0.0);
 
-                            return Card(
+                            return NeuCard(
                               elevation: 0,
                               margin: const EdgeInsets.only(bottom: 8),
                               shape: RoundedRectangleBorder(

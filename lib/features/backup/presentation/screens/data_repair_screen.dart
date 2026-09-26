@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
@@ -617,7 +618,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           constraints: const BoxConstraints(maxWidth: 500),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
-            child: Card(
+            child: NeuCard(
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
