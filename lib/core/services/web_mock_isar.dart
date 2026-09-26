@@ -1807,8 +1807,12 @@ class WebMockCollection<T> extends IsarCollection<T> {
       });
     }
     
-    if (offset != null && offset > 0 && offset < list.length) {
-      list = list.sublist(offset);
+    if (offset != null && offset > 0) {
+      if (offset >= list.length) {
+        list = [];
+      } else {
+        list = list.sublist(offset);
+      }
     }
     if (limit != null && limit > 0 && limit < list.length) {
       list = list.sublist(0, limit);
