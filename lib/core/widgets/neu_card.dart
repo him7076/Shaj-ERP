@@ -32,7 +32,7 @@ class NeuCard extends ConsumerWidget {
 
     if (!isNeumorphic) {
       // Standard theme — render as normal Card, unchanged
-      return NeuCard(
+      return Card(
         margin: margin,
         elevation: elevation,
         clipBehavior: clipBehavior,
