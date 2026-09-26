@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -85,7 +85,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
               controller: modeController,
               decoration: InputDecoration(
                 labelText: 'Payment Mode Name (e.g. Finance, EMI)',
-                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.account_balance_wallet),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
@@ -406,8 +406,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    if (_isPaidAmountAutoFill) {
+if (_isPaidAmountAutoFill) {
        final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
        if ((currentPaid - _grandTotal).abs() > 0.01) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -474,7 +473,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Paid Amount (₹)', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                    decoration: InputDecoration(labelText: 'Paid Amount (₹)', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                     onChanged: (val) {
                       setState(() { _isPaidAmountAutoFill = false; });
                       _recalculateTotals();
@@ -496,7 +495,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       }
                     },
                     child: InputDecorator(
-                      decoration: InputDecoration(labelText: 'Due Date', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                      decoration: InputDecoration(labelText: 'Due Date', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                       child: Text(DateFormat('dd-MM-yyyy').format(_dueDate)),
                     ),
                   ),
@@ -534,7 +533,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                               value: _paymentMode,
                               decoration: InputDecoration(
                                 labelText: 'Payment Mode / Account',
-                                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                                 prefixIcon: Icon(Icons.payment),
                               ),
                               items: dropdownItems,
@@ -559,7 +558,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       value: _paymentMode,
                       decoration: InputDecoration(
                         labelText: 'Payment Mode / Account',
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         prefixIcon: Icon(Icons.payment),
                       ),
                       items: const [
@@ -581,13 +580,13 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
             TextFormField(
               controller: _discountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'Bill Level Discount (₹)', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+              decoration: InputDecoration(labelText: 'Bill Level Discount (₹)', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
               onChanged: (val) => _recalculateTotals(),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _remarksController,
-              decoration: InputDecoration(labelText: 'Remarks / Notes', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+              decoration: InputDecoration(labelText: 'Remarks / Notes', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
             ),
             const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
@@ -596,7 +595,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
               icon: const Icon(Icons.check_circle_outline),
               label: const Text('Save Purchase Bill'),
               onPressed: _saveBill,
-              style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+              style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(55),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -674,7 +673,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
               icon: const Icon(Icons.check_circle_outline),
               label: const Text('Save Purchase Bill', style: TextStyle(fontWeight: FontWeight.bold)),
               onPressed: _saveBill,
-              style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+              style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 backgroundColor: theme.colorScheme.primary,
                 foregroundColor: theme.colorScheme.onPrimary,
@@ -768,7 +767,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       }
                     },
                     child: InputDecorator(
-                      decoration: InputDecoration(labelText: 'Purchase Date', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                      decoration: InputDecoration(labelText: 'Purchase Date', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                       child: Text(DateFormat('dd-MM-yyyy').format(_purchaseDate), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                   ),
@@ -778,14 +777,14 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   child: TextFormField(
                     controller: _billNumberController,
                     readOnly: true,
-                    decoration: InputDecoration(labelText: 'Internal Bill # (Auto)', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(labelText: 'Internal Bill # (Auto)', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
                     controller: _supplierInvoiceNumberController,
-                    decoration: InputDecoration(labelText: 'Supplier Invoice #', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                    decoration: InputDecoration(labelText: 'Supplier Invoice #', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                   ),
                 ),
               ],
@@ -829,7 +828,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
                       label: const Text('Add Item'),
-                      style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                      style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -846,7 +845,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                         },
                         icon: const Icon(Icons.extension_rounded, size: 18),
                         label: const Text('Add Bundle'),
-                        style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                        style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                           visualDensity: VisualDensity.compact,
                           backgroundColor: Colors.orange.shade100,
                           foregroundColor: Colors.orange.shade900,
@@ -1042,7 +1041,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
                   decoration: InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                    border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   ),
                   onChanged: (val) {
                     final parsed = double.tryParse(val);
@@ -1224,8 +1223,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final item = widget.item;
+final item = widget.item;
     final dbItem = _resolvedDbItem ?? item.item.value;
     final primaryUnit = dbItem?.primaryUnitName ?? dbItem?.unit.value?.shortName ?? dbItem?.unit.value?.unitName ?? item.unit ?? 'PCS';
     final secondaryUnit = dbItem?.secondaryUnit;
@@ -1374,7 +1372,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                         labelText: 'Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                       onChanged: (val) {
@@ -1399,7 +1397,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                       decoration: InputDecoration(
                         labelText: 'Purchase Rate (₹)',
                         isDense: true,
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       onChanged: (val) {
                         final double? excl = double.tryParse(val);
@@ -1418,7 +1416,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                       decoration: InputDecoration(
                         labelText: 'Disc (₹)',
                         isDense: true,
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       onChanged: (val) {
                         final double? discVal = double.tryParse(val);
@@ -1470,7 +1468,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                             child: TextFormField(
                               controller: _rateInclController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                              decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                               onChanged: (val) {
                                 final double? incl = double.tryParse(val);
                                 if (incl != null) {
@@ -1486,7 +1484,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                             child: TextFormField(
                               controller: _gstController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: InputDecoration(labelText: 'GST %', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                              decoration: InputDecoration(labelText: 'GST %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                               onChanged: (val) {
                                 final double? gstVal = double.tryParse(val);
                                 if (gstVal != null) {
@@ -1503,7 +1501,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           Expanded(
                             child: TextFormField(
                               controller: _batchController,
-                              decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                              decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                               onChanged: (val) {
                                 item.batchNumber = val.trim();
                               },
@@ -1513,7 +1511,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                           Expanded(
                             child: TextFormField(
                               controller: _mfgDateController,
-                              decoration: InputDecoration(labelText: 'Mfg Date', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                              decoration: InputDecoration(labelText: 'Mfg Date', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                               onChanged: (val) {
                                 item.mfgDate = val.trim();
                               },
@@ -1524,7 +1522,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _expDateController,
-                        decoration: InputDecoration(labelText: 'Expiry Date (e.g. 12/28)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                        decoration: InputDecoration(labelText: 'Expiry Date (e.g. 12/28)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                         onChanged: (val) {
                           item.expiryDate = val.trim();
                         },
@@ -1619,7 +1617,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? qtyVal = double.tryParse(val);
                   if (qtyVal != null) {
@@ -1637,7 +1635,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
                   labelText: 'Unit',
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
@@ -1683,7 +1681,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1704,7 +1702,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1729,7 +1727,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _discController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? discVal = double.tryParse(val);
                   if (discVal != null) {
@@ -1743,7 +1741,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
               child: TextFormField(
                 controller: _gstController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? gstVal = double.tryParse(val);
                   if (gstVal != null) {
@@ -1767,7 +1765,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _batchController,
-                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   widget.item.batchNumber = val.trim();
                 },
@@ -1777,7 +1775,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _mfgDateController,
-                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   widget.item.mfgDate = val.trim();
                 },
@@ -1787,7 +1785,7 @@ class _PurchaseCartItemRowState extends ConsumerState<PurchaseCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _expDateController,
-                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   widget.item.expiryDate = val.trim();
                 },

@@ -86,8 +86,7 @@ class _PersonalAccountDetailsScreenState extends ConsumerState<PersonalAccountDe
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final accountsAsync = ref.watch(bankAccountsListProvider);
+final accountsAsync = ref.watch(bankAccountsListProvider);
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
     final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
 

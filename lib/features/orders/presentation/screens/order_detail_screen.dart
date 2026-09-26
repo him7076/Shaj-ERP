@@ -249,8 +249,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final theme = Theme.of(context);
+final theme = Theme.of(context);
     final userRoleAsync = ref.watch(currentUserRoleProvider);
 
     if (_isLoading) {
@@ -517,11 +516,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: BoxDecoration(
-          border: isNeu ? null : const Border(left: BorderSide(color: Color(0xFF1E88E5), width: 5)),
+          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? null : const Border(left: BorderSide(color: Color(0xFF1E88E5), width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -640,11 +639,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNeu ? BorderSide.none : BorderSide(color: Colors.redAccent.withOpacity(0.3)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: Colors.redAccent.withOpacity(0.3)),
       ),
       child: Container(
         decoration: BoxDecoration(
-          border: isNeu ? null : Border(left: BorderSide(color: Colors.redAccent, width: 5)),
+          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? null : Border(left: BorderSide(color: Colors.redAccent, width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -725,11 +724,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: BoxDecoration(
-          border: isNeu ? null : const Border(left: BorderSide(color: Color(0xFF43A047), width: 5)),
+          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? null : const Border(left: BorderSide(color: Color(0xFF43A047), width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -863,11 +862,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
         decoration: BoxDecoration(
-          border: isNeu ? null : const Border(left: BorderSide(color: Color(0xFFFB8C00), width: 5)),
+          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? null : const Border(left: BorderSide(color: Color(0xFFFB8C00), width: 5)),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -953,7 +952,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

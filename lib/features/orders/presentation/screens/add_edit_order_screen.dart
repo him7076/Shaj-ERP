@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,7 +77,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
               controller: nameController,
               decoration: InputDecoration(
                 labelText: 'Salesman Name',
-                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person_add),
               ),
               validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
@@ -276,7 +276,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
+                style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade800),
                 child: const Text('Save Anyway'),
               ),
             ],
@@ -390,8 +390,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final theme = Theme.of(context);
+final theme = Theme.of(context);
     final cart = ref.watch(cartProvider);
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
@@ -438,7 +437,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc %', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                    decoration: InputDecoration(labelText: 'Disc %', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                     onChanged: (val) {
                       final double? pct = double.tryParse(val);
                       ref.read(cartProvider.notifier).setOrderDiscounts(pct, null);
@@ -450,7 +449,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                   child: TextFormField(
                     controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc Amt (₹)', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                    decoration: InputDecoration(labelText: 'Disc Amt (₹)', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                     onChanged: (val) {
                       final double? amt = double.tryParse(val);
                       ref.read(cartProvider.notifier).setOrderDiscounts(null, amt);
@@ -462,7 +461,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _remarksController,
-              decoration: InputDecoration(labelText: 'Remarks / Terms', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+              decoration: InputDecoration(labelText: 'Remarks / Terms', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
             ),
             const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
@@ -471,7 +470,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
               icon: const Icon(Icons.check_circle_outline),
               label: Text(widget.orderUuid != null ? 'Update Sales Order' : 'Save Sales Order'),
               onPressed: _saveOrder,
-              style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+              style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(55),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -553,7 +552,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                       icon: const Icon(Icons.check_circle_outline),
                       label: const Text('Save Sales Order', style: TextStyle(fontWeight: FontWeight.bold)),
                       onPressed: _saveOrder,
-                      style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                      style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                         backgroundColor: theme.colorScheme.primary,
                         foregroundColor: theme.colorScheme.onPrimary,
@@ -650,7 +649,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                       }
                     },
                     child: InputDecorator(
-                      decoration: InputDecoration(labelText: 'Order Date', border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
+                      decoration: InputDecoration(labelText: 'Order Date', border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(), isDense: true),
                       child: Text(DateFormat('dd-MM-yyyy').format(_orderDate), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                   ),
@@ -666,7 +665,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                           value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
                           decoration: InputDecoration(
                             labelText: 'Salesman Name',
-                            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             prefixIcon: Icon(Icons.badge_outlined),
@@ -778,7 +777,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                             decoration: InputDecoration(
                               labelText: 'Type product name to add...',
                               prefixIcon: Icon(Icons.search),
-                              border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                              border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                             ),
                           );
                         },
@@ -1074,8 +1073,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final theme = Theme.of(context);
+final theme = Theme.of(context);
     final item = widget.cartItem;
     final primaryUnit = item.item.primaryUnitName ?? item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
     final secondaryUnit = item.item.secondaryUnit;
@@ -1202,7 +1200,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                         labelText: 'Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                       onChanged: (val) {
@@ -1229,7 +1227,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                         labelText: widget.isGstInclusive ? 'Rate Incl (₹)' : 'Rate Excl (₹)',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       onChanged: (val) {
                         final double? parsed = double.tryParse(val);
@@ -1251,7 +1249,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                         labelText: 'Tax Mode',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       items: const [
                         DropdownMenuItem(value: false, child: Text('Excl Tax', style: TextStyle(fontSize: 11))),
@@ -1276,7 +1274,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                         labelText: 'Rate Unit',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       ),
                       items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u, style: const TextStyle(fontSize: 11)))).toList(),
                       onChanged: (val) {
@@ -1365,7 +1363,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null && qty >= 0) {
@@ -1383,7 +1381,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
                   labelText: 'Unit',
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                 ),
                 items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) {
@@ -1435,7 +1433,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               child: TextFormField(
                 controller: _freeQtyController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? qty = double.tryParse(val);
                   if (qty != null) {
@@ -1449,7 +1447,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1474,7 +1472,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1503,7 +1501,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc %', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? pct = double.tryParse(val);
                   if (pct != null) {
@@ -1517,7 +1515,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {
@@ -1529,7 +1527,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             const SizedBox(width: 8),
             Expanded(
               child: InputDecorator(
-                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 child: Text('${item.gstPercent.toInt()}%'),
               ),
             ),
@@ -1541,7 +1539,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _batchController,
-                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   ref.read(cartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
                 },
@@ -1551,7 +1549,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _mfgDateController,
-                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   ref.read(cartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
                 },
@@ -1561,7 +1559,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
             Expanded(
               child: TextFormField(
                 controller: _expDateController,
-                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
                 onChanged: (val) {
                   ref.read(cartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
                 },
@@ -1574,7 +1572,7 @@ class _OrderCartItemRowState extends ConsumerState<OrderCartItemRow> {
           TextFormField(
             controller: _descController,
             maxLines: 2,
-            decoration: InputDecoration(labelText: 'Item Description', isDense: true, border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
+            decoration: InputDecoration(labelText: 'Item Description', isDense: true, border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),),
             onChanged: (val) {
               ref.read(cartProvider.notifier).updateItemAt(widget.index, description: val.trim());
             },

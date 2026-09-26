@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -275,7 +275,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               decoration: InputDecoration(
                 labelText: 'Expense Item Name *',
                 hintText: 'e.g. Printer Cartridge, Tea, Courier',
-                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 12),
@@ -284,7 +284,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
                 labelText: 'Default Rate / Cost (₹)',
-                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
               ),
             ),
           ],
@@ -496,8 +496,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final theme = Theme.of(context);
+final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final isMobile = ResponsiveLayout.isMobile(context);
 
@@ -564,7 +563,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               // Save Action Button
               ElevatedButton.icon(
                 onPressed: _isSaving ? null : _saveExpense,
-                style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
@@ -600,7 +599,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
           decoration: InputDecoration(
             labelText: 'Voucher Number',
             hintText: 'e.g. EXP-1, EXP-2',
-            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
           ),
         ),
         actions: [
@@ -687,7 +686,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 decoration: InputDecoration(
                   labelText: 'Vendor / Payee Name (Optional)',
                   prefixIcon: Icon(Icons.storefront_rounded),
-                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                 ),
               ),
@@ -710,7 +709,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       decoration: InputDecoration(
                         labelText: 'Vendor / Payee Name (Optional)',
                         prefixIcon: Icon(Icons.storefront_rounded),
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -760,7 +759,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
         decoration: InputDecoration(
           labelText: 'Expense Date',
           prefixIcon: Icon(Icons.calendar_today_outlined),
-          border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+          border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
           isDense: true,
         ),
         child: Text(
@@ -838,7 +837,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     decoration: InputDecoration(
                       labelText: 'Expense Item Description *',
                       prefixIcon: Icon(Icons.shopping_bag_outlined),
-                      border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                      border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                       isDense: true,
                     ),
                     onChanged: (val) {
@@ -867,7 +866,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Qty',
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -879,7 +878,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Rate (₹)',
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -887,7 +886,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: _addLineItem,
-                    style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                    style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -917,7 +916,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                           decoration: InputDecoration(
                             labelText: 'Expense Item Description *',
                             prefixIcon: Icon(Icons.shopping_bag_outlined),
-                            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                             isDense: true,
                           ),
                           onChanged: (val) {
@@ -946,7 +945,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Qty',
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -959,7 +958,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
                         labelText: 'Rate (₹)',
-                        border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                        border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                         isDense: true,
                       ),
                     ),
@@ -967,7 +966,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   const SizedBox(width: 8),
                   ElevatedButton.icon(
                     onPressed: _addLineItem,
-                    style: isNeu ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                    style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -1102,7 +1101,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 decoration: InputDecoration(
                   labelText: 'Expense Total Amount (INR) *',
                   prefixIcon: Icon(Icons.currency_rupee_rounded),
-                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                 ),
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -1137,7 +1136,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                   decoration: InputDecoration(
                     labelText: 'Payment Method',
                     prefixIcon: Icon(Icons.payment_rounded),
-                    border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                    border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                     isDense: true,
                   ),
                   items: dropdownItems,
@@ -1156,7 +1155,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                 decoration: InputDecoration(
                   labelText: 'Payment Method',
                   prefixIcon: Icon(Icons.payment_rounded),
-                  border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                  border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                   isDense: true,
                 ),
                 items: const [
@@ -1206,7 +1205,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
                     decoration: InputDecoration(
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                      border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
                     ),
                     onChanged: (val) {
                       final parsed = double.tryParse(val);
@@ -1261,7 +1260,7 @@ class _AddEditExpenseScreenState extends ConsumerState<AddEditExpenseScreen> {
               decoration: InputDecoration(
                 labelText: 'Remarks / Notes (Optional)',
                 prefixIcon: Icon(Icons.edit_note_rounded),
-                border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+                border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
               ),
             ),
           ],
@@ -1316,8 +1315,7 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final optionsList = [
+final optionsList = [
       ...widget.categories,
       widget.createNewTag,
     ];
@@ -1387,7 +1385,7 @@ class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
             labelText: 'Expense Category *',
             hintText: 'Search or Select Category',
             prefixIcon: Icon(Icons.category_outlined),
-            border: isNeu ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
+            border: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none) : const OutlineInputBorder(),
             isDense: true,
           ),
         );

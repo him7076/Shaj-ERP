@@ -194,8 +194,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
 
   @override
   Widget build(BuildContext context) {
-    final isNeu = ref.watch(themeProvider).themeType == ThemeType.neumorphism;
-    final theme = Theme.of(context);
+final theme = Theme.of(context);
     final isMobile = ResponsiveLayout.isMobile(context);
 
     if (_isLoading) {
@@ -467,7 +466,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: Padding(
         padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
@@ -665,7 +664,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+                side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
               ),
               child: ListTile(
                 onTap: () {
@@ -780,7 +779,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+        side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -818,7 +817,7 @@ Current Outstanding: ₹${(_party!.outstandingBalance ?? 0.0).toStringAsFixed(2)
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: isNeu ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+          side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20),
