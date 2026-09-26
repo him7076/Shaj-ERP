@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
-import 'package:business_sahaj_erp/core/theme/theme_provider.dart';
-import 'package:business_sahaj_erp/core/ui/neumorphism/neu_card.dart';
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 
 class TransferFundsDialog extends ConsumerStatefulWidget {
@@ -140,7 +141,6 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
         ..paymentMode = paymentMode
         ..partyName = partyName
         ..remarks = _descController.text.trim()
-        ..receiptPhotoPath = _photoPath
         ..createdAt = DateTime.now()
         ..updatedAt = DateTime.now()
         ..isDeleted = false
