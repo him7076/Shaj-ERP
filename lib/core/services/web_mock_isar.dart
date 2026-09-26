@@ -113,13 +113,18 @@ class WebMockIsar implements Isar {
     });
   }
 
+  Timer? _autoSaveTimer;
+
   Future<void> autoSave() async {
-    try {
-      final p = prefs ?? await SharedPreferences.getInstance();
-      await saveToPrefs(p);
-    } catch (e) {
-      print('WebMockIsar autoSave failed: $e');
-    }
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(milliseconds: 100), () async {
+      try {
+        final p = prefs ?? await SharedPreferences.getInstance();
+        await saveToPrefs(p);
+      } catch (e) {
+        print('WebMockIsar autoSave failed: $e');
+      }
+    });
   }
 
   void clearAllData() {
