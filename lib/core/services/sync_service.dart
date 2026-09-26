@@ -269,6 +269,9 @@ class SyncService {
         await batch.commit();
       }
 
+      // 3. Hard delete data for soft-deleted firms
+      await hardDeleteSoftDeletedFirms();
+
       await _prefs.setStringList('firms_list', updatedFirmsList);
       logger.info('Firm definitions synced successfully: $updatedFirmsList');
       return updatedFirmsList;
@@ -278,22 +281,78 @@ class SyncService {
     }
   }
 
-  /// Mark firm document as isDeleted: true in Firestore
+  Future<void> _hardDeleteFirmData(String firmId) async {
+    final collections = [
+      'parties', 'items', 'categories', 'units', 'brands', 'orders', 'order_items',
+      'invoices', 'invoice_items', 'settings', 'users', 'purchases', 'purchase_items',
+      'expenses', 'expense_items', 'transactions', 'bank_accounts', 'credit_notes',
+      'credit_note_items', 'debit_notes', 'debit_note_items', 'stock_adjustments',
+      'whatsapp_mappings', 'tasks', 'machinerys', 'sync_logs'
+    ];
+    final companyId = _firebaseService.companyId;
+
+    for (final col in collections) {
+      try {
+        final snapshot = await _firebaseService.firestore
+            .collection(col)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: firmId)
+            .get();
+        
+        if (snapshot.docs.isNotEmpty) {
+          WriteBatch batch = _firebaseService.firestore.batch();
+          int count = 0;
+          for (var doc in snapshot.docs) {
+            batch.delete(doc.reference);
+            count++;
+            if (count >= 400) {
+              await batch.commit();
+              batch = _firebaseService.firestore.batch();
+              count = 0;
+            }
+          }
+          if (count > 0) {
+            await batch.commit();
+          }
+        }
+      } catch (e) {
+        logger.error('Error deleting collection $col for firm $firmId', e);
+      }
+    }
+  }
+
+  Future<void> hardDeleteSoftDeletedFirms() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+    try {
+      final snapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: _firebaseService.companyId)
+          .where('isDeleted', isEqualTo: true)
+          .get();
+      
+      for (var doc in snapshot.docs) {
+        final firmId = doc.id;
+        await _hardDeleteFirmData(firmId);
+        await doc.reference.delete();
+        logger.info('Hard deleted soft-deleted firm $firmId and its data.');
+      }
+    } catch (e) {
+      logger.error('Failed to hard delete soft-deleted firms', e);
+    }
+  }
+
+  /// Hard delete firm document and all its data in Firestore
   Future<void> deleteRemoteFirm(String firmId) async {
     await _firebaseService.ensureAuthenticated();
     if (!_firebaseService.isAuthenticated) return;
     try {
+      await _hardDeleteFirmData(firmId);
       final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
-      await docRef.set({
-        'firmId': firmId,
-        'companyId': _firebaseService.companyId,
-        'isDeleted': true,
-        'updatedAt': DateTime.now().toIso8601String(),
-        'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
-      }, SetOptions(merge: true));
-      logger.info('Marked firm $firmId as isDeleted: true in Firestore.');
+      await docRef.delete();
+      logger.info('Hard deleted firm $firmId from Firestore.');
     } catch (e) {
-      logger.error('Failed to mark firm $firmId as deleted in Firestore', e);
+      logger.error('Failed to hard delete firm $firmId in Firestore', e);
     }
   }
 
