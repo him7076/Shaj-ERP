@@ -13,16 +13,9 @@ class SyncQueueService {
   /// Fetch all pending queue records, ordered by creation date (FIFO)
   Future<List<SyncQueue>> getPendingQueue() async {
     try {
-      final List<SyncQueue> allItems = [];
-      int offset = 0;
-      const int limit = 500;
-      while (true) {
-        final chunk = await _queueCollection.filter().isSyncedEqualTo(false).sortByCreatedAt().offset(offset).limit(limit).findAll();
-        if (chunk.isEmpty) break;
-        allItems.addAll(chunk);
-        offset += limit;
-        await Future.delayed(const Duration(milliseconds: 10)); // Yield
-      }
+      final allItems = await _queueCollection.filter().isSyncedEqualTo(false).findAll();
+      // Sort in memory to avoid Isar unindexed sort overhead across multiple chunked queries
+      allItems.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       return allItems;
     } catch (e) {
       logger.error('Failed to get pending sync queue', e);

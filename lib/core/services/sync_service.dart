@@ -198,14 +198,29 @@ class SyncService {
         final isDeleted = data['isDeleted'] as bool? ?? false;
         existingRemoteIds.add(firmId);
 
+        final remoteUpdatedAtStr = data['updatedAt'] as String? ?? '';
+        final remoteUpdatedAt = DateTime.tryParse(remoteUpdatedAtStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final localUpdatedAtStr = _prefs.getString('firm_updated_at_$firmId') ?? '';
+        final localUpdatedAt = DateTime.tryParse(localUpdatedAtStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
+
         if (isDeleted) {
           remoteDeletedFirms.add(firmId);
           updatedFirmsSet.remove(firmId);
           await _prefs.remove('firm_name_$firmId');
         } else {
           updatedFirmsSet.add(firmId);
-          if (firmName != null && firmName.isNotEmpty) {
-            await _prefs.setString('firm_name_$firmId', firmName);
+          
+          // Conflict resolution: Remote vs Local
+          if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+            // Remote is newer, overwrite local
+            if (firmName != null && firmName.isNotEmpty) {
+              await _prefs.setString('firm_name_$firmId', firmName);
+              await _prefs.setString('firm_updated_at_$firmId', remoteUpdatedAt.toIso8601String());
+            }
+          } else if (localUpdatedAt.isAfter(remoteUpdatedAt)) {
+            // Local is newer! We need to upload this local edit to Firebase.
+            // By removing it from existingRemoteIds, it will be uploaded in step 2.
+            existingRemoteIds.remove(firmId);
           }
         }
       }
@@ -216,13 +231,13 @@ class SyncService {
 
       final updatedFirmsList = updatedFirmsSet.toList();
 
-      // 2. Upload local firms to Firestore ONLY if missing in Firestore and NOT deleted remotely
+      // 2. Upload local firms to Firestore ONLY if missing in Firestore and NOT deleted remotely, OR if local is newer
       final batch = _firebaseService.firestore.batch();
       bool hasUploads = false;
 
       for (var firmId in updatedFirmsList) {
         if (existingRemoteIds.contains(firmId) || remoteDeletedFirms.contains(firmId)) {
-          continue; // Do NOT overwrite existing remote firms or resurrect deleted firms!
+          continue; // Do NOT overwrite existing remote firms unless local is newer!
         }
         final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$firmId') ?? true;
         if (!isFirmSyncEnabled) {
@@ -231,6 +246,7 @@ class SyncService {
 
         final firmName = _prefs.getString('firm_name_$firmId') ??
             (firmId == 'firm_default' ? 'Default Company' : 'New Company');
+        final localUpdatedAt = _prefs.getString('firm_updated_at_$firmId') ?? DateTime.now().toUtc().toIso8601String();
 
         final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
         batch.set(
@@ -239,8 +255,8 @@ class SyncService {
             'firmId': firmId,
             'firmName': firmName,
             'companyId': companyId,
-            'createdAt': DateTime.now().toIso8601String(),
-            'updatedAt': DateTime.now().toIso8601String(),
+            'createdAt': DateTime.now().toIso8601String(), // This will be merged, so it won't overwrite existing
+            'updatedAt': localUpdatedAt,
             'isDeleted': false,
             'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
           },

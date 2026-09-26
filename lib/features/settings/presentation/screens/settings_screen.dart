@@ -1480,6 +1480,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             }
 
                             await prefs.setString('firm_name_$id', name);
+                            await prefs.setString('firm_updated_at_$id', DateTime.now().toUtc().toIso8601String());
                             await prefs.setString('firm_gst_$id', gstController.text.trim());
                             await prefs.setString('firm_mobile_$id', mobileController.text.trim());
                             await prefs.setString('firm_whatsapp_$id', whatsappController.text.trim());
@@ -1550,6 +1551,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 context.go('/dashboard');
                               }
                             } else {
+                              // Force UI to rebuild on edit too!
+                              ref.invalidate(sharedPreferencesProvider);
+                              
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
