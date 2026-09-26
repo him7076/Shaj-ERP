@@ -129,7 +129,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final status = (inv.paymentStatus ?? '').trim().toLowerCase();
           final remarks = (inv.remarks ?? '').trim().toLowerCase();
           final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
-          if (paid > 0 && (status == name || status.contains(name) || remarks.contains('paid via \') || remarks.contains(name))) {
+          if (paid > 0 && (status == name || status.contains(name) || remarks.contains('paid via $name') || remarks.contains(name))) {
             bankInflows += paid;
           }
         }
@@ -139,7 +139,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final status = (pur.paymentStatus ?? '').trim().toLowerCase();
           final remarks = (pur.remarks ?? '').trim().toLowerCase();
           final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
-          if (paid > 0 && (status == name || status.contains(name) || remarks.contains('paid via \') || remarks.contains(name))) {
+          if (paid > 0 && (status == name || status.contains(name) || remarks.contains('paid via $name') || remarks.contains(name))) {
             bankOutflows += paid;
           }
         }
@@ -673,7 +673,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
            }
         } else {
            final accName = widget.accountName.trim().toLowerCase();
-           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via \') || remarks.contains(accName))) {
+           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
               matches = true;
            }
         }
@@ -704,7 +704,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
            }
         } else {
            final accName = widget.accountName.trim().toLowerCase();
-           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via \') || remarks.contains(accName))) {
+           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
               matches = true;
            }
         }
@@ -736,7 +736,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
           items.add(AccountTransactionDisplayItem(
             transactionNumber: exp.voucherNo ?? 'EXP',
             partyName: exp.partyName ?? exp.category ?? 'Expense',
-            transactionType: 'Expense (\)',
+            transactionType: 'Expense (${exp.category ?? "General"})',
             date: exp.expenseDate ?? exp.createdAt,
             amount: exp.amount ?? 0.0,
             isCredit: false,
