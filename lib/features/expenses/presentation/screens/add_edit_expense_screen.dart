@@ -1270,7 +1270,7 @@ final theme = Theme.of(context);
   }
 }
 
-class EmbeddedCategoryDropdown extends StatefulWidget {
+class EmbeddedCategoryDropdown extends ConsumerStatefulWidget {
   final List<String> categories;
   final String selectedCategory;
   final String createNewTag;
@@ -1285,10 +1285,10 @@ class EmbeddedCategoryDropdown extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<EmbeddedCategoryDropdown> createState() => _EmbeddedCategoryDropdownState();
+  ConsumerState<EmbeddedCategoryDropdown> createState() => _EmbeddedCategoryDropdownState();
 }
 
-class _EmbeddedCategoryDropdownState extends State<EmbeddedCategoryDropdown> {
+class _EmbeddedCategoryDropdownState extends ConsumerState<EmbeddedCategoryDropdown> {
   late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
 
