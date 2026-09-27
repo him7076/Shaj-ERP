@@ -364,9 +364,8 @@ class _MyAppState extends ConsumerState<MyApp> {
       title: 'Sahaj ERP Pro',
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        final clampedScaler = mediaQuery.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.20);
         return MediaQuery(
-          data: mediaQuery.copyWith(textScaler: clampedScaler),
+            data: mediaQuery.copyWith(textScaler: const TextScaler.linear(1.0)),
           child: child ?? const SizedBox.shrink(),
         );
       },
