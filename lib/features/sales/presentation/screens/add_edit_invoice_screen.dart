@@ -1892,7 +1892,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  ResponsiveFormRow(
+                                  Row(
                                     children: [
                                       Expanded(
                                         child: TextFormField(
@@ -1927,7 +1927,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  ResponsiveFormRow(
+                                  Row(
                                     children: [
                                       Expanded(
                                         child: TextFormField(
@@ -2140,7 +2140,7 @@ final theme = Theme.of(context);
               const Divider(height: 16),
 
               // Qty Stepper & Unit Selector
-              ResponsiveFormRow(
+              Row(
                 children: [
                   // Qty Stepper
                   Container(
@@ -2217,7 +2217,7 @@ final theme = Theme.of(context);
               ),
               const SizedBox(height: 8),
               // Rate Row: Rate Input + Tax Mode
-              ResponsiveFormRow(
+              Row(
                 children: [
                   // Rate Input Box — takes most space
                   Expanded(
@@ -2330,7 +2330,7 @@ final theme = Theme.of(context);
                     ),
                     child: Column(
                       children: [
-                        ResponsiveFormRow(
+                        Row(
                           children: [
                             Expanded(
                               child: TextFormField(
@@ -2362,7 +2362,7 @@ final theme = Theme.of(context);
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ResponsiveFormRow(
+                        Row(
                           children: [
                             Expanded(
                               child: TextFormField(
@@ -2518,7 +2518,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
+        Row(
           children: [
             Expanded(
               child: TextFormField(
@@ -2642,7 +2642,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
+        Row(
           children: [
             Expanded(
               child: TextFormField(
@@ -2697,7 +2697,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
+        Row(
           children: [
             Expanded(
               child: TextFormField(

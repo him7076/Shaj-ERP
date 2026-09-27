@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -226,11 +226,20 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       final isar = ref.read(databaseServiceProvider).isar;
       final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
       
-      final pdfData = await pdfService.generateInvoicePdf(
-        _invoice!,
-        items: _invoiceItems,
-        firmInfo: firmInfo,
-      );
+      final isThermal = prefs.getBool('use_thermal_printer') ?? false;
+      final thermalSize = prefs.getString('thermal_paper_size') ?? '58mm';
+      final pdfData = isThermal 
+          ? await pdfService.generateThermalInvoicePdf(
+              _invoice!,
+              items: _invoiceItems,
+              firmInfo: firmInfo,
+              paperSize: thermalSize,
+            )
+          : await pdfService.generateInvoicePdf(
+              _invoice!,
+              items: _invoiceItems,
+              firmInfo: firmInfo,
+            );
       await pdfService.printOrSharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
     } catch (e) {
       logger.error('Failed to print PDF', e);
@@ -253,11 +262,20 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       final isar = ref.read(databaseServiceProvider).isar;
       final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
       
-      final pdfData = await pdfService.generateInvoicePdf(
-        _invoice!,
-        items: _invoiceItems,
-        firmInfo: firmInfo,
-      );
+      final isThermal = prefs.getBool('use_thermal_printer') ?? false;
+      final thermalSize = prefs.getString('thermal_paper_size') ?? '58mm';
+      final pdfData = isThermal 
+          ? await pdfService.generateThermalInvoicePdf(
+              _invoice!,
+              items: _invoiceItems,
+              firmInfo: firmInfo,
+              paperSize: thermalSize,
+            )
+          : await pdfService.generateInvoicePdf(
+              _invoice!,
+              items: _invoiceItems,
+              firmInfo: firmInfo,
+            );
       await pdfService.sharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
     } catch (e) {
       logger.error('Failed to share PDF', e);

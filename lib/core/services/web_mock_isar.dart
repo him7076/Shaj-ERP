@@ -1,5 +1,6 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
+import 'package:archive/archive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
@@ -289,7 +290,13 @@ class WebMockIsar implements Isar {
         try {
           final collectionMaps = list.map((item) => _entityToMap(item)).toList();
           final colJson = jsonEncode(collectionMaps);
-          prefsInstance.setString('web_mock_col_${firmId}_$collectionName', colJson);
+          final compressedBytes = GZipEncoder().encode(utf8.encode(colJson));
+          if (compressedBytes != null) {
+            final base64Str = base64Encode(compressedBytes);
+            prefsInstance.setString('web_mock_col_${firmId}_$collectionName', base64Str);
+          } else {
+            prefsInstance.setString('web_mock_col_${firmId}_$collectionName', colJson);
+          }
         } catch (colError) {
           print('Error saving web collection $collectionName: $colError');
         }
@@ -327,7 +334,18 @@ class WebMockIsar implements Isar {
         final colJson = prefsInstance.getString('web_mock_col_${firmId}_$colName');
         if (colJson != null && colJson.isNotEmpty) {
           try {
-            final listData = jsonDecode(colJson) as List<dynamic>;
+            List<dynamic> listData;
+              if (colJson.startsWith('[')) {
+                listData = jsonDecode(colJson) as List<dynamic>;
+              } else {
+                try {
+                  final compressedBytes = base64Decode(colJson);
+                  final jsonBytes = GZipDecoder().decodeBytes(compressedBytes);
+                  listData = jsonDecode(utf8.decode(jsonBytes)) as List<dynamic>;
+                } catch (_) {
+                  listData = jsonDecode(colJson) as List<dynamic>;
+                }
+              }
             final expectedType = _getTypeForCol(colName);
             _db[colName] = listData.map((itemMap) {
                try {

@@ -1256,7 +1256,7 @@ final item = widget.item;
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header: Index, Item Name, Delete Button
-              ResponsiveFormRow(
+              Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1312,7 +1312,7 @@ final item = widget.item;
               const Divider(height: 16),
 
               // Qty Stepper & Unit Selector
-              ResponsiveFormRow(
+              Row(
                 children: [
                   // Qty Stepper
                   Container(
@@ -1390,7 +1390,7 @@ final item = widget.item;
               const SizedBox(height: 10),
 
               // Rate Excl & Disc
-              ResponsiveFormRow(
+              Row(
                 children: [
                   Expanded(
                     flex: 3,
@@ -1465,7 +1465,7 @@ final item = widget.item;
                   ),
                   child: Column(
                     children: [
-                      ResponsiveFormRow(
+                      Row(
                         children: [
                           Expanded(
                             child: TextFormField(
@@ -1499,7 +1499,7 @@ final item = widget.item;
                         ],
                       ),
                       const SizedBox(height: 8),
-                      ResponsiveFormRow(
+                      Row(
                         children: [
                           Expanded(
                             child: TextFormField(
@@ -1563,7 +1563,7 @@ final item = widget.item;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ResponsiveFormRow(
+        Row(
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1614,7 +1614,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
+        Row(
           children: [
             Expanded(
               child: TextFormField(
@@ -1724,7 +1724,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
+        Row(
           children: [
             Expanded(
               child: TextFormField(
@@ -1763,7 +1763,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
+        Row(
           children: [
             Expanded(
               child: TextFormField(
