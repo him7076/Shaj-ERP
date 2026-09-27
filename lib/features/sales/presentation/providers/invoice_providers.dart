@@ -187,7 +187,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       final item = current.item;
       final isPrimary = unit == (item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS');
       final isSecondary = unit == item.secondaryUnit;
-      final conv = item.conversionRate ?? 1.0;
+      final conv = item.conversionFactor ?? 1.0;
       
       if (conv > 0) {
         if (isSecondary && current.unit != item.secondaryUnit) {
