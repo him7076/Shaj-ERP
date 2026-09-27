@@ -566,6 +566,7 @@ class AccountTransactionDisplayItem {
   final double amount;
   final bool isCredit;
   final String? remarks;
+  final String? entityUuid;
 
   AccountTransactionDisplayItem({
     required this.transactionNumber,
@@ -575,6 +576,7 @@ class AccountTransactionDisplayItem {
     required this.amount,
     required this.isCredit,
     this.remarks,
+    this.entityUuid,
   });
 }
 
