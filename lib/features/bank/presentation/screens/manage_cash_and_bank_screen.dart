@@ -1005,16 +1005,19 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                                   side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                                 ),
                                 child: InkWell(
-                                  onTap: () {
+                                  onTap: () async {
                                     if (t.entityUuid == null) return;
                                     if (t.entityType == 'Transaction') {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => AddEditTransactionDialog(
-                                          transactionUuid: t.entityUuid,
-                                          lockedType: null,
-                                        ),
-                                      ).then((_) => _loadTransactions());
+                                      final isar = ref.read(databaseServiceProvider).isar;
+                                      final txn = await isar.transactions.filter().uuidEqualTo(t.entityUuid).findFirst();
+                                      if (txn != null && mounted) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => AddEditTransactionDialog(
+                                            transaction: txn,
+                                          ),
+                                        ).then((_) => _loadTransactions());
+                                      }
                                     } else if (t.entityType == 'Invoice') {
                                       Navigator.of(context, rootNavigator: true).push(
                                         MaterialPageRoute(builder: (_) => InvoiceDetailScreen(invoiceUuid: t.entityUuid!))
