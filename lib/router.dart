@@ -293,14 +293,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/personal-stats',
             name: 'personal-stats',
             builder: (context, state) => const PersonalStatsScreen(),
+          ),
           GoRoute(
             path: '/personal-management',
             name: 'personal-management',
             builder: (context, state) => const PersonalManagementScreen(),
+          ),
           GoRoute(
             path: '/personal-accounts',
             name: 'personal-accounts',
             builder: (context, state) => const PersonalAccountsScreen(),
+          ),
           GoRoute(
             path: '/personal-account-details/:id',
             name: 'personal-account-details',
