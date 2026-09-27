@@ -1456,7 +1456,7 @@ class SyncService {
           parent = invoiceByUuid[item.parentInvoiceUuid!];
         }
 
-        if (parent == null && item.parentInvoiceId != null) {
+        if (parent == null && (item.parentInvoiceUuid == null || item.parentInvoiceUuid!.isEmpty) && item.parentInvoiceId != null) {
           parent = invoiceById[item.parentInvoiceId!];
         }
 
@@ -1498,7 +1498,7 @@ class SyncService {
           parent = purchaseByUuid[item.purchaseUuid!];
         }
 
-        if (parent == null && item.purchaseId != null) {
+        if (parent == null && (item.purchaseUuid == null || item.purchaseUuid!.isEmpty) && item.purchaseId != null) {
           parent = purchaseById[item.purchaseId!];
         }
 
@@ -2049,6 +2049,7 @@ class SyncService {
           'uuid': item.uuid,
           'itemId': item.itemId,
           'itemName': item.itemName,
+          'itemUuid': _safeGetLinkUuid(item.item),
           'hsnCode': item.hsnCode,
           'quantity': item.quantity,
           'freeQuantity': item.freeQuantity,
@@ -2126,6 +2127,7 @@ class SyncService {
           'uuid': item.uuid,
           'itemId': item.itemId,
           'itemName': item.itemName,
+          'itemUuid': _safeGetLinkUuid(item.item),
           'hsnCode': item.hsnCode,
           'quantity': item.quantity,
           'freeQuantity': item.freeQuantity,
@@ -2241,6 +2243,7 @@ class SyncService {
           'uuid': item.uuid,
           'itemId': item.itemId,
           'itemName': item.itemName,
+          'itemUuid': _safeGetLinkUuid(item.item),
           'hsnCode': item.hsnCode,
           'quantity': item.quantity,
           'rate': item.rate,
@@ -2636,7 +2639,6 @@ class SyncService {
           ..orderNumber = data['orderNumber']
           ..orderDate = data['orderDate'] != null ? DateTime.parse(data['orderDate']) : null
           ..status = data['status']
-          ..partyId = data['partyId']
           ..partyName = data['partyName']
           ..mobileNumber = data['mobileNumber']
           ..gstNumber = data['gstNumber']
@@ -2663,7 +2665,6 @@ class SyncService {
         entity = OrderItem()
           ..orderId = data['orderId'] as int?
           ..orderUuid = data['orderUuid'] as String?
-          ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
           ..quantity = (data['quantity'] as num?)?.toDouble()
@@ -2686,9 +2687,7 @@ class SyncService {
           ..invoiceDate = data['invoiceDate'] != null ? DateTime.parse(data['invoiceDate']) : null
           ..invoiceType = data['invoiceType']
           ..invoiceStatus = data['invoiceStatus']
-          ..sourceOrderId = data['sourceOrderId']
           ..sourceOrderNumber = data['sourceOrderNumber']
-          ..partyId = data['partyId']
           ..partyName = data['partyName']
           ..gstNumber = data['gstNumber']
           ..address = data['address']
@@ -2716,10 +2715,8 @@ class SyncService {
         break;
       case 'InvoiceItem':
         entity = InvoiceItem()
-          ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
-          ..parentInvoiceId = data['parentInvoiceId']
           ..parentInvoiceUuid = (data['parentInvoiceUuid'] ?? data['invoiceUuid']) as String?
           ..selectedSubItemUuid = data['selectedSubItemUuid'] as String?
           ..selectedSubItemName = data['selectedSubItemName'] as String?
@@ -2815,7 +2812,6 @@ class SyncService {
           ..purchaseNumber = data['purchaseNumber']
           ..supplierInvoiceNumber = data['supplierInvoiceNumber']
           ..purchaseDate = data['purchaseDate'] != null ? DateTime.parse(data['purchaseDate']) : null
-          ..partyId = data['partyId']
           ..partyName = data['partyName']
           ..gstNumber = data['gstNumber']
           ..address = data['address']
@@ -2835,10 +2831,8 @@ class SyncService {
         break;
       case 'PurchaseItem':
         entity = PurchaseItem()
-          ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
-          ..purchaseId = data['purchaseId']
           ..purchaseUuid = data['purchaseUuid']
           ..quantity = (data['quantity'] as num?)?.toDouble()
           ..unit = data['unit']
@@ -2858,7 +2852,6 @@ class SyncService {
           ..creditNoteDate = data['creditNoteDate'] != null ? DateTime.parse(data['creditNoteDate']) : null
           ..originalInvoiceNumber = data['originalInvoiceNumber']
           ..originalInvoiceUuid = data['originalInvoiceUuid']
-          ..partyId = data['partyId']
           ..partyName = data['partyName']
           ..gstNumber = data['gstNumber']
           ..address = data['address']
@@ -2876,7 +2869,6 @@ class SyncService {
         break;
       case 'CreditNoteItem':
         entity = CreditNoteItem()
-          ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
           ..quantity = (data['quantity'] as num?)?.toDouble()
@@ -2894,7 +2886,6 @@ class SyncService {
           ..debitNoteDate = data['debitNoteDate'] != null ? DateTime.parse(data['debitNoteDate']) : null
           ..originalPurchaseNumber = data['originalPurchaseNumber']
           ..originalPurchaseUuid = data['originalPurchaseUuid']
-          ..partyId = data['partyId']
           ..partyName = data['partyName']
           ..gstNumber = data['gstNumber']
           ..address = data['address']
@@ -2912,7 +2903,6 @@ class SyncService {
         break;
       case 'DebitNoteItem':
         entity = DebitNoteItem()
-          ..itemId = data['itemId']
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
           ..quantity = (data['quantity'] as num?)?.toDouble()
@@ -3190,7 +3180,6 @@ class SyncService {
               final OrderItem ordItem = (await isar.orderItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? OrderItem();
               ordItem
                 ..uuid = itemUuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3230,7 +3219,6 @@ class SyncService {
               final OrderItem ordItem = (await isar.orderItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? OrderItem();
               ordItem
                 ..uuid = itemUuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3302,7 +3290,6 @@ class SyncService {
                 ..uuid = itemUuid
                 ..parentInvoiceId = e.id
                 ..parentInvoiceUuid = e.uuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3344,7 +3331,6 @@ class SyncService {
                 ..uuid = itemUuid
                 ..parentInvoiceId = e.id
                 ..parentInvoiceUuid = e.uuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3415,7 +3401,6 @@ class SyncService {
                 ..uuid = itemUuid
                 ..purchaseId = e.id
                 ..purchaseUuid = e.uuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3456,7 +3441,6 @@ class SyncService {
                 ..uuid = itemUuid
                 ..purchaseId = e.id
                 ..purchaseUuid = e.uuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3522,7 +3506,6 @@ class SyncService {
               final CreditNoteItem cnItem = (await isar.creditNoteItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? CreditNoteItem();
               cnItem
                 ..uuid = itemUuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3578,7 +3561,6 @@ class SyncService {
               final DebitNoteItem dnItem = (await isar.debitNoteItems.filter().uuidEqualTo(itemUuid).findFirst()) ?? DebitNoteItem();
               dnItem
                 ..uuid = itemUuid
-                ..itemId = itemMap['itemId'] as int?
                 ..itemName = itemMap['itemName'] as String?
                 ..hsnCode = itemMap['hsnCode'] as String?
                 ..quantity = (itemMap['quantity'] as num?)?.toDouble()
@@ -3674,3 +3656,6 @@ class SyncService {
     _stateController.close();
   }
 }
+
+
+
