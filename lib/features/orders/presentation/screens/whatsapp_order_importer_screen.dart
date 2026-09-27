@@ -1422,7 +1422,8 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                     border: Border.all(color: Colors.blue.withOpacity(0.3)),
                                                   ),
                                                   child: DropdownButtonHideUnderline(
-                                                    child: \n                                  isExpanded: true,
+                                                    child: DropdownButton<String>(
+                                                      isExpanded: true,
                                                       value: row.unitName,
                                                       isDense: true,
                                                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blue),
@@ -1453,7 +1454,8 @@ Location: https://maps.google.com/?q=23.1815,75.7860''';
                                                 border: Border.all(color: row.isTaxInclusive ? Colors.orange : Colors.teal),
                                               ),
                                               child: DropdownButtonHideUnderline(
-                                                child: \n                                  isExpanded: true,
+                                                child: DropdownButton<bool>(
+                                                  isExpanded: true,
                                                   value: row.isTaxInclusive,
                                                   isDense: true,
                                                   style: TextStyle(

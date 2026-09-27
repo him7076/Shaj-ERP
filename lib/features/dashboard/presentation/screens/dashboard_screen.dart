@@ -125,7 +125,8 @@ class DashboardScreen extends ConsumerWidget {
                           Icon(Icons.calendar_month_rounded, size: 16, color: theme.colorScheme.primary),
                           const SizedBox(width: 6),
                           DropdownButtonHideUnderline(
-                            child: \n                                  isExpanded: true,
+                            child: DropdownButton<DashboardPeriodPreset>(
+                                  isExpanded: true,
                               value: dateFilter.preset,
                               isDense: true,
                               style: theme.textTheme.bodyMedium?.copyWith(
