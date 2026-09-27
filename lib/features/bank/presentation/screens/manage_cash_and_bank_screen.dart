@@ -844,31 +844,46 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             ? TextField(
                 focusNode: _searchFocusNode,
                 autofocus: true,
-                decoration: const InputDecoration(
+                style: const TextStyle(fontSize: 15),
+                decoration: InputDecoration(
                   hintText: 'Search transactions...',
                   border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
                 ),
                 onChanged: (val) => setState(() => _searchQuery = val),
               )
-            : Text(widget.accountName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            : Text(
+                widget.accountName, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
         elevation: 0,
-        actions: [
+        actions: _isSearching 
+            ? [] 
+            : [
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            icon: const Icon(Icons.search_rounded),
             onPressed: () {
               setState(() {
-                if (_isSearching) {
-                  _isSearching = false;
-                  _searchQuery = '';
-                } else {
-                  _isSearching = true;
-                  _searchFocusNode.requestFocus();
-                }
+                _isSearching = true;
+                _searchFocusNode.requestFocus();
               });
             },
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list_rounded),
+            icon: const Icon(Icons.tune_rounded), // Professional Filter icon
             tooltip: 'Filter Type',
             onSelected: (val) => setState(() => _typeFilter = val),
             itemBuilder: (context) => [
@@ -878,7 +893,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             ],
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.sort_rounded),
+            icon: const Icon(Icons.swap_vert_rounded), // Professional Sort icon
             tooltip: 'Sort By',
             onSelected: (val) => setState(() => _sortBy = val),
             itemBuilder: (context) => [
@@ -889,7 +904,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
           ),
           if (!widget.isCash)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
+              icon: const Icon(Icons.more_vert_rounded),
               onSelected: (val) {
                 if (val == 'edit') {
                   widget.onEdit?.call();
