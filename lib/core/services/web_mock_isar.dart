@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -314,6 +314,8 @@ class WebMockIsar implements Isar {
       final jsonStr = jsonEncode(fullData);
       if (jsonStr.length < 1500000) {
         await prefsInstance.setString('web_mock_db_$firmId', jsonStr);
+      } else {
+        await prefsInstance.remove('web_mock_db_$firmId');
       }
     } catch (e) {
       print('Error saving web mock DB to SharedPreferences: $e');

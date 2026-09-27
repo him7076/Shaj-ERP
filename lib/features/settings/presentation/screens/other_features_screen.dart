@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -236,6 +236,32 @@ class _OtherFeaturesScreenState extends ConsumerState<OtherFeaturesScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // 0. Printing Settings
+          Text(
+            'Printing Settings',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: ListTile(
+              leading: Icon(Icons.print_rounded, color: theme.colorScheme.primary),
+              title: const Text('Printer Setup & Formats', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Configure Thermal printing, paper sizes, and receipt layouts.', style: TextStyle(fontSize: 12)),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              onTap: () => context.push('/settings/printing'),
+            ),
+          ),
+          const SizedBox(height: 24),
           // 1. Transaction Settings
           Text(
             'Transaction Settings',

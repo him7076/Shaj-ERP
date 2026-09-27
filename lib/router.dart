@@ -185,6 +185,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const OtherFeaturesScreen(),
           ),
           GoRoute(
+            path: '/settings/printing',
+            name: 'printing-settings',
+            builder: (context, state) => const PrintingSettingsScreen(),
+          ),
+          GoRoute(
             path: '/receipts',
             name: 'receipts',
             builder: (context, state) {
