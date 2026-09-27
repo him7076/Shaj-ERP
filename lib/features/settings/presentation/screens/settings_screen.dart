@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
@@ -1141,6 +1141,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final ifscController = TextEditingController(text: prefs.getString('firm_ifsc_$id') ?? '');
     final upiController = TextEditingController(text: prefs.getString('firm_upi_$id') ?? '');
     final categoryController = TextEditingController(text: prefs.getString('firm_category_$id') ?? 'Trading & Retail');
+    final fssaiController = TextEditingController(text: prefs.getString('firm_fssai_$id') ?? '');
+    String? _logoPath = prefs.getString('firm_logo_$id');
 
     bool isFetchingGst = false;
 
@@ -1494,6 +1496,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             await prefs.setString('firm_ifsc_$id', ifscController.text.trim());
                             await prefs.setString('firm_upi_$id', upiController.text.trim());
                             await prefs.setString('firm_category_$id', categoryController.text.trim());
+                            await prefs.setString('firm_fssai_$id', fssaiController.text.trim());
+                            if (_logoPath != null) {
+                              await prefs.setString('firm_logo_$id', _logoPath!);
+                            } else {
+                              await prefs.remove('firm_logo_$id');
+                            }
 
                             // Update active Isar Settings object
                             try {

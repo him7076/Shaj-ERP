@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/providers/fixed_asset_providers.dart';
-import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/add_fixed_asset_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/depreciation_form_screen.dart';
-import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/sell_fixed_asset_screen.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 
 class FixedAssetsDashboardScreen extends ConsumerWidget {
   const FixedAssetsDashboardScreen({super.key});
@@ -23,7 +23,7 @@ class FixedAssetsDashboardScreen extends ConsumerWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AddFixedAssetScreen()),
+                MaterialPageRoute(builder: (_) => const AddEditPurchaseScreen(isFixedAsset: true)),
               ).then((_) => ref.refresh(fixedAssetsProvider));
             },
           ),
@@ -88,7 +88,7 @@ class FixedAssetsDashboardScreen extends ConsumerWidget {
                                 Navigator.pop(ctx);
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => SellFixedAssetScreen(asset: asset)),
+                                  MaterialPageRoute(builder: (_) => const AddEditInvoiceScreen(isFixedAsset: true)),
                                 ).then((_) => ref.refresh(fixedAssetsProvider));
                               },
                             ),
@@ -109,7 +109,7 @@ class FixedAssetsDashboardScreen extends ConsumerWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const AddFixedAssetScreen()),
+            MaterialPageRoute(builder: (_) => const AddEditPurchaseScreen(isFixedAsset: true)),
           ).then((_) => ref.refresh(fixedAssetsProvider));
         },
         icon: const Icon(Icons.add),

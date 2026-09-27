@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:uuid/uuid.dart';
@@ -259,6 +259,22 @@ class SyncService {
             'updatedAt': localUpdatedAt,
             'isDeleted': false,
             'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
+            'firmGst': _prefs.getString('firm_gst_') ?? '',
+            'firmMobile': _prefs.getString('firm_mobile_') ?? '',
+            'firmWhatsapp': _prefs.getString('firm_whatsapp_') ?? '',
+            'firmEmail': _prefs.getString('firm_email_') ?? '',
+            'firmPan': _prefs.getString('firm_pan_') ?? '',
+            'firmAddress': _prefs.getString('firm_address_') ?? '',
+            'firmCity': _prefs.getString('firm_city_') ?? '',
+            'firmState': _prefs.getString('firm_state_') ?? '',
+            'firmPincode': _prefs.getString('firm_pincode_') ?? '',
+            'firmBankName': _prefs.getString('firm_bank_name_') ?? '',
+            'firmBankAcc': _prefs.getString('firm_bank_acc_') ?? '',
+            'firmIfsc': _prefs.getString('firm_ifsc_') ?? '',
+            'firmUpi': _prefs.getString('firm_upi_') ?? '',
+            'firmCategory': _prefs.getString('firm_category_') ?? '',
+            'firmFssai': _prefs.getString('firm_fssai_') ?? '',
+            'firmLogo': _prefs.getString('firm_logo_') ?? '',
           },
           SetOptions(merge: true),
         );

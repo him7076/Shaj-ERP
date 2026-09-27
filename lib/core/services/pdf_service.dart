@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -509,5 +509,156 @@ class PdfService {
         ),
       ],
     );
+  }
+
+  /// Generates a Thermal Receipt PDF using active FirmInfo
+  Future<Uint8List> generateThermalInvoicePdf(
+    Invoice invoice, {
+    List<InvoiceItem>? items,
+    required FirmInfo firmInfo,
+    required String paperSize,
+  }) async {
+    try {
+      final pdf = pw.Document();
+      final actualItems = items ?? invoice.invoiceItems.toList();
+      final filteredItems = actualItems.where((i) => i.uuid == null || !i.uuid!.endsWith("_BNDLCOMP")).toList();
+
+      final is58mm = paperSize == '58mm';
+      final pageFormat = is58mm ? PdfPageFormat.roll57 : PdfPageFormat.roll80;
+      final double width = pageFormat.width;
+
+      pdf.addPage(
+        pw.Page(
+          pageFormat: pageFormat.copyWith(
+            marginBottom: 10,
+            marginTop: 10,
+            marginLeft: 5,
+            marginRight: 5,
+          ),
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                // Firm Name
+                pw.Text(firmInfo.name.toUpperCase(), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 12), textAlign: pw.TextAlign.center),
+                pw.SizedBox(height: 2),
+                
+                // Address
+                if (firmInfo.fullAddress.isNotEmpty)
+                  pw.Text(firmInfo.fullAddress, style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center),
+                
+                // Phone
+                if (firmInfo.phone.isNotEmpty)
+                  pw.Text('Ph: ', style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center),
+                
+                // GST & FSSAI
+                if (firmInfo.gst.isNotEmpty)
+                  pw.Text('GSTIN: ', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                if (firmInfo.fssai.isNotEmpty)
+                  pw.Text('FSSAI: ', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                pw.Text('TAX INVOICE', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                // Invoice Details
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Inv No: ', style: const pw.TextStyle(fontSize: 8)),
+                    pw.Text('Date: ', style: const pw.TextStyle(fontSize: 8)),
+                  ],
+                ),
+                pw.SizedBox(height: 4),
+                if (invoice.partyName != null && invoice.partyName!.isNotEmpty)
+                  pw.Align(
+                    alignment: pw.Alignment.centerLeft,
+                    child: pw.Text('Customer: ', style: const pw.TextStyle(fontSize: 8)),
+                  ),
+                
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                // Items Header
+                pw.Row(
+                  children: [
+                    pw.Expanded(flex: 3, child: pw.Text('Item', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
+                    pw.Expanded(flex: 1, child: pw.Text('Qty', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
+                    pw.Expanded(flex: 1, child: pw.Text('Rate', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                    pw.Expanded(flex: 1, child: pw.Text('Amt', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                  ],
+                ),
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                // Items List
+                ...filteredItems.map((item) {
+                  final qty = item.quantity ?? 0.0;
+                  final rate = item.rate ?? 0.0;
+                  final amt = item.totalAmount ?? 0.0;
+                  final qtyStr = qty % 1 == 0 ? qty.toInt().toString() : qty.toStringAsFixed(2);
+                  return pw.Padding(
+                    padding: const pw.EdgeInsets.only(bottom: 2),
+                    child: pw.Row(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Expanded(flex: 3, child: pw.Text(item.itemName ?? '', style: const pw.TextStyle(fontSize: 8))),
+                        pw.Expanded(flex: 1, child: pw.Text(qtyStr, style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center)),
+                        pw.Expanded(flex: 1, child: pw.Text(rate.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
+                        pw.Expanded(flex: 1, child: pw.Text(amt.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
+                      ],
+                    ),
+                  );
+                }),
+                
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                // Summary
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('Subtotal:', style: const pw.TextStyle(fontSize: 8)),
+                    pw.Text((invoice.subtotal ?? 0.0).toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8)),
+                  ],
+                ),
+                if ((invoice.discountAmount ?? 0.0) > 0)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Discount:', style: const pw.TextStyle(fontSize: 8)),
+                      pw.Text('-', style: const pw.TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                if ((invoice.totalGST ?? 0.0) > 0)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Tax (GST):', style: const pw.TextStyle(fontSize: 8)),
+                      pw.Text((invoice.totalGST ?? 0.0).toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8)),
+                    ],
+                  ),
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                // Grand Total
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text('GRAND TOTAL', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Rs ', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                  ],
+                ),
+                pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                pw.SizedBox(height: 10),
+                pw.Text('Thank you for visiting!', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700), textAlign: pw.TextAlign.center),
+                pw.SizedBox(height: 20), // Padding at bottom for cutter
+              ],
+            );
+          },
+        ),
+      );
+
+      return pdf.save();
+    } catch (e) {
+      throw PDFException('Failed to generate Thermal Invoice PDF: $e');
+    }
   }
 }

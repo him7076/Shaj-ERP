@@ -15,6 +15,8 @@ class FirmInfo {
   final String bankAcc;
   final String ifsc;
   final String upi;
+  final String fssai;
+  final String logoPath;
 
   const FirmInfo({
     this.name = 'Business Sahaj ERP',
@@ -29,6 +31,8 @@ class FirmInfo {
     this.bankAcc = '',
     this.ifsc = '',
     this.upi = '',
+    this.fssai = '',
+    this.logoPath = '',
   });
 
   String get fullAddress {
@@ -52,6 +56,8 @@ class FirmInfo {
     String bankAcc = prefs.getString('firm_bank_acc_$activeId') ?? '';
     String ifsc = prefs.getString('firm_ifsc_$activeId') ?? '';
     String upi = prefs.getString('firm_upi_$activeId') ?? '';
+    String fssai = prefs.getString('firm_fssai_$activeId') ?? '';
+    String logoPath = prefs.getString('firm_logo_$activeId') ?? '';
 
     // Fallback to Isar Settings if SharedPreferences firm fields are empty
     try {
@@ -79,6 +85,8 @@ class FirmInfo {
       bankAcc: bankAcc,
       ifsc: ifsc,
       upi: upi,
+      fssai: fssai,
+      logoPath: logoPath,
     );
   }
 }
