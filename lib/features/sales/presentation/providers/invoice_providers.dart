@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -179,12 +179,33 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       finalDiscPercent = totalBase > 0 ? (discountAmount / totalBase) * 100.0 : 0.0;
     }
 
+    double finalRate = rate ?? current.rate;
+    double finalBuyRate = buyRate ?? current.buyRate ?? 0.0;
+    
+    // Automatically apply unit conversion if unit changes and user didn't explicitly pass a new rate
+    if (unit != null && unit != current.unit && rate == null) {
+      final item = current.item;
+      final isPrimary = unit == (item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS');
+      final isSecondary = unit == item.secondaryUnit;
+      final conv = item.conversionRate ?? 1.0;
+      
+      if (conv > 0) {
+        if (isSecondary && current.unit != item.secondaryUnit) {
+           finalRate = current.rate * conv;
+           finalBuyRate = finalBuyRate * conv;
+        } else if (isPrimary && current.unit == item.secondaryUnit) {
+           finalRate = current.rate / conv;
+           finalBuyRate = finalBuyRate / conv;
+        }
+      }
+    }
+
     final updated = current.copyWith(
       quantity: quantity,
       freeQuantity: freeQuantity,
       unit: unit,
-      rate: rate,
-      buyRate: buyRate,
+      rate: finalRate,
+      buyRate: finalBuyRate,
       discountPercent: finalDiscPercent,
       discountAmount: finalDiscAmount,
       batchNumber: batchNumber,
