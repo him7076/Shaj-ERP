@@ -26,7 +26,8 @@ import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 class AddEditPurchaseScreen extends ConsumerStatefulWidget {
   final String? purchaseUuid;
-  const AddEditPurchaseScreen({Key? key, this.purchaseUuid}) : super(key: key);
+  final bool isFixedAsset;
+  const AddEditPurchaseScreen({Key? key, this.purchaseUuid, this.isFixedAsset = false}) : super(key: key);
 
   @override
   ConsumerState<AddEditPurchaseScreen> createState() => _AddEditPurchaseScreenState();

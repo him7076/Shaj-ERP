@@ -40,7 +40,8 @@ import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
   final String? invoiceUuid;
   final String? sourceOrderUuid;
-  const AddEditInvoiceScreen({Key? key, this.invoiceUuid, this.sourceOrderUuid}) : super(key: key);
+  final bool isFixedAsset;
+  const AddEditInvoiceScreen({Key? key, this.invoiceUuid, this.sourceOrderUuid, this.isFixedAsset = false}) : super(key: key);
 
   @override
   ConsumerState<AddEditInvoiceScreen> createState() => _AddEditInvoiceScreenState();
