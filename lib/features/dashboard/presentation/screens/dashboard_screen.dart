@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,7 +81,7 @@ class DashboardScreen extends ConsumerWidget {
                 if (!ResponsiveLayout.isMobile(context)) ...[
                   _buildQuickActionsHeader(context),
                   const SizedBox(height: 12),
-                  _buildQuickActionsGrid(context),
+                  _buildQuickActionsGrid(context, ref),
                   const SizedBox(height: 28),
                 ],
 
@@ -494,7 +495,7 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickActionsGrid(BuildContext context) {
+  Widget _buildQuickActionsGrid(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     
     final settings = ref.read(sharedPreferencesProvider);

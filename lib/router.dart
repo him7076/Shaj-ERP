@@ -34,7 +34,7 @@ import 'package:business_sahaj_erp/features/tasks/presentation/screens/tasks_scr
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_task_screen.dart';
 import 'package:business_sahaj_erp/features/tasks/presentation/screens/add_edit_machinery_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/screens/vault_screen.dart';
-import 'package:business_sahaj_erp/features/fixed_assets/presentation/screens/fixed_assets_dashboard_screen.dart';
+
 import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_stats_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_management_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/screens/personal_accounts_screen.dart';
@@ -313,10 +313,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'vault',
             builder: (context, state) => const VaultScreen(),
           ),
-          GoRoute(
-            path: '/fixed-assets',
-            name: 'fixed-assets',
-            builder: (context, state) => const FixedAssetsDashboardScreen(),
           ),
           GoRoute(
             path: '/personal-stats',

@@ -46,7 +46,6 @@ class PdfService {
                 docNumber: invoice.invoiceNumber ?? 'N/A',
                 dateStr: invoice.invoiceDate?.toIso8601String().substring(0, 10) ?? 'N/A',
                 firmInfo: firmInfo,
-                invoiceBanks: invoiceBanks,
               ),
               pw.SizedBox(height: 14),
 
@@ -177,6 +176,7 @@ class PdfService {
     required String docNumber,
     required String dateStr,
     required FirmInfo firmInfo,
+    List<BankAccount>? invoiceBanks,
   }) {
     return pw.Container(
       decoration: pw.BoxDecoration(
