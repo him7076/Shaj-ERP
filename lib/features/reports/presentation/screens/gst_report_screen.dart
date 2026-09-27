@@ -238,7 +238,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<ReportDatePreset>(
+                    child: ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<ReportDatePreset>(
                             value: _datePreset,
                             decoration: const InputDecoration(
                               labelText: 'Filing Period Preset',

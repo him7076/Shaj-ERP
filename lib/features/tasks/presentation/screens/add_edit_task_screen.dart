@@ -298,7 +298,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+              ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                       value: _status,
                       decoration: const InputDecoration(
                         labelText: 'Status',
@@ -331,7 +331,7 @@ class _AddEditTaskScreenState extends ConsumerState<AddEditTaskScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+              ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                       controller: _estimatedTimeController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(

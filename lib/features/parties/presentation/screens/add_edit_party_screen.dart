@@ -911,7 +911,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      ResponsiveFormResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                                      ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                                               initialValue: addr.label,
                                               decoration: const InputDecoration(labelText: 'Address Label (e.g. Office, Godown)', ),
                                               onChanged: (val) => addr.label = val,
@@ -1029,7 +1029,7 @@ class _AddEditPartyScreenState extends ConsumerState<AddEditPartyScreen> {
                                 decoration: const InputDecoration(labelText: 'Contact Person Name', ),
                               ),
                               const SizedBox(height: 16),
-                              ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+                              ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                                       value: _categories.contains(_category) ? _category : _categories.first,
                                       decoration: const InputDecoration(labelText: 'Business Category', ),
                                       items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),

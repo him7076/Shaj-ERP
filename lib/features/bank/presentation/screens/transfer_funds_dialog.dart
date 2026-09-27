@@ -14,6 +14,7 @@ import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 
 class TransferFundsDialog extends ConsumerStatefulWidget {
   final String? defaultFromAccount;

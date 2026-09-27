@@ -577,7 +577,7 @@ class DashboardScreen extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: actions.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(context, mobile: 2, tablet: 4, desktop: 4),
           crossAxisSpacing: 10,
           mainAxisSpacing: 16,

@@ -528,7 +528,7 @@ if (_isPaidAmountAutoFill) {
                       if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
                         dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                       }
-                      return ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+                      return ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                               value: _paymentMode,
                               decoration: InputDecoration(
                                 labelText: 'Payment Mode / Account',

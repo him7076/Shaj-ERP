@@ -703,7 +703,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+          ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                   value: filter.stockStatus,
                   decoration: const InputDecoration(
                     labelText: 'Stock Level',

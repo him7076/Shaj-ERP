@@ -468,7 +468,7 @@ final theme = Theme.of(context);
             const SizedBox(height: 16),
 
             const Divider(height: 24),
-            ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+            ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: 'Disc %', ),
@@ -1383,7 +1383,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
@@ -1518,7 +1518,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(labelText: 'Disc %', isDense: true, ),
@@ -1554,7 +1554,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _batchController,
                 decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                 onChanged: (val) {

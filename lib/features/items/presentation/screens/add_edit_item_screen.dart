@@ -1576,7 +1576,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
               ),
       ]),
         const SizedBox(height: 16),
-        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _shortNameController,
                 decoration: const InputDecoration(
                   labelText: 'Short Name / Alias',
@@ -1676,7 +1676,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
   Widget _buildIdentificationSection() {
     final isMobile = ResponsiveLayout.isMobile(context);
-    final barcodeField = ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+    final barcodeField = ResponsiveFormRow(children: [ Expanded(child: TextFormField(
             controller: _barcodeController,
             decoration: const InputDecoration(
               labelText: 'Barcode (UPC/EAN)',
@@ -1994,7 +1994,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         const SizedBox(height: 16),
 
         // 3. Minimum Selling Price Threshold Row
-        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _minPriceController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
@@ -2027,7 +2027,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         ),
         if (_gstApplicable) ...[
           const SizedBox(height: 16),
-          ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<double>(
+          ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<double>(
                   value: _gstRate,
                   decoration: const InputDecoration(
                     labelText: 'GST Percentage',

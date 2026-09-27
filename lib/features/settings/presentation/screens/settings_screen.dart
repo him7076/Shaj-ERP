@@ -1290,7 +1290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: mobileController,
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
@@ -1315,7 +1315,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
@@ -1353,7 +1353,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: cityController,
                             decoration: const InputDecoration(
                               labelText: 'City / District',
@@ -1389,7 +1389,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // Banking Details
                     Text('Banking & Payment Info', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                     const SizedBox(height: 10),
-                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: bankNameController,
                             decoration: const InputDecoration(
                               labelText: 'Bank Name',
@@ -1412,7 +1412,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: ifscController,
                             textCapitalization: TextCapitalization.characters,
                             decoration: const InputDecoration(

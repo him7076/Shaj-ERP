@@ -892,7 +892,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
                   dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                 }
-                return ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+                return ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                         value: _paymentMode,
                         decoration: InputDecoration(
                           labelText: 'Payment Mode',
@@ -940,7 +940,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             ),
             const SizedBox(height: 10),
             // Discount Row
-            ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
+            ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: 'Disc %',  isDense: true),
