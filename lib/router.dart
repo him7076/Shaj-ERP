@@ -70,6 +70,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         name: 'splash',
         builder: (context, state) => const SplashScreen(),
+          ),
           GoRoute(
         path: '/login',
         name: 'login',
@@ -84,10 +85,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/dashboard',
             name: 'dashboard',
             builder: (context, state) => const DashboardScreen(),
+          ),
           GoRoute(
             path: '/parties',
             name: 'parties',
             builder: (context, state) => const PartiesScreen(),
+          ),
           GoRoute(
             path: '/parties/detail/:id',
             name: 'party-detail-id',
@@ -108,6 +111,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/items',
             name: 'items',
             builder: (context, state) => const ItemsScreen(),
+          ),
           GoRoute(
             path: '/orders',
             name: 'orders',
@@ -120,10 +124,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/orders/whatsapp-import',
             name: 'whatsapp-order-import',
             builder: (context, state) => const WhatsappOrderImporterScreen(),
+          ),
           GoRoute(
             path: '/orders/whatsapp-mappings',
             name: 'whatsapp-mappings',
             builder: (context, state) => const WhatsAppMappingsScreen(),
+          ),
           GoRoute(
             path: '/sales',
             name: 'sales',
@@ -152,30 +158,37 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/reports',
             name: 'reports',
             builder: (context, state) => const ReportsScreen(),
+          ),
           GoRoute(
             path: '/sync-center',
             name: 'sync-center',
             builder: (context, state) => const SyncCenterScreen(),
+          ),
           GoRoute(
             path: '/backup',
             name: 'backup',
             builder: (context, state) => const SnapshotBackupScreen(),
+          ),
           GoRoute(
             path: '/data-repair',
             name: 'data-repair',
             builder: (context, state) => const DataRepairScreen(),
+          ),
           GoRoute(
             path: '/settings',
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
           GoRoute(
             path: '/other-features',
             name: 'other-features',
             builder: (context, state) => const OtherFeaturesScreen(),
+          ),
           GoRoute(
             path: '/settings/printing',
             name: 'printing-settings',
             builder: (context, state) => const PrintingSettingsScreen(),
+          ),
           GoRoute(
             path: '/receipts',
             name: 'receipts',
@@ -220,6 +233,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/transactions',
             name: 'transactions',
             builder: (context, state) => const TransactionsScreen(),
+          ),
           GoRoute(
             path: '/other-incomes',
             name: 'other-incomes',
@@ -232,38 +246,47 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/categories',
             name: 'categories',
             builder: (context, state) => const ManageCategoriesScreen(),
+          ),
           GoRoute(
             path: '/cash-and-bank',
             name: 'cash-and-bank',
             builder: (context, state) => const ManageCashAndBankScreen(),
+          ),
           GoRoute(
             path: '/reports/receivables',
             name: 'receivables',
             builder: (context, state) => const ReceivablesScreen(),
+          ),
           GoRoute(
             path: '/reports/payables',
             name: 'payables',
             builder: (context, state) => const PayablesScreen(),
+          ),
           GoRoute(
             path: '/reports/day-book',
             name: 'day-book',
             builder: (context, state) => const DayBookReportScreen(),
+          ),
           GoRoute(
             path: '/bulk-item-edit',
             name: 'bulk-item-edit',
             builder: (context, state) => const BulkItemEditScreen(),
+          ),
           GoRoute(
             path: '/stock-adjustments',
             name: 'stock-adjustments',
             builder: (context, state) => const StockAdjustmentsScreen(),
+          ),
           GoRoute(
             path: '/tasks',
             name: 'tasks',
             builder: (context, state) => const TasksScreen(),
+          ),
           GoRoute(
             path: '/tasks/add',
             name: 'add-task',
             builder: (context, state) => const AddEditTaskScreen(),
+          ),
           GoRoute(
             path: '/tasks/edit/:id',
             name: 'edit-task',
@@ -276,6 +299,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/machinery/add',
             name: 'add-machinery',
             builder: (context, state) => const AddEditMachineryScreen(),
+          ),
           GoRoute(
             path: '/machinery/edit/:id',
             name: 'edit-machinery',
