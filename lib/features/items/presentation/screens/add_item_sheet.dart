@@ -224,10 +224,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
               const SizedBox(height: 16),
 
               // Pricing and GST
-              ResponsiveFormRow(
-                children: [
-                  Expanded(
-                    child: TextFormField(
+              ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                       controller: _sellRateController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
@@ -327,10 +324,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
               const SizedBox(height: 16),
 
               // 3rd Unit & Conversion Factor Row (Optional)
-              ResponsiveFormRow(
-                children: [
-                  Expanded(
-                    child: TextFormField(
+              ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                       controller: _tertiaryUnitController,
                       decoration: const InputDecoration(
                         labelText: '3rd Unit (Optional, e.g. Candies)',

@@ -54,4 +54,13 @@ class ResponsiveLayout extends StatelessWidget {
       },
     );
   }
+
+  /// Adaptive grid column count based on screen width
+  static int getGridCrossAxisCount(BuildContext context, {int mobile = 2, int tablet = 3, int desktop = 4, int tiny = 1}) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= AppConstants.tabletBreakpoint) return desktop;
+    if (width >= AppConstants.mobileBreakpoint) return tablet;
+    if (width < 360) return tiny;
+    return mobile;
+  }
 }

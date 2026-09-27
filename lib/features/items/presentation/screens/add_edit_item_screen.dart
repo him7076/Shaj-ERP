@@ -1576,10 +1576,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
               ),
       ]),
         const SizedBox(height: 16),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _shortNameController,
                 decoration: const InputDecoration(
                   labelText: 'Short Name / Alias',
@@ -1593,10 +1590,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 data: (list) {
                   final exists = _selectedCategory != null && list.any((c) => c.id == _selectedCategory!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedCategory != null) _selectedCategory!];
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<Category>(
+                  return ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<Category>(
                           value: _selectedCategory,
                           decoration: const InputDecoration(
                             labelText: 'Category',
@@ -1634,10 +1628,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                 data: (list) {
                   final exists = _selectedBrand != null && list.any((b) => b.id == _selectedBrand!.id);
                   final dropdownItems = exists ? list : [...list, if (_selectedBrand != null) _selectedBrand!];
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<Brand>(
+                  return ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<Brand>(
                           value: _selectedBrand,
                           decoration: const InputDecoration(
                             labelText: 'Brand',
@@ -1685,10 +1676,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
 
   Widget _buildIdentificationSection() {
     final isMobile = ResponsiveLayout.isMobile(context);
-    final barcodeField = ResponsiveFormRow(
-      children: [
-        Expanded(
-          child: TextFormField(
+    final barcodeField = ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
             controller: _barcodeController,
             decoration: const InputDecoration(
               labelText: 'Barcode (UPC/EAN)',
@@ -1798,10 +1786,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
+                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                           controller: _buyRateController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           onChanged: (_) => setState(() {}),
@@ -1880,10 +1865,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
+                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                           controller: _sellRateController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           onChanged: (_) => setState(() {}),
@@ -1947,10 +1929,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
+                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                           controller: _wholesaleRateController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           onChanged: (_) => setState(() {}),
@@ -2015,10 +1994,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         const SizedBox(height: 16),
 
         // 3. Minimum Selling Price Threshold Row
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _minPriceController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
@@ -2051,10 +2027,7 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
         ),
         if (_gstApplicable) ...[
           const SizedBox(height: 16),
-          ResponsiveFormRow(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<double>(
+          ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<double>(
                   value: _gstRate,
                   decoration: const InputDecoration(
                     labelText: 'GST Percentage',

@@ -892,10 +892,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
                   dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
                 }
-                return ResponsiveFormRow(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
+                return ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                         value: _paymentMode,
                         decoration: InputDecoration(
                           labelText: 'Payment Mode',
@@ -943,10 +940,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             ),
             const SizedBox(height: 10),
             // Discount Row
-            ResponsiveFormRow(
-              children: [
-                Expanded(
-                  child: TextFormField(
+            ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: 'Disc %',  isDense: true),
@@ -1892,10 +1886,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
+                                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                                           initialValue: quantities[index].toString(),
                                           keyboardType: TextInputType.number,
                                           decoration: InputDecoration(labelText: 'Qty',  isDense: true),
@@ -1927,10 +1918,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                                     ],
                                   ),
                                   const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextFormField(
+                                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                                           initialValue: rates[index].toString(),
                                           keyboardType: TextInputType.number,
                                           decoration: InputDecoration(labelText: 'Selling Rate',  isDense: true),
@@ -2330,10 +2318,7 @@ final theme = Theme.of(context);
                     ),
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
+                        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                                 controller: _freeQtyController,
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(labelText: 'Free Qty', isDense: true, ),
@@ -2362,10 +2347,7 @@ final theme = Theme.of(context);
                           ],
                         ),
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
+                        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                                 controller: _batchController,
                                 decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                                 onChanged: (val) {
@@ -2518,10 +2500,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
@@ -2642,10 +2621,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(labelText: 'Disc %', isDense: true, ),
@@ -2697,10 +2673,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _batchController,
                 decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                 onChanged: (val) {

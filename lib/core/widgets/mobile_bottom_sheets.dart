@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:go_router/go_router.dart';
 
 class MobileBottomSheets {
@@ -81,7 +82,7 @@ class MobileBottomSheets {
                   child: GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
+                    crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(context, mobile: 2, tablet: 3, desktop: 4),
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
                     childAspectRatio: 2.3,

@@ -156,10 +156,7 @@ class _PartyLedgerScreenState extends ConsumerState<PartyLedgerScreen> {
                           },
                         ),
                   const SizedBox(height: 12),
-                  ResponsiveFormRow(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<ReportDatePreset>(
+                  ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<ReportDatePreset>(
                           value: _datePreset,
                           decoration: const InputDecoration(
                             labelText: 'Filing Period Preset',

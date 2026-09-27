@@ -524,10 +524,7 @@ class _AddEditMachineryScreenState extends ConsumerState<AddEditMachineryScreen>
                 validator: (val) => val == null || val.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 16),
-              ResponsiveFormRow(
-                children: [
-                  Expanded(
-                    child: TextFormField(
+              ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                       controller: _brandNameController,
                       decoration: const InputDecoration(
                         labelText: 'Brand',

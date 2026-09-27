@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -217,7 +218,7 @@ class _SyncCenterScreenState extends ConsumerState<SyncCenterScreen> {
                   return GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
+                    crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(context, mobile: 2, tablet: 3, desktop: 4),
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     childAspectRatio: 2.2,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -237,10 +238,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<ReportDatePreset>(
+                    child: ResponsiveFormResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<ReportDatePreset>(
                             value: _datePreset,
                             decoration: const InputDecoration(
                               labelText: 'Filing Period Preset',
@@ -339,7 +337,7 @@ class _GstReportScreenState extends ConsumerState<GstReportScreen> {
                   child: GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 3,
+                    crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(context, mobile: 2, tablet: 3, desktop: 4),
                     crossAxisSpacing: 12,
                     mainAxisSpacing: 12,
                     childAspectRatio: 1.8,

@@ -1193,8 +1193,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
-              width: 650,
+            child: Container(width: MediaQuery.of(context).size.width, constraints: const BoxConstraints(maxWidth: 650),
               padding: const EdgeInsets.all(24),
               child: SingleChildScrollView(
                 child: Column(
@@ -1291,10 +1290,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: mobileController,
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
@@ -1319,10 +1315,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
@@ -1360,10 +1353,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: cityController,
                             decoration: const InputDecoration(
                               labelText: 'City / District',
@@ -1399,10 +1389,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // Banking Details
                     Text('Banking & Payment Info', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                     const SizedBox(height: 10),
-                    ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: bankNameController,
                             decoration: const InputDecoration(
                               labelText: 'Bank Name',
@@ -1425,10 +1412,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
+                    ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                             controller: ifscController,
                             textCapitalization: TextCapitalization.characters,
                             decoration: const InputDecoration(

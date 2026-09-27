@@ -125,7 +125,7 @@ class DashboardScreen extends ConsumerWidget {
                           Icon(Icons.calendar_month_rounded, size: 16, color: theme.colorScheme.primary),
                           const SizedBox(width: 6),
                           DropdownButtonHideUnderline(
-                            child: DropdownButton<DashboardPeriodPreset>(
+                            child: \n                                  isExpanded: true,
                               value: dateFilter.preset,
                               isDense: true,
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -577,7 +577,7 @@ class DashboardScreen extends ConsumerWidget {
         physics: const NeverScrollableScrollPhysics(),
         itemCount: actions.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
+          crossAxisCount: ResponsiveLayout.getGridCrossAxisCount(context, mobile: 2, tablet: 4, desktop: 4),
           crossAxisSpacing: 10,
           mainAxisSpacing: 16,
           childAspectRatio: 0.85,

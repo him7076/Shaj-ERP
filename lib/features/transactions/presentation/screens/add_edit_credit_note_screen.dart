@@ -1320,10 +1320,7 @@ final item = widget.item;
                   ),
                   child: Column(
                     children: [
-                      ResponsiveFormRow(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
+                      ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                               controller: _rateInclController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
@@ -1354,10 +1351,7 @@ final item = widget.item;
                         ],
                       ),
                       const SizedBox(height: 8),
-                      ResponsiveFormRow(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
+                      ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                               controller: _batchController,
                               decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                               onChanged: (val) {
@@ -1469,10 +1463,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
@@ -1579,10 +1570,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _discController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(labelText: 'Disc (₹)', isDense: true, ),
@@ -1618,10 +1606,7 @@ final item = widget.item;
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _batchController,
                 decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                 onChanged: (val) {

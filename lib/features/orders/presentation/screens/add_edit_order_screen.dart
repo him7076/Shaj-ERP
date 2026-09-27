@@ -468,10 +468,7 @@ final theme = Theme.of(context);
             const SizedBox(height: 16),
 
             const Divider(height: 24),
-            ResponsiveFormRow(
-              children: [
-                Expanded(
-                  child: TextFormField(
+            ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                     controller: _discountPercentController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(labelText: 'Disc %', ),
@@ -686,10 +683,7 @@ final theme = Theme.of(context);
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
+                  child: ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
                           isExpanded: true,
                           value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
                           decoration: InputDecoration(
@@ -1389,10 +1383,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _qtyController,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
@@ -1527,10 +1518,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _discPercentController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(labelText: 'Disc %', isDense: true, ),
@@ -1566,10 +1554,7 @@ final theme = Theme.of(context);
           ],
         ),
         const SizedBox(height: 8),
-        ResponsiveFormRow(
-          children: [
-            Expanded(
-              child: TextFormField(
+        ResponsiveFormResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _batchController,
                 decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
                 onChanged: (val) {

@@ -73,8 +73,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             Positioned(
               bottom: -150,
               left: -50,
-              child: Container(
-                width: 400,
+              child: Container(width: MediaQuery.of(context).size.width, constraints: const BoxConstraints(maxWidth: 400),
                 height: 400,
                 decoration: const BoxDecoration(
                   color: Colors.white10,

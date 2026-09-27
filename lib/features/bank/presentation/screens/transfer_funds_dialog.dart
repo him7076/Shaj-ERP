@@ -181,8 +181,7 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.transparent,
-        child: Container(
-          width: 500,
+        child: Container(width: MediaQuery.of(context).size.width, constraints: const BoxConstraints(maxWidth: 500),
           decoration: BoxDecoration(
             color: theme.scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(20),
