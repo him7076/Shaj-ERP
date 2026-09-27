@@ -1,4 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/screens/add_edit_expense_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -656,6 +661,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             amount: t.amount ?? 0.0,
             isCredit: isCredit,
             remarks: t.remarks,
+            entityUuid: t.uuid,
           ));
         }
       }
@@ -687,6 +693,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             amount: paid,
             isCredit: true,
             remarks: inv.remarks,
+            entityUuid: inv.uuid,
           ));
         }
       }
@@ -718,6 +725,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             amount: paid,
             isCredit: false,
             remarks: pur.remarks,
+            entityUuid: pur.uuid,
           ));
         }
       }
@@ -741,6 +749,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             amount: exp.amount ?? 0.0,
             isCredit: false,
             remarks: exp.remarks,
+            entityUuid: exp.uuid,
           ));
         }
       }
