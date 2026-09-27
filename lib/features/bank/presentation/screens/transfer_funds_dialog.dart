@@ -18,8 +18,9 @@ import 'package:business_sahaj_erp/data/local/collections/bank_account_collectio
 
 class TransferFundsDialog extends ConsumerStatefulWidget {
   final String? defaultFromAccount;
+  final Transaction? existingTransaction;
 
-  const TransferFundsDialog({Key? key, this.defaultFromAccount}) : super(key: key);
+  const TransferFundsDialog({Key? key, this.defaultFromAccount, this.existingTransaction}) : super(key: key);
 
   @override
   ConsumerState<TransferFundsDialog> createState() => _TransferFundsDialogState();
@@ -39,6 +40,7 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
   List<String> _bankAccounts = [];
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isEditing = false;
 
   late AnimationController _animController;
   late Animation<double> _scaleAnimation;
@@ -49,6 +51,34 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
     _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
     _scaleAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeOutBack);
     _animController.forward();
+    
+    if (widget.existingTransaction != null) {
+      _isEditing = true;
+      final t = widget.existingTransaction!;
+      _amountController.text = t.amount?.toString() ?? '';
+      _date = t.transactionDate ?? DateTime.now();
+      _descController.text = t.remarks ?? '';
+      _photoPath = t.referenceNumber; // Assuming this might hold URL or path
+      
+      if (t.paymentMode == 'Cash' && t.partyName != 'Cash') {
+         _transferType = 'Cash to Bank';
+         _toBank = t.partyName;
+      } else if (t.partyName == 'Cash' && t.paymentMode != 'Cash') {
+         _transferType = 'Bank to Cash';
+         _fromBank = t.paymentMode;
+      } else {
+         _transferType = 'Bank to Bank';
+         _fromBank = t.paymentMode;
+         _toBank = t.partyName;
+      }
+    } else if (widget.defaultFromAccount != null) {
+      if (widget.defaultFromAccount == 'Cash') {
+        _transferType = 'Cash to Bank';
+      } else {
+        _fromBank = widget.defaultFromAccount;
+      }
+    }
+    
     _loadBanks();
   }
 
@@ -168,16 +198,16 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
 
       final isar = ref.read(databaseServiceProvider).isar;
       
-      final txn = Transaction()
-        ..uuid = const Uuid().v4()
+      final txn = widget.existingTransaction ?? Transaction()
+        ..uuid = widget.existingTransaction?.uuid ?? const Uuid().v4()
         ..transactionType = 'Transfer'
         ..amount = amt
         ..transactionDate = _date
         ..paymentMode = paymentMode
         ..partyName = partyName
         ..remarks = _descController.text.trim()
-        ..referenceNumber = uploadedImageUrl // Storing image url here since it's synced and unused in transfer
-        ..createdAt = DateTime.now()
+        ..referenceNumber = uploadedImageUrl ?? widget.existingTransaction?.referenceNumber // Storing image url here since it's synced and unused in transfer
+        ..createdAt = widget.existingTransaction?.createdAt ?? DateTime.now()
         ..updatedAt = DateTime.now()
         ..isDeleted = false
         ..isSynced = false;
@@ -189,7 +219,7 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
           ..entityType = 'Transaction'
           ..entityId = id
           ..entityUuid = txn.uuid
-          ..operation = 'Insert'
+          ..operation = _isEditing ? 'Update' : 'Insert'
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(q);

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
 class MobileBottomSheets {
   /// Shows a modern, thumb-friendly Quick Create Bottom Sheet featuring ALL Transaction Types.
-  static Future<void> showQuickCreate(BuildContext context) {
+  static Future<void> showQuickCreate(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final settings = ref.read(sharedPreferencesProvider);
 
     return showModalBottomSheet(
       context: context,
@@ -197,6 +200,30 @@ class MobileBottomSheets {
                           context.go('/other-incomes?create=true');
                         },
                       ),
+                      if (settings.getBool('maintain_fixed_assets') ?? false) ...[
+                        _buildQuickActionTile(
+                          context,
+                          title: 'Purchase FA',
+                          subtitle: 'Buy fixed asset',
+                          icon: Icons.precision_manufacturing_rounded,
+                          color: const Color(0xFF6B7280),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.go('/purchase-fa?create=true');
+                          },
+                        ),
+                        _buildQuickActionTile(
+                          context,
+                          title: 'Sale FA',
+                          subtitle: 'Sell fixed asset',
+                          icon: Icons.sell_rounded,
+                          color: const Color(0xFF9CA3AF),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.go('/sale-fa?create=true');
+                          },
+                        ),
+                      ],
                       _buildQuickActionTile(
                         context,
                         title: 'Cash & Bank',

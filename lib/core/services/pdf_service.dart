@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -8,6 +8,7 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_item_collectio
 import 'package:business_sahaj_erp/core/models/firm_info.dart';
 import 'package:business_sahaj_erp/core/services/amount_to_words_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 
 class PdfService {
   final AmountToWordsService _amountToWordsService = AmountToWordsService();
@@ -27,6 +28,7 @@ class PdfService {
     Invoice invoice, {
     List<InvoiceItem>? items,
     required FirmInfo firmInfo,
+    List<BankAccount>? invoiceBanks,
   }) async {
     try {
       final pdf = pw.Document();
@@ -44,6 +46,7 @@ class PdfService {
                 docNumber: invoice.invoiceNumber ?? 'N/A',
                 dateStr: invoice.invoiceDate?.toIso8601String().substring(0, 10) ?? 'N/A',
                 firmInfo: firmInfo,
+                invoiceBanks: invoiceBanks,
               ),
               pw.SizedBox(height: 14),
 
@@ -68,6 +71,7 @@ class PdfService {
                 sgst: invoice.sgstAmount ?? 0.0,
                 igst: invoice.igstAmount ?? 0.0,
                 firmInfo: firmInfo,
+                invoiceBanks: invoiceBanks,
               ),
               pw.SizedBox(height: 20),
 
@@ -370,6 +374,7 @@ class PdfService {
     required double sgst,
     required double igst,
     required FirmInfo firmInfo,
+    List<BankAccount>? invoiceBanks,
   }) {
     final words = _amountToWordsService.convertToWords(grandTotal);
 
@@ -399,14 +404,27 @@ class PdfService {
                 ),
               ),
               pw.SizedBox(height: 8),
-              if (firmInfo.bankName.isNotEmpty || firmInfo.bankAcc.isNotEmpty || firmInfo.upi.isNotEmpty) ...[
+              if ((invoiceBanks != null && invoiceBanks.isNotEmpty) || firmInfo.bankName.isNotEmpty || firmInfo.bankAcc.isNotEmpty || firmInfo.upi.isNotEmpty) ...[
                 pw.Text('Payment & Banking Credentials:', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: obsidianDark)),
-                if (firmInfo.bankName.isNotEmpty)
-                  pw.Text('Bank Name: ${firmInfo.bankName}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
-                if (firmInfo.bankAcc.isNotEmpty)
-                  pw.Text('A/C No: ${firmInfo.bankAcc}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
-                if (firmInfo.ifsc.isNotEmpty)
-                  pw.Text('IFSC Code: ${firmInfo.ifsc}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                if (invoiceBanks != null && invoiceBanks.isNotEmpty) ...invoiceBanks.map((b) => pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Bank Name: ${b.bankName ?? b.accountName ?? ''}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                    if (b.accountNumber != null && b.accountNumber!.isNotEmpty)
+                      pw.Text('A/C No: ${b.accountNumber}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                    if (b.ifscCode != null && b.ifscCode!.isNotEmpty)
+                      pw.Text('IFSC: ${b.ifscCode}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                    pw.SizedBox(height: 4),
+                  ]
+                )).toList()
+                else ...[
+                  if (firmInfo.bankName.isNotEmpty)
+                    pw.Text('Bank Name: ${firmInfo.bankName}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                  if (firmInfo.bankAcc.isNotEmpty)
+                    pw.Text('A/C No: ${firmInfo.bankAcc}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                  if (firmInfo.ifsc.isNotEmpty)
+                    pw.Text('IFSC Code: ${firmInfo.ifsc}', style: pw.TextStyle(fontSize: 7.5, color: textMuted)),
+                ],
                 if (firmInfo.upi.isNotEmpty)
                   pw.Text('UPI ID: ${firmInfo.upi}', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: primaryIndigo)),
               ],

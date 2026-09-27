@@ -497,7 +497,26 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildQuickActionsGrid(BuildContext context) {
     final theme = Theme.of(context);
     
+    final settings = ref.read(sharedPreferencesProvider);
+    final bool maintainFA = settings.getBool('maintain_fixed_assets') ?? false;
+
     final List<Map<String, dynamic>> actions = [
+      if (maintainFA) ...[
+        {
+          'title': 'Purchase FA',
+          'subtitle': 'Buy fixed asset',
+          'icon': Icons.precision_manufacturing_rounded,
+          'color': const Color(0xFF6B7280),
+          'path': '/purchase-fa?create=true',
+        },
+        {
+          'title': 'Sale FA',
+          'subtitle': 'Sell fixed asset',
+          'icon': Icons.sell_rounded,
+          'color': const Color(0xFF9CA3AF),
+          'path': '/sale-fa?create=true',
+        },
+      ],
       {
         'title': 'Sales Order',
         'subtitle': 'Book customer order',

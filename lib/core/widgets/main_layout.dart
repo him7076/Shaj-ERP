@@ -142,7 +142,7 @@ class MainLayout extends ConsumerWidget {
                     if (isPersonal) {
                       AddEditPersonalTransactionDialog.show(context);
                     } else {
-                      MobileBottomSheets.showQuickCreate(context);
+                      MobileBottomSheets.showQuickCreate(context, ref);
                     }
                   },
                   child: const Icon(Icons.add_rounded, size: 34),

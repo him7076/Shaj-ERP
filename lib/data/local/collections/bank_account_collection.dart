@@ -25,6 +25,8 @@ class BankAccount implements IsarModel {
   @Index()
   bool isPersonalVault = false;
 
+  bool printOnInvoice = false;
+
   @override
   DateTime createdAt = DateTime.now();
 

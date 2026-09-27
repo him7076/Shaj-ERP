@@ -34,8 +34,6 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collec
 import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
-import 'package:business_sahaj_erp/data/local/collections/fixed_asset_transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
@@ -129,8 +127,6 @@ class DatabaseService {
             DeletedVoucherSchema,
             StockAdjustmentSchema,
             WhatsAppMappingSchema,
-            FixedAssetSchema,
-            FixedAssetTransactionSchema,
             MachinerySchema,
             MachineryCategorySchema,
             TaskSchema,
@@ -202,8 +198,6 @@ class DatabaseService {
               DeletedVoucherSchema,
               StockAdjustmentSchema,
               WhatsAppMappingSchema,
-              FixedAssetSchema,
-              FixedAssetTransactionSchema,
               MachinerySchema,
               MachineryCategorySchema,
               TaskSchema,

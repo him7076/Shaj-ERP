@@ -390,113 +390,13 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
 
   // --- Add/Edit Account Dialog ---
   Future<void> _showAddEditAccountDialog({BankAccount? existingAccount}) async {
-    final isEdit = existingAccount != null;
-    final nameCtrl = TextEditingController(text: existingAccount?.accountName);
-    final bankCtrl = TextEditingController(text: existingAccount?.bankName);
-    final numCtrl = TextEditingController(text: existingAccount?.accountNumber);
-    final ifscCtrl = TextEditingController(text: existingAccount?.ifscCode);
-    final branchCtrl = TextEditingController(text: existingAccount?.branchName);
-    final balCtrl = TextEditingController(text: (existingAccount?.openingBalance ?? 0.0).toString());
-
-    final formKey = GlobalKey<FormState>();
-
-    await showDialog(
+    final result = await showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(isEdit ? 'Edit Bank Account' : 'Add New Bank Account', style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Account Display Name *', hintText: 'e.g. HDFC Primary A/C', ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: bankCtrl,
-                  decoration: const InputDecoration(labelText: 'Bank Name', hintText: 'e.g. HDFC Bank, State Bank of India', ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: numCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Account Number', ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: ifscCtrl,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(labelText: 'IFSC Code', hintText: 'e.g. HDFC0001234', ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: branchCtrl,
-                  decoration: const InputDecoration(labelText: 'Branch Name', ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: balCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Opening Balance (₹)', ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (formKey.currentState!.validate()) {
-                final isar = ref.read(databaseServiceProvider).isar;
-                final openBal = double.tryParse(balCtrl.text.trim()) ?? 0.0;
-
-                final acc = existingAccount ?? BankAccount();
-                acc.accountName = nameCtrl.text.trim();
-                acc.bankName = bankCtrl.text.trim();
-                acc.accountNumber = numCtrl.text.trim();
-                acc.ifscCode = ifscCtrl.text.trim().toUpperCase();
-                acc.branchName = branchCtrl.text.trim();
-                acc.openingBalance = openBal;
-                acc.uuid ??= const Uuid().v4();
-                if (!isEdit) {
-                  acc.currentBalance = openBal;
-                }
-                acc.updatedAt = DateTime.now();
-                acc.isSynced = false;
-
-                await isar.writeTxn(() async {
-                  await isar.bankAccounts.put(acc);
-                  await isar.syncQueues.put(SyncQueue()
-                    ..uuid = const Uuid().v4()
-                    ..entityType = 'BankAccount'
-                    ..entityId = acc.id
-                    ..entityUuid = acc.uuid
-                    ..operation = isEdit ? 'Update' : 'Insert'
-                    ..createdAt = DateTime.now()
-                    ..updatedAt = DateTime.now());
-                });
-
-                try {
-                  ref.read(syncServiceProvider).syncPendingChangesQuietly();
-                } catch (_) {}
-
-                ref.invalidate(bankAccountsListProvider);
-
-                Navigator.pop(ctx);
-                await _loadAccounts();
-              }
-            },
-            child: Text(isEdit ? 'Update Account' : 'Save Account'),
-          ),
-        ],
-      ),
+      builder: (_) => AddEditBankAccountDialog(existingAccount: existingAccount),
     );
+    if (result == true) {
+      _loadAccounts();
+    }
   }
 
   Future<void> _deleteAccount(BankAccount acc) async {
@@ -1027,12 +927,21 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                                       final isar = ref.read(databaseServiceProvider).isar;
                                       final txn = await isar.transactions.filter().uuidEqualTo(t.entityUuid).findFirst();
                                       if (txn != null && mounted) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => AddEditTransactionDialog(
-                                            transaction: txn,
-                                          ),
-                                        ).then((_) => _loadTransactions());
+                                        if (txn.transactionType == 'Transfer') {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) => TransferFundsDialog(
+                                              existingTransaction: txn,
+                                            ),
+                                          ).then((_) => _loadTransactions());
+                                        } else {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) => AddEditTransactionDialog(
+                                              transaction: txn,
+                                            ),
+                                          ).then((_) => _loadTransactions());
+                                        }
                                       }
                                     } else if (t.entityType == 'Invoice') {
                                       Navigator.of(context, rootNavigator: true).push(
