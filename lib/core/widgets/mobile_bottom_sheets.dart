@@ -200,7 +200,7 @@ class MobileBottomSheets {
                           context.go('/other-incomes?create=true');
                         },
                       ),
-                      if (settings.getBool('maintain_fixed_assets') ?? false) ...[
+                      if (settings.getBool('enable_fixed_assets') ?? false) ...[
                         _buildQuickActionTile(
                           context,
                           title: 'Purchase FA',

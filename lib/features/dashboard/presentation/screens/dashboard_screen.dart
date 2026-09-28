@@ -499,7 +499,7 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     
     final settings = ref.read(sharedPreferencesProvider);
-    final bool maintainFA = settings.getBool('maintain_fixed_assets') ?? false;
+    final bool maintainFA = settings.getBool('enable_fixed_assets') ?? false;
 
     final List<Map<String, dynamic>> actions = [
       if (maintainFA) ...[

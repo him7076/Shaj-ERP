@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/features/orders/presentation/screens/orders_s
 import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_order_importer_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/whatsapp_mappings_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/sales_screen.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/reports_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/settings_screen.dart';
 import 'package:business_sahaj_erp/features/settings/presentation/screens/printing_settings_screen.dart';
@@ -23,6 +24,7 @@ import 'package:business_sahaj_erp/features/sync/presentation/screens/sync_cente
 import 'package:business_sahaj_erp/features/backup/presentation/screens/snapshot_backup_screen.dart';
 import 'package:business_sahaj_erp/features/backup/presentation/screens/data_repair_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/purchases_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/transactions_screen.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/screens/receivables_screen.dart';
@@ -153,6 +155,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               final create = state.uri.queryParameters['create'] == 'true';
               return ExpensesScreen(createImmediately: create);
             },
+          ),
+          GoRoute(
+            path: '/purchase-fa',
+            name: 'purchase-fa',
+            builder: (context, state) => const AddEditPurchaseScreen(isFixedAsset: true),
+          ),
+          GoRoute(
+            path: '/sale-fa',
+            name: 'sale-fa',
+            builder: (context, state) => const AddEditInvoiceScreen(isFixedAsset: true),
           ),
           GoRoute(
             path: '/reports',
