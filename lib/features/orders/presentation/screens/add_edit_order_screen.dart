@@ -310,12 +310,764 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
         order.editTime = DateTime.now();
       }
 
-      order.orderDate = _orderDate
-      ..paymentMode = _paymentMode
-      ..discountType = _isDiscountPercent ? "percentage" : "flat"
-      ..discountPercent = _isDiscountPercent ? double.tryParse(_discountController.text) : null
-      ..attachedImage = _attachedImage
-      ..isSynced = false;
+      order.orderDate = _orderDate;
+      order.paymentMode = _paymentMode;
+      order.discountType = _isDiscountPercent ? "percentage" : "flat";
+      order.discountPercent = _isDiscountPercent ? (double.tryParse(_discountController.text) ?? 0.0) : 0.0;
+      order.attachedImage = _attachedImage;
+      order.isSynced = false;
+      order.partyId = cart.selectedParty!.id;
+      order.partyName = cart.selectedParty!.partyName;
+      order.mobileNumber = cart.selectedParty!.mobileNumber;
+      order.gstNumber = cart.selectedParty!.gstNumber;
+
+      order.subtotal = totals['subtotal'];
+      order.discountAmount = totals['discountAmount'];
+      order.discountPercent = double.tryParse(_discountPercentController.text) ?? 0.0;
+      order.totalGST = totals['totalGST'];
+      order.roundOff = totals['roundOff'];
+      order.grandTotal = totals['grandTotal'];
+      order.remarks = _remarksController.text.trim();
+
+      if (!kIsWeb) {
+        order.party.value = cart.selectedParty;
+      }
+
+      final List<OrderItem> orderItems = cart.items.map((cartItem) {
+        final orderItem = OrderItem()
+          ..itemId = cartItem.item.id
+          ..itemName = cartItem.item.itemName
+          ..hsnCode = cartItem.item.hsnCode
+          ..quantity = cartItem.quantity
+          ..freeQuantity = cartItem.freeQuantity
+          ..unit = cartItem.unit ?? cartItem.item.primaryUnitName ?? cartItem.item.unit.value?.shortName ?? cartItem.item.unit.value?.unitName ?? 'PCS'
+          ..rate = cartItem.rate
+          ..discountAmount = cartItem.discountAmount
+          ..discountPercent = cartItem.discountPercent
+          ..taxableAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
+          ..gstPercent = cartItem.gstPercent
+          ..gstAmount = cartItem.gstPercent * cartItem.rate * 0.01
+          ..totalAmount = cartItem.quantity * cartItem.rate - cartItem.discountAmount
+          ..batchNumber = cartItem.batchNumber
+          ..expiryDate = cartItem.expiryDate
+          ..mfgDate = cartItem.mfgDate;
+
+
+        if (!kIsWeb) {
+          orderItem.item.value = cartItem.item;
+        }
+        return orderItem;
+      }).toList();
+
+      await repo.saveOrder(order, orderItems);
+
+      // Quiet background sync for newly saved order
+      Future.microtask(() {
+        try {
+          ref.read(syncServiceProvider).syncPendingChangesQuietly();
+        } catch (_) {}
+      });
+
+      ref.invalidate(filteredOrdersProvider);
+      ref.invalidate(dashboardAnalyticsProvider);
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sales Order #${order.orderNumber} recorded!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      logger.error('Failed to save Sales Order', e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save order: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+final theme = Theme.of(context);
+    final cart = ref.watch(cartProvider);
+    final isDesktop = ResponsiveLayout.isDesktop(context);
+
+    if (_isSaving) {
+      return Scaffold(bottomNavigationBar: SafeArea(
+          child: Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: theme.scaffoldBackgroundColor,
+              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isSaving ? null : () => _saveOrder(isSaveAndNew: true),
+                    icon: const Icon(Icons.add_task),
+                    label: const Text('Save & New'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isSaving ? null : () => _saveOrder(isSaveAndNew: false),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Save & Close'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      body: Center(child: CircularProgressIndicator()));
+    }
+
+    final mainContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildPartyAndHeaderCard(theme),
+        const SizedBox(height: 16),
+        _buildProductSearchAndCatalog(theme),
+        const SizedBox(height: 16),
+        _buildCartItemsTable(theme, cart),
+      ],
+    );
+
+    final summaryContent = NeuCard(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+            left: BorderSide(color: Color(0xFF5E35B1), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+            Row(
+              children: [
+                Icon(Icons.description_outlined, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Order Details', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Paid Amount with auto-fill checkbox
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: Checkbox(
+                    value: _isPaidAmountAutoFill,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: (val) {
+                      setState(() {
+                        _isPaidAmountAutoFill = val ?? false;
+                        if (_isPaidAmountAutoFill) {
+                          final totals = ref.read(cartProvider.notifier).calculateTotals(null);
+                          final grandTotal = totals['grandTotal'] ?? 0.0;
+                          _paidAmountController.text = grandTotal.toStringAsFixed(2);
+                        } else {
+                          _paidAmountController.clear();
+                        }
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: _paidAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(fontSize: 13),
+                    decoration: const InputDecoration(
+                      labelText: 'Paid/Settled (₹)',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                    ),
+                    onChanged: (val) {
+                      setState(() { _isPaidAmountAutoFill = false; });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: ref.watch(bankAccountsListProvider).when(
+                    data: (accounts) {
+                      final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                      final dropdownItems = <DropdownMenuItem<String>>[
+                        const DropdownMenuItem(value: 'Cash', child: Text('Cash', style: TextStyle(fontSize: 13))),
+                        const DropdownMenuItem(value: 'Credit', child: Text('Credit', style: TextStyle(fontSize: 13))),
+                        const DropdownMenuItem(value: 'Cheque', child: Text('Cheque', style: TextStyle(fontSize: 13))),
+                        ...activeAccounts.map((acc) => DropdownMenuItem(
+                          value: acc.accountName,
+                          child: Text(acc.accountName ?? '', style: const TextStyle(fontSize: 13)),
+                        )),
+                      ];
+                      if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
+                        dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode, style: const TextStyle(fontSize: 13))));
+                      }
+                      return DropdownButtonFormField<String>(
+                        value: _paymentMode.isNotEmpty ? _paymentMode : 'Cash',
+                        decoration: const InputDecoration(
+                          labelText: 'Payment Mode',
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          prefixIcon: Icon(Icons.payment, size: 18),
+                        ),
+                        items: dropdownItems,
+                        onChanged: (val) {
+                          if (val != null) setState(() => _paymentMode = val);
+                        },
+                      );
+                    },
+                    loading: () => const CircularProgressIndicator(),
+                    error: (e, _) => const Text('Error'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _dueDate,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (selected != null) {
+                        setState(() => _dueDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Expected Date',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        prefixIcon: Icon(Icons.event_outlined, size: 18),
+                      ),
+                      child: Text(DateFormat('dd MMM yyyy').format(_dueDate), style: const TextStyle(fontSize: 13)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: _remarksController,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: const InputDecoration(
+                      labelText: 'Remarks / Notes',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                      prefixIcon: Icon(Icons.notes_rounded, size: 18),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
+            ),
+            Row(
+              children: [
+                Icon(Icons.local_offer_outlined, size: 18, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text('Discounts & Attachments', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: _discountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Discount',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<bool>(
+                            value: _isDiscountPercent,
+                            isDense: true,
+                            items: const [
+                              DropdownMenuItem(value: true, child: Text('%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+                              DropdownMenuItem(value: false, child: Text('₹', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                setState(() {
+                                  _isDiscountPercent = val;
+                                  final double? amt = double.tryParse(_discountController.text);
+                                  if (_isDiscountPercent) {
+                                    ref.read(cartProvider.notifier).setOrderDiscounts(amt, null); // Reused method
+                                  } else {
+                                    ref.read(cartProvider.notifier).setOrderDiscounts(null, amt);
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    onChanged: (val) {
+                      final double? amt = double.tryParse(val);
+                      if (_isDiscountPercent) {
+                        ref.read(cartProvider.notifier).setOrderDiscounts(amt, null);
+                      } else {
+                        ref.read(cartProvider.notifier).setOrderDiscounts(null, amt);
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                         _attachedImage = _attachedImage == null ? 'attached.jpg' : null;
+                      });
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Attachment',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        prefixIcon: const Icon(Icons.image_outlined, size: 18),
+                        suffixIcon: _attachedImage != null 
+                           ? IconButton(icon: const Icon(Icons.close, size: 16), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 32), onPressed: () => setState(()=> _attachedImage = null)) 
+                           : null,
+                      ),
+                      child: Text(_attachedImage != null ? 'Image Attached' : 'Add Image', style: TextStyle(fontSize: 13, color: _attachedImage != null ? Colors.green : Colors.grey)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildTotalsSummaryPanel(theme),
+            const SizedBox(height: 20),
+            const SizedBox.shrink(), // old save button
+          ],
+        ),
+      ),
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+        title: Text(widget.orderUuid != null ? 'Edit Sales Order' : 'Record Sales Order'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: isDesktop
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 3, child: mainContent),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 2, child: summaryContent),
+                ],
+              )
+            : Column(
+                children: [
+                  mainContent,
+                  const SizedBox(height: 16),
+                  summaryContent,
+                  const SizedBox(height: 30),
+                ],
+              ),
+      ),
+      bottomNavigationBar: !isDesktop
+          ? null
+          : Builder(
+              builder: (context) {
+          final cart = ref.watch(cartProvider);
+          return FutureBuilder<Settings?>(
+            future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
+            builder: (context, snapshot) {
+              final totals = ref.read(cartProvider.notifier).calculateTotals(snapshot.data?.companyGST);
+              final grandTotal = totals['grandTotal'] ?? 0.0;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Grand Total (${cart.items.length} items)',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                        Text(
+                          'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${grandTotal.toStringAsFixed(2)}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Save Sales Order', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: _saveOrder,
+                      style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPartyAndHeaderCard(ThemeData theme) {
+    final partiesAsync = ref.watch(partiesListProvider);
+    final cart = ref.watch(cartProvider);
+
+    return NeuCard(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+            left: BorderSide(color: Color(0xFF1E88E5), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Billing Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            partiesAsync.when(
+              data: (parties) {
+                final customerParties = parties.where((p) => p.partyType != 'Supplier').toList();
+                return SearchablePartyDropdown(
+                  parties: customerParties,
+                  selectedParty: cart.selectedParty != null && customerParties.any((p) => p.uuid == cart.selectedParty!.uuid)
+                      ? customerParties.firstWhere((p) => p.uuid == cart.selectedParty!.uuid)
+                      : null,
+                  labelText: 'Select Customer Account',
+                  onChanged: (party) {
+                    ref.read(cartProvider.notifier).setParty(party);
+                  },
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Text('Error loading customers: $e'),
+            ),
+            if (cart.selectedParty != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info, color: Colors.blue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'GST: ${cart.selectedParty!.gstNumber ?? "Unregistered"} | City: ${cart.selectedParty!.city ?? "N/A"} | Current Outstanding: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const Divider(height: 24),
+            ResponsiveFormRow(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _orderDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _orderDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(labelText: 'Order Date',  isDense: true),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_orderDate), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+                          value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : _salesmenList.first,
+                          decoration: InputDecoration(
+                            labelText: 'Salesman Name',
+                            
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
+                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedSalesman = val);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        icon: const Icon(Icons.person_add_alt_1),
+                        tooltip: 'Add Salesman',
+                        onPressed: _showAddSalesmanDialog,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildProductSearchAndCatalog(ThemeData theme) {
+    final itemsAsync = ref.watch(filteredItemsProvider);
+
+    return NeuCard(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+            left: BorderSide(color: Color(0xFF43A047), width: 5),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            Text('Search & Add Products', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: itemsAsync.when(
+                    data: (items) {
+                      return Autocomplete<Item>(
+                        displayStringForOption: (item) => '${item.itemName ?? "Unnamed"} (Stock: ${item.currentStock?.toInt() ?? 0})',
+                        optionsBuilder: (textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return items.take(20);
+                          }
+                          final query = textEditingValue.text.toLowerCase();
+                          return items.where((item) {
+                            final name = item.itemName?.toLowerCase() ?? '';
+                            final code = item.itemCode?.toLowerCase() ?? '';
+                            return name.contains(query) || code.contains(query);
+                          });
+                        },
+                        optionsMaxHeight: 300,
+                        onSelected: (item) {
+                          ref.read(cartProvider.notifier).addItem(item);
+                          FocusScope.of(context).unfocus();
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 6,
+                              borderRadius: BorderRadius.circular(12),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
+                                child: ListView.builder(
+                                  padding: EdgeInsets.zero,
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  itemBuilder: (context, index) {
+                                    final item = options.elementAt(index);
+                                    return ListTile(
+                                      dense: true,
+                                      leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
+                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                      subtitle: Text(
+                                        'Code: ${item.itemCode ?? "N/A"} | Price: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                      onTap: () => onSelected(item),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              labelText: 'Type product name to add...',
+                              prefixIcon: Icon(Icons.search),
+                              
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => Text('Error loading products: $e'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.add_shopping_cart_rounded),
+                  tooltip: 'Search & Pick Item from Catalog',
+                  onPressed: () { FullScreenItemEntry.show(context, onAdd: (data) { _addFullScreenItemLine(data); ref.invalidate(filteredItemsProvider); }); },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  void _addFullScreenItemLine(FullScreenItemEntryData data) {
+    final item = data.item;
+
+    final newItem = OrderItem()
+      ..itemId = item.id
+      ..itemName = item.itemName
+      ..hsnCode = item.hsnCode
+      ..quantity = data.quantity
+      ..unit = data.unit
+      ..rate = data.rate
+      ..discountAmount = data.discountAmount // some models use discountAmount, some use discount
+      ..batchNumber = data.batchNumber
+      ..mfgDate = data.mfgDate?.toIso8601String()
+      ..expiryDate = data.expDate?.toIso8601String();
+      
+    newItem.item.value = item;
+
+    final notifier = ref.read(cartProvider.notifier);
+    notifier.addItem(newItem.item.value!);
+    final cart = ref.read(cartProvider);
+    
+    // Different providers have slightly different updateItemAt arguments
+    try {
+      notifier.updateItemAt(
+        cart.items.length - 1,
+        quantity: data.quantity,
+        rate: data.rate,
+        discountAmount: data.discountAmount,
+        discountPercent: data.discountPercent,
+        unit: data.unit,
+        batchNumber: data.batchNumber ?? '',
+        mfgDate: data.mfgDate?.toIso8601String() ?? '',
+        expiryDate: data.expDate?.toIso8601String() ?? '',
+      );
+    } catch(e) {
+      // Fallback if some arguments like discountPercent are not supported
+      notifier.updateItemAt(
+        cart.items.length - 1,
+        quantity: data.quantity,
+        rate: data.rate,
+        discountAmount: data.discountAmount,
+        unit: data.unit,
+        batchNumber: data.batchNumber ?? '',
+        mfgDate: data.mfgDate?.toIso8601String() ?? '',
+        expiryDate: data.expDate?.toIso8601String() ?? '',
+      );
+    }
+    
+    if (data.saleRate != (item.sellRate ?? 0.0) || data.purchaseRate != (item.buyRate ?? 0.0)) {
+        item.sellRate = data.saleRate;
+        item.buyRate = data.purchaseRate;
+        item.updatedAt = DateTime.now();
+        item.isSynced = false;
         try {
           ref.invalidate(itemsListProvider);
         } catch (_) {}
