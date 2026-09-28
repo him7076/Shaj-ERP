@@ -541,8 +541,8 @@ class SyncService {
 
     try {
       // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
-      //    This is critical � stale entity timestamps cause filterCutoff to block full download!
-      //    NOTE: We NEVER purge local DB here � existing local offline data must be preserved!
+      //    This is critical Ã¯Â¿Â½ stale entity timestamps cause filterCutoff to block full download!
+      //    NOTE: We NEVER purge local DB here Ã¯Â¿Â½ existing local offline data must be preserved!
       final activeFirmId = _dbService.activeFirmId;
       await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
       await _prefs.remove(AppConstants.keyLastSyncTime);
@@ -560,7 +560,7 @@ class SyncService {
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
       }
-      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId � forcing full fresh download.');
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId Ã¯Â¿Â½ forcing full fresh download.');
 
       // 3. Re-seed standard commercial units in local DB
       await DemoDataSeeder.seedStandardUnits(_dbService);
@@ -920,7 +920,7 @@ class SyncService {
   }
 
   /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
-  /// [silent] = true when called from background quiet sync � avoids polluting global state
+  /// [silent] = true when called from background quiet sync Ã¯Â¿Â½ avoids polluting global state
   Future<void> _uploadLocalChanges({bool silent = false}) async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
@@ -954,7 +954,7 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    // Deduplicate queue items to minimize Firebase Writes � with event-loop yielding
+    // Deduplicate queue items to minimize Firebase Writes Ã¯Â¿Â½ with event-loop yielding
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1130,7 +1130,7 @@ class SyncService {
       }
     }
 
-    // Mark synced items in local DB � chunked with yields
+    // Mark synced items in local DB Ã¯Â¿Â½ chunked with yields
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1238,14 +1238,14 @@ class SyncService {
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Determine filterCutoff � ONLY for incremental sync, NEVER for forceFullDownload
+        // Determine filterCutoff Ã¯Â¿Â½ ONLY for incremental sync, NEVER for forceFullDownload
         DateTime? filterCutoff;
         if (!forceFullDownload) {
           final String? lastCloudSyncStr = prefs.getString(timestampKey);
           if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
             final parsed = DateTime.tryParse(lastCloudSyncStr);
             if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
-              // Subtract 30 seconds (not 2 minutes) as safety overlap � less wasteful reads
+              // Subtract 30 seconds (not 2 minutes) as safety overlap Ã¯Â¿Â½ less wasteful reads
               filterCutoff = parsed.subtract(const Duration(seconds: 30));
             }
           }
@@ -1253,7 +1253,7 @@ class SyncService {
 
         dynamic querySnapshot;
 
-        // Step 1: Compound query (companyId + firmId + filterCutoff) � primary path for delta sync
+        // Step 1: Compound query (companyId + firmId + filterCutoff) Ã¯Â¿Â½ primary path for delta sync
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
@@ -1292,7 +1292,7 @@ class SyncService {
           continue;
         }
 
-        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType � processing...');
+        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType Ã¯Â¿Â½ processing...');
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
@@ -1384,7 +1384,7 @@ class SyncService {
     }
 
     // Post-download pass: Re-link relations and recalculate stocks
-    // ONLY run during full download � during delta sync this is wasteful O(N�) overhead
+    // ONLY run during full download Ã¯Â¿Â½ during delta sync this is wasteful O(NÃ¯Â¿Â½) overhead
     // that loads ALL records into memory and causes the "96% hang"
     if (forceFullDownload) {
       try {
@@ -1430,96 +1430,183 @@ class SyncService {
   /// with their respective parent documents by UUID/ID in local DB.
   Future<void> _relinkAllRelations() async {
     final isar = _dbService.isar;
-    logger.info('Executing post-sync pass to re-link all line items to parents...');
+    logger.info('Executing post-sync pass to re-link all line items to parents and products...');
 
     try {
+      final allItems = await _chunkedFindAll((o, l) => isar.items.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, Item> itemByUuid = {};
+      for (var it in allItems) {
+        if (it.uuid != null && it.uuid!.isNotEmpty) itemByUuid[it.uuid!] = it;
+      }
+
+      // 1. Invoices
       final allInvoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final Map<String, Invoice> invoiceByUuid = {};
       final Map<int, Invoice> invoiceById = {};
-
-      for (int i = 0; i < allInvoices.length; i++) {
-        final inv = allInvoices[i];
-        if (inv.uuid != null && inv.uuid!.isNotEmpty) {
-          invoiceByUuid[inv.uuid!] = inv;
-        }
+      for (var inv in allInvoices) {
+        if (inv.uuid != null && inv.uuid!.isNotEmpty) invoiceByUuid[inv.uuid!] = inv;
         invoiceById[inv.id] = inv;
       }
 
       final allInvoiceItems = await _chunkedFindAll((o, l) => isar.invoiceItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final List<InvoiceItem> modifiedInvItems = [];
-
-      for (int i = 0; i < allInvoiceItems.length; i++) {
-        final item = allInvoiceItems[i];
+      for (var item in allInvoiceItems) {
+        bool modified = false;
         Invoice? parent = item.invoice.value;
-
-        if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) {
-          parent = invoiceByUuid[item.parentInvoiceUuid!];
-        }
-
-        if (parent == null && (item.parentInvoiceUuid == null || item.parentInvoiceUuid!.isEmpty) && item.parentInvoiceId != null) {
-          parent = invoiceById[item.parentInvoiceId!];
-        }
-
+        if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) parent = invoiceByUuid[item.parentInvoiceUuid!];
+        if (parent == null && (item.parentInvoiceUuid == null || item.parentInvoiceUuid!.isEmpty) && item.parentInvoiceId != null) parent = invoiceById[item.parentInvoiceId!];
         if (parent != null) {
           item.invoice.value = parent;
           item.parentInvoiceId = parent.id;
           item.parentInvoiceUuid = parent.uuid;
-          modifiedInvItems.add(item);
+          modified = true;
         }
-      }
 
-      if (modifiedInvItems.isNotEmpty) {
-        await isar.writeTxn(() async {
-          await isar.invoiceItems.putAll(modifiedInvItems);
-        });
+        Item? prod = item.item.value;
+        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedInvItems.add(item);
       }
+      if (modifiedInvItems.isNotEmpty) await isar.writeTxn(() async { await isar.invoiceItems.putAll(modifiedInvItems); });
 
-      // Relink PurchaseItems
+      // 2. Purchases
       final allPurchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final Map<String, Purchase> purchaseByUuid = {};
       final Map<int, Purchase> purchaseById = {};
-
-      for (int i = 0; i < allPurchases.length; i++) {
-        final pur = allPurchases[i];
-        if (pur.uuid != null && pur.uuid!.isNotEmpty) {
-          purchaseByUuid[pur.uuid!] = pur;
-        }
+      for (var pur in allPurchases) {
+        if (pur.uuid != null && pur.uuid!.isNotEmpty) purchaseByUuid[pur.uuid!] = pur;
         purchaseById[pur.id] = pur;
       }
 
       final allPurchaseItems = await _chunkedFindAll((o, l) => isar.purchaseItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
       final List<PurchaseItem> modifiedPurItems = [];
-
-      for (int i = 0; i < allPurchaseItems.length; i++) {
-        final item = allPurchaseItems[i];
+      for (var item in allPurchaseItems) {
+        bool modified = false;
         Purchase? parent = item.purchase.value;
-
-        if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) {
-          parent = purchaseByUuid[item.purchaseUuid!];
-        }
-
-        if (parent == null && (item.purchaseUuid == null || item.purchaseUuid!.isEmpty) && item.purchaseId != null) {
-          parent = purchaseById[item.purchaseId!];
-        }
-
+        if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) parent = purchaseByUuid[item.purchaseUuid!];
+        if (parent == null && (item.purchaseUuid == null || item.purchaseUuid!.isEmpty) && item.purchaseId != null) parent = purchaseById[item.purchaseId!];
         if (parent != null) {
           item.purchase.value = parent;
           item.purchaseId = parent.id;
           item.purchaseUuid = parent.uuid;
-          modifiedPurItems.add(item);
+          modified = true;
         }
-      }
 
-      if (modifiedPurItems.isNotEmpty) {
-        await isar.writeTxn(() async {
-          await isar.purchaseItems.putAll(modifiedPurItems);
-        });
+        Item? prod = item.item.value;
+        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedPurItems.add(item);
       }
+      if (modifiedPurItems.isNotEmpty) await isar.writeTxn(() async { await isar.purchaseItems.putAll(modifiedPurItems); });
+
+      // 3. Orders
+      final allOrders = await _chunkedFindAll((o, l) => isar.orders.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, Order> orderByUuid = {};
+      final Map<int, Order> orderById = {};
+      for (var ord in allOrders) {
+        if (ord.uuid != null && ord.uuid!.isNotEmpty) orderByUuid[ord.uuid!] = ord;
+        orderById[ord.id] = ord;
+      }
+      final allOrderItems = await _chunkedFindAll((o, l) => isar.orderItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<OrderItem> modifiedOrderItems = [];
+      for (var item in allOrderItems) {
+        bool modified = false;
+        Order? parent = item.order.value;
+        if (parent == null && item.parentOrderUuid != null && item.parentOrderUuid!.isNotEmpty) parent = orderByUuid[item.parentOrderUuid!];
+        if (parent == null && (item.parentOrderUuid == null || item.parentOrderUuid!.isEmpty) && item.parentOrderId != null) parent = orderById[item.parentOrderId!];
+        if (parent != null) {
+          item.order.value = parent;
+          item.parentOrderId = parent.id;
+          item.parentOrderUuid = parent.uuid;
+          modified = true;
+        }
+        Item? prod = item.item.value;
+        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedOrderItems.add(item);
+      }
+      if (modifiedOrderItems.isNotEmpty) await isar.writeTxn(() async { await isar.orderItems.putAll(modifiedOrderItems); });
+
+      // 4. Credit Notes
+      final allCN = await _chunkedFindAll((o, l) => isar.creditNotes.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, CreditNote> cnByUuid = {};
+      final Map<int, CreditNote> cnById = {};
+      for (var cn in allCN) {
+        if (cn.uuid != null && cn.uuid!.isNotEmpty) cnByUuid[cn.uuid!] = cn;
+        cnById[cn.id] = cn;
+      }
+      final allCNItems = await _chunkedFindAll((o, l) => isar.creditNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<CreditNoteItem> modifiedCNItems = [];
+      for (var item in allCNItems) {
+        bool modified = false;
+        CreditNote? parent = item.creditNote.value;
+        if (parent == null && item.parentCreditNoteUuid != null && item.parentCreditNoteUuid!.isNotEmpty) parent = cnByUuid[item.parentCreditNoteUuid!];
+        if (parent == null && (item.parentCreditNoteUuid == null || item.parentCreditNoteUuid!.isEmpty) && item.parentCreditNoteId != null) parent = cnById[item.parentCreditNoteId!];
+        if (parent != null) {
+          item.creditNote.value = parent;
+          item.parentCreditNoteId = parent.id;
+          item.parentCreditNoteUuid = parent.uuid;
+          modified = true;
+        }
+        Item? prod = item.item.value;
+        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedCNItems.add(item);
+      }
+      if (modifiedCNItems.isNotEmpty) await isar.writeTxn(() async { await isar.creditNoteItems.putAll(modifiedCNItems); });
+
+      // 5. Debit Notes
+      final allDN = await _chunkedFindAll((o, l) => isar.debitNotes.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, DebitNote> dnByUuid = {};
+      final Map<int, DebitNote> dnById = {};
+      for (var dn in allDN) {
+        if (dn.uuid != null && dn.uuid!.isNotEmpty) dnByUuid[dn.uuid!] = dn;
+        dnById[dn.id] = dn;
+      }
+      final allDNItems = await _chunkedFindAll((o, l) => isar.debitNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<DebitNoteItem> modifiedDNItems = [];
+      for (var item in allDNItems) {
+        bool modified = false;
+        DebitNote? parent = item.debitNote.value;
+        if (parent == null && item.parentDebitNoteUuid != null && item.parentDebitNoteUuid!.isNotEmpty) parent = dnByUuid[item.parentDebitNoteUuid!];
+        if (parent == null && (item.parentDebitNoteUuid == null || item.parentDebitNoteUuid!.isEmpty) && item.parentDebitNoteId != null) parent = dnById[item.parentDebitNoteId!];
+        if (parent != null) {
+          item.debitNote.value = parent;
+          item.parentDebitNoteId = parent.id;
+          item.parentDebitNoteUuid = parent.uuid;
+          modified = true;
+        }
+        Item? prod = item.item.value;
+        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedDNItems.add(item);
+      }
+      if (modifiedDNItems.isNotEmpty) await isar.writeTxn(() async { await isar.debitNoteItems.putAll(modifiedDNItems); });
+
     } catch (e) {
       logger.error('Error during post-sync relation re-linking pass', e);
     }
   }
-
   /// Recalculates party outstanding balances dynamically from transactions & invoices
   Future<void> recalculateAllPartyBalancesFromTransactions() async {
     final isar = _dbService.isar;
@@ -3605,7 +3692,7 @@ class SyncService {
     }
   }
 
-  /// Appends log items � Success logs to local SharedPreferences only, Failures to Firestore
+  /// Appends log items Ã¯Â¿Â½ Success logs to local SharedPreferences only, Failures to Firestore
   Future<void> _logSyncEvent(String result, String message) async {
     // Success logs: local-only to minimize Firebase writes
     if (result == 'Success') {

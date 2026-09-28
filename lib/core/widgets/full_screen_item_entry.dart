@@ -110,6 +110,11 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
       _gstController.text = '18.0';
       _resetKey++;
     });
+    FocusScope.of(context).requestFocus(); // Reset focus to the dropdown if possible
+  }
+
+  void _cancel() {
+    Navigator.pop(context);
   }
 
   @override
@@ -215,13 +220,30 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                     ),
                   ),
                   const Spacer(),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: _save,
-                    child: const Text('SAVE & ADD', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: _cancel,
+                          child: const Text('CANCEL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: _save,
+                          child: const Text('SAVE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ],

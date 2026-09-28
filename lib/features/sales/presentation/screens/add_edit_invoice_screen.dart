@@ -1452,10 +1452,25 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () async {
-                        final selectedItem = await ItemSearchPickerModal.show(context, excludeBundles: true);
-                        if (selectedItem != null) {
-                          await _handleItemAdded(selectedItem);
-                        }
+                        FullScreenItemEntry.show(
+      context, excludeBundles: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        await _handleItemAdded(tempSelected);
+        // Post-update qty and discount
+        ref.read(invoiceCartProvider.notifier).updateItem(
+          data.item.uuid ?? '',
+          quantity: data.quantity,
+          discountAmount: data.discountAmount,
+        );
+        
+      },
+    );
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
                       label: const Text('Add Item'),
@@ -1468,10 +1483,25 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
-                          if (selectedItem != null) {
-                            await _handleItemAdded(selectedItem);
-                          }
+                          FullScreenItemEntry.show(
+      context, onlyBundles: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        await _handleItemAdded(tempSelected);
+        // Post-update qty and discount
+        ref.read(invoiceCartProvider.notifier).updateItem(
+          data.item.uuid ?? '',
+          quantity: data.quantity,
+          discountAmount: data.discountAmount,
+        );
+        
+      },
+    );
                         },
                         icon: const Icon(Icons.extension_rounded, size: 18),
                         label: const Text('Add Bundle'),
@@ -1532,10 +1562,25 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final selectedItem = await ItemSearchPickerModal.show(context, excludeBundles: true);
-                      if (selectedItem != null) {
-                        await _handleItemAdded(selectedItem);
-                      }
+                      FullScreenItemEntry.show(
+      context, excludeBundles: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        await _handleItemAdded(tempSelected);
+        // Post-update qty and discount
+        ref.read(invoiceCartProvider.notifier).updateItem(
+          data.item.uuid ?? '',
+          quantity: data.quantity,
+          discountAmount: data.discountAmount,
+        );
+        
+      },
+    );
                     },
                     style: OutlinedButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -1551,10 +1596,25 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true);
-                        if (selectedItem != null) {
-                          await _handleItemAdded(selectedItem);
-                        }
+                        FullScreenItemEntry.show(
+      context, onlyBundles: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        await _handleItemAdded(tempSelected);
+        // Post-update qty and discount
+        ref.read(invoiceCartProvider.notifier).updateItem(
+          data.item.uuid ?? '',
+          quantity: data.quantity,
+          discountAmount: data.discountAmount,
+        );
+        
+      },
+    );
                       },
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
@@ -2005,20 +2065,25 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                       icon: const Icon(Icons.add),
                       label: const Text('Add Component to this Bundle'),
                       onPressed: () async {
-                        final selected = await ItemSearchPickerModal.show(ctx, excludeBundles: true);
-                        if (selected != null && selected.item.uuid != null) {
-                          if (!uuids.contains(selected.item.uuid)) {
-                            setSheetState(() {
-                              uuids.add(selected.item.uuid!);
-                              quantities.add(1.0);
-                              units.add(selected.item.primaryUnitName ?? 'PCS');
-                              rates.add(selected.item.sellRate ?? 0.0);
-                              buyRates.add(selected.item.buyRate ?? 0.0);
-                              gstRates.add(selected.item.gstRate ?? 18.0);
-                              descriptions.add(selected.item.description ?? '');
-                            });
-                          }
-                        }
+                        FullScreenItemEntry.show(
+                          ctx,
+                          excludeBundles: true,
+                          onAdd: (data) {
+                            if (data.item.uuid != null) {
+                              if (!uuids.contains(data.item.uuid)) {
+                                setSheetState(() {
+                                  uuids.add(data.item.uuid!);
+                                  quantities.add(data.quantity);
+                                  units.add(data.item.primaryUnitName ?? 'PCS');
+                                  rates.add(data.rate);
+                                  buyRates.add(data.item.buyRate ?? 0.0);
+                                  gstRates.add(data.gstRate);
+                                  descriptions.add(data.item.description ?? '');
+                                });
+                              }
+                            }
+                          },
+                        );
                       },
                     ),
                     const SizedBox(height: 8),

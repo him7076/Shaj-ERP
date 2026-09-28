@@ -704,11 +704,26 @@ if (_isPaidAmountAutoFill) {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () async {
-                        final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
-                        if (selectedItem != null) {
-                          _addItemLine(selectedItem);
-                          ref.invalidate(filteredItemsProvider);
-                        }
+                        FullScreenItemEntry.show(
+      context, isPurchase: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        _addItemLine(tempSelected);
+        setState(() {
+           if (_draftItems.isNotEmpty) {
+             _draftItems.last.quantity = data.quantity;
+             _draftItems.last.discount = data.discountAmount;
+           }
+        });
+        _recalculateTotals();
+        
+      },
+    );
                       },
                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
                       label: const Text('Add Item'),
@@ -721,11 +736,26 @@ if (_isPaidAmountAutoFill) {
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true, isPurchase: true);
-                          if (selectedItem != null) {
-                            _addItemLine(selectedItem);
-                            ref.invalidate(filteredItemsProvider);
-                          }
+                          FullScreenItemEntry.show(
+      context, onlyBundles: true, isPurchase: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        _addItemLine(tempSelected);
+        setState(() {
+           if (_draftItems.isNotEmpty) {
+             _draftItems.last.quantity = data.quantity;
+             _draftItems.last.discount = data.discountAmount;
+           }
+        });
+        _recalculateTotals();
+        
+      },
+    );
                         },
                         icon: const Icon(Icons.extension_rounded, size: 18),
                         label: const Text('Add Bundle'),
@@ -807,11 +837,26 @@ if (_isPaidAmountAutoFill) {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      final selectedItem = await ItemSearchPickerModal.show(context, isPurchase: true);
-                      if (selectedItem != null) {
-                        _addItemLine(selectedItem);
-                        ref.invalidate(filteredItemsProvider);
-                      }
+                      FullScreenItemEntry.show(
+      context, isPurchase: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        _addItemLine(tempSelected);
+        setState(() {
+           if (_draftItems.isNotEmpty) {
+             _draftItems.last.quantity = data.quantity;
+             _draftItems.last.discount = data.discountAmount;
+           }
+        });
+        _recalculateTotals();
+        
+      },
+    );
                     },
                     style: OutlinedButton.styleFrom(
                       visualDensity: VisualDensity.compact,
@@ -827,11 +872,26 @@ if (_isPaidAmountAutoFill) {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        final selectedItem = await ItemSearchPickerModal.show(context, onlyBundles: true, isPurchase: true);
-                        if (selectedItem != null) {
-                          _addItemLine(selectedItem);
-                          ref.invalidate(filteredItemsProvider);
-                        }
+                        FullScreenItemEntry.show(
+      context, onlyBundles: true, isPurchase: true,
+      onAdd: (data) async {
+        final tempSelected = SelectedProductData(data.item);
+        tempSelected.item.sellRate = data.rate;
+        tempSelected.item.buyRate = data.rate; // fallback
+        tempSelected.item.gstRate = data.gstRate;
+        // Since cart updates only default to 1 qty, we'll need to manually set it after!
+        
+        _addItemLine(tempSelected);
+        setState(() {
+           if (_draftItems.isNotEmpty) {
+             _draftItems.last.quantity = data.quantity;
+             _draftItems.last.discount = data.discountAmount;
+           }
+        });
+        _recalculateTotals();
+        
+      },
+    );
                       },
                       style: OutlinedButton.styleFrom(
                         visualDensity: VisualDensity.compact,
