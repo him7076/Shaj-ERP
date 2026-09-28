@@ -311,7 +311,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
         fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       ),
     );
   }
@@ -368,7 +368,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
 
           return SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
@@ -387,11 +387,11 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                       sliver: SliverList(
                         delegate: SliverChildListDelegate([
                           Card(
-                            elevation: 2,
+                            elevation: 0,
                             shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
@@ -399,7 +399,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                     _selectedItem!.itemName ?? 'Unknown Item', 
                                     style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                                   ),
-                                  const SizedBox(height: 24),
+                                  const SizedBox(height: 16),
                                   
                                   // QTY & UNIT
                                   Row(
@@ -416,7 +416,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                             filled: true,
                                             fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                           ),
                                           items: _availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                                           onChanged: _onUnitChange,
@@ -424,7 +424,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
 
                                   // SALE RATE
                                   Row(
@@ -440,7 +440,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                             filled: true,
                                             fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                           ),
                                           items: const [
                                             DropdownMenuItem(value: false, child: Text('Without Tax')),
@@ -456,7 +456,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
 
                                   // PURCHASE RATE
                                   Row(
@@ -472,7 +472,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                             filled: true,
                                             fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                           ),
                                           items: const [
                                             DropdownMenuItem(value: false, child: Text('Without Tax')),
@@ -488,7 +488,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
 
                                   // DISCOUNT & TAX
                                   Row(
@@ -531,11 +531,11 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
 
                                   // BATCH, MFG, EXP
                                   _buildModernTextField('Batch Number', _batchController),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 12),
                                   Row(
                                     children: [
                                       Expanded(
@@ -546,7 +546,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                             decoration: InputDecoration(
                                               labelText: 'Mfg Date',
                                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                             ),
                                             child: Text(_mfgDate != null ? _dateFormat.format(_mfgDate!) : 'Select Date'),
                                           ),
@@ -561,7 +561,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                             decoration: InputDecoration(
                                               labelText: 'Exp Date',
                                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                             ),
                                             child: Text(_expDate != null ? _dateFormat.format(_expDate!) : 'Select Date'),
                                           ),
@@ -574,18 +574,18 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                             ),
                           ),
                           
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           
                           // SUMMARY CARD
                           Card(
                             elevation: 0,
                             color: theme.colorScheme.primaryContainer.withOpacity(0.5),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(12.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [

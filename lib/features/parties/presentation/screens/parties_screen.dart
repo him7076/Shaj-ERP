@@ -144,7 +144,7 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: [
                 Icon(
@@ -166,12 +166,12 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('✨ New Parties Registered: ${importResult.totalPartiesImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text('🔄 Existing Parties Updated: ${importResult.totalPartiesUpdated}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   if (importResult.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
                   ],
                 ],
@@ -437,7 +437,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
       ),
       body: Column(
         children: [
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
 
           // Filtering Chips bar
           SingleChildScrollView(
@@ -659,7 +659,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Container(

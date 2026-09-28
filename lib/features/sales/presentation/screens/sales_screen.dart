@@ -160,7 +160,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: const Row(
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
@@ -225,7 +225,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             barrierDismissible: false,
             builder: (ctx) {
               return AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 title: const Row(
                   children: [
                     Icon(Icons.help_outline, color: Colors.blue, size: 28),
@@ -367,7 +367,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: [
                 Icon(
@@ -385,16 +385,16 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('✅ Sales Invoices Imported: ${importResult.totalInvoicesImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text('📦 Sales Items Recorded: ${importResult.totalItemsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   if (importResult.skippedInvoices > 0) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text('⏭️ Invoices Skipped: ${importResult.skippedInvoices}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15)),
                   ],
                   if (importResult.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text('Warnings / Logs:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
                   ],
                 ],
@@ -756,7 +756,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: isMobile
@@ -768,7 +768,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 sortByDropdown,
                 const SizedBox(height: 10),
                 partyDropdown,
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 Align(
                   alignment: Alignment.centerRight,
                   child: resetFiltersButton,
@@ -826,11 +826,11 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       margin: const EdgeInsets.symmetric(vertical: 6),
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -885,7 +885,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 2),
                               Text(
                                 invoice.partyName ?? 'Unknown Party',
                                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -893,7 +893,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                                   color: theme.colorScheme.onSurface.withOpacity(0.85),
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 4,
@@ -1050,7 +1050,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.primary.withOpacity(0.15)),
       ),
       child: Row(

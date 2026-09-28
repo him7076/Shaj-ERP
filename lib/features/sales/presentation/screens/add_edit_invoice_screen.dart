@@ -468,7 +468,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
         final confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: const [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
@@ -749,7 +749,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
@@ -990,7 +990,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             ),
             const SizedBox(height: 10),
             _buildTotalsSummaryPanel(theme),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             const SizedBox.shrink(), // old save button
           ],
         ),
@@ -1010,7 +1010,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
         final shouldPop = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: const Text('Unsaved Changes Warning'),
             content: const Text('You have unsaved items in this invoice. Are you sure you want to exit and discard changes?'),
             actions: [
@@ -1058,9 +1058,9 @@ ref.listen(invoiceCartProvider, (prev, next) {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               _buildPartyAndHeaderCard(theme),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               _buildCartItemsTable(theme, cart),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               summaryContent,
                             ],
                           )
@@ -1072,14 +1072,14 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 children: [
                   if (isRestaurantMode) ...[
                     _buildPartyAndHeaderCard(theme),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     SizedBox(
                       height: 500, // Fixed height for POS grid on mobile
                       child: mainContent,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _buildCartItemsTable(theme, cart),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     summaryContent,
                   ] else ...[
                     mainContent,
@@ -1206,7 +1206,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
@@ -1394,7 +1394,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                           return Align(
                             alignment: Alignment.topLeft,
                             child: Material(
-                              elevation: 4,
+                              elevation: 0,
                               borderRadius: BorderRadius.circular(8),
                               child: Container(
                                 width: constraints.maxWidth,
@@ -1467,7 +1467,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
       return NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
         ),
         child: Padding(
@@ -1554,7 +1554,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
@@ -1584,7 +1584,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                  );
                },
              ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(

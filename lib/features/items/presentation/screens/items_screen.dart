@@ -239,7 +239,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: [
                 Icon(
@@ -261,12 +261,12 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('✨ New Products Added: ${importResult.totalItemsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text('🔄 Existing Stock Updated: ${importResult.totalItemsUpdated}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   if (importResult.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
                   ],
                 ],
@@ -697,7 +697,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceVariant.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Column(

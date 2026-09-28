@@ -472,7 +472,7 @@ if (_isPaidAmountAutoFill) {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildPartyAndHeaderCard(theme),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _buildCartItemsTable(theme),
       ],
     );
@@ -481,7 +481,7 @@ if (_isPaidAmountAutoFill) {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
@@ -656,7 +656,7 @@ if (_isPaidAmountAutoFill) {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: isDesktop
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,7 +669,7 @@ if (_isPaidAmountAutoFill) {
             : Column(
                 children: [
                   mainContent,
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   summaryContent,
                   const SizedBox(height: 30),
                 ],
@@ -734,7 +734,7 @@ if (_isPaidAmountAutoFill) {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
@@ -744,7 +744,7 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -844,7 +844,7 @@ if (_isPaidAmountAutoFill) {
       return NeuCard(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
         ),
         child: Padding(
@@ -933,7 +933,7 @@ if (_isPaidAmountAutoFill) {
       elevation: 0,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Container(
@@ -943,7 +943,7 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -984,7 +984,7 @@ if (_isPaidAmountAutoFill) {
                  ),
                ),
              ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(

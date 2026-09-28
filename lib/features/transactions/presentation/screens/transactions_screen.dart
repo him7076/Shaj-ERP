@@ -122,7 +122,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
               Container(
@@ -370,7 +370,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: [
                 Icon(
@@ -391,7 +391,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   if (importResult.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text('Warnings / Errors:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
                   ],
                 ],
@@ -902,11 +902,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     return NeuCard(
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                         child: IntrinsicHeight(
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -918,7 +918,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               Expanded(
                                 child: ListTile(
                                   onTap: () => _openTransaction(context, txn),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  dense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                                   leading: CircleAvatar(
                                     radius: 20,
                                     backgroundColor: badgeColor.withOpacity(0.12),
@@ -995,16 +995,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                   subtitle: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 2),
                                       Text(
                                         txn.partyName ?? (txn.transactionType == 'Expense' ? 'General Expense' : 'Other Income Ledger'),
                                         style: const TextStyle(fontWeight: FontWeight.w600),
                                       ),
                                       if (txn.remarks != null && txn.remarks!.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 2),
                                         Text(txn.remarks!, style: theme.textTheme.bodySmall),
                                       ],
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 2),
                                       Wrap(
                                         spacing: 8,
                                         runSpacing: 4,
@@ -1338,7 +1338,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     return NeuCard(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
       ),
       child: Padding(
@@ -1364,7 +1364,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     value,
                     style: TextStyle(

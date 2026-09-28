@@ -139,7 +139,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantLight, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(color: primary, fontSize: 13, fontWeight: FontWeight.w700),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }
@@ -247,7 +247,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantDark, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(color: primary, fontSize: 13, fontWeight: FontWeight.w700),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }
@@ -354,7 +354,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantLight, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(color: primary, fontSize: 13, fontWeight: FontWeight.w700),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }
@@ -462,7 +462,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: ColorConstants.onSurfaceVariantDark, fontSize: 13, fontWeight: FontWeight.w500),
         floatingLabelStyle: TextStyle(color: primary, fontSize: 13, fontWeight: FontWeight.w700),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       ),
     );
   }

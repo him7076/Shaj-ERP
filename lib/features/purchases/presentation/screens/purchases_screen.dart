@@ -138,7 +138,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: const Row(
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
@@ -220,7 +220,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             title: Row(
               children: [
                 Icon(
@@ -238,16 +238,16 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('✅ Purchase Bills Imported: ${importResult.totalBillsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text('📦 Purchase Items Recorded: ${importResult.totalItemsImported}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   if (importResult.skippedBills > 0) ...[
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text('⏭️ Bills Skipped: ${importResult.skippedBills}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 15)),
                   ],
                   if (importResult.errors.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     const Text('Warnings / Logs:', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     ...importResult.errors.map((e) => Text('• $e', style: const TextStyle(color: Colors.red, fontSize: 12))),
                   ],
                 ],
@@ -436,7 +436,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                             padding: const EdgeInsets.all(16.0),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.primary.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: theme.colorScheme.primary.withOpacity(0.12)),
                         ),
                         child: Row(
@@ -452,7 +452,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   currencyFormat.format(totals.totalAmt),
                                   style: TextStyle(
@@ -474,7 +474,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 2),
                                 Text(
                                   currencyFormat.format(totals.totalTax),
                                   style: const TextStyle(
@@ -557,11 +557,11 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                             elevation: 0,
                             margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                               child: IntrinsicHeight(
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -630,7 +630,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 4),
+                                              const SizedBox(height: 2),
                                               Row(
                                                 children: [
                                                   const Icon(Icons.calendar_today_outlined, size: 13, color: Colors.grey),
