@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +24,7 @@ import 'package:business_sahaj_erp/core/services/gst_service.dart';
 import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
 import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
+import 'package:business_sahaj_erp/core/widgets/full_screen_item_entry.dart';
 class AddEditPurchaseScreen extends ConsumerStatefulWidget {
   final String? purchaseUuid;
   final bool isFixedAsset;
@@ -235,7 +236,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         }
       }
     } else {
-      final numStr = await repo.generateNextPurchaseNumber();
+      final numStr = await repo.generateNextPurchaseNumber(isFixedAsset: widget.isFixedAsset);
       _billNumberController.text = numStr;
       if (mounted) {
         setState(() {});
@@ -285,6 +286,29 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       _totalGST = tax;
       _grandTotal = rawTotal + _roundOff;
     });
+  }
+
+
+  void _addFullScreenItemLine(FullScreenItemEntryData data) {
+    final item = data.item;
+    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+
+    final newItem = PurchaseItem()
+      ..itemId = item.id
+      ..itemName = item.itemName
+      ..hsnCode = item.hsnCode
+      ..quantity = data.quantity
+      ..unit = primaryUnitName
+      ..rate = data.rate
+      ..discount = data.discountAmount
+      ..gstRate = data.gstRate;
+      
+    newItem.item.value = item;
+
+    setState(() {
+      _draftItems.add(newItem);
+    });
+    _recalculateTotals();
   }
 
 
@@ -710,7 +734,7 @@ if (_isPaidAmountAutoFill) {
             const SizedBox(height: 12),
             partiesAsync.when(
               data: (parties) {
-                final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                final supplierParties = widget.isFixedAsset ? parties.toList() : parties.where((p) => p.partyType == 'Supplier').toList();
                 return SearchablePartyDropdown(
                   parties: supplierParties,
                   selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
@@ -1783,4 +1807,6 @@ final item = widget.item;
 
   }
 }
+
+
 

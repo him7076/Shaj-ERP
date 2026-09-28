@@ -1,4 +1,4 @@
-ï»¿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:uuid/uuid.dart';
@@ -541,8 +541,8 @@ class SyncService {
 
     try {
       // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
-      //    This is critical â€” stale entity timestamps cause filterCutoff to block full download!
-      //    NOTE: We NEVER purge local DB here â€” existing local offline data must be preserved!
+      //    This is critical — stale entity timestamps cause filterCutoff to block full download!
+      //    NOTE: We NEVER purge local DB here — existing local offline data must be preserved!
       final activeFirmId = _dbService.activeFirmId;
       await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
       await _prefs.remove(AppConstants.keyLastSyncTime);
@@ -560,7 +560,7 @@ class SyncService {
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
       }
-      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId â€” forcing full fresh download.');
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
 
       // 3. Re-seed standard commercial units in local DB
       await DemoDataSeeder.seedStandardUnits(_dbService);
@@ -920,7 +920,7 @@ class SyncService {
   }
 
   /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
-  /// [silent] = true when called from background quiet sync â€” avoids polluting global state
+  /// [silent] = true when called from background quiet sync — avoids polluting global state
   Future<void> _uploadLocalChanges({bool silent = false}) async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
@@ -954,7 +954,7 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    // Deduplicate queue items to minimize Firebase Writes â€” with event-loop yielding
+    // Deduplicate queue items to minimize Firebase Writes — with event-loop yielding
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1130,7 +1130,7 @@ class SyncService {
       }
     }
 
-    // Mark synced items in local DB â€” chunked with yields
+    // Mark synced items in local DB — chunked with yields
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1238,14 +1238,14 @@ class SyncService {
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Determine filterCutoff â€” ONLY for incremental sync, NEVER for forceFullDownload
+        // Determine filterCutoff — ONLY for incremental sync, NEVER for forceFullDownload
         DateTime? filterCutoff;
         if (!forceFullDownload) {
           final String? lastCloudSyncStr = prefs.getString(timestampKey);
           if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
             final parsed = DateTime.tryParse(lastCloudSyncStr);
             if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
-              // Subtract 30 seconds (not 2 minutes) as safety overlap â€” less wasteful reads
+              // Subtract 30 seconds (not 2 minutes) as safety overlap — less wasteful reads
               filterCutoff = parsed.subtract(const Duration(seconds: 30));
             }
           }
@@ -1253,7 +1253,7 @@ class SyncService {
 
         dynamic querySnapshot;
 
-        // Step 1: Compound query (companyId + firmId + filterCutoff) â€” primary path for delta sync
+        // Step 1: Compound query (companyId + firmId + filterCutoff) — primary path for delta sync
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
@@ -1292,7 +1292,7 @@ class SyncService {
           continue;
         }
 
-        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType â€” processing...');
+        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType — processing...');
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
@@ -1384,7 +1384,7 @@ class SyncService {
     }
 
     // Post-download pass: Re-link relations and recalculate stocks
-    // ONLY run during full download â€” during delta sync this is wasteful O(NÂ²) overhead
+    // ONLY run during full download — during delta sync this is wasteful O(N²) overhead
     // that loads ALL records into memory and causes the "96% hang"
     if (forceFullDownload) {
       try {
@@ -2362,6 +2362,7 @@ class SyncService {
           'branchName': e.branchName,
           'openingBalance': e.openingBalance,
           'currentBalance': e.currentBalance,
+          'printOnInvoice': e.printOnInvoice,
         });
       case 'CreditNote':
         final e = entity as CreditNote;
@@ -2805,7 +2806,8 @@ class SyncService {
           ..ifscCode = data['ifscCode']
           ..branchName = data['branchName']
           ..openingBalance = (data['openingBalance'] as num?)?.toDouble()
-          ..currentBalance = (data['currentBalance'] as num?)?.toDouble();
+          ..currentBalance = (data['currentBalance'] as num?)?.toDouble()
+          ..printOnInvoice = data['printOnInvoice'] as bool? ?? false;
         break;
       case 'Purchase':
         entity = Purchase()
@@ -3038,7 +3040,7 @@ class SyncService {
       }
     });
 
-    _linkRemoteRelations(entityType, entity, data);
+    await _linkRemoteRelations(entityType, entity, data);
   }
 
   /// Inserts a new remote record downloaded into local database
@@ -3131,7 +3133,7 @@ class SyncService {
       }
     });
 
-    _linkRemoteRelations(entityType, entity, data);
+    await _linkRemoteRelations(entityType, entity, data);
   }
 
   /// Resolves entity linking using global UUID references downloaded
@@ -3603,7 +3605,7 @@ class SyncService {
     }
   }
 
-  /// Appends log items â€” Success logs to local SharedPreferences only, Failures to Firestore
+  /// Appends log items — Success logs to local SharedPreferences only, Failures to Firestore
   Future<void> _logSyncEvent(String result, String message) async {
     // Success logs: local-only to minimize Firebase writes
     if (result == 'Success') {

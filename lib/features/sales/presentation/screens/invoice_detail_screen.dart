@@ -693,9 +693,9 @@ final theme = Theme.of(context);
                             () {
                               final catalogName = item.item.value?.itemName;
                               final localName = item.itemName;
-                              final displayName = (catalogName != null && catalogName.trim().isNotEmpty)
-                                  ? catalogName
-                                  : ((localName != null && localName.trim().isNotEmpty) ? localName : 'Unnamed Item');
+                              final displayName = (localName != null && localName.trim().isNotEmpty)
+                                  ? localName
+                                  : ((catalogName != null && catalogName.trim().isNotEmpty) ? catalogName : 'Unnamed Item');
                               return Text(
                                 displayName,
                                 style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),

@@ -7,7 +7,7 @@ abstract class InvoiceRepository implements BaseRepository<Invoice> {
   Future<List<Invoice>> searchInvoices(String query);
 
   /// Generates the next unique sequential Invoice Number prefixed by Financial Year (e.g. 2026-27/INV000001)
-  Future<String> generateNextInvoiceNumber();
+  Future<String> generateNextInvoiceNumber({bool isFixedAsset = false});
 
   /// Saves or updates a direct sales invoice along with its items transactionally,
   /// updating stock balances and outstanding balances.
@@ -25,3 +25,4 @@ abstract class InvoiceRepository implements BaseRepository<Invoice> {
     required String user,
   });
 }
+

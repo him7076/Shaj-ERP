@@ -55,7 +55,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
   }
 
   @override
-  Future<String> generateNextInvoiceNumber() => _numberService.generateNextInvoiceNumber();
+  Future<String> generateNextInvoiceNumber({bool isFixedAsset = false}) => _numberService.generateNextInvoiceNumber(isFixedAsset: isFixedAsset);
 
   @override
   Future<void> saveInvoice(Invoice invoice, List<InvoiceItem> items) async {
@@ -835,3 +835,4 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
     }
   }
 }
+

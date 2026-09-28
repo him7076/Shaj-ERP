@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/widgets/pos_product_grid.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -35,6 +35,7 @@ import 'package:business_sahaj_erp/data/local/collections/order_collection.dart'
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
+import 'package:business_sahaj_erp/core/widgets/full_screen_item_entry.dart';
 
 
 class AddEditInvoiceScreen extends ConsumerStatefulWidget {
@@ -205,7 +206,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       } else {
         try {
           final repo = ref.read(invoiceRepositoryProvider);
-          final nextNo = await repo.generateNextInvoiceNumber();
+          final nextNo = await repo.generateNextInvoiceNumber(isFixedAsset: widget.isFixedAsset);
           if (mounted) {
             setState(() => _voucherNumberDisplay = nextNo);
           }
@@ -331,7 +332,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       final order = await db.orders.filter().uuidEqualTo(widget.sourceOrderUuid).findFirst();
       if (order != null) {
         _sourceOrder = order;
-        final nextNo = await ref.read(invoiceRepositoryProvider).generateNextInvoiceNumber();
+        final nextNo = await ref.read(invoiceRepositoryProvider).generateNextInvoiceNumber(isFixedAsset: widget.isFixedAsset);
         _voucherNumberDisplay = nextNo;
         _remarksController.text = 'Converted from Sales Order #${order.orderNumber}';
 
@@ -483,7 +484,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 const SizedBox(height: 10),
                 ...insufficientItems.map((msg) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                  child: Text('� $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                 )),
                 const SizedBox(height: 12),
                 const Text('Do you want to proceed and save this transaction anyway?'),
@@ -517,7 +518,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
       final companyGst = companySettings?.companyGST;
 
       final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(companyGst);
-      final nextInvNum = await repo.generateNextInvoiceNumber();
+      final nextInvNum = await repo.generateNextInvoiceNumber(isFixedAsset: widget.isFixedAsset);
 
       final invoice = _existingInvoice ?? Invoice();
       if (_existingInvoice == null) {
@@ -762,7 +763,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            // ── Section A: Invoice Details ──
+            // -- Section A: Invoice Details --
             Row(
               children: [
                 Icon(Icons.description_outlined, size: 18, color: theme.colorScheme.primary),
@@ -786,7 +787,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             ),
 
 
-            // ── Section B: Payment & Discounts ──
+            // -- Section B: Payment & Discounts --
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
@@ -874,7 +875,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
               ),
             ),
             const SizedBox(height: 10),
-            // Payment Mode — always visible
+            // Payment Mode � always visible
             ref.watch(bankAccountsListProvider).when(
               data: (accounts) {
                 final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
@@ -975,7 +976,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
               ),
             ),
 
-            // ── Section C: Bill Summary ──
+            // -- Section C: Bill Summary --
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
@@ -1129,6 +1130,28 @@ ref.listen(invoiceCartProvider, (prev, next) {
     );
   }
 
+  void _addFullScreenItemLine(FullScreenItemEntryData data) {
+    final item = data.item;
+    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
+
+    final newItem = InvoiceItem()
+      ..itemId = item.id
+      ..itemName = item.itemName
+      ..hsnCode = item.hsnCode
+      ..quantity = data.quantity
+      ..unit = primaryUnitName
+      ..rate = data.rate
+      ..discount = data.discountAmount
+      ..gstRate = data.gstRate;
+      
+    newItem.item.value = item;
+
+    setState(() {
+      _draftItems.add(newItem);
+    });
+    _recalculateTotals();
+  }
+
   Future<void> _handleItemAdded(SelectedProductData data) async {
     ref.read(invoiceCartProvider.notifier).addItem(
       data.item, 
@@ -1216,7 +1239,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                         const SizedBox(width: 6),
                         Text('Outstanding: ', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
                         Text(
-                          '₹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                          '?${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
                           style: theme.textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: (cart.selectedParty!.outstandingBalance ?? 0) > 0 ? Colors.red : Colors.green,
@@ -1677,7 +1700,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             ),
           ),
           Text(
-            '₹${val.toStringAsFixed(2)}',
+            '?${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
               fontSize: (isBold || isPending) ? 15 : 13,
@@ -2114,7 +2137,7 @@ final theme = Theme.of(context);
                       label: const Text('Components'),
                       onPressed: _showBundleComponentsDialog,
                     ),
-                                    Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                                    Text('?${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
                                     const SizedBox(width: 8),
                                     IconButton(
 
@@ -2207,7 +2230,7 @@ final theme = Theme.of(context);
               // Rate Row: Rate Input + Tax Mode
               Row(
                 children: [
-                  // Rate Input Box — takes most space
+                  // Rate Input Box � takes most space
                   Expanded(
                     flex: 5,
                     child: TextFormField(
@@ -2229,7 +2252,7 @@ final theme = Theme.of(context);
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Tax Mode Toggle — compact
+                  // Tax Mode Toggle � compact
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<bool>(
@@ -2254,7 +2277,7 @@ final theme = Theme.of(context);
                   ),
                 ],
               ),
-              // Buy Price Row — conditional, full width
+              // Buy Price Row � conditional, full width
               if (enableBuyPrice) ...[
                 const SizedBox(height: 8),
                 TextFormField(
@@ -2573,7 +2596,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Excl (?)', isDense: true, ),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -2598,7 +2621,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Incl (?)', isDense: true, ),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -2638,7 +2661,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Disc Amt (?)', isDense: true, ),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {
@@ -2708,3 +2731,5 @@ final theme = Theme.of(context);
 
   }
 }
+
+

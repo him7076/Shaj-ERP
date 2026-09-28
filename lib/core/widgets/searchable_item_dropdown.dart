@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_fixed_asset_screen.dart';
 
 class SearchableItemDropdown extends StatefulWidget {
   final List<Item> items;
   final ValueChanged<Item> onSelected;
   final String labelText;
+  final bool isFixedAsset;
 
   const SearchableItemDropdown({
     Key? key,
     required this.items,
     required this.onSelected,
     this.labelText = 'Search and add component...',
+    this.isFixedAsset = false,
   }) : super(key: key);
 
   @override
@@ -59,8 +62,8 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
         final createActionItem = Item()
           ..uuid = 'NEW_ACTION'
           ..itemName = query.isNotEmpty
-              ? '+ Create New Product "$query"'
-              : '+ Create New Product';
+              ? '+ Create New \ "$query"'
+              : '+ Create New \';
 
         return [...filtered, createActionItem];
       },
@@ -71,7 +74,9 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
           _controller.clear();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddEditItemScreen(
+            MaterialPageRoute(builder: (context) => widget.isFixedAsset ? AddEditFixedAssetScreen(
+              prefilledName: query.isNotEmpty ? query : null,
+            ) : AddEditItemScreen(
               prefilledItem: query.isNotEmpty ? (Item()..itemName = query) : null,
             )),
           );
@@ -170,3 +175,4 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
     );
   }
 }
+

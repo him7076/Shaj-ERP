@@ -61,6 +61,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       if (type == 'Other Income') prefix = 'OTHER Income';
       if (type == 'Credit Note') prefix = 'CN';
       if (type == 'Debit Note') prefix = 'DN';
+      if (type == 'Transfer') prefix = 'TRF';
       return '$prefix-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate transaction number: $e');
@@ -475,3 +476,4 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
     return '${DateTime.now().millisecondsSinceEpoch}-${parts.join("-")}';
   }
 }
+

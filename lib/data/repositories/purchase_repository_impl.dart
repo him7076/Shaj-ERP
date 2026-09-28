@@ -41,12 +41,13 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
   }
 
   @override
-  Future<String> generateNextPurchaseNumber() async {
+  Future<String> generateNextPurchaseNumber({bool isFixedAsset = false}) async {
     try {
+      final prefix = isFixedAsset ? 'FA-PUR-' : 'PUR-';
       final allPurchases = await collection.where().findAll();
       int maxNum = 0;
       for (var pur in allPurchases) {
-        if (pur.purchaseNumber != null) {
+        if (pur.purchaseNumber != null && pur.purchaseNumber!.startsWith(prefix)) {
           final match = RegExp(r'\d+').firstMatch(pur.purchaseNumber!);
           if (match != null) {
             final parsed = int.tryParse(match.group(0)!) ?? 0;
@@ -56,7 +57,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       }
       final nextNum = maxNum + 1;
       final suffix = nextNum.toString().padLeft(2, '0');
-      return 'PUR-$suffix';
+      return '$prefix$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate purchase number: $e');
     }

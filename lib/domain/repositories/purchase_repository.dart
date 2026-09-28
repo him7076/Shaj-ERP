@@ -7,9 +7,10 @@ abstract class PurchaseRepository implements BaseRepository<Purchase> {
   Future<List<Purchase>> searchPurchases(String query);
 
   /// Generates the next sequential Purchase Number
-  Future<String> generateNextPurchaseNumber();
+  Future<String> generateNextPurchaseNumber({bool isFixedAsset = false});
 
   /// Saves a purchase bill along with its items transactionally,
   /// updating stock levels of items.
   Future<void> savePurchase(Purchase purchase, List<PurchaseItem> items);
 }
+
