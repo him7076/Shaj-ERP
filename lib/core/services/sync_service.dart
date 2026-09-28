@@ -3143,7 +3143,8 @@ class SyncService {
         final existing = await isar.invoices.filter().invoiceNumberEqualTo(data['invoiceNumber'] as String).findFirst();
         if (existing != null && existing.uuid != uuid) {
           final originalNum = data['invoiceNumber'] as String;
-          data['invoiceNumber'] = '$originalNum-CLOUD';
+          final suffix = uuid != null && uuid.length >= 4 ? uuid.substring(0, 4).toUpperCase() : 'C';
+          data['invoiceNumber'] = '$originalNum-$suffix';
           logger.warning('CONFLICT: Duplicate invoice number "$originalNum" from different device. Renamed to "${data['invoiceNumber']}".');
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed to "${data['invoiceNumber']}"');
         }
@@ -3151,7 +3152,8 @@ class SyncService {
         final existing = await isar.purchases.filter().purchaseNumberEqualTo(data['purchaseNumber'] as String).findFirst();
         if (existing != null && existing.uuid != uuid) {
           final originalNum = data['purchaseNumber'] as String;
-          data['purchaseNumber'] = '$originalNum-CLOUD';
+          final suffix = uuid != null && uuid.length >= 4 ? uuid.substring(0, 4).toUpperCase() : 'C';
+          data['purchaseNumber'] = '$originalNum-$suffix';
           logger.warning('CONFLICT: Duplicate purchase number "$originalNum" from different device. Renamed.');
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
         }
@@ -3159,7 +3161,8 @@ class SyncService {
         final existing = await isar.orders.filter().orderNumberEqualTo(data['orderNumber'] as String).findFirst();
         if (existing != null && existing.uuid != uuid) {
           final originalNum = data['orderNumber'] as String;
-          data['orderNumber'] = '$originalNum-CLOUD';
+          final suffix = uuid != null && uuid.length >= 4 ? uuid.substring(0, 4).toUpperCase() : 'C';
+          data['orderNumber'] = '$originalNum-$suffix';
           logger.warning('CONFLICT: Duplicate order number "$originalNum" from different device. Renamed.');
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
         }
@@ -3169,7 +3172,8 @@ class SyncService {
         final existing = allExpenses.where((e) => e.voucherNo == voucherNoStr).firstOrNull;
         if (existing != null && existing.uuid != uuid) {
           final originalNum = voucherNoStr;
-          data['voucherNo'] = '$originalNum-CLOUD';
+          final suffix = uuid != null && uuid.length >= 4 ? uuid.substring(0, 4).toUpperCase() : 'C';
+          data['voucherNo'] = '$originalNum-$suffix';
           logger.warning('CONFLICT: Duplicate expense voucher "$originalNum" from different device. Renamed.');
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
         }
@@ -3177,7 +3181,8 @@ class SyncService {
         final existing = await isar.transactions.filter().transactionNumberEqualTo(data['transactionNumber'] as String).findFirst();
         if (existing != null && existing.uuid != uuid) {
           final originalNum = data['transactionNumber'] as String;
-          data['transactionNumber'] = '$originalNum-CLOUD';
+          final suffix = uuid != null && uuid.length >= 4 ? uuid.substring(0, 4).toUpperCase() : 'C';
+          data['transactionNumber'] = '$originalNum-$suffix';
           logger.warning('CONFLICT: Duplicate transaction number "$originalNum" from different device. Renamed.');
           await _logConflictEvent(entityType, uuid ?? '', 0, 0, 'Duplicate voucher# "$originalNum" renamed');
         }
