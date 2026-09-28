@@ -1113,7 +1113,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
               purchaseRate: item.item.value!.buyRate ?? 0.0,
               isSaleRateWithTax: false,
               isPurchaseRateWithTax: false,
-              description: cartItem.description,
+              description: item.description,
             ),
             onAdd: (data) {
               item.unit = data.unit;
@@ -1147,13 +1147,13 @@ class PurchaseCartItemRow extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.isBundle == true
+              if (item.description != null && item.description!.isNotEmpty &&
+                  (item.item.value?.isBundle == true
                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                  child: Text(item.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
                 ),
               const SizedBox(height: 4),
               Row(

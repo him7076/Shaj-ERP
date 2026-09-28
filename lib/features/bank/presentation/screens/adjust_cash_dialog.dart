@@ -13,6 +13,7 @@ import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_service.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
 class AdjustCashDialog extends ConsumerStatefulWidget {
   const AdjustCashDialog({Key? key}) : super(key: key);

@@ -604,7 +604,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..batchNumber = cartItem.batchNumber
           ..expiryDate = cartItem.expiryDate
           ..mfgDate = cartItem.mfgDate
-          ..isBundle = cartItem.item.isBundle
+          ..isBundle = cartItem.item.value?.isBundle
           ..bundleComponentUuids = cartItem.bundleComponentUuids
           ..bundleComponentQuantities = cartItem.bundleComponentQuantities
           ..bundleComponentUnits = cartItem.bundleComponentUnits;
@@ -1330,7 +1330,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       ],
               ),
               if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.isBundle == true
+                  (cartItem.item.value?.isBundle == true
                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
                 Padding(
@@ -1347,7 +1347,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       ],
               ),
               if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.isBundle == true
+                  (cartItem.item.value?.isBundle == true
                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
                 Padding(
@@ -1904,8 +1904,8 @@ class InvoiceCartItemRow extends ConsumerWidget {
             context,
             isPurchase: false,
             isFixedAsset: isFixedAsset,
-            excludeBundles: !(cartItem.item.isBundle ?? false),
-            onlyBundles: cartItem.item.isBundle ?? false,
+            excludeBundles: !(cartItem.item.value?.isBundle ?? false),
+            onlyBundles: cartItem.item.value?.isBundle ?? false,
             initialData: FullScreenItemEntryData(
               item: cartItem.item,
               quantity: cartItem.quantity,
@@ -1962,7 +1962,7 @@ class InvoiceCartItemRow extends ConsumerWidget {
                 ],
               ),
               if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.isBundle == true
+                  (cartItem.item.value?.isBundle == true
                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
                 Padding(

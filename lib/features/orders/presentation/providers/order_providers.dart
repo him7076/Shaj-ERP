@@ -120,7 +120,6 @@ class CartItemState {
     String? selectedSubItemUuid,
     String? selectedSubItemName,
     String? description,
-    String? description,
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,

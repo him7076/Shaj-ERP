@@ -153,7 +153,6 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     String? expiryDate,
     String? mfgDate,
     String? description,
-    String? description,
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,

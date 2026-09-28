@@ -683,7 +683,6 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
       rate: rate,
       discountPercent: discountPercent,
       discountAmount: discountAmount,
-      description: description,
     );
   }
 

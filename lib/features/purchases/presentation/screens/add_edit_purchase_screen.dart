@@ -1387,7 +1387,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
                 ],
               ),
               if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.isBundle == true
+                  (cartItem.item.value?.isBundle == true
                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
                 Padding(
