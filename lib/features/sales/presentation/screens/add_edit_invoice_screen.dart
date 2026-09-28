@@ -1467,64 +1467,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                   onChanged: (val) {
                                     if (val != null) setState(() => _selectedSalesman = val);
                                   },
-                                )String>(
-                    textEditingController: TextEditingController(text: _selectedSalesman),
-                    focusNode: FocusNode(),
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      final query = textEditingValue.text.trim().toLowerCase();
-                      if (query.isEmpty) return _salesmenList;
-                      return _salesmenList.where((s) => s.toLowerCase().contains(query)).toList();
-                    },
-                    onSelected: (String s) {
-                      setState(() { _selectedSalesman = s; });
-                      FocusScope.of(context).unfocus();
-                    },
-                    optionsViewBuilder: (context, onSelected, options) {
-                      return Align(
-                        alignment: Alignment.topLeft,
-                        child: Material(
-                          elevation: 4,
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 250,
-                            constraints: const BoxConstraints(maxHeight: 250),
-                            child: ListView.builder(
-                              padding: EdgeInsets.zero,
-                              shrinkWrap: true,
-                              itemCount: options.length,
-                              itemBuilder: (context, index) {
-                                final option = options.elementAt(index);
-                                return ListTile(
-                                  dense: true,
-                                  title: Text(option, style: const TextStyle(fontSize: 13)),
-                                  onTap: () => onSelected(option),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                      return TextFormField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        style: const TextStyle(fontSize: 13),
-                        decoration: InputDecoration(
-                          labelText: 'Salesman',
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                          prefixIcon: const Icon(Icons.badge_outlined, size: 18),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: _showAddSalesmanDialog,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                                ),
                 ),
               ],
             ),

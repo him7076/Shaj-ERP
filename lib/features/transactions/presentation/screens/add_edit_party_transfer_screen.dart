@@ -397,8 +397,9 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                   ),
                   const SizedBox(height: 100),
                 ],
-              );
-            },
+              ),
+            );
+          },
         ),
       ),
       bottomSheet: Container(
