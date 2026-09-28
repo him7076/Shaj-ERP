@@ -1297,7 +1297,7 @@ class OrderCartItemRow extends ConsumerWidget {
               isPurchaseRateWithTax: false,
             ),
             onAdd: (data) {
-              ref.read(orderCartProvider.notifier).updateItemAt(
+              ref.read(cartProvider.notifier).updateItemAt(
                 index,
                 quantity: data.quantity,
                 unit: data.unit,
@@ -1333,7 +1333,7 @@ class OrderCartItemRow extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   InkWell(
-                    onTap: () => ref.read(orderCartProvider.notifier).removeItemAt(index),
+                    onTap: () => ref.read(cartProvider.notifier).removeItemAt(index),
                     child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                   ),
                 ],

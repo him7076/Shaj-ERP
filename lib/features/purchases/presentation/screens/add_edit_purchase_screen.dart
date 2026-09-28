@@ -1061,9 +1061,10 @@ if (_isPaidAmountAutoFill) {
                    itemBuilder: (context, index) {
                      final item = _draftItems[index];
                      return PurchaseCartItemRow(
-                       index: index,
-                       cartItem: item,
-                       isFixedAsset: widget.isFixedAsset,
+                        index: index,
+                        cartItem: item,
+                        isGstInclusive: false,
+                        isFixedAsset: widget.isFixedAsset,
                        onDelete: () {
                          setState(() {
                            _draftItems.removeAt(index);
@@ -1331,34 +1332,23 @@ class PurchaseCartItemRow extends ConsumerWidget {
             excludeBundles: !(cartItem.isBundle ?? false),
             onlyBundles: cartItem.isBundle ?? false,
             initialData: FullScreenItemEntryData(
-              item: cartItem.item.value,
-              quantity: cartItem.quantity,
-              rate: cartItem.rate,
-              discountAmount: cartItem.discountAmount,
-              discountPercent: cartItem.discountPercent,
-              gstRate: cartItem.gstPercent,
+              item: cartItem.item.value ?? Item()..itemName = cartItem.itemName,
+              quantity: cartItem.quantity ?? 1.0,
+              rate: cartItem.rate ?? 0.0,
+              discountAmount: (cartItem.discount ?? 0.0),
+              discountPercent: 0.0,
+              gstRate: (cartItem.gstRate ?? 0.0),
               unit: cartItem.unit ?? 'PCS',
               batchNumber: cartItem.batchNumber,
               mfgDate: parseDate(cartItem.mfgDate),
               expDate: parseDate(cartItem.expiryDate),
-              saleRate: cartItem.rate ?? cartItem.rate,
+              saleRate: cartItem.rate ?? 0.0,
               purchaseRate: cartItem.rate ?? 0.0,
               isSaleRateWithTax: false ?? false,
               isPurchaseRateWithTax: false ?? false,
             ),
             onAdd: (data) {
-              onEdit(
-                index,
-                quantity: data.quantity,
-                unit: data.unit,
-                rate: data.rate,
-                buyRate: data.purchaseRate,
-                discountPercent: data.discountPercent,
-                discountAmount: data.discountAmount,
-                batchNumber: data.batchNumber,
-                mfgDate: data.mfgDate != null ? DateFormat('MM/yyyy').format(data.mfgDate!) : null,
-                expiryDate: data.expDate != null ? DateFormat('MM/yyyy').format(data.expDate!) : null,
-              );
+              onEdit(data);
             },
           );
         },
@@ -1373,12 +1363,12 @@ class PurchaseCartItemRow extends ConsumerWidget {
                   Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   Expanded(
                     child: Text(
-                      cartItem.item.valueName ?? '',
+                      cartItem.itemName ?? '',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
                   Text(
-                    '₹ ${cartItem.totalAmount.toStringAsFixed(2)}',
+                    '₹ ${(cartItem.totalAmount ?? 0.0).toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(width: 8),
@@ -1393,28 +1383,28 @@ class PurchaseCartItemRow extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Qty: ${cartItem.quantity} ${cartItem.unit ?? 'PCS'} x Rate: ${cartItem.rate.toStringAsFixed(2)}',
+                    'Qty: ${cartItem.quantity} ${cartItem.unit ?? 'PCS'} x Rate: ${(cartItem.rate ?? 0.0).toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 12),
                   ),
                   Text(
-                    'Subtotal: ${(cartItem.quantity * cartItem.rate).toStringAsFixed(2)}',
+                    'Subtotal: ${((cartItem.quantity ?? 0.0) * (cartItem.rate ?? 0.0)).toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],
               ),
-              if (cartItem.discountAmount > 0)
+              if ((cartItem.discount ?? 0.0) > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
                   child: Text(
-                    'Discount: -₹ ${cartItem.discountAmount.toStringAsFixed(2)}${cartItem.discountPercent > 0 ? ' (${cartItem.discountPercent.toStringAsFixed(2)}%)' : ''}',
+                    'Discount: -₹ ${(cartItem.discount ?? 0.0).toStringAsFixed(2)}${0.0 > 0 ? ' (${0.0.toStringAsFixed(2)}%)' : ''}',
                     style: const TextStyle(fontSize: 12, color: Colors.red),
                   ),
                 ),
-              if (cartItem.taxAmount > 0)
+              if ((cartItem.gstAmount ?? 0.0) > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
                   child: Text(
-                    'Tax @ ${cartItem.gstPercent}%: +₹ ${cartItem.taxAmount.toStringAsFixed(2)}',
+                    'Tax @ ${(cartItem.gstRate ?? 0.0)}%: +₹ ${(cartItem.gstAmount ?? 0.0).toStringAsFixed(2)}',
                     style: const TextStyle(fontSize: 12, color: Colors.green),
                   ),
                 ),
