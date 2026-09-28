@@ -124,8 +124,6 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   }
 
   bool _isPaidAmountAutoFill = false;
-  bool _isDiscountPercent = true;
-  String? _attachedImage;
 
   @override
   void initState() {
@@ -497,48 +495,29 @@ if (_isPaidAmountAutoFill) {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            Row(
+            Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ResponsiveFormRow(
               children: [
-                Icon(Icons.description_outlined, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Purchase Bill Details', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Paid Amount with auto-fill checkbox
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: Checkbox(
-                    value: _isPaidAmountAutoFill,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    onChanged: (val) {
-                      setState(() {
-                        _isPaidAmountAutoFill = val ?? false;
-                        if (_isPaidAmountAutoFill) {
-                          _paidAmountController.text = _grandTotal.toStringAsFixed(2);
-                        } else {
-                          _paidAmountController.clear();
-                        }
-                        _recalculateTotals();
-                      });
-                    },
-                  ),
+                Checkbox(
+                  value: _isPaidAmountAutoFill,
+                  onChanged: (val) {
+                    setState(() {
+                      _isPaidAmountAutoFill = val ?? false;
+                      if (_isPaidAmountAutoFill) {
+                        _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+                      } else {
+                        _paidAmountController.text = '';
+                      }
+                      _recalculateTotals();
+                    });
+                  },
                 ),
                 Expanded(
-                  flex: 1,
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Paid (₹)',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    ),
+                    decoration: InputDecoration(labelText: 'Paid Amount (â‚¹)', ),
                     onChanged: (val) {
                       setState(() { _isPaidAmountAutoFill = false; });
                       _recalculateTotals();
@@ -547,55 +526,6 @@ if (_isPaidAmountAutoFill) {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  flex: 2,
-                  child: ref.watch(bankAccountsListProvider).when(
-                    data: (accounts) {
-                      final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
-                      final dropdownItems = <DropdownMenuItem<String>>[
-                        const DropdownMenuItem(value: 'Cash', child: Text('Cash', style: TextStyle(fontSize: 13))),
-                        const DropdownMenuItem(value: 'Credit', child: Text('Credit', style: TextStyle(fontSize: 13))),
-                        const DropdownMenuItem(value: 'Cheque', child: Text('Cheque', style: TextStyle(fontSize: 13))),
-                        ...activeAccounts.map((acc) => DropdownMenuItem(
-                          value: acc.accountName,
-                          child: Text(acc.accountName ?? '', style: const TextStyle(fontSize: 13)),
-                        )),
-                      ];
-                      if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
-                        dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode, style: const TextStyle(fontSize: 13))));
-                      }
-                      return DropdownButtonFormField<String>(
-                        value: _paymentMode.isNotEmpty ? _paymentMode : 'Cash',
-                        decoration: InputDecoration(
-                          labelText: 'Payment Mode',
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                          prefixIcon: const Icon(Icons.payment, size: 18),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: _showAddPaymentModeDialog,
-                          ),
-                        ),
-                        items: dropdownItems,
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _paymentMode = val);
-                          }
-                        },
-                      );
-                    },
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, _) => const Text('Error'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
                   child: InkWell(
                     onTap: () async {
                       final selected = await showDatePicker(
@@ -609,108 +539,97 @@ if (_isPaidAmountAutoFill) {
                       }
                     },
                     child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Due Date',
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        prefixIcon: Icon(Icons.event_outlined, size: 18),
-                      ),
-                      child: Text(DateFormat('dd MMM yyyy').format(_dueDate), style: const TextStyle(fontSize: 13)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _remarksController,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Remarks / Notes',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                      prefixIcon: Icon(Icons.notes_rounded, size: 18),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
-            ),
-            Row(
-              children: [
-                Icon(Icons.local_offer_outlined, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text('Discounts & Attachments', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _discountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      labelText: 'Discount',
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<bool>(
-                            value: _isDiscountPercent,
-                            isDense: true,
-                            items: const [
-                              DropdownMenuItem(value: true, child: Text('%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
-                              DropdownMenuItem(value: false, child: Text('₹', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _isDiscountPercent = val;
-                                  _recalculateTotals();
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    onChanged: (val) => _recalculateTotals(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 1,
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                         _attachedImage = _attachedImage == null ? 'attached.jpg' : null;
-                      });
-                    },
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Attachment',
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        prefixIcon: const Icon(Icons.image_outlined, size: 18),
-                        suffixIcon: _attachedImage != null 
-                           ? IconButton(icon: const Icon(Icons.close, size: 16), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 32), onPressed: () => setState(()=> _attachedImage = null)) 
-                           : null,
-                      ),
-                      child: Text(_attachedImage != null ? 'Image Attached' : 'Add Image', style: TextStyle(fontSize: 13, color: _attachedImage != null ? Colors.green : Colors.grey)),
+                      decoration: InputDecoration(labelText: 'Due Date', ),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_dueDate)),
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+            Builder(
+              builder: (context) {
+                final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+                if (paidAmt <= 0) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: ref.watch(bankAccountsListProvider).when(
+                    data: (accounts) {
+                      final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                      final dropdownItems = <DropdownMenuItem<String>>[
+                        const DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        const DropdownMenuItem(value: 'UPI', child: Text('UPI / PhonePe / GPay')),
+                        const DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                        const DropdownMenuItem(value: 'Credit', child: Text('Credit')),
+                        ..._paymentModesList.map((m) => DropdownMenuItem(value: m, child: Text(m))),
+                        ...activeAccounts.map((acc) => DropdownMenuItem(
+                          value: acc.accountName,
+                          child: Text(acc.accountName ?? ''),
+                        )),
+                      ];
+                      if (_paymentMode.isNotEmpty && !dropdownItems.any((item) => item.value == _paymentMode)) {
+                        dropdownItems.add(DropdownMenuItem(value: _paymentMode, child: Text(_paymentMode)));
+                      }
+                      return ResponsiveFormRow(children: [ Expanded(child: DropdownButtonFormField<String>(
+                              value: _paymentMode,
+                              decoration: InputDecoration(
+                                labelText: 'Payment Mode / Account',
+                                
+                                prefixIcon: Icon(Icons.payment),
+                              ),
+                              items: dropdownItems,
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _paymentMode = val);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            icon: const Icon(Icons.account_balance_wallet_outlined),
+                            tooltip: 'Add Payment Type',
+                            onPressed: _showAddPaymentModeDialog,
+                          ),
+                        ],
+                      );
+                    },
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (e, _) => DropdownButtonFormField<String>(
+                      value: _paymentMode,
+                      decoration: InputDecoration(
+                        labelText: 'Payment Mode / Account',
+                        
+                        prefixIcon: Icon(Icons.payment),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'Cash', child: Text('Cash')),
+                        DropdownMenuItem(value: 'UPI', child: Text('UPI')),
+                        DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _paymentMode = val);
+                        }
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _discountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(labelText: 'Bill Level Discount (â‚¹)', ),
+              onChanged: (val) => _recalculateTotals(),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _remarksController,
+              decoration: InputDecoration(labelText: 'Remarks / Notes', ),
+            ),
+            const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -873,10 +792,9 @@ if (_isPaidAmountAutoFill) {
               ),
             ],
             const Divider(height: 24),
-            Row(
+            ResponsiveFormRow(
               children: [
                 Expanded(
-                  flex: 1,
                   child: InkWell(
                     onTap: () async {
                       final selected = await showDatePicker(
@@ -890,41 +808,24 @@ if (_isPaidAmountAutoFill) {
                       }
                     },
                     child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Purchase Date',
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
-                      ),
-                      child: Text(DateFormat('dd MMM yyyy').format(_purchaseDate), style: const TextStyle(fontSize: 13)),
+                      decoration: InputDecoration(labelText: 'Purchase Date',  isDense: true),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_purchaseDate), maxLines: 1, overflow: TextOverflow.ellipsis),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  flex: 1,
                   child: TextFormField(
                     controller: _billNumberController,
                     readOnly: true,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Internal Bill # (Auto)',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    ),
+                    decoration: InputDecoration(labelText: 'Internal Bill # (Auto)',  isDense: true),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  flex: 1,
                   child: TextFormField(
                     controller: _supplierInvoiceNumberController,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Supplier Invoice #',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    ),
+                    decoration: InputDecoration(labelText: 'Supplier Invoice #',  isDense: true),
                   ),
                 ),
               ],

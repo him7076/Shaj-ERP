@@ -30,6 +30,10 @@ class Purchase implements IsarModel {
   // Financial Information
   double? subtotal;
   double? discountAmount;
+  double? discountPercent;
+  String? discountType;
+  String? paymentMode;
+  String? attachedImage;
   double? taxableAmount;
   double? cgstAmount;
   double? sgstAmount;

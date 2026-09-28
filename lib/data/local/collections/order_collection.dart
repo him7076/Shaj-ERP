@@ -40,6 +40,9 @@ class Order implements IsarModel {
   double? subtotal;
   double? discountAmount;
   double? discountPercent;
+  String? discountType;
+  String? paymentMode;
+  String? attachedImage;
   double? totalGST;
   double? roundOff;
   double? grandTotal; // Maps to totalAmount if backward compatibility is needed
