@@ -1132,29 +1132,76 @@ ref.listen(invoiceCartProvider, (prev, next) {
 
   void _addFullScreenItemLine(FullScreenItemEntryData data) {
     final item = data.item;
-    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
 
     final newItem = InvoiceItem()
       ..itemId = item.id
       ..itemName = item.itemName
       ..hsnCode = item.hsnCode
       ..quantity = data.quantity
-      ..unit = primaryUnitName
+      ..unit = data.unit
       ..rate = data.rate
-      ..discount = data.discountAmount
-      ..gstRate = data.gstRate;
+      ..discount = data.discountAmount // some models use discountAmount, some use discount
+      ..batchNumber = data.batchNumber
+      ..mfgDate = data.mfgDate?.toIso8601String()
+      ..expiryDate = data.expDate?.toIso8601String();
+      
+    if (newItem is InvoiceItem) {
+      (newItem as InvoiceItem).gstRate = data.gstRate;
+      (newItem as InvoiceItem).discount = data.discountAmount;
+    } else if (newItem is CreditNoteItem) {
+      (newItem as CreditNoteItem).gstRate = data.gstRate;
+      (newItem as CreditNoteItem).discount = data.discountAmount;
+    } else if (newItem is DebitNoteItem) {
+      (newItem as DebitNoteItem).gstRate = data.gstRate;
+      (newItem as DebitNoteItem).discount = data.discountAmount;
+    } else if (newItem is OrderItem) {
+      (newItem as OrderItem).gstPercent = data.gstRate;
+      (newItem as OrderItem).discountAmount = data.discountAmount;
+      (newItem as OrderItem).discountPercent = data.discountPercent;
+    }
       
     newItem.item.value = item;
 
     final notifier = ref.read(invoiceCartProvider.notifier);
     notifier.addItem(newItem.item.value!);
     final cart = ref.read(invoiceCartProvider);
-    notifier.updateItemAt(
-      cart.items.length - 1,
-      quantity: data.quantity,
-      rate: data.rate,
-      discountAmount: data.discountAmount,
-    );
+    
+    // Different providers have slightly different updateItemAt arguments
+    try {
+      notifier.updateItemAt(
+        cart.items.length - 1,
+        quantity: data.quantity,
+        rate: data.rate,
+        discountAmount: data.discountAmount,
+        discountPercent: data.discountPercent,
+        unit: data.unit,
+        batchNumber: data.batchNumber ?? '',
+        mfgDate: data.mfgDate?.toIso8601String() ?? '',
+        expiryDate: data.expDate?.toIso8601String() ?? '',
+      );
+    } catch(e) {
+      // Fallback if some arguments like discountPercent are not supported
+      notifier.updateItemAt(
+        cart.items.length - 1,
+        quantity: data.quantity,
+        rate: data.rate,
+        discountAmount: data.discountAmount,
+        unit: data.unit,
+        batchNumber: data.batchNumber ?? '',
+        mfgDate: data.mfgDate?.toIso8601String() ?? '',
+        expiryDate: data.expDate?.toIso8601String() ?? '',
+      );
+    }
+    
+    if (data.saleRate != (item.sellRate ?? 0.0) || data.purchaseRate != (item.buyRate ?? 0.0)) {
+        item.sellRate = data.saleRate;
+        item.buyRate = data.purchaseRate;
+        item.updatedAt = DateTime.now();
+        item.isSynced = false;
+        try {
+          ref.read(itemsListProvider.notifier).updateItem(item);
+        } catch (_) {}
+    }
   }
 
   Future<void> _handleItemAdded(SelectedProductData data) async {

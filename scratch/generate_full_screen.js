@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+const fs = require('fs');
+
+const code = `import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
@@ -266,7 +268,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
       ),
     );
     
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_selectedItem!.itemName} added!')));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('\${_selectedItem!.itemName} added!')));
     
     setState(() {
       _selectedItem = null;
@@ -590,13 +592,13 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  _buildSummaryRow('Sub Total', '₹${_subTotal.toStringAsFixed(2)}'),
-                                  _buildSummaryRow('Discount', '- ₹${_discountAmt.toStringAsFixed(2)}', color: Colors.red.shade400),
+                                  _buildSummaryRow('Sub Total', '₹\${_subTotal.toStringAsFixed(2)}'),
+                                  _buildSummaryRow('Discount', '- ₹\${_discountAmt.toStringAsFixed(2)}', color: Colors.red.shade400),
                                   const Divider(height: 16),
-                                  _buildSummaryRow('Taxable Amount', '₹${_taxableAmount.toStringAsFixed(2)}'),
-                                  _buildSummaryRow('Total Tax (${_gstController.text}%)', '+ ₹${_taxAmount.toStringAsFixed(2)}', color: Colors.blueGrey),
+                                  _buildSummaryRow('Taxable Amount', '₹\${_taxableAmount.toStringAsFixed(2)}'),
+                                  _buildSummaryRow('Total Tax (\${_gstController.text}%)', '+ ₹\${_taxAmount.toStringAsFixed(2)}', color: Colors.blueGrey),
                                   const Divider(height: 16),
-                                  _buildSummaryRow('FINAL AMOUNT', '₹${_totalAmount.toStringAsFixed(2)}', isBold: true, color: theme.colorScheme.primary),
+                                  _buildSummaryRow('FINAL AMOUNT', '₹\${_totalAmount.toStringAsFixed(2)}', isBold: true, color: theme.colorScheme.primary),
                                 ],
                               ),
                             ),
@@ -616,3 +618,6 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
     );
   }
 }
+`;
+
+fs.writeFileSync('lib/core/widgets/full_screen_item_entry.dart', code);

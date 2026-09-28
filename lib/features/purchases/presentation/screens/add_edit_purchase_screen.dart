@@ -295,23 +295,38 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
       await item.unit.load();
     } catch (_) {}
 
-    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
-
     final newItem = PurchaseItem()
       ..itemId = item.id
       ..itemName = item.itemName
       ..hsnCode = item.hsnCode
       ..quantity = data.quantity
-      ..unit = primaryUnitName
+      ..unit = data.unit
       ..rate = data.rate
       ..discount = data.discountAmount
-      ..gstRate = data.gstRate;
+      ..gstRate = data.gstRate
+      ..batchNumber = data.batchNumber
+      ..mfgDate = data.mfgDate?.toIso8601String()
+      ..expiryDate = data.expDate?.toIso8601String()
+      ..taxableAmount = data.taxableAmount
+      ..gstAmount = data.gstAmount
+      ..totalAmount = data.totalAmount;
       
     newItem.item.value = item;
 
     setState(() {
       _draftItems.add(newItem);
     });
+    
+    if (data.saleRate != (item.sellRate ?? 0.0) || data.purchaseRate != (item.buyRate ?? 0.0)) {
+        item.sellRate = data.saleRate;
+        item.buyRate = data.purchaseRate;
+        item.updatedAt = DateTime.now();
+        item.isSynced = false;
+        try {
+          ref.read(itemsListProvider.notifier).updateItem(item);
+        } catch (_) {}
+    }
+    
     _recalculateTotals();
   }
 
