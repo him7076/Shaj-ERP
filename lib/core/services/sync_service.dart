@@ -2229,6 +2229,10 @@ class SyncService {
           'invoiceDate': e.invoiceDate?.toIso8601String(),
           'invoiceType': e.invoiceType,
           'invoiceStatus': e.invoiceStatus,
+        'paymentMode': e.paymentMode,
+        'discountType': e.discountType,
+        'discountPercent': e.discountPercent,
+        'attachedImage': e.attachedImage,
           'sourceOrderId': e.sourceOrderId,
           'sourceOrderNumber': e.sourceOrderNumber,
           'partyId': e.partyId,
@@ -2769,6 +2773,10 @@ class SyncService {
           ..invoiceDate = data['invoiceDate'] != null ? DateTime.parse(data['invoiceDate']) : null
           ..invoiceType = data['invoiceType']
           ..invoiceStatus = data['invoiceStatus']
+        ..paymentMode = data['paymentMode']
+        ..discountType = data['discountType']
+        ..discountPercent = (data['discountPercent'] as num?)?.toDouble()
+        ..attachedImage = data['attachedImage']
           ..sourceOrderNumber = data['sourceOrderNumber']
           ..partyName = data['partyName']
           ..gstNumber = data['gstNumber']
