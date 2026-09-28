@@ -71,7 +71,7 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
       },
       onSelected: (item) {
         if (item.uuid == 'NEW_ACTION') {
-                    return const SizedBox.shrink(); /*
+                    
           final query = _controller.text.trim();
           FocusScope.of(context).unfocus();
           _controller.clear();
