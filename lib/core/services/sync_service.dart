@@ -2139,6 +2139,9 @@ class SyncService {
           'gstPercent': item.gstPercent,
           'gstAmount': item.gstAmount,
           'totalAmount': item.totalAmount,
+          'batchNumber': item.batchNumber,
+          'expiryDate': item.expiryDate,
+          'mfgDate': item.mfgDate,
         }).toList();
 
         return baseMap..addAll({
@@ -2958,7 +2961,10 @@ class SyncService {
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
           ..gstRate = (data['gstRate'] as num?)?.toDouble()
           ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble()
+          ..batchNumber = data['batchNumber'] as String?
+          ..expiryDate = data['expiryDate'] as String?
+          ..mfgDate = data['mfgDate'] as String?;
         break;
       case 'DebitNote':
         entity = DebitNote()
@@ -2992,7 +2998,10 @@ class SyncService {
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
           ..gstRate = (data['gstRate'] as num?)?.toDouble()
           ..gstAmount = (data['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (data['totalAmount'] as num?)?.toDouble();
+          ..totalAmount = (data['totalAmount'] as num?)?.toDouble()
+          ..batchNumber = data['batchNumber'] as String?
+          ..expiryDate = data['expiryDate'] as String?
+          ..mfgDate = data['mfgDate'] as String?;
         break;
       case 'StockAdjustment':
         entity = StockAdjustment()
