@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,7 @@ class FullScreenItemEntryData {
     this.expDate,
     required this.saleRate,
     required this.purchaseRate,
+    this.description,
     this.isSaleRateWithTax = false,
     this.isPurchaseRateWithTax = false,
     this.taxableAmount = 0.0,

@@ -1,10 +1,10 @@
 const fs = require('fs');
-const file = 'lib/features/transactions/presentation/screens/add_edit_party_transfer_screen.dart';
-let c = fs.readFileSync(file, 'utf8');
 
-c = c.replace(
-  "import '../../../sales/presentation/widgets/searchable_party_dropdown.dart';",
-  "import '../../../../core/widgets/searchable_party_dropdown.dart';"
-);
-
-fs.writeFileSync(file, c);
+let c = fs.readFileSync('lib/core/widgets/full_screen_item_entry.dart', 'utf8');
+if (!c.includes('theme_provider.dart')) {
+  c = 'import \'package:business_sahaj_erp/presentation/providers/theme_provider.dart\';\n' + c;
+  fs.writeFileSync('lib/core/widgets/full_screen_item_entry.dart', c, 'utf8');
+  console.log('Added theme_provider.dart import');
+} else {
+  console.log('theme_provider.dart already imported');
+}

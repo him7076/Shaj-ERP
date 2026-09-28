@@ -604,7 +604,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
           ..batchNumber = cartItem.batchNumber
           ..expiryDate = cartItem.expiryDate
           ..mfgDate = cartItem.mfgDate
-          ..isBundle = cartItem.item.value?.isBundle
+          ..isBundle = cartItem.item.isBundle
           ..bundleComponentUuids = cartItem.bundleComponentUuids
           ..bundleComponentQuantities = cartItem.bundleComponentQuantities
           ..bundleComponentUnits = cartItem.bundleComponentUnits;
@@ -1329,14 +1329,6 @@ ref.listen(invoiceCartProvider, (prev, next) {
                         Expanded(child: Text(cart.selectedParty!.gstNumber ?? 'Unregistered', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600))),
                       ],
               ),
-              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.value?.isBundle == true
-                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
-                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
-                ),
               const SizedBox(height: 4),
               Row(
                       children: [
@@ -1346,14 +1338,6 @@ ref.listen(invoiceCartProvider, (prev, next) {
                         Expanded(child: Text(cart.selectedParty!.city ?? 'N/A', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       ],
               ),
-              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.value?.isBundle == true
-                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
-                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
-                ),
               const SizedBox(height: 4),
               Row(
                       children: [
@@ -1904,8 +1888,8 @@ class InvoiceCartItemRow extends ConsumerWidget {
             context,
             isPurchase: false,
             isFixedAsset: isFixedAsset,
-            excludeBundles: !(cartItem.item.value?.isBundle ?? false),
-            onlyBundles: cartItem.item.value?.isBundle ?? false,
+            excludeBundles: !(cartItem.item.isBundle ?? false),
+            onlyBundles: cartItem.item.isBundle ?? false,
             initialData: FullScreenItemEntryData(
               item: cartItem.item,
               quantity: cartItem.quantity,
@@ -1962,7 +1946,7 @@ class InvoiceCartItemRow extends ConsumerWidget {
                 ],
               ),
               if (cartItem.description != null && cartItem.description!.isNotEmpty &&
-                  (cartItem.item.value?.isBundle == true
+                  (cartItem.item.isBundle == true
                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
                 Padding(
