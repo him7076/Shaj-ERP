@@ -295,63 +295,10 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       ..mfgDate = data.mfgDate?.toIso8601String()
       ..expiryDate = data.expDate?.toIso8601String();
       
-    if (newItem is InvoiceItem) {
-      (newItem as InvoiceItem).gstRate = data.gstRate;
-      (newItem as InvoiceItem).discount = data.discountAmount;
-    } else if (newItem is CreditNoteItem) {
-      (newItem as CreditNoteItem).gstRate = data.gstRate;
-      (newItem as CreditNoteItem).discount = data.discountAmount;
-    } else if (newItem is DebitNoteItem) {
-      (newItem as DebitNoteItem).gstRate = data.gstRate;
-      (newItem as DebitNoteItem).discount = data.discountAmount;
-    } else if (newItem is OrderItem) {
-      (newItem as OrderItem).gstPercent = data.gstRate;
-      (newItem as OrderItem).discountAmount = data.discountAmount;
-      (newItem as OrderItem).discountPercent = data.discountPercent;
-    }
-      
     newItem.item.value = item;
 
-    final notifier = ref.read(creditNoteCartProvider.notifier);
-    notifier.addItem(newItem.item.value!);
-    final cart = ref.read(creditNoteCartProvider);
-    
-    // Different providers have slightly different updateItemAt arguments
-    try {
-      notifier.updateItemAt(
-        cart.items.length - 1,
-        quantity: data.quantity,
-        rate: data.rate,
-        discountAmount: data.discountAmount,
-        discountPercent: data.discountPercent,
-        unit: data.unit,
-        batchNumber: data.batchNumber ?? '',
-        mfgDate: data.mfgDate?.toIso8601String() ?? '',
-        expiryDate: data.expDate?.toIso8601String() ?? '',
-      );
-    } catch(e) {
-      // Fallback if some arguments like discountPercent are not supported
-      notifier.updateItemAt(
-        cart.items.length - 1,
-        quantity: data.quantity,
-        rate: data.rate,
-        discountAmount: data.discountAmount,
-        unit: data.unit,
-        batchNumber: data.batchNumber ?? '',
-        mfgDate: data.mfgDate?.toIso8601String() ?? '',
-        expiryDate: data.expDate?.toIso8601String() ?? '',
-      );
-    }
-    
-    if (data.saleRate != (item.sellRate ?? 0.0) || data.purchaseRate != (item.buyRate ?? 0.0)) {
-        item.sellRate = data.saleRate;
-        item.buyRate = data.purchaseRate;
-        item.updatedAt = DateTime.now();
-        item.isSynced = false;
-        try {
-          ref.read(itemsListProvider.notifier).updateItem(item);
-        } catch (_) {}
-    }
+    setState(() { _draftItems.add(newItem); });
+    _recalculateTotals();
   }
 
   void _addItemLine(SelectedProductData data) async {

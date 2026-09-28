@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
-import 'package:business_sahaj_erp/core/theme/theme_provider.dart';
 
 class FullScreenItemEntryData {
   final Item item;

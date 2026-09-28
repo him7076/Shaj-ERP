@@ -323,7 +323,7 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
         item.updatedAt = DateTime.now();
         item.isSynced = false;
         try {
-          ref.read(itemsListProvider.notifier).updateItem(item);
+          ref.invalidate(itemsListProvider);
         } catch (_) {}
     }
     

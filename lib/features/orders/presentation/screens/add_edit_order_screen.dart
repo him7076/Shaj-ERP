@@ -836,25 +836,10 @@ final theme = Theme.of(context);
       ..quantity = data.quantity
       ..unit = data.unit
       ..rate = data.rate
-      ..discount = data.discountAmount // some models use discountAmount, some use discount
+      ..discountAmount = data.discountAmount // some models use discountAmount, some use discount
       ..batchNumber = data.batchNumber
       ..mfgDate = data.mfgDate?.toIso8601String()
       ..expiryDate = data.expDate?.toIso8601String();
-      
-    if (newItem is InvoiceItem) {
-      (newItem as InvoiceItem).gstRate = data.gstRate;
-      (newItem as InvoiceItem).discount = data.discountAmount;
-    } else if (newItem is CreditNoteItem) {
-      (newItem as CreditNoteItem).gstRate = data.gstRate;
-      (newItem as CreditNoteItem).discount = data.discountAmount;
-    } else if (newItem is DebitNoteItem) {
-      (newItem as DebitNoteItem).gstRate = data.gstRate;
-      (newItem as DebitNoteItem).discount = data.discountAmount;
-    } else if (newItem is OrderItem) {
-      (newItem as OrderItem).gstPercent = data.gstRate;
-      (newItem as OrderItem).discountAmount = data.discountAmount;
-      (newItem as OrderItem).discountPercent = data.discountPercent;
-    }
       
     newItem.item.value = item;
 
@@ -895,7 +880,7 @@ final theme = Theme.of(context);
         item.updatedAt = DateTime.now();
         item.isSynced = false;
         try {
-          ref.read(itemsListProvider.notifier).updateItem(item);
+          ref.invalidate(itemsListProvider);
         } catch (_) {}
     }
   }
