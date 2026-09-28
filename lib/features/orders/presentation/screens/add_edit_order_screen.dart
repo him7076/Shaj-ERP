@@ -114,6 +114,13 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
     }
   }
 
+    bool _isDiscountPercent = true;
+  String? _attachedImage;
+  String _paymentMode = "Cash";
+  bool _isPaidAmountAutoFill = false;
+  DateTime _dueDate = DateTime.now();
+  final _paidAmountController = TextEditingController();
+
   @override
   void initState() {
     super.initState();

@@ -127,6 +127,9 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
 
   bool _isPaidAmountAutoFill = false;
 
+    bool _isDiscountPercent = true;
+  String? _attachedImage;
+
   @override
   void initState() {
     super.initState();
