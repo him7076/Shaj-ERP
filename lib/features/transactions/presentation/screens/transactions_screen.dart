@@ -1147,8 +1147,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           ),
                         ),
                       );
-
-},
+                    },
+                    separatorBuilder: (context, index) => const SizedBox(height: 8),
+                  );
+                },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Center(child: Text('Error loading transactions: $err')),
             ),
