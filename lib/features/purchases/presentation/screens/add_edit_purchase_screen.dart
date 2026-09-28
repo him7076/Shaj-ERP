@@ -289,29 +289,6 @@ class _AddEditPurchaseScreenState extends ConsumerState<AddEditPurchaseScreen> {
   }
 
 
-  void _addFullScreenItemLine(FullScreenItemEntryData data) {
-    final item = data.item;
-    final primaryUnitName = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
-
-    final newItem = PurchaseItem()
-      ..itemId = item.id
-      ..itemName = item.itemName
-      ..hsnCode = item.hsnCode
-      ..quantity = data.quantity
-      ..unit = primaryUnitName
-      ..rate = data.rate
-      ..discount = data.discountAmount
-      ..gstRate = data.gstRate;
-      
-    newItem.item.value = item;
-
-    setState(() {
-      _draftItems.add(newItem);
-    });
-    _recalculateTotals();
-  }
-
-
   void _addFullScreenItemLine(FullScreenItemEntryData data) async {
     final item = data.item;
     try {

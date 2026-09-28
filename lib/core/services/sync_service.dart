@@ -1463,7 +1463,6 @@ class SyncService {
         }
 
         Item? prod = item.item.value;
-        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
         if (prod != null) {
           item.item.value = prod;
           item.itemId = prod.id;
@@ -1497,7 +1496,6 @@ class SyncService {
         }
 
         Item? prod = item.item.value;
-        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
         if (prod != null) {
           item.item.value = prod;
           item.itemId = prod.id;
@@ -1520,16 +1518,15 @@ class SyncService {
       for (var item in allOrderItems) {
         bool modified = false;
         Order? parent = item.order.value;
-        if (parent == null && item.parentOrderUuid != null && item.parentOrderUuid!.isNotEmpty) parent = orderByUuid[item.parentOrderUuid!];
-        if (parent == null && (item.parentOrderUuid == null || item.parentOrderUuid!.isEmpty) && item.parentOrderId != null) parent = orderById[item.parentOrderId!];
+        if (parent == null && item.orderUuid != null && item.orderUuid!.isNotEmpty) parent = orderByUuid[item.orderUuid!];
+        if (parent == null && (item.orderUuid == null || item.orderUuid!.isEmpty) && item.orderId != null) parent = orderById[item.orderId!];
         if (parent != null) {
           item.order.value = parent;
-          item.parentOrderId = parent.id;
-          item.parentOrderUuid = parent.uuid;
+          item.orderId = parent.id;
+          item.orderUuid = parent.uuid;
           modified = true;
         }
         Item? prod = item.item.value;
-        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
         if (prod != null) {
           item.item.value = prod;
           item.itemId = prod.id;
@@ -1552,16 +1549,13 @@ class SyncService {
       for (var item in allCNItems) {
         bool modified = false;
         CreditNote? parent = item.creditNote.value;
-        if (parent == null && item.parentCreditNoteUuid != null && item.parentCreditNoteUuid!.isNotEmpty) parent = cnByUuid[item.parentCreditNoteUuid!];
-        if (parent == null && (item.parentCreditNoteUuid == null || item.parentCreditNoteUuid!.isEmpty) && item.parentCreditNoteId != null) parent = cnById[item.parentCreditNoteId!];
+        if (parent == null && item.parentCreditNoteId != null) parent = cnById[item.parentCreditNoteId!];
         if (parent != null) {
           item.creditNote.value = parent;
           item.parentCreditNoteId = parent.id;
-          item.parentCreditNoteUuid = parent.uuid;
           modified = true;
         }
         Item? prod = item.item.value;
-        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
         if (prod != null) {
           item.item.value = prod;
           item.itemId = prod.id;
@@ -1584,16 +1578,13 @@ class SyncService {
       for (var item in allDNItems) {
         bool modified = false;
         DebitNote? parent = item.debitNote.value;
-        if (parent == null && item.parentDebitNoteUuid != null && item.parentDebitNoteUuid!.isNotEmpty) parent = dnByUuid[item.parentDebitNoteUuid!];
-        if (parent == null && (item.parentDebitNoteUuid == null || item.parentDebitNoteUuid!.isEmpty) && item.parentDebitNoteId != null) parent = dnById[item.parentDebitNoteId!];
+        if (parent == null && item.parentDebitNoteId != null) parent = dnById[item.parentDebitNoteId!];
         if (parent != null) {
           item.debitNote.value = parent;
           item.parentDebitNoteId = parent.id;
-          item.parentDebitNoteUuid = parent.uuid;
           modified = true;
         }
         Item? prod = item.item.value;
-        if (prod == null && item.itemUuid != null && item.itemUuid!.isNotEmpty) prod = itemByUuid[item.itemUuid!];
         if (prod != null) {
           item.item.value = prod;
           item.itemId = prod.id;
