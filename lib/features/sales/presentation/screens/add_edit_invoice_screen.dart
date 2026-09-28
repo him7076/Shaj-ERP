@@ -1581,6 +1581,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                    index: index,
                    cartItem: cartItem,
                    isGstInclusive: cart.isGstInclusive,
+                   isFixedAsset: widget.isFixedAsset,
                  );
                },
              ),
@@ -1807,10 +1808,11 @@ ref.listen(invoiceCartProvider, (prev, next) {
 }
 
 class InvoiceCartItemRow extends ConsumerStatefulWidget {
+  final bool isFixedAsset;
   final int index;
   final CartItemState cartItem;
   final bool isGstInclusive;
-  const InvoiceCartItemRow({Key? key, required this.index, required this.cartItem, required this.isGstInclusive}) : super(key: key);
+  const InvoiceCartItemRow({Key? key, required this.index, required this.cartItem, required this.isGstInclusive, this.isFixedAsset = false}) : super(key: key);
 
   @override
   ConsumerState<InvoiceCartItemRow> createState() => _InvoiceCartItemRowState();

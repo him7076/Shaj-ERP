@@ -964,6 +964,7 @@ if (_isPaidAmountAutoFill) {
                      return PurchaseCartItemRow(
                        index: index,
                        item: item,
+                       isFixedAsset: widget.isFixedAsset,
                        onDelete: () {
                          setState(() {
                            _draftItems.removeAt(index);
@@ -1188,6 +1189,7 @@ if (_isPaidAmountAutoFill) {
 }
 
 class PurchaseCartItemRow extends ConsumerStatefulWidget {
+  final bool isFixedAsset;
   final int index;
   final PurchaseItem item;
   final VoidCallback onDelete;
@@ -1198,7 +1200,7 @@ class PurchaseCartItemRow extends ConsumerStatefulWidget {
     required this.index,
     required this.item,
     required this.onDelete,
-    required this.onChanged,
+    required this.onChanged, this.isFixedAsset = false,
   }) : super(key: key);
 
   @override
