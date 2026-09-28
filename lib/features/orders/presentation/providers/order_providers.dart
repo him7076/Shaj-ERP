@@ -120,6 +120,7 @@ class CartItemState {
     String? selectedSubItemUuid,
     String? selectedSubItemName,
     String? description,
+    String? description,
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,
@@ -207,7 +208,8 @@ class CartNotifier extends StateNotifier<OrderCart> {
     state = state.copyWith(selectedParty: party);
   }
 
-  void addItem(Item item, {double qty = 1.0, String? selectedSubItemUuid, String? selectedSubItemName}) {
+  void addItem(Item item, {
+    String? description,double qty = 1.0, String? selectedSubItemUuid, String? selectedSubItemName}) {
     double rate = item.sellRate ?? 0.0;
     if (selectedSubItemUuid != null && item.subItems != null) {
       try {
@@ -227,6 +229,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
       gstPercent: gst,
       selectedSubItemUuid: selectedSubItemUuid,
       selectedSubItemName: selectedSubItemName,
+        description: description,
       bundleComponentUuids: item.isBundle ? item.bundleComponentUuids : null,
       bundleComponentQuantities: item.isBundle ? item.bundleComponentQuantities : null,
       bundleComponentUnits: item.isBundle ? item.bundleComponentUnits : null,
@@ -294,6 +297,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
     double? rate,
     double? discountPercent,
     double? discountAmount,
+    String? description,
   }) {
     final index = state.items.indexWhere((element) => element.item.uuid == itemUuid);
     if (index == -1) return;
@@ -305,6 +309,7 @@ class CartNotifier extends StateNotifier<OrderCart> {
       rate: rate,
       discountPercent: discountPercent,
       discountAmount: discountAmount,
+      description: description,
     );
   }
 

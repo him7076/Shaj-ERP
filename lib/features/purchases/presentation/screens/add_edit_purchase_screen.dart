@@ -570,12 +570,7 @@ if (_isPaidAmountAutoFill) {
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                           prefixIcon: const Icon(Icons.payment, size: 18),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: _showAddPaymentModeDialog,
-                          ),
+                          
                         ),
                         items: [
                           DropdownMenuItem(
@@ -591,6 +586,10 @@ if (_isPaidAmountAutoFill) {
                           ...dropdownItems,
                         ],
                         onChanged: (val) {
+                          if (val == 'ADD_NEW_PAYMENT') {
+                            _showAddPaymentModeDialog();
+                            return;
+                          }
                           if (val != null) {
                             setState(() => _paymentMode = val);
                           }
@@ -749,7 +748,7 @@ if (_isPaidAmountAutoFill) {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: isDesktop
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,7 +836,7 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1054,7 +1053,7 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1330,7 +1329,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
     }
 
     return NeuCard(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1367,7 +1366,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1387,7 +1386,15 @@ class PurchaseCartItemRow extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
+                  (cartItem.item.isBundle == true
+                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

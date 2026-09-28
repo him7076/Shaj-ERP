@@ -20,6 +20,7 @@ class FullScreenItemEntryData {
   
   final double saleRate;
   final double purchaseRate;
+  final String? description;
   final bool isSaleRateWithTax;
   final bool isPurchaseRateWithTax;
   final double taxableAmount;
@@ -87,6 +88,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
   final TextEditingController _saleRateController = TextEditingController();
   final TextEditingController _purchaseRateController = TextEditingController();
   final TextEditingController _batchController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _discountController = TextEditingController(text: '0.0');
   final TextEditingController _gstController = TextEditingController(text: '18.0');
 
@@ -118,6 +120,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
       _saleRateController.text = d.saleRate.toString();
       _purchaseRateController.text = d.purchaseRate.toString();
       _batchController.text = d.batchNumber ?? '';
+      _descriptionController.text = d.description ?? '';
       _discountController.text = d.discountPercent > 0 ? d.discountPercent.toString() : d.discountAmount.toString();
       _isDiscountPercent = d.discountPercent > 0 || (d.discountPercent == 0 && d.discountAmount == 0);
       _gstController.text = d.gstRate.toString();
@@ -359,14 +362,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
             : (widget.isFixedAsset ? 'Add Fixed Asset' : 'Add Item')),
         centerTitle: true,
         elevation: 0,
-        actions: [
-          TextButton.icon(
-            onPressed: _save,
-            icon: const Icon(Icons.check),
-            label: const Text('SAVE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: const [],
       ),
       body: itemsAsync.when(
         data: (allItems) {
@@ -549,6 +545,33 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                   // BATCH, MFG, EXP
                                   _buildModernTextField('Batch Number', _batchController),
                                   const SizedBox(height: 12),
+                                  Consumer(
+                                    builder: (context, r, child) {
+                                      final prefs = r.watch(sharedPreferencesProvider);
+                                      final isBundle = _selectedItem?.isBundle == true;
+                                      final showDesc = isBundle
+                                          ? (prefs.getBool('enable_bundle_description') ?? false)
+                                          : (prefs.getBool('enable_item_description') ?? false);
+                                      if (!showDesc) return const SizedBox.shrink();
+                                      return Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: TextFormField(
+                                          controller: _descriptionController,
+                                          maxLines: 2,
+                                          decoration: InputDecoration(
+                                            labelText: 'Description',
+                                            alignLabelWithHint: true,
+                                            isDense: true,
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5))),
+                                          ),
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      );
+                                    }
+                                  ),
+                                  const SizedBox(height: 12),
                                   Row(
                                     children: [
                                       Expanded(
@@ -624,6 +647,60 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, _) => Center(child: Text('Error: $err')),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Center(
+            heightFactor: 1,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          foregroundColor: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        child: const Text('CANCEL', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: _save,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          elevation: 2,
+                        ),
+                        child: const Text('SAVE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

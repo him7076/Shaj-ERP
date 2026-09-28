@@ -58,7 +58,7 @@ class _SearchablePartyDropdownState extends State<SearchablePartyDropdown> {
             final query = textEditingValue.text.trim().toLowerCase();
             List<Party> filtered = [];
             if (query.isEmpty) {
-              filtered = widget.parties;
+              return const Iterable<Party>.empty();
             } else {
               filtered = widget.parties.where((p) {
                 final name = p.partyName?.toLowerCase() ?? '';

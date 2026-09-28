@@ -904,8 +904,12 @@ final theme = Theme.of(context);
                             ..._salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))),
                           ],
                           onChanged: (val) {
-                            if (val != null) setState(() => _selectedSalesman = val);
-                          },
+                                    if (val == 'ADD_NEW_SALESMAN') {
+                                      _showAddSalesmanDialog();
+                                      return;
+                                    }
+                                    if (val != null) setState(() => _selectedSalesman = val);
+                                  },
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1277,7 +1281,7 @@ class OrderCartItemRow extends ConsumerWidget {
     }
 
     return NeuCard(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1307,6 +1311,7 @@ class OrderCartItemRow extends ConsumerWidget {
               purchaseRate: cartItem.item.buyRate ?? 0.0,
               isSaleRateWithTax: false,
               isPurchaseRateWithTax: false,
+              description: cartItem.description,
             ),
             onAdd: (data) {
               ref.read(cartProvider.notifier).updateItemAt(
@@ -1320,12 +1325,13 @@ class OrderCartItemRow extends ConsumerWidget {
                 batchNumber: data.batchNumber,
                 mfgDate: data.mfgDate != null ? DateFormat('MM/yyyy').format(data.mfgDate!) : null,
                 expiryDate: data.expDate != null ? DateFormat('MM/yyyy').format(data.expDate!) : null,
+                description: data.description,
               );
             },
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1345,7 +1351,15 @@ class OrderCartItemRow extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
+                  (cartItem.item.isBundle == true
+                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

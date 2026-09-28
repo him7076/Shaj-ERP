@@ -502,7 +502,7 @@ if (_isPaidAmountAutoFill) {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: isDesktop
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,7 +590,7 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -793,7 +793,7 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1081,7 +1081,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
     final double taxAmount = item.gstAmount ?? 0.0;
 
     return NeuCard(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1112,6 +1112,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
               purchaseRate: item.item.value!.buyRate ?? 0.0,
               isSaleRateWithTax: false,
               isPurchaseRateWithTax: false,
+              description: cartItem.description,
             ),
             onAdd: (data) {
               item.unit = data.unit;
@@ -1125,7 +1126,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1145,7 +1146,15 @@ class PurchaseCartItemRow extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
+                  (cartItem.item.isBundle == true
+                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

@@ -98,7 +98,8 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     state = state.copyWith(selectedParty: party);
   }
 
-  void addItem(Item item, {double qty = 1.0, String? selectedSubItemUuid, String? selectedSubItemName}) {
+  void addItem(Item item, {
+    String? description,double qty = 1.0, String? selectedSubItemUuid, String? selectedSubItemName}) {
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
     final defaultUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
@@ -130,6 +131,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       gstPercent: gst,
       selectedSubItemUuid: selectedSubItemUuid,
       selectedSubItemName: selectedSubItemName,
+        description: description,
       bundleComponentUuids: item.isBundle ? item.bundleComponentUuids : null,
       bundleComponentQuantities: item.isBundle ? item.bundleComponentQuantities : null,
       bundleComponentUnits: item.isBundle ? item.bundleComponentUnits : null,
@@ -150,6 +152,8 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     String? batchNumber,
     String? expiryDate,
     String? mfgDate,
+    String? description,
+    String? description,
     List<String>? bundleComponentUuids,
     List<double>? bundleComponentQuantities,
     List<String>? bundleComponentUnits,
@@ -238,6 +242,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     double? buyRate,
     double? discountPercent,
     double? discountAmount,
+    String? description,
   }) {
     final index = state.items.indexWhere((element) => element.item.uuid == itemUuid);
     if (index == -1) return;
@@ -250,6 +255,7 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
       buyRate: buyRate,
       discountPercent: discountPercent,
       discountAmount: discountAmount,
+      description: description,
     );
   }
 

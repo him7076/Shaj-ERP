@@ -858,12 +858,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                           prefixIcon: const Icon(Icons.payment, size: 18),
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.add_circle, color: Colors.blue, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            onPressed: _showAddPaymentModeDialog,
-                          ),
+                          
                         ),
                         items: [
                           DropdownMenuItem(
@@ -879,6 +874,10 @@ ref.listen(invoiceCartProvider, (prev, next) {
                           ...dropdownItems,
                         ],
                         onChanged: (val) {
+                          if (val == 'ADD_NEW_PAYMENT') {
+                            _showAddPaymentModeDialog();
+                            return;
+                          }
                           if (val != null) {
                             setState(() => _paymentMode = val);
                           }
@@ -1329,18 +1328,34 @@ ref.listen(invoiceCartProvider, (prev, next) {
                         Text('GST: ', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
                         Expanded(child: Text(cart.selectedParty!.gstNumber ?? 'Unregistered', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600))),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+              ),
+              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
+                  (cartItem.item.isBundle == true
+                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              const SizedBox(height: 4),
+              Row(
                       children: [
                         Icon(Icons.location_on_outlined, size: 15, color: theme.colorScheme.primary),
                         const SizedBox(width: 6),
                         Text('Addr: ', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
                         Expanded(child: Text(cart.selectedParty!.city ?? 'N/A', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+              ),
+              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
+                  (cartItem.item.isBundle == true
+                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              const SizedBox(height: 4),
+              Row(
                       children: [
                         Icon(Icons.account_balance_wallet_outlined, size: 15, color: (cart.selectedParty!.outstandingBalance ?? 0) > 0 ? Colors.red : Colors.green),
                         const SizedBox(width: 6),
@@ -1389,7 +1404,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                               },
                             ),
                             if (cart.linkedMachineUuid != null) ...[
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               CheckboxListTile(
                                 title: const Text('Early inspection / Same service?', style: TextStyle(fontSize: 12)),
                                 subtitle: const Text('Won\'t reschedule next service date', style: TextStyle(fontSize: 10)),
@@ -1464,12 +1479,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                                             padding: EdgeInsets.zero,
                                           ),
-                                        IconButton(
-                                          icon: const Icon(Icons.person_add, size: 18),
-                                          onPressed: _showAddSalesmanDialog,
-                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                          padding: EdgeInsets.zero,
-                                        ),
+                                        
                                         const Icon(Icons.arrow_drop_down, color: Colors.grey),
                                         const SizedBox(width: 8),
                                       ],
@@ -1489,6 +1499,10 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                     ..._salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))),
                                   ],
                                   onChanged: (val) {
+                                    if (val == 'ADD_NEW_SALESMAN') {
+                                      _showAddSalesmanDialog();
+                                      return;
+                                    }
                                     if (val != null) setState(() => _selectedSalesman = val);
                                   },
                                 ),
@@ -1537,6 +1551,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
           data.item.uuid ?? '',
           quantity: data.quantity,
           discountAmount: data.discountAmount,
+          description: data.description,
         );
         
       },
@@ -1566,6 +1581,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
           data.item.uuid ?? '',
           quantity: data.quantity,
           discountAmount: data.discountAmount,
+          description: data.description,
         );
         
       },
@@ -1609,7 +1625,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Cart Items', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
              ListView.separated(
                shrinkWrap: true,
                physics: const NeverScrollableScrollPhysics(),
@@ -1644,6 +1660,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
           data.item.uuid ?? '',
           quantity: data.quantity,
           discountAmount: data.discountAmount,
+          description: data.description,
         );
         
       },
@@ -1676,6 +1693,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
           data.item.uuid ?? '',
           quantity: data.quantity,
           discountAmount: data.discountAmount,
+          description: data.description,
         );
         
       },
@@ -1873,7 +1891,7 @@ class InvoiceCartItemRow extends ConsumerWidget {
     }
 
     return NeuCard(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -1903,6 +1921,7 @@ class InvoiceCartItemRow extends ConsumerWidget {
               purchaseRate: cartItem.item.buyRate ?? 0.0,
               isSaleRateWithTax: false,
               isPurchaseRateWithTax: false,
+              description: cartItem.description,
             ),
             onAdd: (data) {
               ref.read(invoiceCartProvider.notifier).updateItemAt(
@@ -1916,12 +1935,13 @@ class InvoiceCartItemRow extends ConsumerWidget {
                 batchNumber: data.batchNumber,
                 mfgDate: data.mfgDate != null ? DateFormat('MM/yyyy').format(data.mfgDate!) : null,
                 expiryDate: data.expDate != null ? DateFormat('MM/yyyy').format(data.expDate!) : null,
+                description: data.description,
               );
             },
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1941,7 +1961,15 @@ class InvoiceCartItemRow extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              if (cartItem.description != null && cartItem.description!.isNotEmpty &&
+                  (cartItem.item.isBundle == true
+                      ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+                      : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Text(cartItem.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                ),
+              const SizedBox(height: 4),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

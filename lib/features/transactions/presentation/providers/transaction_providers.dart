@@ -599,7 +599,8 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
     state = state.copyWith(selectedParty: party);
   }
 
-  void addItem(Item item, {double qty = 1.0}) {
+  void addItem(Item item, {
+    String? description,double qty = 1.0}) {
     final rate = item.sellRate ?? 0.0;
     final gst = item.gstRate ?? 18.0;
     final defaultUnit = item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS';
@@ -670,6 +671,7 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
     double? rate,
     double? discountPercent,
     double? discountAmount,
+    String? description,
   }) {
     final index = state.items.indexWhere((element) => element.item.uuid == itemUuid);
     if (index == -1) return;
@@ -681,6 +683,7 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
       rate: rate,
       discountPercent: discountPercent,
       discountAmount: discountAmount,
+      description: description,
     );
   }
 
