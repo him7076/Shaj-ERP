@@ -541,8 +541,8 @@ class SyncService {
 
     try {
       // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
-      //    This is critical — stale entity timestamps cause filterCutoff to block full download!
-      //    NOTE: We NEVER purge local DB here — existing local offline data must be preserved!
+      //    This is critical ï¿½ stale entity timestamps cause filterCutoff to block full download!
+      //    NOTE: We NEVER purge local DB here ï¿½ existing local offline data must be preserved!
       final activeFirmId = _dbService.activeFirmId;
       await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
       await _prefs.remove(AppConstants.keyLastSyncTime);
@@ -560,7 +560,7 @@ class SyncService {
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
       }
-      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId ï¿½ forcing full fresh download.');
 
       // 3. Re-seed standard commercial units in local DB
       await DemoDataSeeder.seedStandardUnits(_dbService);
@@ -920,7 +920,7 @@ class SyncService {
   }
 
   /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
-  /// [silent] = true when called from background quiet sync — avoids polluting global state
+  /// [silent] = true when called from background quiet sync ï¿½ avoids polluting global state
   Future<void> _uploadLocalChanges({bool silent = false}) async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
@@ -954,7 +954,7 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    // Deduplicate queue items to minimize Firebase Writes — with event-loop yielding
+    // Deduplicate queue items to minimize Firebase Writes ï¿½ with event-loop yielding
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1130,7 +1130,7 @@ class SyncService {
       }
     }
 
-    // Mark synced items in local DB — chunked with yields
+    // Mark synced items in local DB ï¿½ chunked with yields
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1238,14 +1238,14 @@ class SyncService {
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Determine filterCutoff — ONLY for incremental sync, NEVER for forceFullDownload
+        // Determine filterCutoff ï¿½ ONLY for incremental sync, NEVER for forceFullDownload
         DateTime? filterCutoff;
         if (!forceFullDownload) {
           final String? lastCloudSyncStr = prefs.getString(timestampKey);
           if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
             final parsed = DateTime.tryParse(lastCloudSyncStr);
             if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
-              // Subtract 30 seconds (not 2 minutes) as safety overlap — less wasteful reads
+              // Subtract 30 seconds (not 2 minutes) as safety overlap ï¿½ less wasteful reads
               filterCutoff = parsed.subtract(const Duration(seconds: 30));
             }
           }
@@ -1253,7 +1253,7 @@ class SyncService {
 
         dynamic querySnapshot;
 
-        // Step 1: Compound query (companyId + firmId + filterCutoff) — primary path for delta sync
+        // Step 1: Compound query (companyId + firmId + filterCutoff) ï¿½ primary path for delta sync
         try {
           var query = _firebaseService.firestore
               .collection(collectionName)
@@ -1292,7 +1292,7 @@ class SyncService {
           continue;
         }
 
-        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType — processing...');
+        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType ï¿½ processing...');
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < querySnapshot.docs.length; d++) {
@@ -1384,7 +1384,7 @@ class SyncService {
     }
 
     // Post-download pass: Re-link relations and recalculate stocks
-    // ONLY run during full download — during delta sync this is wasteful O(N²) overhead
+    // ONLY run during full download ï¿½ during delta sync this is wasteful O(Nï¿½) overhead
     // that loads ALL records into memory and causes the "96% hang"
     if (forceFullDownload) {
       try {
@@ -3605,7 +3605,7 @@ class SyncService {
     }
   }
 
-  /// Appends log items — Success logs to local SharedPreferences only, Failures to Firestore
+  /// Appends log items ï¿½ Success logs to local SharedPreferences only, Failures to Firestore
   Future<void> _logSyncEvent(String result, String message) async {
     // Success logs: local-only to minimize Firebase writes
     if (result == 'Success') {

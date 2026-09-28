@@ -484,7 +484,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 const SizedBox(height: 10),
                 ...insufficientItems.map((msg) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                  child: Text('ï¿½ $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                 )),
                 const SizedBox(height: 12),
                 const Text('Do you want to proceed and save this transaction anyway?'),
@@ -875,7 +875,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
               ),
             ),
             const SizedBox(height: 10),
-            // Payment Mode — always visible
+            // Payment Mode ï¿½ always visible
             ref.watch(bankAccountsListProvider).when(
               data: (accounts) {
                 final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
@@ -2230,7 +2230,7 @@ final theme = Theme.of(context);
               // Rate Row: Rate Input + Tax Mode
               Row(
                 children: [
-                  // Rate Input Box — takes most space
+                  // Rate Input Box ï¿½ takes most space
                   Expanded(
                     flex: 5,
                     child: TextFormField(
@@ -2252,7 +2252,7 @@ final theme = Theme.of(context);
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Tax Mode Toggle — compact
+                  // Tax Mode Toggle ï¿½ compact
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<bool>(
@@ -2277,7 +2277,7 @@ final theme = Theme.of(context);
                   ),
                 ],
               ),
-              // Buy Price Row — conditional, full width
+              // Buy Price Row ï¿½ conditional, full width
               if (enableBuyPrice) ...[
                 const SizedBox(height: 8),
                 TextFormField(

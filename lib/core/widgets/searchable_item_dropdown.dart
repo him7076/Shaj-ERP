@@ -63,7 +63,7 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
           ..uuid = 'NEW_ACTION'
           ..itemName = query.isNotEmpty
               ? '+ Create New \ "$query"'
-              : '+ Create New \';
+              : '+ Create New Item';
 
         return [...filtered, createActionItem];
       },
