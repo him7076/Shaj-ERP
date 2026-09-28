@@ -23,6 +23,8 @@ import 'package:business_sahaj_erp/data/local/collections/expense_collection.dar
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/features/bank/presentation/screens/transfer_funds_dialog.dart';
 
+import 'package:business_sahaj_erp/features/bank/presentation/screens/adjust_cash_dialog.dart';
+
 class ManageCashAndBankScreen extends ConsumerStatefulWidget {
   const ManageCashAndBankScreen({Key? key}) : super(key: key);
 
@@ -195,7 +197,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                   // Hero Balance Banner
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [const Color(0xFF1E88E5), const Color(0xFF1565C0)],
@@ -228,7 +230,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                         const SizedBox(height: 8),
                         Text(
                           currencyFormat.format(_totalLiquidBalance),
-                          style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
                         const Text('Tap any account card below to view transaction history, statements & filters.', style: TextStyle(color: Colors.white70, fontSize: 12)),
@@ -247,7 +249,8 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                       side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      dense: true,
                       onTap: () => _openAccountTransactions(accountName: 'Cash in Hand', isCash: true),
                       leading: const CircleAvatar(
                         radius: 26,
@@ -286,7 +289,8 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                       side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      dense: true,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -343,7 +347,8 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                             side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                           ),
                           child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      dense: true,
                             onTap: () => _openAccountTransactions(accountName: acc.accountName ?? 'Bank Account', bankUuid: acc.uuid),
                             leading: const CircleAvatar(
                               radius: 26,
@@ -821,19 +826,52 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final res = await showDialog(
-            context: context,
-            builder: (_) => TransferFundsDialog(defaultFromAccount: widget.isCash ? 'Cash' : widget.accountName),
-          );
-          if (res == true) {
-            _loadTransactions();
-          }
-        },
-        icon: const Icon(Icons.swap_horiz_rounded),
-        label: const Text('Transfer Funds'),
-      ),
+      floatingActionButton: widget.isCash 
+        ? Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: 'adjust_cash',
+                onPressed: () async {
+                  final res = await showDialog(
+                    context: context,
+                    builder: (_) => const AdjustCashDialog(),
+                  );
+                  if (res == true) _loadTransactions();
+                },
+                icon: const Icon(Icons.account_balance_wallet_outlined),
+                label: const Text('Adjust Cash'),
+              ),
+              const SizedBox(height: 12),
+              FloatingActionButton.extended(
+                heroTag: 'bank_transfer_cash',
+                onPressed: () async {
+                  final res = await showDialog(
+                    context: context,
+                    builder: (_) => TransferFundsDialog(defaultFromAccount: 'Cash'),
+                  );
+                  if (res == true) _loadTransactions();
+                },
+                icon: const Icon(Icons.swap_horiz_rounded),
+                label: const Text('Bank Transfer'),
+              ),
+            ],
+          )
+        : FloatingActionButton.extended(
+            heroTag: 'add_bank_txn',
+            onPressed: () async {
+              final res = await showDialog(
+                context: context,
+                builder: (_) => TransferFundsDialog(defaultFromAccount: widget.accountName),
+              );
+              if (res == true) {
+                _loadTransactions();
+              }
+            },
+            icon: const Icon(Icons.add_circle_outline),
+            label: const Text('Add Bank Transaction'),
+          ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),

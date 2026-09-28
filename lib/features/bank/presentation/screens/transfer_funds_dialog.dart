@@ -30,7 +30,8 @@ class TransferFundsDialog extends ConsumerStatefulWidget {
 class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   
-  String _transferType = 'Bank to Cash'; // 'Bank to Cash', 'Cash to Bank', 'Bank to Bank'
+  String _transferType = 'Bank to Cash';
+  String _adjustmentType = 'Increase Balance'; // 'Bank to Cash', 'Cash to Bank', 'Bank to Bank'
   DateTime _date = DateTime.now();
   String? _fromBank;
   String? _toBank;
@@ -160,7 +161,19 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
     String paymentMode = '';
     String partyName = '';
 
-    if (_transferType == 'Bank to Cash') {
+    if (_transferType == 'Adjustment') {
+      if (_fromBank == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select Account Name')));
+        return;
+      }
+      if (_adjustmentType == 'Increase Balance') {
+        paymentMode = 'System Adjustment';
+        partyName = _fromBank!;
+      } else {
+        paymentMode = _fromBank!;
+        partyName = 'System Adjustment';
+      }
+    } else if (_transferType == 'Bank to Cash') {
       if (_fromBank == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select From Bank')));
         return;
@@ -347,6 +360,25 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
                       const SizedBox(height: 20),
 
                       // From / To Fields
+                      if (_transferType == 'Adjustment') ...[
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(value: 'Increase Balance', label: Text('Increase Balance'), icon: Icon(Icons.add_circle)),
+                            ButtonSegment(value: 'Decrease Balance', label: Text('Decrease Balance'), icon: Icon(Icons.remove_circle)),
+                          ],
+                          selected: {_adjustmentType},
+                          onSelectionChanged: (set) => setState(() => _adjustmentType = set.first),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _fromBank,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Account Name', prefixIcon: Icon(Icons.account_balance)),
+                          items: _bankAccounts.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                          onChanged: (v) => setState(() => _fromBank = v),
+                          validator: (v) => v == null ? 'Required' : null,
+                        ),
+                      ],
                       if (_transferType == 'Bank to Cash')
                         DropdownButtonFormField<String>(
                           value: _fromBank,
