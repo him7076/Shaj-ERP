@@ -1484,9 +1484,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () async {
-                        FullScreenItemEntry.show(
-      context, excludeBundles: true,
-      onAdd: (data) async {
+                        FullScreenItemEntry.show(context, excludeBundles: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -1515,9 +1513,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          FullScreenItemEntry.show(
-      context, onlyBundles: true,
-      onAdd: (data) async {
+                          FullScreenItemEntry.show(context, onlyBundles: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -1594,9 +1590,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      FullScreenItemEntry.show(
-      context, excludeBundles: true,
-      onAdd: (data) async {
+                      FullScreenItemEntry.show(context, excludeBundles: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -1628,9 +1622,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        FullScreenItemEntry.show(
-      context, onlyBundles: true,
-      onAdd: (data) async {
+                        FullScreenItemEntry.show(context, onlyBundles: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -2100,6 +2092,7 @@ class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
                         FullScreenItemEntry.show(
                           ctx,
                           excludeBundles: true,
+                          isFixedAsset: widget.isFixedAsset,
                           onAdd: (data) {
                             if (data.item.uuid != null) {
                               if (!uuids.contains(data.item.uuid)) {

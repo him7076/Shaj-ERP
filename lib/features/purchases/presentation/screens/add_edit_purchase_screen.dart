@@ -861,9 +861,7 @@ if (_isPaidAmountAutoFill) {
                   children: [
                     ElevatedButton.icon(
                       onPressed: () async {
-                        FullScreenItemEntry.show(
-      context, isPurchase: true,
-      onAdd: (data) async {
+                        FullScreenItemEntry.show(context, isPurchase: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -893,9 +891,7 @@ if (_isPaidAmountAutoFill) {
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () async {
-                          FullScreenItemEntry.show(
-      context, onlyBundles: true, isPurchase: true,
-      onAdd: (data) async {
+                          FullScreenItemEntry.show(context, onlyBundles: true, isPurchase: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -994,9 +990,7 @@ if (_isPaidAmountAutoFill) {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () async {
-                      FullScreenItemEntry.show(
-      context, isPurchase: true,
-      onAdd: (data) async {
+                      FullScreenItemEntry.show(context, isPurchase: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
@@ -1029,9 +1023,7 @@ if (_isPaidAmountAutoFill) {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () async {
-                        FullScreenItemEntry.show(
-      context, onlyBundles: true, isPurchase: true,
-      onAdd: (data) async {
+                        FullScreenItemEntry.show(context, onlyBundles: true, isPurchase: true, isFixedAsset: widget.isFixedAsset, onAdd: (data) async {
         final tempSelected = SelectedProductData(data.item);
         tempSelected.item.sellRate = data.rate;
         tempSelected.item.buyRate = data.rate; // fallback
