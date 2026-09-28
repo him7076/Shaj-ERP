@@ -374,7 +374,12 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         ..roundOff = _roundOff
         ..grandTotal = _grandTotal
         ..remarks = currentRemarks
-        ..updatedAt = DateTime.now();
+        ..updatedAt = DateTime.now()
+      ..paymentMode = _paymentMode
+      ..discountType = _isDiscountPercent ? 'percentage' : 'flat'
+      ..discountPercent = _isDiscountPercent ? (double.tryParse(_discountController.text) ?? 0.0) : 0.0
+      ..attachedImage = _attachedImage
+      ..isSynced = false;
 
       if (!kIsWeb) {
         creditNote.party.value = _selectedParty;
