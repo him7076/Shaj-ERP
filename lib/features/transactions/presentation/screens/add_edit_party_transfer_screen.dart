@@ -220,7 +220,7 @@ margin: const EdgeInsets.symmetric(vertical: 4),
                   // CARD 2: Transfer Details
                   NeuCard(
 margin: const EdgeInsets.symmetric(vertical: 4),
-child: Padding(padding: const EdgeInsets.all(16), child: Column(
+child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text('Transfer Between Parties', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -333,7 +333,7 @@ child: Padding(padding: const EdgeInsets.all(16), child: Column(
                   // CARD 3: Additional Details & Photo
                   NeuCard(
 margin: const EdgeInsets.symmetric(vertical: 4),
-child: Padding(padding: const EdgeInsets.all(16), child: Column(
+child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text('Additional Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
