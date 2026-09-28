@@ -487,7 +487,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 const SizedBox(height: 10),
                 ...insufficientItems.map((msg) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('ÃƒÂ¯Ã‚Â¿Ã‚Â½ $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                  child: Text('- $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                 )),
                 const SizedBox(height: 12),
                 const Text('Do you want to proceed and save this transaction anyway?'),
@@ -1091,8 +1091,9 @@ ref.listen(invoiceCartProvider, (prev, next) {
         appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
           title: Text(
             widget.invoiceUuid != null
-                ? 'Edit Sales Invoice ${_voucherNumberDisplay.isNotEmpty ? "(#$_voucherNumberDisplay)" : ""}'
-                : 'Direct Tax Invoice ${_voucherNumberDisplay.isNotEmpty ? "(#$_voucherNumberDisplay)" : ""}',
+                ? 'Edit Sales Invoice ${_voucherNumberDisplay.isNotEmpty ? "(#${_voucherNumberDisplay})" : ""}'
+                : 'Direct Tax Invoice ${_voucherNumberDisplay.isNotEmpty ? "(#${_voucherNumberDisplay})" : ""}',
+            style: const TextStyle(fontSize: 18),
           ),
         ),
       body: SingleChildScrollView(
@@ -1431,7 +1432,42 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 const SizedBox(width: 8),
                 Expanded(
                   flex: 1,
-                  child: RawAutocomplete<String>(
+                  child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  value: _salesmenList.contains(_selectedSalesman) ? _selectedSalesman : null,
+                                  hint: const Text('Select Salesman', style: TextStyle(fontSize: 13)),
+                                  icon: const SizedBox.shrink(),
+                                  decoration: InputDecoration(
+                                    labelText: 'Salesman Name',
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    prefixIcon: const Icon(Icons.badge_outlined, size: 18),
+                                    suffixIcon: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (_selectedSalesman.isNotEmpty && _selectedSalesman != 'Default Salesman')
+                                          IconButton(
+                                            icon: const Icon(Icons.close, size: 16),
+                                            onPressed: () => setState(() => _selectedSalesman = ''),
+                                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        IconButton(
+                                          icon: const Icon(Icons.person_add, size: 18),
+                                          onPressed: _showAddSalesmanDialog,
+                                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                          padding: EdgeInsets.zero,
+                                        ),
+                                        const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                        const SizedBox(width: 8),
+                                      ],
+                                    ),
+                                  ),
+                                  items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _selectedSalesman = val);
+                                  },
+                                )String>(
                     textEditingController: TextEditingController(text: _selectedSalesman),
                     focusNode: FocusNode(),
                     optionsBuilder: (TextEditingValue textEditingValue) {
@@ -2364,7 +2400,7 @@ final theme = Theme.of(context);
               // Rate Row: Rate Input + Tax Mode
               Row(
                 children: [
-                  // Rate Input Box ÃƒÂ¯Ã‚Â¿Ã‚Â½ takes most space
+                  // Rate Input Box - takes most space
                   Expanded(
                     flex: 5,
                     child: TextFormField(
@@ -2386,7 +2422,7 @@ final theme = Theme.of(context);
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Tax Mode Toggle ÃƒÂ¯Ã‚Â¿Ã‚Â½ compact
+                  // Tax Mode Toggle - compact
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<bool>(
@@ -2411,7 +2447,7 @@ final theme = Theme.of(context);
                   ),
                 ],
               ),
-              // Buy Price Row ÃƒÂ¯Ã‚Â¿Ã‚Â½ conditional, full width
+              // Buy Price Row - conditional, full width
               if (enableBuyPrice) ...[
                 const SizedBox(height: 8),
                 TextFormField(

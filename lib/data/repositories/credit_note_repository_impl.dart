@@ -21,8 +21,18 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
   @override
   Future<String> generateNextCreditNoteNumber() async {
     try {
-      final count = await collection.filter().isDeletedEqualTo(false).count();
-      final suffix = (count + 1).toString().padLeft(2, '0');
+      final allItems = await collection.where().findAll();
+      int maxNum = 0;
+      for (var item in allItems) {
+        if (item.creditNoteNumber != null && item.creditNoteNumber!.startsWith('CN-')) {
+          final match = RegExp(r'\d+').firstMatch(item.creditNoteNumber!);
+          if (match != null) {
+            final parsed = int.tryParse(match.group(0)!) ?? 0;
+            if (parsed > maxNum) maxNum = parsed;
+          }
+        }
+      }
+      final suffix = (maxNum + 1).toString().padLeft(2, '0');
       return 'CN-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate credit note number: $e');

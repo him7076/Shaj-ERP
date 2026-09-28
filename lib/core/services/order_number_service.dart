@@ -11,8 +11,18 @@ class OrderNumberService {
   /// Generates the next sequential unique Order Number prefixed by SO (e.g. SO-01, SO-02)
   Future<String> generateNextOrderNumber() async {
     try {
-      final count = await isar.orders.filter().isDeletedEqualTo(false).count();
-      final numStr = (count + 1).toString().padLeft(2, '0');
+      final allOrders = await isar.orders.where().findAll();
+      int maxNum = 0;
+      for (var order in allOrders) {
+        if (order.orderNumber != null && order.orderNumber!.startsWith('SO-')) {
+          final match = RegExp(r'\d+').firstMatch(order.orderNumber!);
+          if (match != null) {
+            final parsed = int.tryParse(match.group(0)!) ?? 0;
+            if (parsed > maxNum) maxNum = parsed;
+          }
+        }
+      }
+      final numStr = (maxNum + 1).toString().padLeft(2, '0');
       final nextCode = 'SO-$numStr';
       logger.debug('Generated next order number: $nextCode');
       return nextCode;

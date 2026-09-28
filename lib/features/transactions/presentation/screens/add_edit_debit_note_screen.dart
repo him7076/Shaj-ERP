@@ -468,7 +468,7 @@ if (_isPaidAmountAutoFill) {
             TextFormField(
               controller: _discountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'Bill Level Discount (Ã¢â€šÂ¹)', ),
+              decoration: InputDecoration(labelText: 'Bill Level Discount (₹)', ),
               onChanged: (val) => _recalculateTotals(),
             ),
             const SizedBox(height: 12),
@@ -549,7 +549,7 @@ if (_isPaidAmountAutoFill) {
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 Text(
-                  'Ã¢â€šÂ¹${_grandTotal.toStringAsFixed(2)}',
+                  '₹${_grandTotal.toStringAsFixed(2)}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -630,7 +630,7 @@ if (_isPaidAmountAutoFill) {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: Ã¢â€šÂ¹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: ₹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -1025,7 +1025,7 @@ if (_isPaidAmountAutoFill) {
             ),
           ),
           Text(
-            'Ã¢â€šÂ¹${val.toStringAsFixed(2)}',
+            '₹${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
               fontSize: (isBold || isPending) ? 15 : 13,
@@ -1344,7 +1344,7 @@ final item = widget.item;
                       controller: _rateExclController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'DebitNote Rate (Ã¢â€šÂ¹)',
+                        labelText: 'DebitNote Rate (₹)',
                         isDense: true,
                         
                       ),
@@ -1363,7 +1363,7 @@ final item = widget.item;
                       controller: _discController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Disc (Ã¢â€šÂ¹)',
+                        labelText: 'Disc (₹)',
                         isDense: true,
                         
                       ),
@@ -1392,7 +1392,7 @@ final item = widget.item;
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _showMoreDetails ? 'Ã¢â€“Â² Hide Batch, Free Qty & GST Details' : 'Ã¢â€“Â¼ More Inputs (Free Qty, Batch, Expiry, GST %)',
+                        _showMoreDetails ? '▲ Hide Batch, Free Qty & GST Details' : '▼ More Inputs (Free Qty, Batch, Expiry, GST %)',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                       ),
                     ],
@@ -1414,7 +1414,7 @@ final item = widget.item;
                       ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                               controller: _rateInclController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              decoration: InputDecoration(labelText: 'Rate Incl (Ã¢â€šÂ¹)', isDense: true, ),
+                              decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
                               onChanged: (val) {
                                 final double? incl = double.tryParse(val);
                                 if (incl != null) {
@@ -1488,7 +1488,7 @@ final item = widget.item;
                   children: [
                     Text('GST: ${_gstController.text}%', style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
                     Text(
-                      'Total: Ã¢â€šÂ¹${(item.totalAmount ?? 0.0).toStringAsFixed(2)}',
+                      'Total: ₹${(item.totalAmount ?? 0.0).toStringAsFixed(2)}',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                     ),
                   ],
@@ -1621,7 +1621,7 @@ final item = widget.item;
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (Ã¢â€šÂ¹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1642,7 +1642,7 @@ final item = widget.item;
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (Ã¢â€šÂ¹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1664,7 +1664,7 @@ final item = widget.item;
         ResponsiveFormRow(children: [ Expanded(child: TextFormField(
                 controller: _discController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc (Ã¢â€šÂ¹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Disc (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? discVal = double.tryParse(val);
                   if (discVal != null) {

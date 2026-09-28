@@ -272,7 +272,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                 const SizedBox(height: 10),
                 ...insufficientItems.map((msg) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                  child: Text('• $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                 )),
                 const SizedBox(height: 12),
                 const Text('Do you want to proceed and save this sales order anyway?'),
@@ -763,7 +763,7 @@ final theme = Theme.of(context);
                           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                         Text(
-                          'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${grandTotal.toStringAsFixed(2)}',
+                          '₹${grandTotal.toStringAsFixed(2)}',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -847,7 +847,7 @@ final theme = Theme.of(context);
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'GST: ${cart.selectedParty!.gstNumber ?? "Unregistered"} | City: ${cart.selectedParty!.city ?? "N/A"} | Current Outstanding: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        'GST: ${cart.selectedParty!.gstNumber ?? "Unregistered"} | City: ${cart.selectedParty!.city ?? "N/A"} | Current Outstanding: ₹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -979,7 +979,7 @@ final theme = Theme.of(context);
                                       leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
                                       title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                       subtitle: Text(
-                                        'Code: ${item.itemCode ?? "N/A"} | Price: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
+                                        'Code: ${item.itemCode ?? "N/A"} | Price: ₹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
                                         style: const TextStyle(fontSize: 11),
                                       ),
                                       onTap: () => onSelected(item),
@@ -1226,7 +1226,7 @@ final theme = Theme.of(context);
             ),
           ),
           Text(
-            'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${val.toStringAsFixed(2)}',
+            '₹${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
               fontSize: isBold ? 15 : 13,
@@ -1393,7 +1393,7 @@ final theme = Theme.of(context);
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text('ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                  Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
                   const SizedBox(width: 8),
                   IconButton(
 
@@ -1494,7 +1494,7 @@ final theme = Theme.of(context);
                       controller: widget.isGstInclusive ? _rateInclController : _rateExclController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: widget.isGstInclusive ? 'Rate Incl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)' : 'Rate Excl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)',
+                        labelText: widget.isGstInclusive ? 'Rate Incl (₹)' : 'Rate Excl (₹)',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                         
@@ -1579,7 +1579,7 @@ final theme = Theme.of(context);
                       style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
                     ),
                     Text(
-                      'Total: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}',
+                      'Total: ₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                     ),
                   ],
@@ -1714,7 +1714,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1739,7 +1739,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1779,7 +1779,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, ),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {

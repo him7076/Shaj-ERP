@@ -21,8 +21,18 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
   @override
   Future<String> generateNextDebitNoteNumber() async {
     try {
-      final count = await collection.filter().isDeletedEqualTo(false).count();
-      final suffix = (count + 1).toString().padLeft(2, '0');
+      final allItems = await collection.where().findAll();
+      int maxNum = 0;
+      for (var item in allItems) {
+        if (item.debitNoteNumber != null && item.debitNoteNumber!.startsWith('DN-')) {
+          final match = RegExp(r'\d+').firstMatch(item.debitNoteNumber!);
+          if (match != null) {
+            final parsed = int.tryParse(match.group(0)!) ?? 0;
+            if (parsed > maxNum) maxNum = parsed;
+          }
+        }
+      }
+      final suffix = (maxNum + 1).toString().padLeft(2, '0');
       return 'DN-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate debit note number: $e');
