@@ -577,7 +577,19 @@ if (_isPaidAmountAutoFill) {
                             onPressed: _showAddPaymentModeDialog,
                           ),
                         ),
-                        items: dropdownItems,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'ADD_NEW_PAYMENT',
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Select...', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                Text('+ Add New', style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                          ...dropdownItems,
+                        ],
                         onChanged: (val) {
                           if (val != null) {
                             setState(() => _paymentMode = val);
@@ -1362,21 +1374,16 @@ class PurchaseCartItemRow extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   Expanded(
                     child: Text(
                       cartItem.itemName ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                   Text(
                     '₹ ${(cartItem.totalAmount ?? 0.0).toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () => onDelete(),
-                    child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),
@@ -1418,7 +1425,14 @@ class PurchaseCartItemRow extends ConsumerWidget {
                     style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
                   ),
                 ),
-            ],
+              Align(
+             alignment: Alignment.bottomRight,
+             child: InkWell(
+               onTap: () => onDelete(),
+               child: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+             ),
+           ),
+        ],
           ),
         ),
       ),

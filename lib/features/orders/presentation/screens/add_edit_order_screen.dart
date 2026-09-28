@@ -890,7 +890,19 @@ final theme = Theme.of(context);
                             contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             prefixIcon: Icon(Icons.badge_outlined),
                           ),
-                          items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'ADD_NEW_SALESMAN',
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Select...', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                  Text('+ Add New', style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            ..._salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))),
+                          ],
                           onChanged: (val) {
                             if (val != null) setState(() => _selectedSalesman = val);
                           },
@@ -977,7 +989,7 @@ final theme = Theme.of(context);
                                     return ListTile(
                                       dense: true,
                                       leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
-                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                      title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                       subtitle: Text(
                                         'Code: ${item.itemCode ?? "N/A"} | Price: ₹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
                                         style: const TextStyle(fontSize: 11),
@@ -1320,21 +1332,16 @@ class OrderCartItemRow extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   Expanded(
                     child: Text(
                       cartItem.item.itemName ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                   Text(
                     '₹ ${cartItem.totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () => ref.read(cartProvider.notifier).removeItemAt(index),
-                    child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),
@@ -1376,7 +1383,14 @@ class OrderCartItemRow extends ConsumerWidget {
                     style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
                   ),
                 ),
-            ],
+              Align(
+             alignment: Alignment.bottomRight,
+             child: InkWell(
+               onTap: () => ref.read(cartProvider.notifier).removeItemAt(index),
+               child: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+             ),
+           ),
+        ],
           ),
         ),
       ),

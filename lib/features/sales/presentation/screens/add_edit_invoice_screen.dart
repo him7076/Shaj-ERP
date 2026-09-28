@@ -865,7 +865,19 @@ ref.listen(invoiceCartProvider, (prev, next) {
                             onPressed: _showAddPaymentModeDialog,
                           ),
                         ),
-                        items: dropdownItems,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'ADD_NEW_PAYMENT',
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Select...', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                Text('+ Add New', style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13)),
+                              ],
+                            ),
+                          ),
+                          ...dropdownItems,
+                        ],
                         onChanged: (val) {
                           if (val != null) {
                             setState(() => _paymentMode = val);
@@ -1463,7 +1475,19 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                       ],
                                     ),
                                   ),
-                                  items: _salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
+                                  items: [
+                                    DropdownMenuItem(
+                                      value: 'ADD_NEW_SALESMAN',
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('Select...', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                                          Text('+ Add New', style: TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.bold, fontSize: 13)),
+                                        ],
+                                      ),
+                                    ),
+                                    ..._salesmenList.map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))),
+                                  ],
                                   onChanged: (val) {
                                     if (val != null) setState(() => _selectedSalesman = val);
                                   },
@@ -1904,21 +1928,16 @@ class InvoiceCartItemRow extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   Expanded(
                     child: Text(
                       cartItem.item.itemName ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                   Text(
                     '₹ ${cartItem.totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: () => ref.read(invoiceCartProvider.notifier).removeItemAt(index),
-                    child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),
@@ -1960,7 +1979,14 @@ class InvoiceCartItemRow extends ConsumerWidget {
                     style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
                   ),
                 ),
-            ],
+              Align(
+             alignment: Alignment.bottomRight,
+             child: InkWell(
+               onTap: () => ref.read(invoiceCartProvider.notifier).removeItemAt(index),
+               child: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+             ),
+           ),
+        ],
           ),
         ),
       ),

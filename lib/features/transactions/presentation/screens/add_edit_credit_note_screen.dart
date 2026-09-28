@@ -1132,21 +1132,16 @@ class PurchaseCartItemRow extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   Expanded(
                     child: Text(
                       item.itemName ?? 'Unknown Item',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                   Text(
                     '₹ ${total.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  const SizedBox(width: 8),
-                  InkWell(
-                    onTap: onDelete,
-                    child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
                 ],
               ),
@@ -1188,7 +1183,14 @@ class PurchaseCartItemRow extends ConsumerWidget {
                     style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
                   ),
                 ),
-            ],
+              Align(
+             alignment: Alignment.bottomRight,
+             child: InkWell(
+               onTap: onDelete,
+               child: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+             ),
+           ),
+        ],
           ),
         ),
       ),
