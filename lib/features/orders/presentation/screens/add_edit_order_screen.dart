@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/full_screen_item_entry.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
@@ -264,7 +265,7 @@ class _AddEditOrderScreenState extends ConsumerState<AddEditOrderScreen> {
                 const SizedBox(height: 10),
                 ...insufficientItems.map((msg) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                  child: Text('ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                 )),
                 const SizedBox(height: 12),
                 const Text('Do you want to proceed and save this sales order anyway?'),
@@ -483,7 +484,7 @@ final theme = Theme.of(context);
                   child: TextFormField(
                     controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: 'Disc Amt (₹)', ),
+                    decoration: InputDecoration(labelText: 'Disc Amt (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', ),
                     onChanged: (val) {
                       final double? amt = double.tryParse(val);
                       ref.read(cartProvider.notifier).setOrderDiscounts(null, amt);
@@ -566,7 +567,7 @@ final theme = Theme.of(context);
                           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                         Text(
-                          '₹${grandTotal.toStringAsFixed(2)}',
+                          'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${grandTotal.toStringAsFixed(2)}',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
@@ -650,7 +651,7 @@ final theme = Theme.of(context);
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'GST: ${cart.selectedParty!.gstNumber ?? "Unregistered"} | City: ${cart.selectedParty!.city ?? "N/A"} | Current Outstanding: ₹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        'GST: ${cart.selectedParty!.gstNumber ?? "Unregistered"} | City: ${cart.selectedParty!.city ?? "N/A"} | Current Outstanding: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${cart.selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
                         style: theme.textTheme.bodySmall,
                       ),
                     ),
@@ -782,7 +783,7 @@ final theme = Theme.of(context);
                                       leading: Icon(Icons.inventory_2_outlined, size: 20, color: theme.colorScheme.primary),
                                       title: Text(item.itemName ?? 'Unnamed', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                       subtitle: Text(
-                                        'Code: ${item.itemCode ?? "N/A"} | Price: ₹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
+                                        'Code: ${item.itemCode ?? "N/A"} | Price: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.sellRate?.toStringAsFixed(2) ?? "0"} | Stock: ${item.currentStock?.toInt() ?? 0}',
                                         style: const TextStyle(fontSize: 11),
                                       ),
                                       onTap: () => onSelected(item),
@@ -814,13 +815,7 @@ final theme = Theme.of(context);
                 IconButton.filledTonal(
                   icon: const Icon(Icons.add_shopping_cart_rounded),
                   tooltip: 'Search & Pick Item from Catalog',
-                  onPressed: () async {
-                    final selectedItem = await ItemSearchPickerModal.show(context);
-                    if (selectedItem != null) {
-                      ref.read(cartProvider.notifier).addItem(selectedItem.item);
-                      ref.invalidate(filteredItemsProvider);
-                    }
-                  },
+                  onPressed: () { FullScreenItemEntry.show(context, onAdd: (data) { _addFullScreenItemLine(data); ref.invalidate(filteredItemsProvider); }); },
                 ),
               ],
             ),
@@ -828,6 +823,17 @@ final theme = Theme.of(context);
         ),
       ),
       ),
+    );
+  }
+
+  void _addFullScreenItemLine(FullScreenItemEntryData data) {
+    ref.read(cartProvider.notifier).addItem(data.item);
+    final cart = ref.read(cartProvider);
+    ref.read(cartProvider.notifier).updateItemAt(
+      cart.items.length - 1,
+      quantity: data.quantity,
+      rate: data.rate,
+      discountAmount: data.discountAmount,
     );
   }
 
@@ -890,13 +896,7 @@ final theme = Theme.of(context);
              ),
             const SizedBox(height: 16),
             OutlinedButton.icon(
-              onPressed: () async {
-                final selectedItem = await ItemSearchPickerModal.show(context);
-                if (selectedItem != null) {
-                  ref.read(cartProvider.notifier).addItem(selectedItem.item);
-                  ref.invalidate(filteredItemsProvider);
-                }
-              },
+              onPressed: () { FullScreenItemEntry.show(context, onAdd: (data) { _addFullScreenItemLine(data); ref.invalidate(filteredItemsProvider); }); },
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -982,7 +982,7 @@ final theme = Theme.of(context);
             ),
           ),
           Text(
-            '₹${val.toStringAsFixed(2)}',
+            'ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
               fontSize: isBold ? 15 : 13,
@@ -1149,7 +1149,7 @@ final theme = Theme.of(context);
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Text('₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
+                  Text('ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
                   const SizedBox(width: 8),
                   IconButton(
 
@@ -1250,7 +1250,7 @@ final theme = Theme.of(context);
                       controller: widget.isGstInclusive ? _rateInclController : _rateExclController,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: widget.isGstInclusive ? 'Rate Incl (₹)' : 'Rate Excl (₹)',
+                        labelText: widget.isGstInclusive ? 'Rate Incl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)' : 'Rate Excl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)',
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                         
@@ -1335,7 +1335,7 @@ final theme = Theme.of(context);
                       style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
                     ),
                     Text(
-                      'Total: ₹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}',
+                      'Total: ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.primary),
                     ),
                   ],
@@ -1470,7 +1470,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateExclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (₹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Excl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, ),
                 onChanged: (val) {
                   final double? excl = double.tryParse(val);
                   if (excl == null) return;
@@ -1495,7 +1495,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _rateInclController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (₹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Rate Incl (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, ),
                 onChanged: (val) {
                   final double? incl = double.tryParse(val);
                   if (incl == null) return;
@@ -1535,7 +1535,7 @@ final theme = Theme.of(context);
               child: TextFormField(
                 controller: _discAmountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (₹)', isDense: true, ),
+                decoration: InputDecoration(labelText: 'Disc Amt (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)', isDense: true, ),
                 onChanged: (val) {
                   final double? amt = double.tryParse(val);
                   if (amt != null) {

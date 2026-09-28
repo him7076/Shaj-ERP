@@ -484,7 +484,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
                 const SizedBox(height: 10),
                 ...insufficientItems.map((msg) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('Ã¯Â¿Â½ $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
+                  child: Text('ÃƒÂ¯Ã‚Â¿Ã‚Â½ $msg', style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red)),
                 )),
                 const SizedBox(height: 12),
                 const Text('Do you want to proceed and save this transaction anyway?'),
@@ -875,7 +875,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
               ),
             ),
             const SizedBox(height: 10),
-            // Payment Mode Ã¯Â¿Â½ always visible
+            // Payment Mode ÃƒÂ¯Ã‚Â¿Ã‚Â½ always visible
             ref.watch(bankAccountsListProvider).when(
               data: (accounts) {
                 final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
@@ -2235,7 +2235,7 @@ final theme = Theme.of(context);
               // Rate Row: Rate Input + Tax Mode
               Row(
                 children: [
-                  // Rate Input Box Ã¯Â¿Â½ takes most space
+                  // Rate Input Box ÃƒÂ¯Ã‚Â¿Ã‚Â½ takes most space
                   Expanded(
                     flex: 5,
                     child: TextFormField(
@@ -2257,7 +2257,7 @@ final theme = Theme.of(context);
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Tax Mode Toggle Ã¯Â¿Â½ compact
+                  // Tax Mode Toggle ÃƒÂ¯Ã‚Â¿Ã‚Â½ compact
                   Expanded(
                     flex: 3,
                     child: DropdownButtonFormField<bool>(
@@ -2282,7 +2282,7 @@ final theme = Theme.of(context);
                   ),
                 ],
               ),
-              // Buy Price Row Ã¯Â¿Â½ conditional, full width
+              // Buy Price Row ÃƒÂ¯Ã‚Â¿Ã‚Â½ conditional, full width
               if (enableBuyPrice) ...[
                 const SizedBox(height: 8),
                 TextFormField(

@@ -8,6 +8,7 @@ class SearchableItemDropdown extends StatefulWidget {
   final ValueChanged<Item> onSelected;
   final String labelText;
   final bool isFixedAsset;
+  final bool autofocus;
 
   const SearchableItemDropdown({
     Key? key,
@@ -15,6 +16,7 @@ class SearchableItemDropdown extends StatefulWidget {
     required this.onSelected,
     this.labelText = 'Search and add component...',
     this.isFixedAsset = false,
+    this.autofocus = false,
   }) : super(key: key);
 
   @override
@@ -69,6 +71,7 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
       },
       onSelected: (item) {
         if (item.uuid == 'NEW_ACTION') {
+                    return const SizedBox.shrink(); /*
           final query = _controller.text.trim();
           FocusScope.of(context).unfocus();
           _controller.clear();
@@ -105,13 +108,48 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
               ),
-              child: ListView.builder(
+                            child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
+                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        final query = _controller.text.trim();
+                        FocusScope.of(context).unfocus();
+                        _controller.clear();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => widget.isFixedAsset ? AddEditFixedAssetScreen(
+                            prefilledName: query.isNotEmpty ? query : null,
+                          ) : AddEditItemScreen(
+                            prefilledItem: query.isNotEmpty ? (Item()..itemName = query) : null,
+                          )),
+                        );
+                      },
+                      icon: const Icon(Icons.add_circle, size: 18),
+                      label: const Text('Add New', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 itemCount: options.length,
                 itemBuilder: (context, index) {
                   final item = options.elementAt(index);
                   if (item.uuid == 'NEW_ACTION') {
+                    return const SizedBox.shrink(); /*
                     return Container(
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primaryContainer.withOpacity(0.12),
@@ -126,7 +164,7 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
                         ),
                         onTap: () => onSelected(item),
                       ),
-                    );
+                    ); */
                   }
 
                   final rate = item.sellRate ?? 0.0;
@@ -137,12 +175,15 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     title: Text(item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
                     subtitle: Text(
-                      'Code: ${item.itemCode ?? "N/A"} | Price: ₹${rate.toStringAsFixed(2)} | Stock: $stock',
+                      'Code: ${item.itemCode ?? "N/A"} | Price: â‚¹${rate.toStringAsFixed(2)} | Stock: $stock',
                       style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
                     ),
                     onTap: () => onSelected(item),
                   );
                 },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -152,6 +193,7 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
         return TextField(
           controller: controller,
           focusNode: focusNode,
+          autofocus: widget.autofocus,
           decoration: InputDecoration(
             labelText: widget.labelText,
             prefixIcon: const Icon(Icons.search),

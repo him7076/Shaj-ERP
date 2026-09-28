@@ -24,20 +24,24 @@ class FullScreenItemEntryData {
 class FullScreenItemEntry extends ConsumerStatefulWidget {
   final bool isPurchase;
   final bool isFixedAsset;
+  final bool onlyBundles;
+  final bool excludeBundles;
   final Function(FullScreenItemEntryData) onAdd;
 
   const FullScreenItemEntry({
     Key? key,
     this.isPurchase = false,
     this.isFixedAsset = false,
+    this.onlyBundles = false,
+    this.excludeBundles = false,
     required this.onAdd,
   }) : super(key: key);
 
-  static Future<void> show(BuildContext context, {bool isPurchase = false, bool isFixedAsset = false, required Function(FullScreenItemEntryData) onAdd}) {
+  static Future<void> show(BuildContext context, {bool isPurchase = false, bool isFixedAsset = false, bool onlyBundles = false, bool excludeBundles = false, required Function(FullScreenItemEntryData) onAdd}) {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FullScreenItemEntry(isPurchase: isPurchase, isFixedAsset: isFixedAsset, onAdd: onAdd),
+        builder: (_) => FullScreenItemEntry(isPurchase: isPurchase, isFixedAsset: isFixedAsset, onlyBundles: onlyBundles, excludeBundles: excludeBundles, onAdd: onAdd),
         fullscreenDialog: true,
       ),
     );
@@ -133,6 +137,8 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
             if (widget.isFixedAsset) {
               return i.category.value?.categoryName == 'Fixed Assets';
             }
+            if (widget.onlyBundles && !i.isBundle) return false;
+            if (widget.excludeBundles && i.isBundle) return false;
             return i.category.value?.categoryName != 'Fixed Assets';
           }).toList();
 
@@ -143,6 +149,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
               children: [
                 SearchableItemDropdown(
                   isFixedAsset: widget.isFixedAsset,
+                  autofocus: true,
                   key: ValueKey(_resetKey),
                   items: items,
                   labelText: widget.isFixedAsset ? 'Search or add Fixed Asset...' : 'Search or add Product...',
