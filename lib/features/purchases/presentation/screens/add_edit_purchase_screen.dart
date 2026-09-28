@@ -1071,12 +1071,14 @@ if (_isPaidAmountAutoFill) {
                          });
                          _recalculateTotals();
                        },
-                       onChanged: (qty, rate, discount, gstRate) {
+                                              onEdit: (data) {
                          setState(() {
-                           item.quantity = qty;
-                           item.rate = rate;
-                           item.discount = discount;
-                           item.gstRate = gstRate;
+                           item.quantity = data.quantity;
+                           item.unit = data.unit;
+                           item.rate = data.rate;
+                           item.discount = data.discountAmount;
+                           item.batchNumber = data.batchNumber;
+                           item.totalAmount = (data.quantity * data.rate) - data.discountAmount;
                          });
                          _recalculateTotals();
                        },

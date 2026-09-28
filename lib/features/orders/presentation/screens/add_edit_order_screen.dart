@@ -1302,7 +1302,7 @@ class OrderCartItemRow extends ConsumerWidget {
                 quantity: data.quantity,
                 unit: data.unit,
                 rate: data.rate,
-                buyRate: data.purchaseRate,
+                
                 discountPercent: data.discountPercent,
                 discountAmount: data.discountAmount,
                 batchNumber: data.batchNumber,

@@ -1148,7 +1148,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                         ),
                       );
                     },
-                    separatorBuilder: (context, index) => const SizedBox(height: 8),
                   );
                 },
               loading: () => const Center(child: CircularProgressIndicator()),
