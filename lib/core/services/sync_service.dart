@@ -2428,6 +2428,7 @@ class SyncService {
           'partyUuid': e.partyUuid,
           'partyName': e.partyName,
           'transactionType': e.transactionType,
+          'tags': e.tags,
           'amount': e.amount,
           'paymentMode': e.paymentMode,
           'referenceNumber': e.referenceNumber,
@@ -2878,6 +2879,7 @@ class SyncService {
           ..partyUuid = data['partyUuid']
           ..partyName = data['partyName']
           ..transactionType = data['transactionType']
+          ..tags = (data['tags'] as List?)?.map((e) => e.toString()).toList()
           ..amount = (data['amount'] as num?)?.toDouble()
           ..paymentMode = data['paymentMode']
           ..referenceNumber = data['referenceNumber']

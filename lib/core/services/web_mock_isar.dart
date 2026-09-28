@@ -824,6 +824,7 @@ class WebMockIsar implements Isar {
         'partyUuid': entity.partyUuid,
         'partyName': entity.partyName,
         'transactionType': entity.transactionType,
+        'tags': entity.tags,
         'amount': entity.amount,
         'paymentMode': entity.paymentMode,
         'referenceNumber': entity.referenceNumber,
@@ -1450,6 +1451,7 @@ class WebMockIsar implements Isar {
           ..partyUuid = map['partyUuid'] as String?
           ..partyName = map['partyName'] as String?
           ..transactionType = map['transactionType'] as String?
+          ..tags = (map['tags'] as List?)?.map((e) => e.toString()).toList()
           ..amount = (map['amount'] as num?)?.toDouble()
           ..paymentMode = map['paymentMode'] as String?
           ..referenceNumber = map['referenceNumber'] as String?
