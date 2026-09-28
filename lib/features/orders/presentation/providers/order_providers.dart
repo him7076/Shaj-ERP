@@ -56,6 +56,18 @@ class CartItemState {
   final List<double>? bundleComponentGstPercents;
   final List<String>? bundleComponentDescriptions;
 
+
+  double get totalAmount {
+    final subtotal = (quantity * rate) - discountAmount;
+    final tax = (subtotal * gstPercent) / 100;
+    return subtotal + tax;
+  }
+
+  double get taxAmount {
+    final subtotal = (quantity * rate) - discountAmount;
+    return (subtotal * gstPercent) / 100;
+  }
+
   const CartItemState({
     required this.item,
     this.quantity = 1.0,

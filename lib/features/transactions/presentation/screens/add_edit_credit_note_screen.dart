@@ -1110,8 +1110,8 @@ class PurchaseCartItemRow extends ConsumerWidget {
               expDate: parseDate(item.expiryDate),
               saleRate: item.item.value!.sellRate ?? rate,
               purchaseRate: item.item.value!.buyRate ?? 0.0,
-              isSaleRateWithTax: item.item.value!.isSaleRateWithTax ?? false,
-              isPurchaseRateWithTax: item.item.value!.isPurchaseRateWithTax ?? false,
+              isSaleRateWithTax: false,
+              isPurchaseRateWithTax: false,
             ),
             onAdd: (data) {
               item.unit = data.unit;

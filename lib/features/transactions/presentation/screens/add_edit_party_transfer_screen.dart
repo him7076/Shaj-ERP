@@ -119,9 +119,9 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
       txn.tags = currentTags.isEmpty ? null : currentTags;
 
       if (!isEdit) {
-        await ref.read(transactionRepositoryProvider).createTransaction(txn);
+        await ref.read(transactionRepositoryProvider).saveTransaction(txn);
       } else {
-        await ref.read(transactionRepositoryProvider).updateTransaction(txn);
+        await ref.read(transactionRepositoryProvider).saveTransaction(txn);
       }
 
       if (mounted) {
@@ -171,7 +171,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                 children: [
                   // CARD 1: Voucher Details
                   NeuCard(
-                    padding: const EdgeInsets.all(16),
+margin: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
                         Expanded(
@@ -219,8 +219,8 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                   
                   // CARD 2: Transfer Details
                   NeuCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+margin: const EdgeInsets.symmetric(vertical: 4),
+child: Padding(padding: const EdgeInsets.all(16), child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text('Transfer Between Parties', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -332,8 +332,8 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                   
                   // CARD 3: Additional Details & Photo
                   NeuCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+margin: const EdgeInsets.symmetric(vertical: 4),
+child: Padding(padding: const EdgeInsets.all(16), child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text('Additional Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),

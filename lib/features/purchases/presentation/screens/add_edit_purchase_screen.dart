@@ -1062,7 +1062,7 @@ if (_isPaidAmountAutoFill) {
                      final item = _draftItems[index];
                      return PurchaseCartItemRow(
                        index: index,
-                       item: item,
+                       cartItem: item,
                        isFixedAsset: widget.isFixedAsset,
                        onDelete: () {
                          setState(() {
@@ -1290,9 +1290,11 @@ if (_isPaidAmountAutoFill) {
 class PurchaseCartItemRow extends ConsumerWidget {
   final bool isFixedAsset;
   final int index;
-  final CartItemState cartItem;
+  final PurchaseItem cartItem;
   final bool isGstInclusive;
-  const PurchaseCartItemRow({Key? key, required this.index, required this.cartItem, required this.isGstInclusive, this.isFixedAsset = false}) : super(key: key);
+  final VoidCallback onDelete;
+  final Function(FullScreenItemEntryData) onEdit;
+  const PurchaseCartItemRow({Key? key, required this.index, required this.cartItem, required this.isGstInclusive, this.isFixedAsset = false, required this.onDelete, required this.onEdit}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1326,10 +1328,10 @@ class PurchaseCartItemRow extends ConsumerWidget {
             context,
             isPurchase: true,
             isFixedAsset: isFixedAsset,
-            excludeBundles: !(cartItem.item.isBundle ?? false),
-            onlyBundles: cartItem.item.isBundle ?? false,
+            excludeBundles: !(cartItem.isBundle ?? false),
+            onlyBundles: cartItem.isBundle ?? false,
             initialData: FullScreenItemEntryData(
-              item: cartItem.item,
+              item: cartItem.item.value,
               quantity: cartItem.quantity,
               rate: cartItem.rate,
               discountAmount: cartItem.discountAmount,
@@ -1339,13 +1341,13 @@ class PurchaseCartItemRow extends ConsumerWidget {
               batchNumber: cartItem.batchNumber,
               mfgDate: parseDate(cartItem.mfgDate),
               expDate: parseDate(cartItem.expiryDate),
-              saleRate: cartItem.item.sellRate ?? cartItem.rate,
-              purchaseRate: cartItem.item.buyRate ?? 0.0,
-              isSaleRateWithTax: cartItem.item.isSaleRateWithTax ?? false,
-              isPurchaseRateWithTax: cartItem.item.isPurchaseRateWithTax ?? false,
+              saleRate: cartItem.rate ?? cartItem.rate,
+              purchaseRate: cartItem.rate ?? 0.0,
+              isSaleRateWithTax: false ?? false,
+              isPurchaseRateWithTax: false ?? false,
             ),
             onAdd: (data) {
-              ref.read(purchaseCartProvider.notifier).updateItemAt(
+              onEdit(
                 index,
                 quantity: data.quantity,
                 unit: data.unit,
@@ -1371,7 +1373,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
                   Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   Expanded(
                     child: Text(
-                      cartItem.item.itemName,
+                      cartItem.item.valueName ?? '',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
@@ -1381,7 +1383,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   InkWell(
-                    onTap: () => ref.read(purchaseCartProvider.notifier).removeItemAt(index),
+                    onTap: () => onDelete(),
                     child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                   ),
                 ],

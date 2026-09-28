@@ -1293,8 +1293,8 @@ class OrderCartItemRow extends ConsumerWidget {
               expDate: parseDate(cartItem.expiryDate),
               saleRate: cartItem.item.sellRate ?? cartItem.rate,
               purchaseRate: cartItem.item.buyRate ?? 0.0,
-              isSaleRateWithTax: cartItem.item.isSaleRateWithTax ?? false,
-              isPurchaseRateWithTax: cartItem.item.isPurchaseRateWithTax ?? false,
+              isSaleRateWithTax: false,
+              isPurchaseRateWithTax: false,
             ),
             onAdd: (data) {
               ref.read(orderCartProvider.notifier).updateItemAt(
@@ -1323,7 +1323,7 @@ class OrderCartItemRow extends ConsumerWidget {
                   Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   Expanded(
                     child: Text(
-                      cartItem.item.itemName,
+                      cartItem.item.itemName ?? '',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ),
