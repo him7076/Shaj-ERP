@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
-import 'package:business_sahaj_erp/features/settings/presentation/providers/settings_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -102,7 +104,6 @@ class _AddEditFixedAssetScreenState extends ConsumerState<AddEditFixedAssetScree
         ..currentStock = double.tryParse(_qtyController.text) ?? 1.0
         ..buyRate = double.tryParse(_priceController.text) ?? 0.0
         ..sellRate = double.tryParse(_priceController.text) ?? 0.0
-        ..asOfDate = _asOfDate
         ..itemType = 'Product'
         ..isSynced = false
         ..createdAt = DateTime.now()
