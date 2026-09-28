@@ -1880,7 +1880,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
   }
 }
 
-class InvoiceCartItemRow extends ConsumerStatefulWidget {
+class InvoiceCartItemRow extends ConsumerWidget {
   final bool isFixedAsset;
   final int index;
   final CartItemState cartItem;
@@ -1888,1018 +1888,139 @@ class InvoiceCartItemRow extends ConsumerStatefulWidget {
   const InvoiceCartItemRow({Key? key, required this.index, required this.cartItem, required this.isGstInclusive, this.isFixedAsset = false}) : super(key: key);
 
   @override
-  ConsumerState<InvoiceCartItemRow> createState() => _InvoiceCartItemRowState();
-}
-
-class _InvoiceCartItemRowState extends ConsumerState<InvoiceCartItemRow> {
-  late TextEditingController _qtyController;
-  late TextEditingController _freeQtyController;
-  late TextEditingController _rateExclController;
-  late TextEditingController _rateInclController;
-  late TextEditingController _buyRateController;
-  late TextEditingController _discPercentController;
-  late TextEditingController _discAmountController;
-  late TextEditingController _batchController;
-  late TextEditingController _mfgDateController;
-  late TextEditingController _expDateController;
-  late TextEditingController _descController;
-
-  bool _isUpdatingLocally = false;
-  bool _showMoreDetails = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final item = widget.cartItem;
-    final gstPct = item.gstPercent;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final enableItemDesc = ref.watch(sharedPreferencesProvider).getBool('enable_item_wise_description') ?? false;
     
-    final double rateExcl = widget.isGstInclusive 
-        ? item.rate / (1 + gstPct / 100.0) 
-        : item.rate;
-    final double rateIncl = widget.isGstInclusive 
-        ? item.rate 
-        : item.rate * (1 + gstPct / 100.0);
-
-    _qtyController = TextEditingController(text: item.quantity.toInt().toString());
-    _freeQtyController = TextEditingController(text: item.freeQuantity.toInt().toString());
-    _rateExclController = TextEditingController(text: rateExcl.toStringAsFixed(2));
-    _rateInclController = TextEditingController(text: rateIncl.toStringAsFixed(2));
-    _buyRateController = TextEditingController(text: (item.buyRate ?? 0.0).toStringAsFixed(2));
-    _discPercentController = TextEditingController(text: item.discountPercent.toString());
-    _discAmountController = TextEditingController(text: item.discountAmount.toString());
-    _batchController = TextEditingController(text: item.batchNumber ?? '');
-    _mfgDateController = TextEditingController(text: item.mfgDate ?? '');
-    _expDateController = TextEditingController(text: item.expiryDate ?? '');
-    _descController = TextEditingController(text: item.description ?? '');
-  }
-
-  
-  @override
-  void didUpdateWidget(InvoiceCartItemRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_isUpdatingLocally) return;
-    
-    final item = widget.cartItem;
-    final gstPct = item.gstPercent;
-    
-    final double rateExcl = widget.isGstInclusive 
-        ? item.rate / (1 + gstPct / 100.0) 
-        : item.rate;
-    final double rateIncl = widget.isGstInclusive 
-        ? item.rate 
-        : item.rate * (1 + gstPct / 100.0);
-
-    _updateIfChanged(_qtyController, item.quantity.toInt().toString());
-    _updateIfChanged(_freeQtyController, item.freeQuantity.toInt().toString());
-    _updateIfChanged(_rateExclController, rateExcl.toStringAsFixed(2));
-    _updateIfChanged(_rateInclController, rateIncl.toStringAsFixed(2));
-    _updateIfChanged(_buyRateController, (item.buyRate ?? 0.0).toStringAsFixed(2));
-    _updateIfChanged(_discPercentController, item.discountPercent.toString());
-    _updateIfChanged(_discAmountController, item.discountAmount.toString());
-    
-    if (_descController.text != (item.description ?? '')) {
-      _descController.text = item.description ?? '';
+    DateTime? parseDate(String? d) {
+      if (d == null || d.isEmpty) return null;
+      try {
+        final parts = d.split('/');
+        if (parts.length == 2) {
+          return DateTime(int.parse(parts[1]), int.parse(parts[0]));
+        }
+        return DateTime.parse(d);
+      } catch (e) {
+        return null;
+      }
     }
-  }
 
-  void _updateIfChanged(TextEditingController controller, String value) {
-    if (controller.text != value && double.tryParse(controller.text) != double.tryParse(value)) {
-      controller.text = value;
-    }
-  }
-
-  @override
-  void dispose() {
-    _qtyController.dispose();
-    _freeQtyController.dispose();
-    _rateExclController.dispose();
-    _rateInclController.dispose();
-    _buyRateController.dispose();
-    _discPercentController.dispose();
-    _discAmountController.dispose();
-    _batchController.dispose();
-    _mfgDateController.dispose();
-    _expDateController.dispose();
-    _descController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _showBundleComponentsDialog() async {
-    final item = widget.cartItem;
-    
-    // Create local copies of components to edit
-    List<String> uuids = item.bundleComponentUuids != null ? List.from(item.bundleComponentUuids!) : [];
-    List<double> quantities = List.from(item.bundleComponentQuantities ?? []);
-    List<String> units = List.from(item.bundleComponentUnits ?? []);
-    List<double> rates = List.from(item.bundleComponentRates ?? []);
-    List<double> buyRates = List.from(item.bundleComponentBuyRates ?? []);
-    List<double> gstRates = List.from(item.bundleComponentGstPercents ?? []);
-    List<String> descriptions = List.from(item.bundleComponentDescriptions ?? []);
-    
-    // Ensure lists match length
-    while (quantities.length < uuids.length) quantities.add(1.0);
-    while (units.length < uuids.length) units.add('PCS');
-    while (rates.length < uuids.length) rates.add(0.0);
-    while (buyRates.length < uuids.length) buyRates.add(0.0);
-    while (gstRates.length < uuids.length) gstRates.add(0.0);
-    while (descriptions.length < uuids.length) descriptions.add('');
-
-    final itemRepo = ref.read(itemRepositoryProvider);
-    final allItems = await itemRepo.getAll();
-
-    if (!mounted) return;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-              child: Container(
-                height: MediaQuery.of(ctx).size.height,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Bundle Components: ${item.item.itemName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                      ],
-                    ),
-                    const Divider(),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: uuids.length,
-                        itemBuilder: (context, index) {
-                          final cUuid = uuids[index];
-                          final cItem = allItems.where((i) => i.uuid == cUuid).firstOrNull;
-                          if (cItem == null) return const SizedBox.shrink();
-                          
-                          return NeuCard(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          cItem.itemName ?? 'Unknown',
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () {
-                                          setSheetState(() {
-                                            uuids.removeAt(index);
-                                            quantities.removeAt(index);
-                                            units.removeAt(index);
-                                            rates.removeAt(index);
-                                            buyRates.removeAt(index);
-                                            gstRates.removeAt(index);
-                                            descriptions.removeAt(index);
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                                          initialValue: quantities[index].toString(),
-                                          keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(labelText: 'Qty',  isDense: true),
-                                          onChanged: (val) {
-                                            final parsed = double.tryParse(val);
-                                            if (parsed != null) quantities[index] = parsed;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: DropdownButtonFormField<String>(
-                                          value: units[index],
-                                          isExpanded: true,
-                                          decoration: InputDecoration(labelText: 'Unit',  isDense: true),
-                                          items: [
-                                            if (cItem.primaryUnitName != null && cItem.primaryUnitName!.isNotEmpty) cItem.primaryUnitName!,
-                                            if (cItem.secondaryUnit != null && cItem.secondaryUnit!.isNotEmpty) cItem.secondaryUnit!,
-                                            if (cItem.tertiaryUnit != null && cItem.tertiaryUnit!.isNotEmpty) cItem.tertiaryUnit!,
-                                            if (cItem.primaryUnitName == null || cItem.primaryUnitName!.isEmpty) 'PCS',
-                                          ].toSet().map((u) => DropdownMenuItem(value: u, child: Text(u, overflow: TextOverflow.ellipsis))).toList(),
-                                          onChanged: (val) {
-                                            if (val != null) {
-                                              units[index] = val;
-                                            }
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                                          initialValue: rates[index].toString(),
-                                          keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(labelText: 'Selling Rate',  isDense: true),
-                                          onChanged: (val) {
-                                            final parsed = double.tryParse(val);
-                                            if (parsed != null) rates[index] = parsed;
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: TextFormField(
-                                          initialValue: gstRates[index].toString(),
-                                          keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(labelText: 'GST %',  isDense: true),
-                                          onChanged: (val) {
-                                            final parsed = double.tryParse(val);
-                                            if (parsed != null) gstRates[index] = parsed;
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (ref.watch(sharedPreferencesProvider).getBool('enable_sales_buy_price') ?? false)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 8.0),
-                                      child: TextFormField(
-                                        initialValue: buyRates[index].toString(),
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(labelText: 'Buy Price',  isDense: true),
-                                        onChanged: (val) {
-                                          final parsed = double.tryParse(val);
-                                          if (parsed != null) buyRates[index] = parsed;
-                                        },
-                                      ),
-                                    ),
-                                  if (ref.watch(sharedPreferencesProvider).getBool('enable_item_descriptions') ?? false)
-                                    TextFormField(
-                                      initialValue: descriptions[index],
-                                      maxLines: 2,
-                                      decoration: InputDecoration(labelText: 'Description',  isDense: true),
-                                      onChanged: (val) {
-                                        descriptions[index] = val;
-                                      },
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Component to this Bundle'),
-                      onPressed: () async {
-                        FullScreenItemEntry.show(
-                          ctx,
-                          excludeBundles: true,
-                          isFixedAsset: widget.isFixedAsset,
-                          onAdd: (data) {
-                            if (data.item.uuid != null) {
-                              if (!uuids.contains(data.item.uuid)) {
-                                setSheetState(() {
-                                  uuids.add(data.item.uuid!);
-                                  quantities.add(data.quantity);
-                                  units.add(data.item.primaryUnitName ?? 'PCS');
-                                  rates.add(data.rate);
-                                  buyRates.add(data.item.buyRate ?? 0.0);
-                                  gstRates.add(data.gstRate);
-                                  descriptions.add(data.item.description ?? '');
-                                });
-                              }
-                            }
-                          },
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      child: const Text('Save Components'),
-                      onPressed: () {
-                        ref.read(invoiceCartProvider.notifier).updateItemAt(
-                          widget.index,
-                          bundleComponentUuids: uuids,
-                          bundleComponentQuantities: quantities,
-                          bundleComponentUnits: units,
-                          bundleComponentRates: rates,
-                          bundleComponentBuyRates: buyRates,
-                          bundleComponentGstPercents: gstRates,
-                          bundleComponentDescriptions: descriptions,
-                        );
-                        Navigator.pop(ctx);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-
-
-  @override
-  Widget build(BuildContext context) {
-final theme = Theme.of(context);
-    final prefs = ref.watch(sharedPreferencesProvider);
-    final bool enableBuyPrice = prefs.getBool('enable_sales_buy_price') ?? false;
-    final item = widget.cartItem;
-    final primaryUnit = item.item.primaryUnitName ?? item.item.unit.value?.shortName ?? item.item.unit.value?.unitName ?? 'PCS';
-    final secondaryUnit = item.item.secondaryUnit;
-    final List<String> availableUnits = [
-      primaryUnit,
-      if (secondaryUnit != null && secondaryUnit.isNotEmpty && secondaryUnit != primaryUnit) secondaryUnit,
-    ];
-    final selectedUnit = item.unit ?? primaryUnit;
-
-    final isDesktop = ResponsiveLayout.isDesktop(context);
-
-    if (!isDesktop) {
-      // Mobile-optimized item card layout with expandable advanced inputs
-      return NeuCard(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-        ),
+    return NeuCard(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          FullScreenItemEntry.show(
+            context,
+            isPurchase: false,
+            isFixedAsset: isFixedAsset,
+            excludeBundles: !(cartItem.item.isBundle ?? false),
+            onlyBundles: cartItem.item.isBundle ?? false,
+            initialData: FullScreenItemEntryData(
+              item: cartItem.item,
+              quantity: cartItem.quantity,
+              rate: cartItem.rate,
+              discountAmount: cartItem.discountAmount,
+              discountPercent: cartItem.discountPercent,
+              gstRate: cartItem.gstPercent,
+              unit: cartItem.unit ?? 'PCS',
+              batchNumber: cartItem.batchNumber,
+              mfgDate: parseDate(cartItem.mfgDate),
+              expDate: parseDate(cartItem.expiryDate),
+              saleRate: cartItem.item.sellRate ?? cartItem.rate,
+              purchaseRate: cartItem.item.buyRate ?? 0.0,
+              isSaleRateWithTax: cartItem.item.isSaleRateWithTax ?? false,
+              isPurchaseRateWithTax: cartItem.item.isPurchaseRateWithTax ?? false,
+            ),
+            onAdd: (data) {
+              ref.read(invoiceCartProvider.notifier).updateItemAt(
+                index,
+                quantity: data.quantity,
+                unit: data.unit,
+                rate: data.rate,
+                buyRate: data.purchaseRate,
+                discountPercent: data.discountPercent,
+                discountAmount: data.discountAmount,
+                batchNumber: data.batchNumber,
+                mfgDate: data.mfgDate != null ? DateFormat('MM/yyyy').format(data.mfgDate!) : null,
+                expiryDate: data.expDate != null ? DateFormat('MM/yyyy').format(data.expDate!) : null,
+              );
+            },
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: Index, Name & Delete Button
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
+                  Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Expanded(
                     child: Text(
-                      '#${widget.index + 1}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
+                      cartItem.item.itemName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
+                  ),
+                  Text(
+                    '₹ ${cartItem.totalAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.item.itemName ?? '',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        VariantDropdownWidget(
-                          item: item.item,
-                          selectedSubItemUuid: item.selectedSubItemUuid,
-                          onChanged: (sub) {
-                            if (sub != null) {
-                              final newRate = sub.sellPrice ?? sub.buyPrice ?? item.rate;
-                              ref.read(invoiceCartProvider.notifier).updateItemAt(
-                                widget.index,
-                                selectedSubItemUuid: sub.uuid,
-                                selectedSubItemName: sub.name,
-                                rate: newRate,
-                                quantity: 1,
-                              );
-                              _qtyController.text = '1';
-                              if (widget.isGstInclusive) {
-                                _rateInclController.text = newRate.toStringAsFixed(2);
-                                _rateExclController.text = (newRate / (1 + item.gstPercent / 100)).toStringAsFixed(2);
-                              } else {
-                                _rateExclController.text = newRate.toStringAsFixed(2);
-                                _rateInclController.text = (newRate * (1 + item.gstPercent / 100)).toStringAsFixed(2);
-                              }
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (item.item.isBundle && (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false))
-                    TextButton.icon(
-                      icon: const Icon(Icons.extension, size: 16),
-                      label: const Text('Components'),
-                      onPressed: _showBundleComponentsDialog,
-                    ),
-                                    Text('?${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
-                                    const SizedBox(width: 8),
-                                    IconButton(
-
-                                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
-                    onPressed: () {
-                      ref.read(invoiceCartProvider.notifier).removeItemAt(widget.index);
-                    },
-                  ),
-                ],
-              ),
-              const Divider(height: 16),
-
-              // Qty Stepper & Unit Selector
-              Row(
-                children: [
-                  // Qty Stepper
-                  Container(
-                    height: 44,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: theme.colorScheme.outlineVariant),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.remove, size: 18),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
-                          onPressed: () {
-                            final current = item.quantity;
-                            if (current > 1) {
-                              final next = current - 1;
-                              _qtyController.text = next.toInt().toString();
-                              ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, quantity: next);
-                            }
-                          },
-                        ),
-                        SizedBox(
-                          width: 44,
-                          child: TextFormField(
-                            controller: _qtyController,
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            decoration: InputDecoration( isDense: true, contentPadding: EdgeInsets.zero),
-                            onChanged: (val) {
-                              final double? qty = double.tryParse(val);
-                              if (qty != null && qty >= 0) {
-                                ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, quantity: qty);
-                              }
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add, size: 18),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 38, minHeight: 44),
-                          onPressed: () {
-                            final next = item.quantity + 1;
-                            _qtyController.text = next.toInt().toString();
-                            ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, quantity: next);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Unit Selector
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      isExpanded: true,
-                      value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
-                      decoration: InputDecoration(
-                        labelText: 'Unit',
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        
-                      ),
-                      items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, unit: val);
-                        }
-                      },
-                    ),
+                  InkWell(
+                    onTap: () => ref.read(invoiceCartProvider.notifier).removeItemAt(index),
+                    child: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              // Rate Row: Rate Input + Tax Mode
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Rate Input Box - takes most space
-                  Expanded(
-                    flex: 5,
-                    child: TextFormField(
-                      controller: widget.isGstInclusive ? _rateInclController : _rateExclController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: widget.isGstInclusive ? 'Rate Incl (\u20b9)' : 'Rate Excl (\u20b9)',
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        
-                        prefixIcon: const Icon(Icons.currency_rupee, size: 16),
-                      ),
-                      onChanged: (val) {
-                        final double? parsed = double.tryParse(val);
-                        if (parsed != null) {
-                          ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, rate: parsed);
-                        }
-                      },
-                    ),
+                  Text(
+                    'Qty: ${cartItem.quantity} ${cartItem.unit ?? 'PCS'} x Rate: ${cartItem.rate.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 12),
                   ),
-                  const SizedBox(width: 8),
-                  // Tax Mode Toggle - compact
-                  Expanded(
-                    flex: 3,
-                    child: DropdownButtonFormField<bool>(
-                      isExpanded: true,
-                      value: widget.isGstInclusive,
-                      decoration: InputDecoration(
-                        labelText: 'Tax',
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                        
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: false, child: Text('Excl', style: TextStyle(fontSize: 12))),
-                        DropdownMenuItem(value: true, child: Text('Incl', style: TextStyle(fontSize: 12))),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          ref.read(invoiceCartProvider.notifier).toggleGstInclusive(val);
-                        }
-                      },
-                    ),
+                  Text(
+                    'Subtotal: ${(cartItem.quantity * cartItem.rate).toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ],
               ),
-              // Buy Price Row - conditional, full width
-              if (enableBuyPrice) ...[
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _buyRateController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Buy / Cost Price (\u20b9)',
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    
-                    prefixIcon: Icon(Icons.shopping_bag_outlined, size: 16),
-                  ),
-                  onChanged: (val) {
-                    final double? parsed = double.tryParse(val);
-                    if (parsed != null) {
-                      ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, buyRate: parsed);
-                    }
-                  },
-                ),
-              ],
-              const SizedBox(height: 6),
-
-              // Advanced Details Toggle
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _showMoreDetails = !_showMoreDetails;
-                  });
-                },
-                borderRadius: BorderRadius.circular(6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _showMoreDetails ? Icons.expand_less : Icons.expand_more,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _showMoreDetails ? 'Less Details' : 'More Details',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.primary),
-                      ),
-                    ],
+              if (cartItem.discountAmount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    'Discount: -₹ ${cartItem.discountAmount.toStringAsFixed(2)}${cartItem.discountPercent > 0 ? ' (${cartItem.discountPercent.toStringAsFixed(2)}%)' : ''}',
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
                   ),
                 ),
-              ),
-
-              // Expandable Details Panel
-              AnimatedCrossFade(
-                firstChild: const SizedBox.shrink(),
-                secondChild: Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
-                    ),
-                    child: Column(
-                      children: [
-                        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                                controller: _freeQtyController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(labelText: 'Free Qty', isDense: true, ),
-                                onChanged: (val) {
-                                  final double? fq = double.tryParse(val);
-                                  if (fq != null) {
-                                    ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, freeQuantity: fq);
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _discAmountController,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                decoration: InputDecoration(labelText: 'Disc \u20b9', isDense: true, ),
-                                onChanged: (val) {
-                                  final double? da = double.tryParse(val);
-                                  if (da != null) {
-                                    ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, discountAmount: da);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                                controller: _batchController,
-                                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
-                                onChanged: (val) {
-                                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _mfgDateController,
-                                decoration: InputDecoration(labelText: 'Mfg Date', isDense: true, ),
-                                onChanged: (val) {
-                                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _expDateController,
-                          decoration: InputDecoration(labelText: 'Expiry (e.g. 12/28)', isDense: true, ),
-                          onChanged: (val) {
-                            ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
-                          },
-                        ),
-                        if (ref.read(sharedPreferencesProvider).getBool('enable_item_descriptions') ?? false) ...[
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            controller: _descController,
-                            maxLines: 2,
-                            decoration: InputDecoration(labelText: 'Item Description', isDense: true, ),
-                            onChanged: (val) {
-                              ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, description: val.trim());
-                            },
-                          ),
-                        ],
-                      ],
-                    ),
+              if (cartItem.taxAmount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    'Tax @ ${cartItem.gstPercent}%: +₹ ${cartItem.taxAmount.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 12, color: Colors.green),
                   ),
                 ),
-                crossFadeState: _showMoreDetails ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 200),
-              ),
-
-              const SizedBox(height: 6),
-              // Item Total Summary Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
+              if (enableItemDesc && cartItem.description != null && cartItem.description!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6.0),
+                  child: Text(
+                    'Desc: ${cartItem.description}',
+                    style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
+                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.percent, size: 13, color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Text(
-                          'GST ${item.gstPercent.toInt()}%',
-                          style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '\u20b9${item.calculateItemTotal(widget.isGstInclusive).toStringAsFixed(2)}',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: theme.colorScheme.primary),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
-      );
-    }
-
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '#${widget.index + 1}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.item.itemName ?? '',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  VariantDropdownWidget(
-                    item: item.item,
-                    selectedSubItemUuid: item.selectedSubItemUuid,
-                    onChanged: (sub) {
-                      if (sub != null) {
-                        final newRate = sub.sellPrice ?? sub.buyPrice ?? item.rate;
-                        ref.read(invoiceCartProvider.notifier).updateItemAt(
-                          widget.index,
-                          selectedSubItemUuid: sub.uuid,
-                          selectedSubItemName: sub.name,
-                          rate: newRate,
-                          quantity: 1,
-                        );
-                        _qtyController.text = '1';
-                        if (widget.isGstInclusive) {
-                          _rateInclController.text = newRate.toStringAsFixed(2);
-                          _rateExclController.text = (newRate / (1 + item.gstPercent / 100)).toStringAsFixed(2);
-                        } else {
-                          _rateExclController.text = newRate.toStringAsFixed(2);
-                          _rateInclController.text = (newRate * (1 + item.gstPercent / 100)).toStringAsFixed(2);
-                        }
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-            if (item.item.isBundle && (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false))
-              TextButton.icon(
-                icon: const Icon(Icons.extension, size: 16),
-                label: const Text('Components'),
-                onPressed: _showBundleComponentsDialog,
-              ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red),
-              onPressed: () {
-                ref.read(invoiceCartProvider.notifier).removeItemAt(widget.index);
-              },
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                controller: _qtyController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(labelText: 'Qty', isDense: true, ),
-                onChanged: (val) {
-                  final double? qty = double.tryParse(val);
-                  if (qty != null && qty >= 0) {
-                    ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, quantity: qty);
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                isExpanded: true,
-                value: availableUnits.contains(selectedUnit) ? selectedUnit : availableUnits.first,
-                decoration: InputDecoration(
-                  labelText: 'Unit',
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  
-                ),
-                items: availableUnits.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    final oldUnit = selectedUnit;
-                    final newUnit = val;
-                    if (oldUnit != newUnit) {
-                      final conv = item.item.conversionFactor ?? 1.0;
-                      if (conv > 0 && conv != 1.0) {
-                        double currentRate = item.rate;
-                        double newRate = currentRate;
-                        if (oldUnit == primaryUnit && newUnit == secondaryUnit) {
-                          newRate = currentRate / conv;
-                        } else if (oldUnit == secondaryUnit && newUnit == primaryUnit) {
-                          newRate = currentRate * conv;
-                        }
-
-                        final gstPct = item.gstPercent;
-                        final double rateExcl = widget.isGstInclusive
-                            ? newRate / (1 + gstPct / 100.0)
-                            : newRate;
-                        final double rateIncl = widget.isGstInclusive
-                            ? newRate
-                            : newRate * (1 + gstPct / 100.0);
-
-                        _isUpdatingLocally = true;
-                        _rateExclController.text = rateExcl.toStringAsFixed(2);
-                        _rateInclController.text = rateIncl.toStringAsFixed(2);
-                        _isUpdatingLocally = false;
-
-                        ref.read(invoiceCartProvider.notifier).updateItemAt(
-                          widget.index,
-                          unit: newUnit,
-                          rate: newRate,
-                        );
-                      } else {
-                        ref.read(invoiceCartProvider.notifier).updateItemAt(
-                          widget.index,
-                          unit: newUnit,
-                        );
-                      }
-                    }
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _rateExclController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Excl (?)', isDense: true, ),
-                onChanged: (val) {
-                  final double? excl = double.tryParse(val);
-                  if (excl == null) return;
-                  
-                  final gstPct = item.gstPercent;
-                  final incl = excl * (1 + gstPct / 100.0);
-                  
-                  _isUpdatingLocally = true;
-                  _rateInclController.text = incl.toStringAsFixed(2);
-                  
-                  final targetRate = widget.isGstInclusive ? incl : excl;
-                  ref.read(invoiceCartProvider.notifier).updateItemAt(
-                    widget.index,
-                    rate: targetRate,
-                  );
-                  _isUpdatingLocally = false;
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _rateInclController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Rate Incl (?)', isDense: true, ),
-                onChanged: (val) {
-                  final double? incl = double.tryParse(val);
-                  if (incl == null) return;
-                  
-                  final gstPct = item.gstPercent;
-                  final excl = incl / (1 + gstPct / 100.0);
-                  
-                  _isUpdatingLocally = true;
-                  _rateExclController.text = excl.toStringAsFixed(2);
-                  
-                  final targetRate = widget.isGstInclusive ? incl : excl;
-                  ref.read(invoiceCartProvider.notifier).updateItemAt(
-                    widget.index,
-                    rate: targetRate,
-                  );
-                  _isUpdatingLocally = false;
-                },
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                controller: _discPercentController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc %', isDense: true, ),
-                onChanged: (val) {
-                  final double? pct = double.tryParse(val);
-                  if (pct != null) {
-                    ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, discountPercent: pct);
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _discAmountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Disc Amt (?)', isDense: true, ),
-                onChanged: (val) {
-                  final double? amt = double.tryParse(val);
-                  if (amt != null) {
-                    ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, discountAmount: amt);
-                  }
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: InputDecorator(
-                decoration: InputDecoration(labelText: 'GST Tax %', isDense: true, ),
-                child: Text('${item.gstPercent.toInt()}%'),
-              ),
-            ),
-            if (enableBuyPrice) ...[
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextFormField(
-                  controller: _buyRateController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(labelText: 'Buy Price', isDense: true, ),
-                  onChanged: (val) {
-                    final double? parsed = double.tryParse(val);
-                    if (parsed != null) {
-                      ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, buyRate: parsed);
-                    }
-                  },
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                controller: _batchController,
-                decoration: InputDecoration(labelText: 'Batch No.', isDense: true, ),
-                onChanged: (val) {
-                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, batchNumber: val.trim());
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _mfgDateController,
-                decoration: InputDecoration(labelText: 'MFG Date', hintText: 'MM/YYYY', isDense: true, ),
-                onChanged: (val) {
-                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, mfgDate: val.trim());
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextFormField(
-                controller: _expDateController,
-                decoration: InputDecoration(labelText: 'EXP Date', hintText: 'MM/YYYY', isDense: true, ),
-                onChanged: (val) {
-                  ref.read(invoiceCartProvider.notifier).updateItemAt(widget.index, expiryDate: val.trim());
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
-
   }
 }
-
-

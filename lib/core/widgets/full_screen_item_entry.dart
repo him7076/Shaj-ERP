@@ -52,6 +52,7 @@ class FullScreenItemEntry extends ConsumerStatefulWidget {
   final bool isFixedAsset;
   final bool onlyBundles;
   final bool excludeBundles;
+  final FullScreenItemEntryData? initialData;
   final Function(FullScreenItemEntryData) onAdd;
 
   const FullScreenItemEntry({
@@ -60,14 +61,15 @@ class FullScreenItemEntry extends ConsumerStatefulWidget {
     this.isFixedAsset = false,
     this.onlyBundles = false,
     this.excludeBundles = false,
+    this.initialData,
     required this.onAdd,
   }) : super(key: key);
 
-  static Future<void> show(BuildContext context, {bool isPurchase = false, bool isFixedAsset = false, bool onlyBundles = false, bool excludeBundles = false, required Function(FullScreenItemEntryData) onAdd}) {
+  static Future<void> show(BuildContext context, {bool isPurchase = false, bool isFixedAsset = false, bool onlyBundles = false, bool excludeBundles = false, FullScreenItemEntryData? initialData, required Function(FullScreenItemEntryData) onAdd}) {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FullScreenItemEntry(isPurchase: isPurchase, isFixedAsset: isFixedAsset, onlyBundles: onlyBundles, excludeBundles: excludeBundles, onAdd: onAdd),
+        builder: (_) => FullScreenItemEntry(isPurchase: isPurchase, isFixedAsset: isFixedAsset, onlyBundles: onlyBundles, excludeBundles: excludeBundles, initialData: initialData, onAdd: onAdd),
         fullscreenDialog: true,
       ),
     );
@@ -108,6 +110,32 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
     _purchaseRateController.addListener(_calculateTotals);
     _discountController.addListener(_calculateTotals);
     _gstController.addListener(_calculateTotals);
+    
+    if (widget.initialData != null) {
+      final d = widget.initialData!;
+      _selectedItem = d.item;
+      _qtyController.text = d.quantity.toString();
+      _saleRateController.text = d.saleRate.toString();
+      _purchaseRateController.text = d.purchaseRate.toString();
+      _batchController.text = d.batchNumber ?? '';
+      _discountController.text = d.discountPercent > 0 ? d.discountPercent.toString() : d.discountAmount.toString();
+      _isDiscountPercent = d.discountPercent > 0 || (d.discountPercent == 0 && d.discountAmount == 0);
+      _gstController.text = d.gstRate.toString();
+      _mfgDate = d.mfgDate;
+      _expDate = d.expDate;
+      _isSaleWithTax = d.isSaleRateWithTax;
+      _isPurchaseWithTax = d.isPurchaseRateWithTax;
+      _selectedUnit = d.unit;
+      
+      _availableUnits = [
+        if (d.item.primaryUnitName != null && d.item.primaryUnitName!.isNotEmpty) d.item.primaryUnitName!,
+        if (d.item.secondaryUnit != null && d.item.secondaryUnit!.isNotEmpty) d.item.secondaryUnit!,
+        if (d.item.tertiaryUnit != null && d.item.tertiaryUnit!.isNotEmpty) d.item.tertiaryUnit!,
+      ];
+      if (_availableUnits.isEmpty) _availableUnits.add(d.item.unit.value?.shortName ?? d.item.unit.value?.unitName ?? 'PCS');
+      
+      _calculateTotals();
+    }
   }
 
   @override
@@ -265,25 +293,8 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
       ),
     );
     
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_selectedItem!.itemName} added!')));
-    
-    setState(() {
-      _selectedItem = null;
-      _qtyController.text = '1.0';
-      _saleRateController.clear();
-      _purchaseRateController.clear();
-      _discountController.text = '0.0';
-      _gstController.text = '18.0';
-      _batchController.clear();
-      _mfgDate = null;
-      _expDate = null;
-      _subTotal = 0.0;
-      _discountAmt = 0.0;
-      _taxableAmount = 0.0;
-      _taxAmount = 0.0;
-      _totalAmount = 0.0;
-      _resetKey++;
-    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(widget.initialData != null ? '${_selectedItem!.itemName} updated!' : '${_selectedItem!.itemName} added!')));
+    Navigator.pop(context);
   }
 
   Future<void> _pickDate(bool isMfg) async {
@@ -343,7 +354,9 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isFixedAsset ? 'Add Fixed Asset' : 'Add Item'),
+        title: Text(widget.initialData != null 
+            ? (widget.isFixedAsset ? 'Edit Fixed Asset' : 'Edit Item') 
+            : (widget.isFixedAsset ? 'Add Fixed Asset' : 'Add Item')),
         centerTitle: true,
         elevation: 0,
         actions: [
