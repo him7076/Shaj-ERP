@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_party_transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
@@ -52,11 +53,18 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             MaterialPageRoute(builder: (context) => const AddEditCreditNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else if (widget.lockedType == 'Debit Note') {
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+                  ).then((_) => ref.invalidate(filteredTransactionsProvider));
+                } else if (widget.lockedType == 'Transfer' || widget.lockedType == 'Party Transfer') {
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute(builder: (context) => const AddEditPartyTransferScreen()),
+                  ).then((_) => ref.invalidate(filteredTransactionsProvider));
           Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else {
-          AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+          if (widget.lockedType != 'Debit Note' && widget.lockedType != 'Transfer' && widget.lockedType != 'Party Transfer') AddEditTransactionDialog.show(context, initialType: widget.lockedType);
         }
       }
       
@@ -102,6 +110,12 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
     } else if (txn.transactionType == 'Debit Note') {
       Navigator.of(context,  rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
+    } else if (txn.transactionType == 'Transfer' || txn.transactionType == 'Party Transfer') {
+      Navigator.of(context, rootNavigator: true).push<bool>(
+        MaterialPageRoute(builder: (context) => AddEditPartyTransferScreen(existingTransaction: txn)),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });

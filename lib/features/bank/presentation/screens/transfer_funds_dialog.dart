@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -451,7 +452,7 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
                         const SizedBox(height: 8),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.file(File(_photoPath!), height: 100, fit: BoxFit.cover),
+                          child: kIsWeb ? Image.network(_photoPath!, height: 100, fit: BoxFit.cover) : Image.file(File(_photoPath!), height: 100, fit: BoxFit.cover),
                         ),
                       ],
                     ],
