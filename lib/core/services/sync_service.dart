@@ -662,11 +662,9 @@ class SyncService {
     final uuidGen = Uuid();
     final isar = _dbService.isar;
 
-    Future<void> processEnqueuing<T>(
+    Future<void> processEnqueuing<T extends IsarModel>(
         Future<List<T>> Function(int offset, int limit) queryFn,
-        String entityType,
-        String? Function(T) getUuid,
-        int Function(T) getId) async {
+        String entityType) async {
       int offset = 0;
       const int limit = 500;
       while (true) {
@@ -676,8 +674,8 @@ class SyncService {
         final queues = chunk.map((item) => SyncQueue()
           ..uuid = uuidGen.v4()
           ..entityType = entityType
-          ..entityId = getId(item)
-          ..entityUuid = getUuid(item)
+          ..entityId = item.id
+          ..entityUuid = item.uuid
           ..operation = 'Update'
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now()).toList();
