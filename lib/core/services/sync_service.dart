@@ -2232,6 +2232,132 @@ class SyncService {
     }
   }
 
+  
+  void _setEntityUuid(String entityType, dynamic entity, String? value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).uuid = value; break;
+      case 'Item': (entity as Item).uuid = value; break;
+      case 'Invoice': (entity as Invoice).uuid = value; break;
+      case 'Order': (entity as Order).uuid = value; break;
+      case 'Purchase': (entity as Purchase).uuid = value; break;
+      case 'Expense': (entity as Expense).uuid = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).uuid = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).uuid = value; break;
+      case 'CreditNote': (entity as CreditNote).uuid = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).uuid = value; break;
+      case 'DebitNote': (entity as DebitNote).uuid = value; break;
+      case 'Transaction': (entity as Transaction).uuid = value; break;
+      case 'Category': (entity as Category).uuid = value; break;
+      case 'Unit': (entity as Unit).uuid = value; break;
+      case 'Brand': (entity as Brand).uuid = value; break;
+      case 'Settings': (entity as Settings).uuid = value; break;
+      case 'User': (entity as User).uuid = value; break;
+      case 'BankAccount': (entity as BankAccount).uuid = value; break;
+      case 'Task': (entity as Task).uuid = value; break;
+      case 'Machinery': (entity as Machinery).uuid = value; break;
+    }
+  }
+
+  void _setEntityCreatedAt(String entityType, dynamic entity, DateTime value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).createdAt = value; break;
+      case 'Item': (entity as Item).createdAt = value; break;
+      case 'Invoice': (entity as Invoice).createdAt = value; break;
+      case 'Order': (entity as Order).createdAt = value; break;
+      case 'Purchase': (entity as Purchase).createdAt = value; break;
+      case 'Expense': (entity as Expense).createdAt = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).createdAt = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).createdAt = value; break;
+      case 'CreditNote': (entity as CreditNote).createdAt = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).createdAt = value; break;
+      case 'DebitNote': (entity as DebitNote).createdAt = value; break;
+      case 'Transaction': (entity as Transaction).createdAt = value; break;
+      case 'Category': (entity as Category).createdAt = value; break;
+      case 'Unit': (entity as Unit).createdAt = value; break;
+      case 'Brand': (entity as Brand).createdAt = value; break;
+      case 'Settings': (entity as Settings).createdAt = value; break;
+      case 'User': (entity as User).createdAt = value; break;
+      case 'BankAccount': (entity as BankAccount).createdAt = value; break;
+      case 'Task': (entity as Task).createdAt = value; break;
+      case 'Machinery': (entity as Machinery).createdAt = value; break;
+    }
+  }
+
+  void _setEntityUpdatedAt(String entityType, dynamic entity, DateTime value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).updatedAt = value; break;
+      case 'Item': (entity as Item).updatedAt = value; break;
+      case 'Invoice': (entity as Invoice).updatedAt = value; break;
+      case 'Order': (entity as Order).updatedAt = value; break;
+      case 'Purchase': (entity as Purchase).updatedAt = value; break;
+      case 'Expense': (entity as Expense).updatedAt = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).updatedAt = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).updatedAt = value; break;
+      case 'CreditNote': (entity as CreditNote).updatedAt = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).updatedAt = value; break;
+      case 'DebitNote': (entity as DebitNote).updatedAt = value; break;
+      case 'Transaction': (entity as Transaction).updatedAt = value; break;
+      case 'Category': (entity as Category).updatedAt = value; break;
+      case 'Unit': (entity as Unit).updatedAt = value; break;
+      case 'Brand': (entity as Brand).updatedAt = value; break;
+      case 'Settings': (entity as Settings).updatedAt = value; break;
+      case 'User': (entity as User).updatedAt = value; break;
+      case 'BankAccount': (entity as BankAccount).updatedAt = value; break;
+      case 'Task': (entity as Task).updatedAt = value; break;
+      case 'Machinery': (entity as Machinery).updatedAt = value; break;
+    }
+  }
+
+  void _setEntityIsDeleted(String entityType, dynamic entity, bool value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).isDeleted = value; break;
+      case 'Item': (entity as Item).isDeleted = value; break;
+      case 'Invoice': (entity as Invoice).isDeleted = value; break;
+      case 'Order': (entity as Order).isDeleted = value; break;
+      case 'Purchase': (entity as Purchase).isDeleted = value; break;
+      case 'Expense': (entity as Expense).isDeleted = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).isDeleted = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).isDeleted = value; break;
+      case 'CreditNote': (entity as CreditNote).isDeleted = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).isDeleted = value; break;
+      case 'DebitNote': (entity as DebitNote).isDeleted = value; break;
+      case 'Transaction': (entity as Transaction).isDeleted = value; break;
+      case 'Category': (entity as Category).isDeleted = value; break;
+      case 'Unit': (entity as Unit).isDeleted = value; break;
+      case 'Brand': (entity as Brand).isDeleted = value; break;
+      case 'Settings': (entity as Settings).isDeleted = value; break;
+      case 'User': (entity as User).isDeleted = value; break;
+      case 'BankAccount': (entity as BankAccount).isDeleted = value; break;
+      case 'Task': (entity as Task).isDeleted = value; break;
+      case 'Machinery': (entity as Machinery).isDeleted = value; break;
+    }
+  }
+
+  void _setEntityVersion(String entityType, dynamic entity, int value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).version = value; break;
+      case 'Item': (entity as Item).version = value; break;
+      case 'Invoice': (entity as Invoice).version = value; break;
+      case 'Order': (entity as Order).version = value; break;
+      case 'Purchase': (entity as Purchase).version = value; break;
+      case 'Expense': (entity as Expense).version = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).version = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).version = value; break;
+      case 'CreditNote': (entity as CreditNote).version = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).version = value; break;
+      case 'DebitNote': (entity as DebitNote).version = value; break;
+      case 'Transaction': (entity as Transaction).version = value; break;
+      case 'Category': (entity as Category).version = value; break;
+      case 'Unit': (entity as Unit).version = value; break;
+      case 'Brand': (entity as Brand).version = value; break;
+      case 'Settings': (entity as Settings).version = value; break;
+      case 'User': (entity as User).version = value; break;
+      case 'BankAccount': (entity as BankAccount).version = value; break;
+      case 'Task': (entity as Task).version = value; break;
+      case 'Machinery': (entity as Machinery).version = value; break;
+    }
+  }
+
   void _setEntityIsSynced(String entityType, dynamic entity, bool value) {
     switch (entityType) {
       case 'Party': (entity as Party).isSynced = value; break;
@@ -3395,16 +3521,16 @@ class SyncService {
     }
 
     if (entity != null) {
-      _getEntityUuid(entityType, entity) = data['uuid']?.toString();
-      _getEntityCreatedAt(entityType, entity) = data['createdAt'] != null 
+      _setEntityUuid(entityType, entity, data['uuid']?.toString());
+      _setEntityCreatedAt(entityType, entity, data['createdAt'] != null 
           ? (DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()) 
-          : DateTime.now();
-      _getEntityUpdatedAt(entityType, entity) = data['updatedAt'] != null 
+          : DateTime.now());
+      _setEntityUpdatedAt(entityType, entity, data['updatedAt'] != null 
           ? (DateTime.tryParse(data['updatedAt'].toString()) ?? DateTime.now()) 
-          : DateTime.now();
-      _getEntityIsDeleted(entityType, entity) = data['isDeleted'] == true;
+          : DateTime.now());
+      _setEntityIsDeleted(entityType, entity, data['isDeleted'] == true);
       _setEntityIsSynced(entityType, entity, true);
-      _getEntityVersion(entityType, entity) = (data['version'] as num?)?.toInt() ?? 1;
+      _setEntityVersion(entityType, entity, (data['version'] as num?)?.toInt() ?? 1);
     }
 
     return entity;
