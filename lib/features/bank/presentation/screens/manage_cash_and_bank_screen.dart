@@ -558,13 +558,13 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
         bool matches = false;
         if (widget.isCash) {
           matches = mode == 'cash' || mode.contains('cash') || mode.isEmpty;
-          if (t.transactionType == 'Transfer' && (target == 'cash' || target.contains('cash'))) {
+          if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == 'cash' || target.contains('cash'))) {
             matches = true;
           }
         } else {
           final accName = widget.accountName.trim().toLowerCase();
           matches = mode == accName || mode.contains(accName) || (accName.contains('bank') && (mode == 'bank' || mode == 'online' || mode == 'upi' || mode == 'cheque'));
-          if (t.transactionType == 'Transfer' && (target == accName || target.contains(accName))) {
+          if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == accName || target.contains(accName))) {
             matches = true;
           }
         }
@@ -573,7 +573,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
           bool isCredit = false;
           if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
             isCredit = true;
-          } else if (t.transactionType == 'Transfer') {
+          } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {
              // If this account was the target, it's a credit!
              if (widget.isCash) {
                 isCredit = (target == 'cash' || target.contains('cash'));
@@ -989,7 +989,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                                       final isar = ref.read(databaseServiceProvider).isar;
                                       final txn = await isar.transactions.filter().uuidEqualTo(t.entityUuid).findFirst();
                                       if (txn != null && mounted) {
-                                        if (txn.transactionType == 'Transfer') {
+                                        if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(txn.transactionType)) {
                                           showDialog(
                                             context: context,
                                             builder: (_) => TransferFundsDialog(

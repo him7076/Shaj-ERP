@@ -110,7 +110,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
-    } else if (txn.transactionType == 'Transfer' || txn.transactionType == 'Party Transfer') {
+    } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(txn.transactionType)) {
       Navigator.of(context, rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => AddEditPartyTransferScreen(existingTransaction: txn)),
       ).then((changed) {

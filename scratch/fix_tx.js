@@ -1,107 +1,51 @@
 const fs = require('fs');
-const lines = fs.readFileSync('lib/data/repositories/transaction_repository_impl.dart', 'utf8').split('\n');
 
-const replaceApply = `            final invoice = await _findInvoice(billUuid);
-            if (invoice != null) {
-              invoice.paidAmount = (invoice.paidAmount ?? 0.0) + allocAmt;
-              invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-              if (invoice.pendingAmount! <= 0) {
-                invoice.paymentStatus = 'Paid';
-              } else if (invoice.paidAmount! > 0) {
-                invoice.paymentStatus = 'Partially Paid';
-              } else {
-                invoice.paymentStatus = 'Unpaid';
-              }
-              invoice.updatedAt = DateTime.now();
-              invoice.isSynced = false;
-              await isar.invoices.put(invoice);
-              await isar.syncQueues.put(SyncQueue()
-                ..uuid = _generateUuid()
-                ..entityType = 'Invoice'
-                ..entityId = invoice.id
-                ..entityUuid = invoice.uuid
-                ..operation = 'Update'
-                ..createdAt = DateTime.now()
-                ..updatedAt = DateTime.now());
-            } else {
-              final purchase = await _findPurchase(billUuid);
-              if (purchase != null) {
-                purchase.paidAmount = (purchase.paidAmount ?? 0.0) + allocAmt;
-                purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
-                if (purchase.pendingAmount! <= 0) {
-                  purchase.paymentStatus = 'Paid';
-                } else if (purchase.paidAmount! > 0) {
-                  purchase.paymentStatus = 'Partially Paid';
-                } else {
-                  purchase.paymentStatus = 'Unpaid';
-                }
-                purchase.updatedAt = DateTime.now();
-                purchase.isSynced = false;
-                await isar.purchases.put(purchase);
-                await isar.syncQueues.put(SyncQueue()
-                  ..uuid = _generateUuid()
-                  ..entityType = 'Purchase'
-                  ..entityId = purchase.id
-                  ..entityUuid = purchase.uuid
-                  ..operation = 'Update'
-                  ..createdAt = DateTime.now()
-                  ..updatedAt = DateTime.now());
-              }
-            }`;
+function fixTransactionsScreen() {
+    let file = 'lib/features/transactions/presentation/screens/transactions_screen.dart';
+    let code = fs.readFileSync(file, 'utf8');
+    
+    code = code.replace(/txn.transactionType == 'Transfer' \|\| txn.transactionType == 'Party Transfer'/g, 
+        "['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(txn.transactionType)");
+        
+    fs.writeFileSync(file, code);
+    console.log('Fixed transactions_screen.dart');
+}
 
-const replaceRevert = `              final invoice = await _findInvoice(billUuid);
-              if (invoice != null) {
-                invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
-                if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
-                invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-                if (invoice.pendingAmount! <= 0) {
-                  invoice.paymentStatus = 'Paid';
-                } else if (invoice.paidAmount! > 0) {
-                  invoice.paymentStatus = 'Partially Paid';
-                } else {
-                  invoice.paymentStatus = 'Unpaid';
-                }
-                invoice.updatedAt = DateTime.now();
-                invoice.isSynced = false;
-                await isar.invoices.put(invoice);
-                await isar.syncQueues.put(SyncQueue()
-                  ..uuid = _generateUuid()
-                  ..entityType = 'Invoice'
-                  ..entityId = invoice.id
-                  ..entityUuid = invoice.uuid
-                  ..operation = 'Update'
-                  ..createdAt = DateTime.now()
-                  ..updatedAt = DateTime.now());
-              } else {
-                final purchase = await _findPurchase(billUuid);
-                if (purchase != null) {
-                  purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
-                  if (purchase.paidAmount! < 0) purchase.paidAmount = 0.0;
-                  purchase.pendingAmount = (purchase.grandTotal ?? 0.0) - purchase.paidAmount!;
-                  if (purchase.pendingAmount! <= 0) {
-                    purchase.paymentStatus = 'Paid';
-                  } else if (purchase.paidAmount! > 0) {
-                    purchase.paymentStatus = 'Partially Paid';
-                  } else {
-                    purchase.paymentStatus = 'Unpaid';
-                  }
-                  purchase.updatedAt = DateTime.now();
-                  purchase.isSynced = false;
-                  await isar.purchases.put(purchase);
-                  await isar.syncQueues.put(SyncQueue()
-                    ..uuid = _generateUuid()
-                    ..entityType = 'Purchase'
-                    ..entityId = purchase.id
-                    ..entityUuid = purchase.uuid
-                    ..operation = 'Update'
-                    ..createdAt = DateTime.now()
-                    ..updatedAt = DateTime.now());
-                }
-              }`;
+function fixManageBankScreen() {
+    let file = 'lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart';
+    let code = fs.readFileSync(file, 'utf8');
+    
+    // Fix 561
+    code = code.replace(/if \(t.transactionType == 'Transfer' && \(target == 'cash' \|\| target.contains\('cash'\)\)\) \{/g, 
+        "if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == 'cash' || target.contains('cash'))) {");
+        
+    // Fix 567
+    code = code.replace(/if \(t.transactionType == 'Transfer' && \(target == accName \|\| target.contains\(accName\)\)\) \{/g, 
+        "if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == accName || target.contains(accName))) {");
+        
+    // Fix 576
+    code = code.replace(/} else if \(t.transactionType == 'Transfer'\) \{/g, 
+        "} else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {");
+        
+    // Fix 992
+    code = code.replace(/if \(txn.transactionType == 'Transfer'\) \{/g, 
+        "if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(txn.transactionType)) {");
+        
+    fs.writeFileSync(file, code);
+    console.log('Fixed manage_cash_and_bank_screen.dart');
+}
 
-// Apply logic is at 246 to 294
-lines.splice(246, 49, replaceApply);
-// Revert logic is at 128 to 178
-lines.splice(128, 51, replaceRevert);
+function fixTransactionProviders() {
+    let file = 'lib/features/transactions/presentation/providers/transaction_providers.dart';
+    let code = fs.readFileSync(file, 'utf8');
+    
+    code = code.replace(/\['Receipt', 'Payment', 'Expense', 'Transfer', 'Other Income'\].contains\(filter.transactionType\)/g, 
+        "['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income'].contains(filter.transactionType)");
+        
+    fs.writeFileSync(file, code);
+    console.log('Fixed transaction_providers.dart');
+}
 
-fs.writeFileSync('lib/data/repositories/transaction_repository_impl.dart', lines.join('\n'));
+fixTransactionsScreen();
+fixManageBankScreen();
+fixTransactionProviders();

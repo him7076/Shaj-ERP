@@ -61,7 +61,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       if (type == 'Other Income') prefix = 'OTHER Income';
       if (type == 'Credit Note') prefix = 'CN';
       if (type == 'Debit Note') prefix = 'DN';
-      if (type == 'Transfer') prefix = 'TRF';
+      if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) prefix = 'TRF';
       return '$prefix-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate transaction number: $e');
@@ -95,7 +95,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             if (oldParty != null) {
               final oldAmt = oldTransaction.amount ?? 0.0;
               final oldType = oldTransaction.transactionType;
-              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Payment' || oldType == 'Debit Note' || oldType == 'Transfer') {
+              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Payment' || oldType == 'Debit Note' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(oldType)) {
                 oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + oldAmt;
               } else if (oldType == 'Sales' || oldType == 'Purchase') {
                 oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - oldAmt;
@@ -106,7 +106,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           }
 
           // Revert old target party balance (if Transfer)
-          if (oldTransaction.transactionType == 'Transfer' && oldTransaction.targetPartyUuid != null) {
+          if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(oldTransaction.transactionType) && oldTransaction.targetPartyUuid != null) {
             final oldTargetParty = await isar.partys.filter().uuidEqualTo(oldTransaction.targetPartyUuid).findFirst();
             if (oldTargetParty != null) {
               final oldAmt = oldTransaction.amount ?? 0.0;
@@ -190,7 +190,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             final type = transaction.transactionType;
             
-            if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note' || type == 'Transfer') {
+            if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
             } else if (type == 'Sales' || type == 'Purchase') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
@@ -213,7 +213,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
         }
 
         // 4. Adjust target party (if Transfer)
-        if (transaction.transactionType == 'Transfer' && transaction.targetPartyUuid != null) {
+        if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(transaction.transactionType) && transaction.targetPartyUuid != null) {
           final targetParty = await isar.partys.filter().uuidEqualTo(transaction.targetPartyUuid).findFirst();
           if (targetParty != null) {
             final amt = transaction.amount ?? 0.0;
@@ -336,7 +336,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           }
         }
 
-        if (transaction.transactionType == 'Transfer' && transaction.targetPartyUuid != null) {
+        if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(transaction.transactionType) && transaction.targetPartyUuid != null) {
           final targetParty = await isar.partys.filter().uuidEqualTo(transaction.targetPartyUuid).findFirst();
           if (targetParty != null) {
             final amt = transaction.amount ?? 0.0;

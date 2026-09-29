@@ -149,8 +149,8 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
         
         // Transfer does not add to total Cash inflow/outflow directly unless it involves Cash, 
         // but let's keep it 0 for Daybook net balance to avoid double counting bank-to-bank.
-        final actualDebit = (isDebit && type != 'Transfer') ? amt : 0.0;
-        final actualCredit = (isCredit && type != 'Transfer') ? amt : 0.0;
+        final actualDebit = (isDebit && !['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(type)) ? amt : 0.0;
+        final actualCredit = (isCredit && !['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(type)) ? amt : 0.0;
 
         vouchers.add(_DayBookVoucher(
           date: t.transactionDate ?? DateTime.now(),
@@ -432,7 +432,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCreditNoteScreen(parentCreditNoteUuid: v.entityUuid!)));
                               } else if (v.voucherType.contains('Debit Note')) {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditDebitNoteScreen(parentDebitNoteUuid: v.entityUuid!)));
-                              } else if (v.voucherType == 'Receipt' || v.voucherType == 'Payment' || v.voucherType == 'Other Income' || v.voucherType == 'Transfer') {
+                              } else if (v.voucherType == 'Receipt' || v.voucherType == 'Payment' || v.voucherType == 'Other Income' || ['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(v.voucherType)) {
                                 // For generic transactions, open the transaction dialog
                                 showDialog(context: context, builder: (_) => AddEditTransactionDialog(
                                   initialType: v.voucherType,
