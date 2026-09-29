@@ -557,8 +557,6 @@ class SyncService {
 
     try {
       // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
-      //    This is critical Ã¯Â¿Â½ stale entity timestamps cause filterCutoff to block full download!
-      //    NOTE: We NEVER purge local DB here Ã¯Â¿Â½ existing local offline data must be preserved!
       final activeFirmId = _dbService.activeFirmId;
       await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
       await _prefs.remove(AppConstants.keyLastSyncTime);
@@ -572,11 +570,15 @@ class SyncService {
         'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
       ];
       for (final et in allEntityTypes) {
-        // Clear both old non-firm-specific keys AND new firm-specific keys
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
       }
-      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId Ã¯Â¿Â½ forcing full fresh download.');
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
+
+      // 2. PURGE local database completely before downloading fresh cloud data.
+      logger.info('Purging local Isar database for firm: $activeFirmId before fresh cloud download...');
+      await _dbService.clearDatabase();
+      logger.info('Local database purged successfully. Ready for fresh cloud download.');
 
       // 3. Re-seed standard commercial units in local DB
       await DemoDataSeeder.seedStandardUnits(_dbService);
@@ -694,16 +696,20 @@ class SyncService {
     await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (e) => e.uuid, (e) => e.id);
-    await processEnqueuing<InvoiceItem>((o, l) => forceAll ? isar.invoiceItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoiceItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'InvoiceItem', (e) => e.uuid, (e) => e.id);
-    await processEnqueuing<PurchaseItem>((o, l) => forceAll ? isar.purchaseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchaseItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'PurchaseItem', (e) => e.uuid, (e) => e.id);
+    // REMOVED: InvoiceItem uploaded separately
+
+    // REMOVED: PurchaseItem uploaded separately
+
     await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((cn) => forceAll || !cn.isSynced).toList()), 'CreditNote', (e) => e.uuid, (e) => e.id);
-    await processEnqueuing<CreditNoteItem>((o, l) => isar.creditNoteItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((cni) => forceAll || !cni.isSynced).toList()), 'CreditNoteItem', (e) => e.uuid, (e) => e.id);
+    // REMOVED: CreditNoteItem uploaded separately
+
     await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((dn) => forceAll || !dn.isSynced).toList()), 'DebitNote', (e) => e.uuid, (e) => e.id);
-    await processEnqueuing<DebitNoteItem>((o, l) => isar.debitNoteItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((dni) => forceAll || !dni.isSynced).toList()), 'DebitNoteItem', (e) => e.uuid, (e) => e.id);
+    // REMOVED: DebitNoteItem uploaded separately
+
     await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<Unit>((o, l) => forceAll ? isar.units.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.units.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Unit', (e) => e.uuid, (e) => e.id);
@@ -711,7 +717,8 @@ class SyncService {
     await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (e) => e.uuid, (e) => e.id);
-    await processEnqueuing<OrderItem>((o, l) => forceAll ? isar.orderItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orderItems.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'OrderItem', (e) => e.uuid, (e) => e.id);
+    // REMOVED: OrderItem uploaded separately
+
     await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (e) => e.uuid, (e) => e.id);
     await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery', (e) => e.uuid, (e) => e.id);
   }
@@ -1269,49 +1276,82 @@ class SyncService {
 
         dynamic querySnapshot;
 
-        // Step 1: Compound query (companyId + firmId + filterCutoff) Ã¯Â¿Â½ primary path for delta sync
+        // Step 1: Paginated compound query (companyId + firmId + filterCutoff)
+        List<dynamic> allDocs = [];
         try {
-          var query = _firebaseService.firestore
+          var baseQuery = _firebaseService.firestore
               .collection(collectionName)
               .where('companyId', isEqualTo: companyId)
               .where('firmId', isEqualTo: activeFirmId);
 
           if (filterCutoff != null) {
-            query = query.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+            baseQuery = baseQuery.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
           }
-          querySnapshot = await query.get().timeout(const Duration(seconds: 15));
+
+          dynamic lastDoc;
+          bool hasMore = true;
+          while (hasMore) {
+            var pageQuery = baseQuery.limit(500);
+            if (lastDoc != null) {
+              pageQuery = pageQuery.startAfterDocument(lastDoc);
+            }
+            final pageSnapshot = await pageQuery.get().timeout(const Duration(seconds: 60));
+            if (pageSnapshot.docs.isEmpty) {
+              hasMore = false;
+            } else {
+              allDocs.addAll(pageSnapshot.docs);
+              lastDoc = pageSnapshot.docs.last;
+              if (pageSnapshot.docs.length < 500) {
+                hasMore = false;
+              }
+              await Future.delayed(const Duration(milliseconds: 50));
+            }
+          }
         } catch (e1) {
-          logger.warning('Primary query failed or timed out for $entityType: $e1. Trying firmId-only query...');
+          logger.warning('Primary paginated query failed for $entityType: $e1. Trying firmId-only query...');
         }
 
-        // Step 2: Fallback to firmId query WITH filterCutoff (preserves delta sync, just drops companyId filter)
-        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
+        // Step 2: Fallback to firmId-only paginated query
+        if (allDocs.isEmpty) {
           try {
-            var firmQuery = _firebaseService.firestore
+            var firmBaseQuery = _firebaseService.firestore
                 .collection(collectionName)
                 .where('firmId', isEqualTo: activeFirmId);
             if (filterCutoff != null) {
-              firmQuery = firmQuery.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+              firmBaseQuery = firmBaseQuery.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
             }
-            querySnapshot = await firmQuery.get().timeout(const Duration(seconds: 15));
+            
+            dynamic lastDoc;
+            bool hasMore = true;
+            while (hasMore) {
+              var pageQuery = firmBaseQuery.limit(500);
+              if (lastDoc != null) {
+                pageQuery = pageQuery.startAfterDocument(lastDoc);
+              }
+              final pageSnapshot = await pageQuery.get().timeout(const Duration(seconds: 60));
+              if (pageSnapshot.docs.isEmpty) {
+                hasMore = false;
+              } else {
+                allDocs.addAll(pageSnapshot.docs);
+                lastDoc = pageSnapshot.docs.last;
+                if (pageSnapshot.docs.length < 500) hasMore = false;
+                await Future.delayed(const Duration(milliseconds: 50));
+              }
+            }
           } catch (e2) {
-            logger.warning('Firm-only query also failed for $entityType: $e2. Skipping this entity type.');
+            logger.warning('Firm-only paginated query also failed for $entityType: $e2. Skipping.');
           }
         }
 
-        // REMOVED Steps 3 & 4: No more companyId-only or full-collection fallbacks.
-        // Those were downloading ALL documents every sync cycle, wasting Firebase reads.
-
-        // Only update timestamp AFTER we've confirmed we got results
-        if (querySnapshot == null || querySnapshot.docs.isEmpty) {
+        if (allDocs.isEmpty) {
           logger.info('  No documents found for $entityType (companyId=$companyId, firmId=$activeFirmId).');
           continue;
         }
 
-        logger.info('  Found ${querySnapshot.docs.length} documents for $entityType Ã¯Â¿Â½ processing...');
+        logger.info('  Found ${allDocs.length} documents for $entityType — processing...');
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
-        for (int d = 0; d < querySnapshot.docs.length; d++) {
+        for (int d = 0; d < allDocs.length; d++) {
           if (kIsWeb ? (d % 5 == 0) : (d % 10 == 0)) await Future.delayed(Duration.zero);
 
           try {
@@ -2468,6 +2508,33 @@ class SyncService {
         });
       case 'CreditNote':
         final e = entity as CreditNote;
+        final isarRefCN = _dbService.isar;
+        final cnItemsQuery = isarRefCN.creditNoteItems.filter().isDeletedEqualTo(false).and().group((q) {
+          var sq = q.parentCreditNoteIdEqualTo(e.id);
+          if (e.uuid != null && e.uuid!.isNotEmpty) {
+            sq = sq.or().creditNoteUuidEqualTo(e.uuid!);
+          }
+          return sq;
+        });
+        List rawCNItems = [];
+        try { rawCNItems = await cnItemsQuery.findAll(); } catch (_) {}
+
+        final cnItemsMapList = rawCNItems.map((item) => {
+          'uuid': item.uuid,
+          'itemId': item.itemId,
+          'itemName': item.itemName,
+          'hsnCode': item.hsnCode,
+          'quantity': item.quantity,
+          'freeQuantity': item.freeQuantity,
+          'rate': item.rate,
+          'discount': item.discount,
+          'taxableAmount': item.taxableAmount,
+          'gstRate': item.gstRate,
+          'gstAmount': item.gstAmount,
+          'totalAmount': item.totalAmount,
+          'itemUuid': item.item.value?.uuid,
+        }).toList();
+
         return baseMap..addAll({
           'creditNoteNumber': e.creditNoteNumber,
           'creditNoteDate': e.creditNoteDate?.toIso8601String(),
@@ -2489,6 +2556,7 @@ class SyncService {
           'remarks': e.remarks,
           'createdBy': e.createdBy,
           'partyUuid': e.party.value?.uuid,
+          'items': cnItemsMapList,
         });
       case 'CreditNoteItem':
         final e = entity as CreditNoteItem;
@@ -2509,6 +2577,33 @@ class SyncService {
         });
       case 'DebitNote':
         final e = entity as DebitNote;
+        final isarRefDN = _dbService.isar;
+        final dnItemsQuery = isarRefDN.debitNoteItems.filter().isDeletedEqualTo(false).and().group((q) {
+          var sq = q.parentDebitNoteIdEqualTo(e.id);
+          if (e.uuid != null && e.uuid!.isNotEmpty) {
+            sq = sq.or().debitNoteUuidEqualTo(e.uuid!);
+          }
+          return sq;
+        });
+        List rawDNItems = [];
+        try { rawDNItems = await dnItemsQuery.findAll(); } catch (_) {}
+
+        final dnItemsMapList = rawDNItems.map((item) => {
+          'uuid': item.uuid,
+          'itemId': item.itemId,
+          'itemName': item.itemName,
+          'hsnCode': item.hsnCode,
+          'quantity': item.quantity,
+          'freeQuantity': item.freeQuantity,
+          'rate': item.rate,
+          'discount': item.discount,
+          'taxableAmount': item.taxableAmount,
+          'gstRate': item.gstRate,
+          'gstAmount': item.gstAmount,
+          'totalAmount': item.totalAmount,
+          'itemUuid': item.item.value?.uuid,
+        }).toList();
+
         return baseMap..addAll({
           'debitNoteNumber': e.debitNoteNumber,
           'debitNoteDate': e.debitNoteDate?.toIso8601String(),
@@ -2530,6 +2625,7 @@ class SyncService {
           'remarks': e.remarks,
           'createdBy': e.createdBy,
           'partyUuid': e.party.value?.uuid,
+          'items': dnItemsMapList,
         });
       case 'DebitNoteItem':
         final e = entity as DebitNoteItem;
@@ -3757,18 +3853,21 @@ class SyncService {
     int localVersion,
     String resolution,
   ) async {
+    // Store conflict logs locally only to save Firebase writes (Free Plan)
     try {
-      await _firebaseService.firestore.collection('sync_logs').add({
-        'time': DateTime.now().toIso8601String(),
-        'result': 'Conflict',
-        'message': 'Conflict resolved for $entityType ($uuid): Remote version $remoteVersion vs Local version $localVersion. Winner: $resolution',
-        'deviceId': _firebaseService.deviceId,
-        'user': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
-        'companyId': _firebaseService.companyId,
-        'firmId': _dbService.activeFirmId,
-      });
+      final logMsg = '[$resolution] ${DateTime.now().toIso8601String()}: $entityType ($uuid) Remote v$remoteVersion vs Local v$localVersion';
+      logger.info('Sync Conflict: $logMsg');
+      // Save to local prefs only — not Firestore
+      final existingLogs = _prefs.getStringList('sync_conflict_logs') ?? [];
+      existingLogs.add(logMsg);
+      // Keep only last 100 conflict logs to prevent prefs bloat
+      if (existingLogs.length > 100) {
+        await _prefs.setStringList('sync_conflict_logs', existingLogs.sublist(existingLogs.length - 100));
+      } else {
+        await _prefs.setStringList('sync_conflict_logs', existingLogs);
+      }
     } catch (e) {
-      logger.error('Failed to write conflict log entry to Firestore', e);
+      logger.error('Failed to write conflict log', e);
     }
   }
 
