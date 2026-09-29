@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:uuid/uuid.dart';
@@ -697,7 +697,8 @@ class SyncService {
     await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (Invoice e) => e.uuid, (Invoice e) => e.id);
     await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (Order e) => e.uuid, (Order e) => e.id);
     await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (Purchase e) => e.uuid, (Purchase e) => e.id);
-    await processEnqueuing<InvoiceItem>((o, l) => isar.invoiceItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((InvoiceItem ei) => forceAll || !ei.isSynced).toList()), 'InvoiceItem', (InvoiceItem e) => e.uuid, (InvoiceItem e) => e.id);`n    await processEnqueuing<PurchaseItem>((o, l) => isar.purchaseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((PurchaseItem ei) => forceAll || !ei.isSynced).toList()), 'PurchaseItem', (PurchaseItem e) => e.uuid, (PurchaseItem e) => e.id);
+    await processEnqueuing<InvoiceItem>((o, l) => isar.invoiceItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((InvoiceItem ei) => forceAll || !ei.isSynced).toList()), 'InvoiceItem', (InvoiceItem e) => e.uuid, (InvoiceItem e) => e.id);
+    await processEnqueuing<PurchaseItem>((o, l) => isar.purchaseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((PurchaseItem ei) => forceAll || !ei.isSynced).toList()), 'PurchaseItem', (PurchaseItem e) => e.uuid, (PurchaseItem e) => e.id);
 
     await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (Expense e) => e.uuid, (Expense e) => e.id);
     await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ExpenseItem ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (ExpenseItem e) => e.uuid, (ExpenseItem e) => e.id);
