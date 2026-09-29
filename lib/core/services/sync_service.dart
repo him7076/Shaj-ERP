@@ -2669,14 +2669,23 @@ class SyncService {
       case 'InvoiceItem':
         final e = entity as InvoiceItem;
         String? invUuid = _safeGetLinkUuid(e.invoice);
+        if ((invUuid == null || invUuid.isEmpty) && e.parentInvoiceUuid != null && e.parentInvoiceUuid!.isNotEmpty) {
+          invUuid = e.parentInvoiceUuid;
+        }
         if ((invUuid == null || invUuid.isEmpty) && e.parentInvoiceId != null) {
           final parentInv = await _dbService.isar.invoices.get(e.parentInvoiceId!);
           invUuid = parentInv?.uuid;
+        }
+        String? itemUuid = _safeGetLinkUuid(e.item);
+        if ((itemUuid == null || itemUuid.isEmpty) && e.itemId != null) {
+          final linkedItem = await _dbService.isar.items.get(e.itemId!);
+          itemUuid = linkedItem?.uuid;
         }
         return baseMap..addAll({
           'itemId': e.itemId,
           'itemName': e.itemName,
           'hsnCode': e.hsnCode,
+          'description': e.description,
           'parentInvoiceId': e.parentInvoiceId,
           'parentInvoiceUuid': invUuid,
           'invoiceUuid': invUuid,
@@ -2686,6 +2695,7 @@ class SyncService {
           'freeQuantity': e.freeQuantity,
           'unit': e.unit,
           'rate': e.rate,
+          'buyRate': e.buyRate,
           'discount': e.discount,
           'taxableAmount': e.taxableAmount,
           'gstRate': e.gstRate,
@@ -2694,7 +2704,15 @@ class SyncService {
           'batchNumber': e.batchNumber,
           'expiryDate': e.expiryDate,
           'mfgDate': e.mfgDate,
-          'itemUuid': _safeGetLinkUuid(e.item),
+          'isBundle': e.isBundle,
+          'bundleComponentUuids': e.bundleComponentUuids,
+          'bundleComponentQuantities': e.bundleComponentQuantities,
+          'bundleComponentUnits': e.bundleComponentUnits,
+          'bundleComponentRates': e.bundleComponentRates,
+          'bundleComponentBuyRates': e.bundleComponentBuyRates,
+          'bundleComponentGstPercents': e.bundleComponentGstPercents,
+          'bundleComponentDescriptions': e.bundleComponentDescriptions,
+          'itemUuid': itemUuid,
         });
       case 'Settings':
         final e = entity as Settings;
@@ -3252,8 +3270,10 @@ class SyncService {
         break;
       case 'InvoiceItem':
         entity = InvoiceItem()
+          ..itemId = (data['itemId'] as num?)?.toInt()
           ..itemName = data['itemName']
           ..hsnCode = data['hsnCode']
+          ..description = data['description'] as String?
           ..parentInvoiceUuid = (data['parentInvoiceUuid'] ?? data['invoiceUuid']) as String?
           ..selectedSubItemUuid = data['selectedSubItemUuid'] as String?
           ..selectedSubItemName = data['selectedSubItemName'] as String?
@@ -3261,6 +3281,7 @@ class SyncService {
           ..freeQuantity = (data['freeQuantity'] as num?)?.toDouble()
           ..unit = data['unit']
           ..rate = (data['rate'] as num?)?.toDouble()
+          ..buyRate = (data['buyRate'] as num?)?.toDouble()
           ..discount = (data['discount'] as num?)?.toDouble()
           ..taxableAmount = (data['taxableAmount'] as num?)?.toDouble()
           ..gstRate = (data['gstRate'] as num?)?.toDouble()
@@ -3268,7 +3289,15 @@ class SyncService {
           ..totalAmount = (data['totalAmount'] as num?)?.toDouble()
           ..batchNumber = data['batchNumber']
           ..expiryDate = data['expiryDate']
-          ..mfgDate = data['mfgDate'];
+          ..mfgDate = data['mfgDate']
+          ..isBundle = data['isBundle'] == true
+          ..bundleComponentUuids = (data['bundleComponentUuids'] as List?)?.cast<String>()
+          ..bundleComponentQuantities = (data['bundleComponentQuantities'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentUnits = (data['bundleComponentUnits'] as List?)?.cast<String>()
+          ..bundleComponentRates = (data['bundleComponentRates'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentBuyRates = (data['bundleComponentBuyRates'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentGstPercents = (data['bundleComponentGstPercents'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentDescriptions = (data['bundleComponentDescriptions'] as List?)?.cast<String>();
         break;
       case 'Settings':
         entity = Settings()
