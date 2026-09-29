@@ -1562,7 +1562,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           }
                         }
                         
-                        ref.invalidate(settingsProvider);
+                        
                       },
                     ),
                   ],

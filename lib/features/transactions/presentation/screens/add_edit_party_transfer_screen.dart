@@ -16,7 +16,7 @@ import '../../../../data/local/collections/invoice_collection.dart';
 import '../../../../data/local/collections/purchase_collection.dart';
 import '../../../parties/presentation/providers/party_providers.dart';
 import '../../presentation/providers/transaction_providers.dart';
-import '../../../../core/providers/database_provider.dart';
+import '../../../../presentation/providers/core_providers.dart';
 import '../../../../core/widgets/searchable_party_dropdown.dart';
 import 'package:isar/isar.dart';
 
