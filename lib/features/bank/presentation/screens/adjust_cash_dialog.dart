@@ -121,7 +121,7 @@ class _AdjustCashDialogState extends ConsumerState<AdjustCashDialog> with Single
 
       final txn = Transaction()
         ..uuid = const Uuid().v4()
-        ..transactionType = 'Transfer'
+        ..transactionType = 'Cash Adjustment'
         ..amount = amt
         ..transactionDate = _date
         ..paymentMode = paymentMode

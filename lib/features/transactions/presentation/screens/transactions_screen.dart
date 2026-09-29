@@ -59,9 +59,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                 } else if (widget.lockedType == 'Transfer' || widget.lockedType == 'Party Transfer') {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(builder: (context) => const AddEditPartyTransferScreen()),
-                  ).then((_) => ref.invalidate(filteredTransactionsProvider));
-          Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else {
           if (widget.lockedType != 'Debit Note' && widget.lockedType != 'Transfer' && widget.lockedType != 'Party Transfer') AddEditTransactionDialog.show(context, initialType: widget.lockedType);

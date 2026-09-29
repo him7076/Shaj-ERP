@@ -418,7 +418,7 @@ class InvoiceSearchFilter {
     this.partyId,
     this.invoiceType = 'All',
     this.sortBy = 'Date',
-    this.limit = 50,
+    this.limit = 500,
   });
 
   InvoiceSearchFilter copyWith({

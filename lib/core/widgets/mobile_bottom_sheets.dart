@@ -98,7 +98,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF0EA5E9),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/sales?create=true');
+                          context.push('/sales?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -109,7 +109,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF10B981),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/purchases?create=true');
+                          context.push('/purchases?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -120,7 +120,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF16A34A),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/receipts?create=true');
+                          context.push('/receipts?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -131,7 +131,7 @@ class MobileBottomSheets {
                         color: const Color(0xFFDC2626),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/payments?create=true');
+                          context.push('/payments?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -142,7 +142,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF7C3AED),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/orders?create=true');
+                          context.push('/orders?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -153,7 +153,7 @@ class MobileBottomSheets {
                         color: const Color(0xFFF43F5E),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/expenses?create=true');
+                          context.push('/expenses?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -164,7 +164,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF6366F1),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/credit-notes?create=true');
+                          context.push('/credit-notes?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -175,7 +175,7 @@ class MobileBottomSheets {
                         color: const Color(0xFFF59E0B),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/debit-notes?create=true');
+                          context.push('/debit-notes?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -186,7 +186,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF14B8A6),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/party-transfers?create=true');
+                          context.push('/party-transfers?create=true');
                         },
                       ),
                       _buildQuickActionTile(
@@ -197,7 +197,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF3B82F6),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/other-incomes?create=true');
+                          context.push('/other-incomes?create=true');
                         },
                       ),
                       if (settings.getBool('enable_fixed_assets') ?? false) ...[
@@ -209,7 +209,7 @@ class MobileBottomSheets {
                           color: const Color(0xFF6B7280),
                           onTap: () {
                             Navigator.pop(context);
-                            context.go('/purchase-fa?create=true');
+                            context.push('/purchase-fa?create=true');
                           },
                         ),
                         _buildQuickActionTile(
@@ -220,7 +220,7 @@ class MobileBottomSheets {
                           color: const Color(0xFF9CA3AF),
                           onTap: () {
                             Navigator.pop(context);
-                            context.go('/sale-fa?create=true');
+                            context.push('/sale-fa?create=true');
                           },
                         ),
                       ],
@@ -232,7 +232,7 @@ class MobileBottomSheets {
                         color: const Color(0xFF0EA5E9),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/cash-and-bank');
+                          context.push('/cash-and-bank');
                         },
                       ),
                       _buildQuickActionTile(
@@ -243,7 +243,7 @@ class MobileBottomSheets {
                         color: const Color(0xFFF97316),
                         onTap: () {
                           Navigator.pop(context);
-                          context.go('/items');
+                          context.push('/items');
                         },
                       ),
                     ],

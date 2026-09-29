@@ -216,6 +216,22 @@ class SyncService {
             if (firmName != null && firmName.isNotEmpty) {
               await _prefs.setString('firm_name_$firmId', firmName);
               await _prefs.setString('firm_updated_at_$firmId', remoteUpdatedAt.toIso8601String());
+              if (data['firmGst'] != null) await _prefs.setString('firm_gst_$firmId', data['firmGst']);
+              if (data['firmMobile'] != null) await _prefs.setString('firm_mobile_$firmId', data['firmMobile']);
+              if (data['firmWhatsapp'] != null) await _prefs.setString('firm_whatsapp_$firmId', data['firmWhatsapp']);
+              if (data['firmEmail'] != null) await _prefs.setString('firm_email_$firmId', data['firmEmail']);
+              if (data['firmPan'] != null) await _prefs.setString('firm_pan_$firmId', data['firmPan']);
+              if (data['firmAddress'] != null) await _prefs.setString('firm_address_$firmId', data['firmAddress']);
+              if (data['firmCity'] != null) await _prefs.setString('firm_city_$firmId', data['firmCity']);
+              if (data['firmState'] != null) await _prefs.setString('firm_state_$firmId', data['firmState']);
+              if (data['firmPincode'] != null) await _prefs.setString('firm_pincode_$firmId', data['firmPincode']);
+              if (data['firmBankName'] != null) await _prefs.setString('firm_bank_name_$firmId', data['firmBankName']);
+              if (data['firmBankAcc'] != null) await _prefs.setString('firm_bank_acc_$firmId', data['firmBankAcc']);
+              if (data['firmIfsc'] != null) await _prefs.setString('firm_ifsc_$firmId', data['firmIfsc']);
+              if (data['firmUpi'] != null) await _prefs.setString('firm_upi_$firmId', data['firmUpi']);
+              if (data['firmCategory'] != null) await _prefs.setString('firm_category_$firmId', data['firmCategory']);
+              if (data['firmFssai'] != null) await _prefs.setString('firm_fssai_$firmId', data['firmFssai']);
+              if (data['firmLogo'] != null) await _prefs.setString('firm_logo_$firmId', data['firmLogo']);
             }
           } else if (localUpdatedAt.isAfter(remoteUpdatedAt)) {
             // Local is newer! We need to upload this local edit to Firebase.
@@ -259,22 +275,22 @@ class SyncService {
             'updatedAt': localUpdatedAt,
             'isDeleted': false,
             'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
-            'firmGst': _prefs.getString('firm_gst_') ?? '',
-            'firmMobile': _prefs.getString('firm_mobile_') ?? '',
-            'firmWhatsapp': _prefs.getString('firm_whatsapp_') ?? '',
-            'firmEmail': _prefs.getString('firm_email_') ?? '',
-            'firmPan': _prefs.getString('firm_pan_') ?? '',
-            'firmAddress': _prefs.getString('firm_address_') ?? '',
-            'firmCity': _prefs.getString('firm_city_') ?? '',
-            'firmState': _prefs.getString('firm_state_') ?? '',
-            'firmPincode': _prefs.getString('firm_pincode_') ?? '',
-            'firmBankName': _prefs.getString('firm_bank_name_') ?? '',
-            'firmBankAcc': _prefs.getString('firm_bank_acc_') ?? '',
-            'firmIfsc': _prefs.getString('firm_ifsc_') ?? '',
-            'firmUpi': _prefs.getString('firm_upi_') ?? '',
-            'firmCategory': _prefs.getString('firm_category_') ?? '',
-            'firmFssai': _prefs.getString('firm_fssai_') ?? '',
-            'firmLogo': _prefs.getString('firm_logo_') ?? '',
+            'firmGst': _prefs.getString('firm_gst_$firmId') ?? '',
+            'firmMobile': _prefs.getString('firm_mobile_$firmId') ?? '',
+            'firmWhatsapp': _prefs.getString('firm_whatsapp_$firmId') ?? '',
+            'firmEmail': _prefs.getString('firm_email_$firmId') ?? '',
+            'firmPan': _prefs.getString('firm_pan_$firmId') ?? '',
+            'firmAddress': _prefs.getString('firm_address_$firmId') ?? '',
+            'firmCity': _prefs.getString('firm_city_$firmId') ?? '',
+            'firmState': _prefs.getString('firm_state_$firmId') ?? '',
+            'firmPincode': _prefs.getString('firm_pincode_$firmId') ?? '',
+            'firmBankName': _prefs.getString('firm_bank_name_$firmId') ?? '',
+            'firmBankAcc': _prefs.getString('firm_bank_acc_$firmId') ?? '',
+            'firmIfsc': _prefs.getString('firm_ifsc_$firmId') ?? '',
+            'firmUpi': _prefs.getString('firm_upi_$firmId') ?? '',
+            'firmCategory': _prefs.getString('firm_category_$firmId') ?? '',
+            'firmFssai': _prefs.getString('firm_fssai_$firmId') ?? '',
+            'firmLogo': _prefs.getString('firm_logo_$firmId') ?? '',
           },
           SetOptions(merge: true),
         );

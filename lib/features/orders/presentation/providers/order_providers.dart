@@ -408,7 +408,7 @@ class OrderSearchFilter {
     this.dateRange,
     this.partyId,
     this.sortBy = 'Recent',
-    this.limit = 50,
+    this.limit = 500,
   });
 
   OrderSearchFilter copyWith({

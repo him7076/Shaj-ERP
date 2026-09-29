@@ -151,8 +151,8 @@ class SyncManager {
   /// Call this when user switches to a different firm.
   /// Clears stale timestamps for the new firm so a full fresh download happens.
   Future<void> handleFirmSwitch(String newFirmId) async {
-    logger.info('Firm switched to: $newFirmId. Clearing stale timestamps and triggering full cloud download...');
-    await _syncService.clearAllFirmTimestamps(newFirmId);
+    logger.info('Firm switched to: $newFirmId. Triggering delta cloud download...');
+    // Removed clearAllFirmTimestamps to preserve delta sync and reduce reads
     // Give DB time to switch
     await Future.delayed(const Duration(milliseconds: 500));
     await _syncService.syncDataFromCloud();

@@ -105,7 +105,7 @@ class ItemSearchFilter {
     this.stockStatus = 'All',
     this.gstRate,
     this.sortBy = 'Name A-Z',
-    this.limit = 50,
+    this.limit = 500,
     this.isBundle,
   });
 

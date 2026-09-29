@@ -18,7 +18,7 @@ class PurchaseSearchFilter {
 
   const PurchaseSearchFilter({
     this.query = '',
-    this.limit = 50,
+    this.limit = 500,
   });
 
   PurchaseSearchFilter copyWith({String? query, int? limit}) {

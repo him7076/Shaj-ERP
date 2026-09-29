@@ -33,7 +33,7 @@ class TransactionSearchFilter {
     this.dateRange,
     this.partyUuid,
     this.showAllHistory = true,
-    this.limit = 50,
+    this.limit = 500,
   });
 
   TransactionSearchFilter copyWith({

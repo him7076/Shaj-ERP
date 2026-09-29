@@ -70,12 +70,12 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
             cashInflows += amt;
           } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense') {
             cashOutflows += amt;
-          } else if (t.transactionType == 'Transfer') {
+          } else if ((t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment')) {
             cashOutflows += amt;
           }
         }
 
-        if (t.transactionType == 'Transfer' && (target == 'cash' || target.contains('cash'))) {
+        if ((t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') && (target == 'cash' || target.contains('cash'))) {
           cashInflows += amt;
         }
       }
@@ -123,12 +123,12 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           if (mode == name || (mode.isNotEmpty && name.isNotEmpty && mode.contains(name))) {
             if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
               bankInflows += amt;
-            } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense' || t.transactionType == 'Transfer') {
+            } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense' || (t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment')) {
               bankOutflows += amt;
             }
           }
 
-          if (t.transactionType == 'Transfer' && (target == name || (target.isNotEmpty && name.isNotEmpty && target.contains(name)))) {
+          if ((t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') && (target == name || (target.isNotEmpty && name.isNotEmpty && target.contains(name)))) {
             bankInflows += amt;
           }
         }
