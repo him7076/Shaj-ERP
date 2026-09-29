@@ -1187,6 +1187,8 @@ class SyncService {
                 case 'User': await isar.users.put(entity as User); break;
                 case 'Purchase': await isar.purchases.put(entity as Purchase); break;
                 case 'Expense': await isar.expenses.put(entity as Expense); break;
+                case 'ExpenseItem': await isar.collection<ExpenseItem>().put(entity as ExpenseItem); break;
+                case 'StockAdjustment': await isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
                 case 'Transaction': await isar.transactions.put(entity as Transaction); break;
                 case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
                 case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
