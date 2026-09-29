@@ -163,7 +163,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
   
   Future<List<dynamic>> _getPendingBillsForParty(String partyUuid) async {
     final isar = ref.read(databaseServiceProvider).isar;
-    final party = await isar.parties.filter().uuidEqualTo(partyUuid).findFirst();
+    final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
     if (party == null) return [];
     
     final invs = await isar.invoices.filter().partyIdEqualTo(party.id).isDeletedEqualTo(false).findAll();
