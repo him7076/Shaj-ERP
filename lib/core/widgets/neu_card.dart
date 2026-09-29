@@ -11,6 +11,7 @@ class NeuCard extends ConsumerWidget {
   final Color? color;
   final BoxDecoration? decoration;
   final EdgeInsetsGeometry? margin;
+  final EdgeInsetsGeometry? padding;
 
   const NeuCard({
     Key? key,
@@ -21,6 +22,7 @@ class NeuCard extends ConsumerWidget {
     this.color,
     this.decoration,
     this.margin,
+    this.padding,
   }) : super(key: key);
 
   @override

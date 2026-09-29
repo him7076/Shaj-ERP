@@ -1005,8 +1005,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                               ),
                                               Text(
                                                 isUsedType
-                                                    ? 'Unused: ${currencyFormat.format(txn.balanceAmount ?? 0.0)}'
-                                                    : 'Balance: ${currencyFormat.format(txn.balanceAmount ?? 0.0)}',
+                                                    ? 'Unused: ${currencyFormat.format(txn.amount ?? 0.0)}'
+                                                    : 'Balance: ${currencyFormat.format(txn.amount ?? 0.0)}',
                                                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: badgeColor.withOpacity(0.8)),
                                               ),
                                             ],

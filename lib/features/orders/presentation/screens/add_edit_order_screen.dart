@@ -897,7 +897,7 @@ final theme = Theme.of(context);
                             
                             isDense: true,
                             contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            prefixIcon: Icon(Icons.badge_outlined),
+                            /* prefixIcon removed */
                           ),
                           items: [
                             DropdownMenuItem(

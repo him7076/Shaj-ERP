@@ -70,7 +70,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
             cashInflows += amt;
           } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense') {
             cashOutflows += amt;
-          } else if ((t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment')) {
+          } else if (t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') {
             cashOutflows += amt;
           }
         }
@@ -123,7 +123,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           if (mode == name || (mode.isNotEmpty && name.isNotEmpty && mode.contains(name))) {
             if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
               bankInflows += amt;
-            } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense' || (t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment')) {
+            } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense' || t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') {
               bankOutflows += amt;
             }
           }
@@ -182,7 +182,683 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
         title: const Text('Manage Cash & Bank Accounts', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
       ),
-      floatingActionButton: Column(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddEditAccountDialog(),
+        icon: const Icon(Icons.account_balance_wallet_outlined),
+        label: const Text('Add Bank Account'),
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Hero Balance Banner
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [const Color(0xFF1E88E5), const Color(0xFF1565C0)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E88E5).withOpacity(0.35),
+                          blurRadius: 12,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Total Net Liquid Assets', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
+                              child: Text('${_accounts.length + 1} Active Accounts', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          currencyFormat.format(_totalLiquidBalance),
+                          style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text('Tap any account card below to view transaction history, statements & filters.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('ACCOUNTS DIRECTORY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+                  const SizedBox(height: 12),
+
+                  // 1. System Cash in Hand Card
+                  NeuCard(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      dense: true,
+                      onTap: () => _openAccountTransactions(accountName: 'Cash in Hand', isCash: true),
+                      leading: const CircleAvatar(
+                        radius: 26,
+                        backgroundColor: Color(0xFFE8F5E9),
+                        child: Icon(Icons.payments_rounded, color: Color(0xFF2E7D32), size: 28),
+                      ),
+                      title: Row(
+                        children: [
+                          const Expanded(child: Text('Cash in Hand', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                          Text(
+                            currencyFormat.format(_cashBalance),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: _cashBalance >= 0 ? const Color(0xFF2E7D32) : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: const Text('Default cash register account for daily store transactions'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 2. Cheques & Uncleared Drafts Card
+                  NeuCard(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      dense: true,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ChequeManagementScreen(),
+                          ),
+                        ).then((_) => _loadAccounts());
+                      },
+                      leading: const CircleAvatar(
+                        radius: 26,
+                        backgroundColor: Color(0xFFFFF3E0),
+                        child: Icon(Icons.assignment_outlined, color: Color(0xFFE65100), size: 28),
+                      ),
+                      title: const Text('Cheques & Uncleared Drafts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      subtitle: const Text('Track open cheques, deposit to bank/cash, & view closed receipts'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 2. Bank Accounts List
+                  if (_accounts.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.account_balance_outlined, size: 48, color: Colors.grey),
+                          const SizedBox(height: 12),
+                          const Text('No custom bank accounts added yet', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          const Text('Click "+ Add Bank Account" below to manage HDFC, SBI, ICICI accounts.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        ],
+                      ),
+                    )
+                  else
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _accounts.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final acc = _accounts[index];
+                        final balance = acc.currentBalance ?? acc.openingBalance ?? 0.0;
+
+                        return NeuCard(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      dense: true,
+                            onTap: () => _openAccountTransactions(accountName: acc.accountName ?? 'Bank Account', bankUuid: acc.uuid),
+                            leading: const CircleAvatar(
+                              radius: 26,
+                              backgroundColor: Color(0xFFE3F2FD),
+                              child: Icon(Icons.account_balance_rounded, color: Color(0xFF1976D2), size: 28),
+                            ),
+                            title: Row(
+                              children: [
+                                Expanded(child: Text(acc.accountName ?? 'Bank Account', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                                Text(currencyFormat.format(balance), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2E7D32))),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                '${acc.bankName ?? "Bank"} • A/C: ${acc.accountNumber ?? "N/A"} • IFSC: ${acc.ifscCode ?? "N/A"}',
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                                  tooltip: 'Edit Account',
+                                  onPressed: () => _showAddEditAccountDialog(existingAccount: acc),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                  tooltip: 'Delete Account',
+                                  onPressed: () => _deleteAccount(acc),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
+    );
+  }
+
+  // --- Add/Edit Account Dialog ---
+  Future<void> _showAddEditAccountDialog({BankAccount? existingAccount}) async {
+    final result = await showDialog(
+      context: context,
+      builder: (_) => AddEditBankAccountDialog(existingAccount: existingAccount),
+    );
+    if (result == true) {
+      _loadAccounts();
+    }
+  }
+
+  Future<void> _deleteAccount(BankAccount acc) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Bank Account'),
+        content: Text('Are you sure you want to delete account "${acc.accountName}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final isar = ref.read(databaseServiceProvider).isar;
+      await isar.writeTxn(() async {
+        acc.isDeleted = true;
+        acc.isSynced = false;
+        acc.updatedAt = DateTime.now();
+        await isar.bankAccounts.put(acc);
+        await isar.syncQueues.put(SyncQueue()
+          ..uuid = const Uuid().v4()
+          ..entityType = 'BankAccount'
+          ..entityId = acc.id
+          ..entityUuid = acc.uuid
+          ..operation = 'Delete'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now());
+      });
+
+      try {
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
+      } catch (_) {}
+
+      ref.invalidate(bankAccountsListProvider);
+      await _loadAccounts();
+    }
+  }
+
+  // --- Open Account Transactions Screen ---
+  void _openAccountTransactions({required String accountName, String? bankUuid, bool isCash = false}) {
+    final account = _accounts.where((a) => a.uuid == bankUuid).firstOrNull;
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (ctx) => AccountTransactionsDetailScreen(
+          accountName: accountName,
+          bankUuid: bankUuid,
+          isCash: isCash,
+          account: account,
+          onEdit: () {
+            if (account != null) _showAddEditAccountDialog(existingAccount: account);
+          },
+          onDelete: () {
+            if (account != null) {
+              _deleteAccount(account).then((_) {
+                if (mounted) Navigator.pop(context);
+              });
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// --- Unified Display Item for Account Transactions ---
+class AccountTransactionDisplayItem {
+  final String transactionNumber;
+  final String partyName;
+  final String transactionType;
+  final DateTime date;
+  final double amount;
+  final bool isCredit;
+  final String? remarks;
+  final String? entityUuid;
+  final String entityType;
+
+  AccountTransactionDisplayItem({
+    required this.transactionNumber,
+    required this.partyName,
+    required this.transactionType,
+    required this.date,
+    required this.amount,
+    required this.isCredit,
+    this.remarks,
+    this.entityUuid,
+    this.entityType = 'Transaction',
+  });
+}
+
+// --- Account Transactions Detailed View Screen with Filters & Search ---
+class AccountTransactionsDetailScreen extends ConsumerStatefulWidget {
+  final String accountName;
+  final String? bankUuid;
+  final bool isCash;
+  final BankAccount? account;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  const AccountTransactionsDetailScreen({
+    Key? key,
+    required this.accountName,
+    this.bankUuid,
+    this.isCash = false,
+    this.account,
+    this.onEdit,
+    this.onDelete,
+  }) : super(key: key);
+
+  @override
+  ConsumerState<AccountTransactionsDetailScreen> createState() => _AccountTransactionsDetailScreenState();
+}
+
+class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransactionsDetailScreen> {
+  bool _isSearching = false;
+  String _searchQuery = '';
+  String _typeFilter = 'All'; // All, Receipt, Payment, Transfer
+  String _sortBy = 'Newest First'; // Newest First, Oldest First, Highest Amount
+  final FocusNode _searchFocusNode = FocusNode();
+
+  List<AccountTransactionDisplayItem> _allDisplayItems = [];
+  bool _isLoading = false;
+  final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() => _isLoading = true);
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      final rawTxns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+      final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
+
+      final List<AccountTransactionDisplayItem> items = [];
+      final Set<String> linkedInvoiceUuids = rawTxns.where((t) => t.linkedBillUuid != null).map((t) => t.linkedBillUuid!).toSet();
+
+      for (var t in rawTxns) {
+        final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
+        final target = (t.partyName ?? '').trim().toLowerCase();
+        bool matches = false;
+        if (widget.isCash) {
+          matches = mode == 'cash' || mode.contains('cash') || mode.isEmpty;
+          if (t.transactionType == 'Transfer' && (target == 'cash' || target.contains('cash'))) {
+            matches = true;
+          }
+        } else {
+          final accName = widget.accountName.trim().toLowerCase();
+          matches = mode == accName || mode.contains(accName) || (accName.contains('bank') && (mode == 'bank' || mode == 'online' || mode == 'upi' || mode == 'cheque'));
+          if (t.transactionType == 'Transfer' && (target == accName || target.contains(accName))) {
+            matches = true;
+          }
+        }
+
+        if (matches) {
+          bool isCredit = false;
+          if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
+            isCredit = true;
+          } else if (t.transactionType == 'Transfer') {
+             // If this account was the target, it's a credit!
+             if (widget.isCash) {
+                isCredit = (target == 'cash' || target.contains('cash'));
+             } else {
+                final accName = widget.accountName.trim().toLowerCase();
+                isCredit = (target == accName || target.contains(accName));
+             }
+          }
+
+          String displayType = t.transactionType ?? 'Payment';
+          if (t.linkedBillUuid != null && t.transactionType == 'Receipt') {
+            displayType = 'Sales'; // Show as Sales for clarity
+          } else if (t.linkedBillUuid != null && t.transactionType == 'Payment') {
+            displayType = 'Purchase';
+          }
+
+          items.add(AccountTransactionDisplayItem(
+            transactionNumber: t.transactionNumber ?? 'TXN',
+            partyName: t.partyName ?? 'Party',
+            transactionType: displayType,
+            date: t.transactionDate ?? t.createdAt,
+            amount: t.amount ?? 0.0,
+            isCredit: isCredit,
+            remarks: t.remarks,
+            entityUuid: t.uuid,
+            entityType: 'Transaction',
+          ));
+        }
+      }
+
+      for (var inv in invoices) {
+        if (inv.uuid != null && linkedInvoiceUuids.contains(inv.uuid)) continue;
+        final status = (inv.paymentStatus ?? '').trim().toLowerCase();
+        final remarks = (inv.remarks ?? '').trim().toLowerCase();
+        final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
+        
+        bool matches = false;
+        if (widget.isCash) {
+           if (paid > 0 && (status == 'paid' || status == 'cash' || status.contains('cash') || remarks.contains('paid via cash'))) {
+              matches = true;
+           }
+        } else {
+           final accName = widget.accountName.trim().toLowerCase();
+           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
+              matches = true;
+           }
+        }
+
+        if (matches) {
+          items.add(AccountTransactionDisplayItem(
+            transactionNumber: inv.invoiceNumber ?? 'INV',
+            partyName: inv.partyName ?? 'Customer',
+            transactionType: 'Sales',
+            date: inv.invoiceDate ?? inv.createdAt,
+            amount: paid,
+            isCredit: true,
+            remarks: inv.remarks,
+            entityUuid: inv.uuid,
+            entityType: 'Invoice',
+          ));
+        }
+      }
+
+      for (var pur in purchases) {
+        if (pur.uuid != null && linkedInvoiceUuids.contains(pur.uuid)) continue;
+        final status = (pur.paymentStatus ?? '').trim().toLowerCase();
+        final remarks = (pur.remarks ?? '').trim().toLowerCase();
+        final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
+        
+        bool matches = false;
+        if (widget.isCash) {
+           if (paid > 0 && (status == 'paid' || status == 'cash' || status.contains('cash') || remarks.contains('paid via cash'))) {
+              matches = true;
+           }
+        } else {
+           final accName = widget.accountName.trim().toLowerCase();
+           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
+              matches = true;
+           }
+        }
+
+        if (matches) {
+          items.add(AccountTransactionDisplayItem(
+            transactionNumber: pur.purchaseNumber ?? 'PUR',
+            partyName: pur.partyName ?? 'Supplier',
+            transactionType: 'Purchase',
+            date: pur.purchaseDate ?? pur.createdAt,
+            amount: paid,
+            isCredit: false,
+            remarks: pur.remarks,
+            entityUuid: pur.uuid,
+            entityType: 'Purchase',
+          ));
+        }
+      }
+
+      for (var exp in expenses) {
+        final mode = (exp.paymentMode ?? 'cash').trim().toLowerCase();
+        bool matches = false;
+        if (widget.isCash) {
+          if (mode == 'cash' || mode.contains('cash') || mode.isEmpty) matches = true;
+        } else {
+          final accName = widget.accountName.trim().toLowerCase();
+          if (mode == accName || mode.contains(accName)) matches = true;
+        }
+
+        if (matches) {
+          items.add(AccountTransactionDisplayItem(
+            transactionNumber: exp.voucherNo ?? 'EXP',
+            partyName: exp.partyName ?? exp.category ?? 'Expense',
+            transactionType: 'Expense (${exp.category ?? "General"})',
+            date: exp.expenseDate ?? exp.createdAt,
+            amount: exp.amount ?? 0.0,
+            isCredit: false,
+            remarks: exp.remarks,
+            entityUuid: exp.uuid,
+            entityType: 'Expense',
+          ));
+        }
+      }
+
+      _allDisplayItems = items;
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  List<AccountTransactionDisplayItem> get _filteredTransactions {
+    List<AccountTransactionDisplayItem> list = List.from(_allDisplayItems);
+
+    // Search filter
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      list = list.where((t) {
+        return t.transactionNumber.toLowerCase().contains(q) ||
+            t.partyName.toLowerCase().contains(q) ||
+            (t.remarks?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+
+    // Type filter
+    if (_typeFilter != 'All') {
+      if (_typeFilter == 'Receipt') {
+        list = list.where((t) => t.isCredit).toList();
+      } else if (_typeFilter == 'Payment') {
+        list = list.where((t) => !t.isCredit).toList();
+      }
+    }
+
+    // Sorting
+    if (_sortBy == 'Newest First') {
+      list.sort((a, b) => b.date.compareTo(a.date));
+    } else if (_sortBy == 'Oldest First') {
+      list.sort((a, b) => a.date.compareTo(b.date));
+    } else if (_sortBy == 'Highest Amount') {
+      list.sort((a, b) => b.amount.compareTo(a.amount));
+    }
+
+    return list;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final txns = _filteredTransactions;
+
+    final double totalInflow = txns.where((t) => t.isCredit).fold(0.0, (s, t) => s + t.amount);
+    final double totalOutflow = txns.where((t) => !t.isCredit).fold(0.0, (s, t) => s + t.amount);
+
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false,
+        leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null,
+        title: _isSearching
+            ? TextField(
+                focusNode: _searchFocusNode,
+                autofocus: true,
+                style: const TextStyle(fontSize: 15),
+                decoration: InputDecoration(
+                  hintText: 'Search transactions...',
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
+                ),
+                onChanged: (val) => setState(() => _searchQuery = val),
+              )
+            : Text(
+                widget.accountName, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+        elevation: 0,
+        actions: _isSearching 
+            ? [] 
+            : [
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () {
+              setState(() {
+                _isSearching = true;
+                _searchFocusNode.requestFocus();
+              });
+            },
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.tune_rounded), // Professional Filter icon
+            tooltip: 'Filter Type',
+            onSelected: (val) => setState(() => _typeFilter = val),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'All', child: Text('All Types')),
+              const PopupMenuItem(value: 'Receipt', child: Text('Receipts / Inflows (+)')),
+              const PopupMenuItem(value: 'Payment', child: Text('Payments / Outflows (-)')),
+            ],
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.swap_vert_rounded), // Professional Sort icon
+            tooltip: 'Sort By',
+            onSelected: (val) => setState(() => _sortBy = val),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'Newest First', child: Text('Newest First')),
+              const PopupMenuItem(value: 'Oldest First', child: Text('Oldest First')),
+              const PopupMenuItem(value: 'Highest Amount', child: Text('Highest Amount')),
+            ],
+          ),
+          if (!widget.isCash)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (val) {
+                if (val == 'edit') {
+                  widget.onEdit?.call();
+                } else if (val == 'delete') {
+                  widget.onDelete?.call();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit Account')])),
+                const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))])),
+              ],
+            ),
+        ],
+      ),
+      floatingActionButton: widget.isCash 
+        ? Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: 'adjust_cash',
+                onPressed: () async {
+                  final res = await showDialog(
+                    context: context,
+                    builder: (_) => const AdjustCashDialog(),
+                  );
+                  if (res == true) _loadTransactions();
+                },
+                icon: const Icon(Icons.account_balance_wallet_outlined),
+                label: const Text('Adjust Cash'),
+              ),
+              const SizedBox(height: 12),
+              FloatingActionButton.extended(
+                heroTag: 'bank_transfer_cash',
+                onPressed: () async {
+                  final res = await showDialog(
+                    context: context,
+                    builder: (_) => TransferFundsDialog(defaultFromAccount: 'Cash'),
+                  );
+                  if (res == true) _loadTransactions();
+                },
+                icon: const Icon(Icons.swap_horiz_rounded),
+                label: const Text('Bank Transfer'),
+              ),
+            ],
+          )
+        : Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [

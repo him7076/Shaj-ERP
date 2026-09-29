@@ -1461,21 +1461,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                     labelText: 'Salesman Name',
                                     isDense: true,
                                     contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-                                    suffixIcon: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (_selectedSalesman.isNotEmpty && _selectedSalesman != 'Default Salesman')
-                                          InkWell(
-                                            onTap: () => setState(() => _selectedSalesman = ''),
-                                            child: const Padding(
-                                              padding: EdgeInsets.all(4.0),
-                                              child: Icon(Icons.close, size: 14),
-                                            ),
-                                          ),
-                                        const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
-                                        const SizedBox(width: 4),
-                                      ],
-                                    ),
+                                    /* suffixIcon removed for space */
                                   ),
                                   items: [
                                     DropdownMenuItem(

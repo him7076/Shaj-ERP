@@ -536,6 +536,7 @@ class PdfService {
     List<InvoiceItem>? items,
     required FirmInfo firmInfo,
     required String paperSize,
+    List<BankAccount>? invoiceBanks,
   }) async {
     try {
       final pdf = pw.Document();
@@ -589,11 +590,17 @@ class PdfService {
                   ],
                 ),
                 pw.SizedBox(height: 4),
-                if (invoice.partyName != null && invoice.partyName!.isNotEmpty)
+                if (invoice.partyName != null && invoice.partyName!.isNotEmpty) ...[
                   pw.Align(
                     alignment: pw.Alignment.centerLeft,
                     child: pw.Text('Customer: ${invoice.partyName ?? "Cash"}', style: const pw.TextStyle(fontSize: 8)),
                   ),
+                  if (invoice.gstNumber != null && invoice.gstNumber!.isNotEmpty)
+                    pw.Align(
+                      alignment: pw.Alignment.centerLeft,
+                      child: pw.Text('GSTIN: ${invoice.gstNumber}', style: const pw.TextStyle(fontSize: 8)),
+                    ),
+                ],
                 
                 pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
                 
@@ -602,7 +609,7 @@ class PdfService {
                   children: [
                     pw.Expanded(flex: 3, child: pw.Text('Item', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
                     pw.Expanded(flex: 1, child: pw.Text('Qty', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
-                    pw.Expanded(flex: 2, child: pw.Text('Rate', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                    pw.Expanded(flex: 2, child: pw.Text('Rate', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
                     pw.Expanded(flex: 2, child: pw.Text('Amt', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
                   ],
                 ),
@@ -621,7 +628,7 @@ class PdfService {
                       children: [
                         pw.Expanded(flex: 3, child: pw.Text(item.itemName ?? '', style: const pw.TextStyle(fontSize: 8))),
                         pw.Expanded(flex: 1, child: pw.Text(qtyStr, style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center)),
-                        pw.Expanded(flex: 2, child: pw.Text(rate.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
+                        pw.Expanded(flex: 2, child: pw.Text(rate.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center)),
                         pw.Expanded(flex: 2, child: pw.Text(amt.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
                       ],
                     ),
@@ -665,6 +672,24 @@ class PdfService {
                   ],
                 ),
                 pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                
+                // Bank Details
+                if (invoiceBanks != null && invoiceBanks.isNotEmpty) ...[
+                  pw.SizedBox(height: 5),
+                  pw.Text('BANK DETAILS', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                  ...invoiceBanks.map((b) => pw.Padding(
+                    padding: const pw.EdgeInsets.only(top: 2),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.center,
+                      children: [
+                        pw.Text('${b.bankName} - ${b.accountName}', style: const pw.TextStyle(fontSize: 8)),
+                        pw.Text('A/C: ${b.accountNumber} | IFSC: ${b.ifscCode}', style: const pw.TextStyle(fontSize: 8)),
+                      ]
+                    )
+                  )),
+                  pw.SizedBox(height: 5),
+                  pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
+                ],
                 
                 pw.SizedBox(height: 10),
                 pw.Text('Thank you for visiting!', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700), textAlign: pw.TextAlign.center),
