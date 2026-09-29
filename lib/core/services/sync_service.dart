@@ -663,9 +663,11 @@ class SyncService {
     final uuidGen = Uuid();
     final isar = _dbService.isar;
 
-    Future<void> processEnqueuing<T extends IsarModel>(
+        Future<void> processEnqueuing<T>(
         Future<List<T>> Function(int offset, int limit) queryFn,
-        String entityType) async {
+        String entityType,
+        String? Function(T) getUuid,
+        int Function(T) getId) async {
       int offset = 0;
       const int limit = 500;
       while (true) {
@@ -675,8 +677,8 @@ class SyncService {
         final queues = chunk.map((item) => SyncQueue()
           ..uuid = uuidGen.v4()
           ..entityType = entityType
-          ..entityId = item.id
-          ..entityUuid = item.uuid
+          ..entityId = getId(item)
+          ..entityUuid = getUuid(item)
           ..operation = 'Update'
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now()).toList();
@@ -690,36 +692,36 @@ class SyncService {
       }
     }
 
-    await processEnqueuing<Party>((o, l) => forceAll ? isar.partys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.partys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Party');
-    await processEnqueuing<Item>((o, l) => forceAll ? isar.items.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.items.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Item');
-    await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice');
-    await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order');
-    await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase');
+    await processEnqueuing<Party>((o, l) => forceAll ? isar.partys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.partys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Party', (Party e) => e.uuid, (Party e) => e.id);
+    await processEnqueuing<Item>((o, l) => forceAll ? isar.items.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.items.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Item', (Item e) => e.uuid, (Item e) => e.id);
+    await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (Invoice e) => e.uuid, (Invoice e) => e.id);
+    await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (Order e) => e.uuid, (Order e) => e.id);
+    await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (Purchase e) => e.uuid, (Purchase e) => e.id);
     // REMOVED: InvoiceItem uploaded separately
 
     // REMOVED: PurchaseItem uploaded separately
 
-    await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense');
-    await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem');
-    await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment');
-    await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((cn) => forceAll || !cn.isSynced).toList()), 'CreditNote');
+    await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (Expense e) => e.uuid, (Expense e) => e.id);
+    await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ExpenseItem ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (ExpenseItem e) => e.uuid, (ExpenseItem e) => e.id);
+    await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((StockAdjustment sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment', (StockAdjustment e) => e.uuid, (StockAdjustment e) => e.id);
+    await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((CreditNote cn) => forceAll || !cn.isSynced).toList()), 'CreditNote', (CreditNote e) => e.uuid, (CreditNote e) => e.id);
     // REMOVED: CreditNoteItem uploaded separately
 
-    await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping');
-    await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((dn) => forceAll || !dn.isSynced).toList()), 'DebitNote');
+    await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((WhatsAppMapping wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping', (WhatsAppMapping e) => e.uuid, (WhatsAppMapping e) => e.id);
+    await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((DebitNote dn) => forceAll || !dn.isSynced).toList()), 'DebitNote', (DebitNote e) => e.uuid, (DebitNote e) => e.id);
     // REMOVED: DebitNoteItem uploaded separately
 
-    await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction');
-    await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category');
-    await processEnqueuing<Unit>((o, l) => forceAll ? isar.units.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.units.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Unit');
-    await processEnqueuing<Brand>((o, l) => forceAll ? isar.brands.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.brands.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Brand');
-    await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings');
-    await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User');
-    await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount');
+    await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction', (Transaction e) => e.uuid, (Transaction e) => e.id);
+    await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category', (Category e) => e.uuid, (Category e) => e.id);
+    await processEnqueuing<Unit>((o, l) => forceAll ? isar.units.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.units.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Unit', (Unit e) => e.uuid, (Unit e) => e.id);
+    await processEnqueuing<Brand>((o, l) => forceAll ? isar.brands.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.brands.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Brand', (Brand e) => e.uuid, (Brand e) => e.id);
+    await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings', (Settings e) => e.uuid, (Settings e) => e.id);
+    await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (User e) => e.uuid, (User e) => e.id);
+    await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (BankAccount e) => e.uuid, (BankAccount e) => e.id);
     // REMOVED: OrderItem uploaded separately
 
-    await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task');
-    await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery');
+    await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (Task e) => e.uuid, (Task e) => e.id);
+    await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery', (Machinery e) => e.uuid, (Machinery e) => e.id);
   }
 
   /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
@@ -1172,7 +1174,7 @@ class SyncService {
             for (var itemMap in chunk) {
               final entityType = itemMap['entityType'] as String;
               final entity = itemMap['entity'];
-              entity.isSynced = true;
+              (entity as IsarModel).isSynced = true;
               switch (entityType) {
                 case 'Party': await isar.partys.put(entity as Party); break;
                 case 'Item': await isar.items.put(entity as Item); break;
@@ -1397,15 +1399,15 @@ class SyncService {
 
             if (localRecord != null) {
               // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
-              if (localRecord.isSynced == false) {
+              if ((localRecord as IsarModel).isSynced == false) {
                 logger.info('Conflict: Local Wins (Unsynced Local Draft Lock) for $entityType UUID: $uuid. Keeping local draft.');
-                await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, localRecord.version, 'Local Wins (Unsynced Draft Lock)');
+                await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, (localRecord as IsarModel).version, 'Local Wins (Unsynced Draft Lock)');
                 continue;
               }
 
-              final localVersion = (localRecord.version as int?) ?? 1;
+              final localVersion = ((localRecord as IsarModel).version as int?) ?? 1;
               final remoteVersion = data['version'] as int? ?? 1;
-              final localUpdated = (localRecord.updatedAt as DateTime?) ?? DateTime.fromMillisecondsSinceEpoch(0);
+              final localUpdated = ((localRecord as IsarModel).updatedAt as DateTime?) ?? DateTime.fromMillisecondsSinceEpoch(0);
               final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
 
               bool remoteWins = false;
@@ -1419,7 +1421,7 @@ class SyncService {
 
               if (remoteWins) {
                 logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
-                await _overwriteLocalRecord(entityType, localRecord.id, data);
+                await _overwriteLocalRecord(entityType, (localRecord as IsarModel).id, data);
                 await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
               } else {
                 logger.info('Conflict: Local wins for $entityType UUID: $uuid.');
@@ -2049,11 +2051,11 @@ class SyncService {
   /// Maps Isar entity to JSON map for Firestore
   Future<Map<String, dynamic>> _mapEntityToMap(String entityType, dynamic entity) async {
     final baseMap = {
-      'uuid': entity.uuid,
-      'createdAt': entity.createdAt.toUtc().toIso8601String(),
-      'updatedAt': entity.updatedAt.toUtc().toIso8601String(),
-      'version': entity.version,
-      'isDeleted': entity.isDeleted,
+      'uuid': (entity as IsarModel).uuid,
+      'createdAt': (entity as IsarModel).createdAt.toUtc().toIso8601String(),
+      'updatedAt': (entity as IsarModel).updatedAt.toUtc().toIso8601String(),
+      'version': (entity as IsarModel).version,
+      'isDeleted': (entity as IsarModel).isDeleted,
       'deviceId': _firebaseService.deviceId,
       'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
       'companyId': _firebaseService.companyId,
@@ -3185,16 +3187,16 @@ class SyncService {
     }
 
     if (entity != null) {
-      entity.uuid = data['uuid']?.toString();
-      entity.createdAt = data['createdAt'] != null 
+      (entity as IsarModel).uuid = data['uuid']?.toString();
+      (entity as IsarModel).createdAt = data['createdAt'] != null 
           ? (DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()) 
           : DateTime.now();
-      entity.updatedAt = data['updatedAt'] != null 
+      (entity as IsarModel).updatedAt = data['updatedAt'] != null 
           ? (DateTime.tryParse(data['updatedAt'].toString()) ?? DateTime.now()) 
           : DateTime.now();
-      entity.isDeleted = data['isDeleted'] == true;
-      entity.isSynced = true;
-      entity.version = (data['version'] as num?)?.toInt() ?? 1;
+      (entity as IsarModel).isDeleted = data['isDeleted'] == true;
+      (entity as IsarModel).isSynced = true;
+      (entity as IsarModel).version = (data['version'] as num?)?.toInt() ?? 1;
     }
 
     return entity;
@@ -3802,7 +3804,7 @@ class SyncService {
         });
       }
     } catch (err) {
-      logger.error('Failed to link downloaded relations for $entityType UUID: ${entity.uuid}', err);
+      logger.error('Failed to link downloaded relations for $entityType UUID: ${(entity as IsarModel).uuid}', err);
     }
   }
 
