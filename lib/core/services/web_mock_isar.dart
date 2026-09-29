@@ -95,6 +95,8 @@ class WebMockIsar implements Isar {
       if (col == 'deletedVouchers') return 'DeletedVoucher';
       if (col == 'stockAdjustments') return 'StockAdjustment';
       if (col == 'whatsAppMappings') return 'WhatsAppMapping';
+      if (col == 'machinerys') return 'Machinery';
+      if (col == 'machineryCategorys') return 'MachineryCategory';
       return '';
     }
 
@@ -621,6 +623,7 @@ class WebMockIsar implements Isar {
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
+        'description': entity.description,
         'selectedSubItemUuid': entity.selectedSubItemUuid,
         'selectedSubItemName': entity.selectedSubItemName,
         'parentInvoiceId': entity.parentInvoiceId,
@@ -629,6 +632,7 @@ class WebMockIsar implements Isar {
         'freeQuantity': entity.freeQuantity,
         'unit': entity.unit,
         'rate': entity.rate,
+        'buyRate': entity.buyRate,
         'discount': entity.discount,
         'taxableAmount': entity.taxableAmount,
         'gstRate': entity.gstRate,
@@ -637,6 +641,14 @@ class WebMockIsar implements Isar {
         'batchNumber': entity.batchNumber,
         'expiryDate': entity.expiryDate,
         'mfgDate': entity.mfgDate,
+        'isBundle': entity.isBundle,
+        'bundleComponentUuids': entity.bundleComponentUuids,
+        'bundleComponentQuantities': entity.bundleComponentQuantities,
+        'bundleComponentUnits': entity.bundleComponentUnits,
+        'bundleComponentRates': entity.bundleComponentRates,
+        'bundleComponentBuyRates': entity.bundleComponentBuyRates,
+        'bundleComponentGstPercents': entity.bundleComponentGstPercents,
+        'bundleComponentDescriptions': entity.bundleComponentDescriptions,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -1311,6 +1323,7 @@ class WebMockIsar implements Isar {
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
           ..hsnCode = map['hsnCode'] as String?
+          ..description = map['description'] as String?
           ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
           ..selectedSubItemName = map['selectedSubItemName'] as String?
           ..parentInvoiceId = map['parentInvoiceId'] as int?
@@ -1319,6 +1332,7 @@ class WebMockIsar implements Isar {
           ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
           ..unit = map['unit'] as String?
           ..rate = (map['rate'] as num?)?.toDouble()
+          ..buyRate = (map['buyRate'] as num?)?.toDouble()
           ..discount = (map['discount'] as num?)?.toDouble()
           ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
           ..gstRate = (map['gstRate'] as num?)?.toDouble()
@@ -1327,6 +1341,14 @@ class WebMockIsar implements Isar {
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
+          ..isBundle = map['isBundle'] == true
+          ..bundleComponentUuids = (map['bundleComponentUuids'] as List?)?.cast<String>()
+          ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentUnits = (map['bundleComponentUnits'] as List?)?.cast<String>()
+          ..bundleComponentRates = (map['bundleComponentRates'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentBuyRates = (map['bundleComponentBuyRates'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentGstPercents = (map['bundleComponentGstPercents'] as List?)?.map((e) => (e as num).toDouble()).toList()
+          ..bundleComponentDescriptions = (map['bundleComponentDescriptions'] as List?)?.cast<String>()
           ..createdAt = DateTime.parse(map['createdAt'] as String)
           ..updatedAt = DateTime.parse(map['updatedAt'] as String)
           ..isDeleted = map['isDeleted'] as bool

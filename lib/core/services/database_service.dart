@@ -324,6 +324,7 @@ class DatabaseService {
       final whatsAppMappings = await isar.whatsAppMappings.where().exportJson();
       final settings = await isar.settings.where().exportJson();
       final users = await isar.users.where().exportJson();
+      final tasks = await isar.tasks.where().exportJson();
       final machinerys = await isar.collection<Machinery>().where().exportJson();
       final machineryCategorys = await isar.collection<MachineryCategory>().where().exportJson();
 
@@ -351,6 +352,7 @@ class DatabaseService {
       result['whatsAppMappings'] = whatsAppMappings;
       result['settings'] = settings;
       result['users'] = users;
+      result['tasks'] = tasks;
       result['machinerys'] = machinerys;
       result['machineryCategorys'] = machineryCategorys;
     } catch (e) {
@@ -447,6 +449,9 @@ class DatabaseService {
 
         final users = _getList('users');
         if (users.isNotEmpty) await isar.users.importJson(users);
+
+        final tasks = _getList('tasks');
+        if (tasks.isNotEmpty) await isar.tasks.importJson(tasks);
 
         final machinerys = _getList('machinerys');
         if (machinerys.isNotEmpty) await isar.collection<Machinery>().importJson(machinerys);
