@@ -574,7 +574,7 @@ class SyncService {
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
       }
-      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId â€” forcing full fresh download.');
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId Ã¢â‚¬â€ forcing full fresh download.');
 
       // 2. PURGE local database completely before downloading fresh cloud data.
       logger.info('Purging local Isar database for firm: $activeFirmId before fresh cloud download...');
@@ -697,19 +697,17 @@ class SyncService {
     await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (Invoice e) => e.uuid, (Invoice e) => e.id);
     await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (Order e) => e.uuid, (Order e) => e.id);
     await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (Purchase e) => e.uuid, (Purchase e) => e.id);
-    // REMOVED: InvoiceItem uploaded separately
-
-    // REMOVED: PurchaseItem uploaded separately
+    await processEnqueuing<InvoiceItem>((o, l) => isar.invoiceItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((InvoiceItem ei) => forceAll || !ei.isSynced).toList()), 'InvoiceItem', (InvoiceItem e) => e.uuid, (InvoiceItem e) => e.id);`n    await processEnqueuing<PurchaseItem>((o, l) => isar.purchaseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((PurchaseItem ei) => forceAll || !ei.isSynced).toList()), 'PurchaseItem', (PurchaseItem e) => e.uuid, (PurchaseItem e) => e.id);
 
     await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (Expense e) => e.uuid, (Expense e) => e.id);
     await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ExpenseItem ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (ExpenseItem e) => e.uuid, (ExpenseItem e) => e.id);
     await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((StockAdjustment sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment', (StockAdjustment e) => e.uuid, (StockAdjustment e) => e.id);
     await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((CreditNote cn) => forceAll || !cn.isSynced).toList()), 'CreditNote', (CreditNote e) => e.uuid, (CreditNote e) => e.id);
-    // REMOVED: CreditNoteItem uploaded separately
+    await processEnqueuing<CreditNoteItem>((o, l) => isar.creditNoteItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((CreditNoteItem ei) => forceAll || !ei.isSynced).toList()), 'CreditNoteItem', (CreditNoteItem e) => e.uuid, (CreditNoteItem e) => e.id);
 
     await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((WhatsAppMapping wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping', (WhatsAppMapping e) => e.uuid, (WhatsAppMapping e) => e.id);
     await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((DebitNote dn) => forceAll || !dn.isSynced).toList()), 'DebitNote', (DebitNote e) => e.uuid, (DebitNote e) => e.id);
-    // REMOVED: DebitNoteItem uploaded separately
+    await processEnqueuing<DebitNoteItem>((o, l) => isar.debitNoteItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((DebitNoteItem ei) => forceAll || !ei.isSynced).toList()), 'DebitNoteItem', (DebitNoteItem e) => e.uuid, (DebitNoteItem e) => e.id);
 
     await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction', (Transaction e) => e.uuid, (Transaction e) => e.id);
     await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category', (Category e) => e.uuid, (Category e) => e.id);
@@ -718,7 +716,7 @@ class SyncService {
     await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings', (Settings e) => e.uuid, (Settings e) => e.id);
     await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (User e) => e.uuid, (User e) => e.id);
     await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (BankAccount e) => e.uuid, (BankAccount e) => e.id);
-    // REMOVED: OrderItem uploaded separately
+    await processEnqueuing<OrderItem>((o, l) => isar.orderItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((OrderItem ei) => forceAll || !ei.isSynced).toList()), 'OrderItem', (OrderItem e) => e.uuid, (OrderItem e) => e.id);
 
     await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (Task e) => e.uuid, (Task e) => e.id);
     await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery', (Machinery e) => e.uuid, (Machinery e) => e.id);
@@ -735,7 +733,7 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
@@ -815,7 +813,7 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
@@ -872,7 +870,7 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
@@ -944,7 +942,7 @@ class SyncService {
   }
 
   /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
-  /// [silent] = true when called from background quiet sync ÃƒÂ¯Ã‚Â¿Ã‚Â½ avoids polluting global state
+  /// [silent] = true when called from background quiet sync ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ avoids polluting global state
   Future<void> _uploadLocalChanges({bool silent = false}) async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
@@ -978,7 +976,7 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    // Deduplicate queue items to minimize Firebase Writes ÃƒÂ¯Ã‚Â¿Ã‚Â½ with event-loop yielding
+    // Deduplicate queue items to minimize Firebase Writes ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ with event-loop yielding
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1154,7 +1152,7 @@ class SyncService {
       }
     }
 
-    // Mark synced items in local DB ÃƒÂ¯Ã‚Â¿Ã‚Â½ chunked with yields
+    // Mark synced items in local DB ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ chunked with yields
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1269,14 +1267,14 @@ class SyncService {
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Determine filterCutoff ÃƒÂ¯Ã‚Â¿Ã‚Â½ ONLY for incremental sync, NEVER for forceFullDownload
+        // Determine filterCutoff ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ ONLY for incremental sync, NEVER for forceFullDownload
         DateTime? filterCutoff;
         if (!forceFullDownload) {
           final String? lastCloudSyncStr = prefs.getString(timestampKey);
           if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
             final parsed = DateTime.tryParse(lastCloudSyncStr);
             if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
-              // Subtract 30 seconds (not 2 minutes) as safety overlap ÃƒÂ¯Ã‚Â¿Ã‚Â½ less wasteful reads
+              // Subtract 30 seconds (not 2 minutes) as safety overlap ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ less wasteful reads
               filterCutoff = parsed.subtract(const Duration(seconds: 30));
             }
           }
@@ -1356,7 +1354,7 @@ class SyncService {
           continue;
         }
 
-        logger.info('  Found ${allDocs.length} documents for $entityType â€” processing...');
+        logger.info('  Found ${allDocs.length} documents for $entityType Ã¢â‚¬â€ processing...');
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < allDocs.length; d++) {
@@ -1453,7 +1451,7 @@ class SyncService {
     }
 
     // Post-download pass: Re-link relations and recalculate stocks
-    // ONLY run during full download ÃƒÂ¯Ã‚Â¿Ã‚Â½ during delta sync this is wasteful O(NÃƒÂ¯Ã‚Â¿Ã‚Â½) overhead
+    // ONLY run during full download ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ during delta sync this is wasteful O(NÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½) overhead
     // that loads ALL records into memory and causes the "96% hang"
     if (forceFullDownload) {
       try {
@@ -4154,7 +4152,7 @@ class SyncService {
     }
   }
 
-  /// Appends log items ÃƒÂ¯Ã‚Â¿Ã‚Â½ Success logs to local SharedPreferences only, Failures to Firestore
+  /// Appends log items ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½ Success logs to local SharedPreferences only, Failures to Firestore
   Future<void> _logSyncEvent(String result, String message) async {
     // Success logs: local-only to minimize Firebase writes
     if (result == 'Success') {
@@ -4192,7 +4190,7 @@ class SyncService {
     try {
       final logMsg = '[$resolution] ${DateTime.now().toIso8601String()}: $entityType ($uuid) Remote v$remoteVersion vs Local v$localVersion';
       logger.info('Sync Conflict: $logMsg');
-      // Save to local prefs only â€” not Firestore
+      // Save to local prefs only Ã¢â‚¬â€ not Firestore
       final existingLogs = _prefs.getStringList('sync_conflict_logs') ?? [];
       existingLogs.add(logMsg);
       // Keep only last 100 conflict logs to prevent prefs bloat
@@ -4210,6 +4208,8 @@ class SyncService {
     _stateController.close();
   }
 }
+
+
 
 
 
