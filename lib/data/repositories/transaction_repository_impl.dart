@@ -42,10 +42,18 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
   @override
   Future<String> generateNextTransactionNumber(String type) async {
     try {
+      String prefix = 'PAYMENT';
+      if (type == 'Receipt' || type == 'Payment In') prefix = 'RECEIPT';
+      else if (type == 'Expense') prefix = 'EXP';
+      else if (type == 'Other Income') prefix = 'OTHER Income';
+      else if (type == 'Credit Note') prefix = 'CN';
+      else if (type == 'Debit Note') prefix = 'DN';
+      else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) prefix = 'TRF';
+
       final allTxns = await collection.where().findAll();
       int maxNum = 0;
       for (var t in allTxns) {
-        if (t.transactionType == type && t.transactionNumber != null) {
+        if (t.transactionNumber != null && t.transactionNumber!.startsWith(prefix)) {
           final matches = RegExp(r'\d+').allMatches(t.transactionNumber!);
           if (matches.isNotEmpty) {
             final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
@@ -55,13 +63,6 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       }
       final nextNum = maxNum + 1;
       final suffix = nextNum.toString().padLeft(2, '0');
-      String prefix = 'PAYMENT';
-      if (type == 'Receipt' || type == 'Payment In') prefix = 'RECEIPT';
-      if (type == 'Expense') prefix = 'EXP';
-      if (type == 'Other Income') prefix = 'OTHER Income';
-      if (type == 'Credit Note') prefix = 'CN';
-      if (type == 'Debit Note') prefix = 'DN';
-      if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) prefix = 'TRF';
       return '$prefix-$suffix';
     } catch (e) {
       throw DatabaseException('Failed to generate transaction number: $e');

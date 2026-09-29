@@ -73,6 +73,7 @@ class AddEditTransactionDialog extends ConsumerStatefulWidget {
 class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDialog> {
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
+  String _nextVoucher = 'Auto';
 
   late String _transactionType;
   late DateTime _transactionDate;
@@ -92,6 +93,9 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
   @override
   void initState() {
     super.initState();
+    if (widget.transaction == null) {
+      _fetchVoucherNumber();
+    }
     _transactionType = widget.transaction?.transactionType ?? widget.initialType ?? 'Receipt';
     _transactionDate = widget.transaction?.transactionDate ?? DateTime.now();
     _paymentMode = widget.transaction?.paymentMode ?? 'Cash';
@@ -177,6 +181,13 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       }
       setState(() {});
     });
+  }
+
+  Future<void> _fetchVoucherNumber() async {
+    try {
+      final num = await ref.read(transactionRepositoryProvider).generateNextTransactionNumber(_transactionType);
+      if (mounted) setState(() => _nextVoucher = num);
+    } catch (_) {}
   }
 
   Future<void> _fetchPendingBills() async {
@@ -459,8 +470,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 setState(() {
                   _transactionType = type;
                   _pendingBills = [];
+                  _nextVoucher = 'Loading...';
                 });
                 _fetchPendingBills();
+                _fetchVoucherNumber();
               }
             },
     );
@@ -573,13 +586,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   partiesAsync.when(
                     data: (parties) {
                       List<Party> filteredParties = parties;
-                      if (widget.transaction == null && widget.initialParty == null) {
-                        if (_transactionType == 'Receipt' || _transactionType == 'Credit Note') {
-                          filteredParties = parties.where((p) => p.partyType != 'Supplier').toList();
-                        } else if (_transactionType == 'Payment' || _transactionType == 'Debit Note') {
-                          filteredParties = parties.where((p) => p.partyType == 'Supplier').toList();
-                        }
-                      }
+                      // Party type filter removed to allow all parties
 
                       bool matchesParty(Party p, Party target) {
                         if (target.uuid != null && target.uuid!.isNotEmpty && p.uuid == target.uuid) return true;

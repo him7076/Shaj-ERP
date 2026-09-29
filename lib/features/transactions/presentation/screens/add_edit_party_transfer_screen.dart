@@ -36,6 +36,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
   final TextEditingController _remarksController = TextEditingController();
 
   String? _imagePath;
+  String _nextVoucher = 'Auto';
   bool _isLoading = false;
   Map<String, double> _linkedAllocations = {};
 
@@ -44,6 +45,9 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
   @override
   void initState() {
     super.initState();
+    if (widget.existingTransaction == null) {
+      _fetchVoucherNumber();
+    }
     if (widget.existingTransaction != null) {
       _date = widget.existingTransaction!.transactionDate ?? DateTime.now();
       _amountController.text = (widget.existingTransaction!.amount ?? 0).toString();
@@ -72,6 +76,13 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
         }
       }
     }
+  }
+
+  Future<void> _fetchVoucherNumber() async {
+    try {
+      final num = await ref.read(transactionRepositoryProvider).generateNextTransactionNumber('Transfer');
+      if (mounted) setState(() => _nextVoucher = num);
+    } catch (_) {}
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -170,7 +181,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     
     List<dynamic> allBills = [];
 
-    if (isFromParty) {
+    if (!isFromParty) {
       final allInvs = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
       final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
       allBills.addAll(invs);
@@ -286,7 +297,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text('No.', style: TextStyle(color: theme.hintColor, fontSize: 12)),
-                                            Text(widget.existingTransaction?.transactionNumber ?? 'Auto', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                            Text(widget.existingTransaction?.transactionNumber ?? _nextVoucher, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                                           ],
                                         ),
                                       ),
@@ -534,6 +545,9 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
   @override
   void initState() {
     super.initState();
+    if (widget.existingTransaction == null) {
+      _fetchVoucherNumber();
+    }
     _allocations = Map.from(widget.initialAllocations);
     _loadBills();
   }
