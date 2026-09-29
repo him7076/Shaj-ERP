@@ -1144,64 +1144,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final fssaiController = TextEditingController(text: prefs.getString('firm_fssai_$id') ?? '');
     String? _logoPath = prefs.getString('firm_logo_$id');
 
-    bool isFetchingGst = false;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StatefulBuilder(
+          builder: (context, setDialogState) {
+            final theme = Theme.of(context);
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final theme = Theme.of(context);
-
-          Future<void> autoFetchGst() async {
-            final gstin = gstController.text.trim();
-            if (gstin.length < 15) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter a valid 15-digit GSTIN number.')),
-              );
-              return;
-            }
-
-            setDialogState(() => isFetchingGst = true);
-            try {
-              final gstService = ref.read(gstServiceProvider);
-              final details = await gstService.fetchPartyDetailsFromGst(gstin);
-
-              if (details != null) {
-                setDialogState(() {
-                  nameController.text = details.tradeName.isNotEmpty ? details.tradeName : details.legalName;
-                  panController.text = details.panNumber;
-                  stateController.text = details.stateName;
-                  addressController.text = details.addressLine1;
-                  cityController.text = details.city;
-                  pincodeController.text = details.pincode;
-                });
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('⚡ Auto-fetched firm details for ${details.tradeName}!'),
-                      backgroundColor: Colors.amber.shade900,
-                    ),
-                  );
-                }
-              }
-            } catch (_) {
-            } finally {
-              setDialogState(() => isFetchingGst = false);
-            }
-          }
-
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(width: MediaQuery.of(context).size.width, constraints: const BoxConstraints(maxWidth: 650),
-              padding: const EdgeInsets.all(24),
-              child: SingleChildScrollView(
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(isEditing ? 'Edit Firm Profile' : 'Create New Company / Firm'),
+              ),
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header Banner
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
@@ -1227,101 +1187,103 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             ],
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
                       ],
                     ),
                     const Divider(height: 24),
 
-                    // 1-Click GST Auto-Fetch Banner
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.amber.shade100, Colors.amber.shade50],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.amber.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.bolt, color: Colors.amber.shade900),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextField(
-                              controller: gstController,
-                              textCapitalization: TextCapitalization.characters,
-                              decoration: const InputDecoration(
-                                hintText: 'Enter GSTIN (e.g. 27AAAAA1111A1Z1)',
-                                labelText: 'GSTIN Number',
-                                isDense: true,
-                                
-                              ),
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.amber.shade900,
-                              foregroundColor: Colors.white,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                            onPressed: isFetchingGst ? null : autoFetchGst,
-                            icon: isFetchingGst
-                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.auto_awesome, size: 16),
-                            label: Text(isFetchingGst ? 'Fetching...' : '1-Click Auto-Fetch'),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
                     // Basic Firm Info
-                    Text('Business Information', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text('Basic Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: nameController,
                       decoration: const InputDecoration(
                         labelText: 'Company / Firm Name *',
-                        
+                        border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.store),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
-                            controller: mobileController,
-                            keyboardType: TextInputType.phone,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: categoryController,
                             decoration: const InputDecoration(
-                              labelText: 'Mobile Number',
-                              
-                              prefixIcon: Icon(Icons.phone),
+                              labelText: 'Business Category',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.category),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: TextFormField(
-                            controller: whatsappController,
+                            controller: mobileController,
                             keyboardType: TextInputType.phone,
                             decoration: const InputDecoration(
-                              labelText: 'WhatsApp Number',
-                              
-                              prefixIcon: Icon(Icons.chat),
+                              labelText: 'Mobile Number',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.phone),
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: whatsappController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'WhatsApp Number',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.chat),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
                               labelText: 'Email Address',
-                              
+                              border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.email),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Divider(height: 32),
+
+                    // Tax & Registration Info
+                    Row(
+                      children: [
+                        Icon(Icons.account_balance_rounded, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text('Tax & Registration', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: gstController,
+                            decoration: const InputDecoration(
+                              labelText: 'GSTIN',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.receipt_long),
                             ),
                           ),
                         ),
@@ -1329,35 +1291,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: panController,
-                            textCapitalization: TextCapitalization.characters,
                             decoration: const InputDecoration(
                               labelText: 'PAN Number',
-                              
-                              prefixIcon: Icon(Icons.badge),
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.credit_card),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: fssaiController,
+                      decoration: const InputDecoration(
+                        labelText: 'FSSAI Number',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.security),
+                      ),
+                    ),
 
-                    // Location & Address
-                    Text('Address & Location', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                    const SizedBox(height: 10),
+                    const Divider(height: 32),
+
+                    // Address Details
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text('Address & Location', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: addressController,
+                      maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: 'Full Address / Street',
-                        
-                        prefixIcon: Icon(Icons.location_on),
+                        labelText: 'Full Address',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.map),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
                             controller: cityController,
                             decoration: const InputDecoration(
-                              labelText: 'City / District',
-                              
+                              labelText: 'City',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.location_city),
                             ),
                           ),
                         ),
@@ -1367,7 +1349,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             controller: stateController,
                             decoration: const InputDecoration(
                               labelText: 'State',
-                              
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.map_outlined),
                             ),
                           ),
                         ),
@@ -1378,23 +1361,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Pincode',
-                              
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.pin_drop),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
 
-                    // Banking Details
-                    Text('Banking & Payment Info', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                    const SizedBox(height: 10),
-                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    const Divider(height: 32),
+
+                    // Bank Details
+                    Row(
+                      children: [
+                        Icon(Icons.account_balance, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text('Bank & UPI Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
                             controller: bankNameController,
                             decoration: const InputDecoration(
                               labelText: 'Bank Name',
-                              
-                              prefixIcon: Icon(Icons.account_balance),
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.food_bank),
                             ),
                           ),
                         ),
@@ -1402,9 +1396,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: bankAccController,
+                            keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
                               labelText: 'Account Number',
-                              
+                              border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.numbers),
                             ),
                           ),
@@ -1412,12 +1407,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ResponsiveFormRow(children: [ Expanded(child: TextFormField(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
                             controller: ifscController,
-                            textCapitalization: TextCapitalization.characters,
                             decoration: const InputDecoration(
                               labelText: 'IFSC Code',
-                              
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.code),
                             ),
                           ),
                         ),
@@ -1426,142 +1424,153 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           child: TextFormField(
                             controller: upiController,
                             decoration: const InputDecoration(
-                              labelText: 'UPI ID (e.g. business@upi)',
-                              
+                              labelText: 'UPI ID',
+                              border: OutlineInputBorder(),
                               prefixIcon: Icon(Icons.qr_code),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+              bottomNavigationBar: Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))
+                  ]
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel', style: TextStyle(fontSize: 16)),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.save),
+                      label: Text(isEditing ? 'Save Firm Details' : 'Create & Switch Firm', style: const TextStyle(fontSize: 16)),
+                      onPressed: () async {
+                        final name = nameController.text.trim();
+                        if (name.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Firm Name is required.')),
+                          );
+                          return;
+                        }
 
-                    // Save Actions
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.save),
-                          label: Text(isEditing ? 'Save Firm Details' : 'Create & Switch Firm'),
-                          onPressed: () async {
-                            final name = nameController.text.trim();
-                            if (name.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Firm Name is required.')),
-                              );
-                              return;
-                            }
+                        // Save into SharedPreferences for this firm ID
+                        if (!isEditing) {
+                          final updatedFirms = List<String>.from(firmsList)..add(id);
+                          await prefs.setStringList('firms_list', updatedFirms);
+                          await prefs.setBool('demo_seeded_$id', true);
+                        }
 
-                            // Save into SharedPreferences for this firm ID
-                            if (!isEditing) {
-                              final updatedFirms = List<String>.from(firmsList)..add(id);
-                              await prefs.setStringList('firms_list', updatedFirms);
-                              await prefs.setBool('demo_seeded_$id', true);
-                            }
+                        await prefs.setString('firm_name_$id', name);
+                        await prefs.setString('firm_updated_at_$id', DateTime.now().toUtc().toIso8601String());
+                        await prefs.setString('firm_gst_$id', gstController.text.trim());
+                        await prefs.setString('firm_mobile_$id', mobileController.text.trim());
+                        await prefs.setString('firm_whatsapp_$id', whatsappController.text.trim());
+                        await prefs.setString('firm_email_$id', emailController.text.trim());
+                        await prefs.setString('firm_pan_$id', panController.text.trim());
+                        await prefs.setString('firm_address_$id', addressController.text.trim());
+                        await prefs.setString('firm_city_$id', cityController.text.trim());
+                        await prefs.setString('firm_state_$id', stateController.text.trim());
+                        await prefs.setString('firm_pincode_$id', pincodeController.text.trim());
+                        await prefs.setString('firm_bank_name_$id', bankNameController.text.trim());
+                        await prefs.setString('firm_bank_acc_$id', bankAccController.text.trim());
+                        await prefs.setString('firm_ifsc_$id', ifscController.text.trim());
+                        await prefs.setString('firm_upi_$id', upiController.text.trim());
+                        await prefs.setString('firm_category_$id', categoryController.text.trim());
+                        await prefs.setString('firm_fssai_$id', fssaiController.text.trim());
+                        if (_logoPath != null) {
+                          await prefs.setString('firm_logo_$id', _logoPath!);
+                        } else {
+                          await prefs.remove('firm_logo_$id');
+                        }
 
-                            await prefs.setString('firm_name_$id', name);
-                            await prefs.setString('firm_updated_at_$id', DateTime.now().toUtc().toIso8601String());
-                            await prefs.setString('firm_gst_$id', gstController.text.trim());
-                            await prefs.setString('firm_mobile_$id', mobileController.text.trim());
-                            await prefs.setString('firm_whatsapp_$id', whatsappController.text.trim());
-                            await prefs.setString('firm_email_$id', emailController.text.trim());
-                            await prefs.setString('firm_pan_$id', panController.text.trim());
-                            await prefs.setString('firm_address_$id', addressController.text.trim());
-                            await prefs.setString('firm_city_$id', cityController.text.trim());
-                            await prefs.setString('firm_state_$id', stateController.text.trim());
-                            await prefs.setString('firm_pincode_$id', pincodeController.text.trim());
-                            await prefs.setString('firm_bank_name_$id', bankNameController.text.trim());
-                            await prefs.setString('firm_bank_acc_$id', bankAccController.text.trim());
-                            await prefs.setString('firm_ifsc_$id', ifscController.text.trim());
-                            await prefs.setString('firm_upi_$id', upiController.text.trim());
-                            await prefs.setString('firm_category_$id', categoryController.text.trim());
-                            await prefs.setString('firm_fssai_$id', fssaiController.text.trim());
-                            if (_logoPath != null) {
-                              await prefs.setString('firm_logo_$id', _logoPath!);
-                            } else {
-                              await prefs.remove('firm_logo_$id');
-                            }
+                        // Update active Isar Settings object
+                        try {
+                          final isar = ref.read(databaseServiceProvider).isar;
+                          final settings = await isar.settings.filter().idGreaterThan(-1).findFirst() ?? Settings();
+                          settings.companyName = name;
+                          settings.companyGST = gstController.text.trim();
+                          settings.companyPhone = mobileController.text.trim();
+                          settings.companyAddress = addressController.text.trim();
+                          await isar.writeTxn(() async => await isar.settings.put(settings));
+                        } catch (_) {}
 
-                            // Update active Isar Settings object
-                            try {
-                              final isar = ref.read(databaseServiceProvider).isar;
-                              final settings = await isar.settings.filter().idGreaterThan(-1).findFirst() ?? Settings();
-                              settings.companyName = name;
-                              settings.companyGST = gstController.text.trim();
-                              settings.companyPhone = mobileController.text.trim();
-                              settings.companyAddress = addressController.text.trim();
-                              await isar.writeTxn(() async => await isar.settings.put(settings));
-                            } catch (_) {}
+                        try {
+                          await ref.read(syncServiceProvider).syncFirms();
+                        } catch (_) {}
 
-                            try {
-                              await ref.read(syncServiceProvider).syncFirms();
-                            } catch (_) {}
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
 
-                            if (mounted) {
-                              setState(() {});
-                              Navigator.pop(context);
-                            }
+                        if (!isEditing) {
+                          final db = ref.read(databaseServiceProvider);
+                          await db.switchFirm(id, prefs);
+                          ref.read(activeFirmIdProvider.notifier).state = id;
+                          
+                          // Run handleFirmSwitch in background without awaiting
+                          ref.read(syncManagerProvider).handleFirmSwitch(id).catchError((_) {});
 
-                            if (!isEditing) {
-                              final db = ref.read(databaseServiceProvider);
-                              await db.switchFirm(id, prefs);
-                              ref.read(activeFirmIdProvider.notifier).state = id;
-                              
-                              // Run handleFirmSwitch in background without awaiting
-                                            ref.read(syncManagerProvider).handleFirmSwitch(id).catchError((_) {});
+                          // Invalidate all local data providers to guarantee clean multi-firm isolation
+                          ref.invalidate(sharedPreferencesProvider);
+                          ref.invalidate(dashboardAnalyticsProvider);
+                          ref.invalidate(filteredPartiesProvider);
+                          ref.invalidate(filteredItemsProvider);
+                          ref.invalidate(categoriesListProvider);
+                          ref.invalidate(brandsListProvider);
+                          ref.invalidate(unitsListProvider);
+                          ref.invalidate(purchaseListProvider);
+                          ref.invalidate(filteredInvoicesProvider);
+                          ref.invalidate(filteredOrdersProvider);
+                          ref.invalidate(expenseListProvider);
+                          ref.invalidate(bankAccountsListProvider);
+                          ref.invalidate(filteredTransactionsProvider);
 
-                              // Invalidate all local data providers to guarantee clean multi-firm isolation
-                              ref.invalidate(sharedPreferencesProvider);
-                              ref.invalidate(dashboardAnalyticsProvider);
-                              ref.invalidate(filteredPartiesProvider);
-                              ref.invalidate(filteredItemsProvider);
-                              ref.invalidate(categoriesListProvider);
-                              ref.invalidate(brandsListProvider);
-                              ref.invalidate(unitsListProvider);
-                              ref.invalidate(purchaseListProvider);
-                              ref.invalidate(filteredInvoicesProvider);
-                              ref.invalidate(filteredOrdersProvider);
-                              ref.invalidate(expenseListProvider);
-                              ref.invalidate(bankAccountsListProvider);
-                              ref.invalidate(filteredTransactionsProvider);
-
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Created and switched to company: $name'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                                context.go('/dashboard');
-                              }
-                            } else {
-                              // Force UI to rebuild on edit too!
-                              ref.invalidate(sharedPreferencesProvider);
-                              
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Updated company profile for $name'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
-                            }
-                          },
-                        ),
-                      ],
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Created and switched to company: $name'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                            context.go('/dashboard');
+                          }
+                        } else {
+                          // Force UI to rebuild on edit too!
+                          ref.invalidate(sharedPreferencesProvider);
+                          
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Updated company profile for $name'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          }
+                        }
+                        
+                        ref.invalidate(settingsProvider);
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

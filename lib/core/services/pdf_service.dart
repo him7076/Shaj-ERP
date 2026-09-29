@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'dart:typed_data';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -567,13 +568,13 @@ class PdfService {
                 
                 // Phone
                 if (firmInfo.phone.isNotEmpty)
-                  pw.Text('Ph: ', style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center),
+                  pw.Text('Ph: ${firmInfo.phone}', style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center),
                 
                 // GST & FSSAI
                 if (firmInfo.gst.isNotEmpty)
-                  pw.Text('GSTIN: ', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                  pw.Text('GSTIN: ${firmInfo.gst}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
                 if (firmInfo.fssai.isNotEmpty)
-                  pw.Text('FSSAI: ', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+                  pw.Text('FSSAI: ${firmInfo.fssai}', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
                 
                 pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
                 pw.Text('TAX INVOICE', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
@@ -583,15 +584,15 @@ class PdfService {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Inv No: ', style: const pw.TextStyle(fontSize: 8)),
-                    pw.Text('Date: ', style: const pw.TextStyle(fontSize: 8)),
+                    pw.Text('Inv No: ${invoice.invoiceNumber ?? ""}', style: const pw.TextStyle(fontSize: 8)),
+                    pw.Text('Date: ${invoice.invoiceDate != null ? DateFormat("dd MMM yyyy").format(invoice.invoiceDate!) : ""}', style: const pw.TextStyle(fontSize: 8)),
                   ],
                 ),
                 pw.SizedBox(height: 4),
                 if (invoice.partyName != null && invoice.partyName!.isNotEmpty)
                   pw.Align(
                     alignment: pw.Alignment.centerLeft,
-                    child: pw.Text('Customer: ', style: const pw.TextStyle(fontSize: 8)),
+                    child: pw.Text('Customer: ${invoice.partyName ?? "Cash"}', style: const pw.TextStyle(fontSize: 8)),
                   ),
                 
                 pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
@@ -601,8 +602,8 @@ class PdfService {
                   children: [
                     pw.Expanded(flex: 3, child: pw.Text('Item', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold))),
                     pw.Expanded(flex: 1, child: pw.Text('Qty', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center)),
-                    pw.Expanded(flex: 1, child: pw.Text('Rate', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
-                    pw.Expanded(flex: 1, child: pw.Text('Amt', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                    pw.Expanded(flex: 2, child: pw.Text('Rate', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
+                    pw.Expanded(flex: 2, child: pw.Text('Amt', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right)),
                   ],
                 ),
                 pw.Divider(thickness: 1, borderStyle: pw.BorderStyle.dashed),
@@ -620,8 +621,8 @@ class PdfService {
                       children: [
                         pw.Expanded(flex: 3, child: pw.Text(item.itemName ?? '', style: const pw.TextStyle(fontSize: 8))),
                         pw.Expanded(flex: 1, child: pw.Text(qtyStr, style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center)),
-                        pw.Expanded(flex: 1, child: pw.Text(rate.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
-                        pw.Expanded(flex: 1, child: pw.Text(amt.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
+                        pw.Expanded(flex: 2, child: pw.Text(rate.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
+                        pw.Expanded(flex: 2, child: pw.Text(amt.toStringAsFixed(2), style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.right)),
                       ],
                     ),
                   );

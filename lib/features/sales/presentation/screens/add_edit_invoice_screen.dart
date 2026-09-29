@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/widgets/pos_product_grid.dart';
@@ -970,19 +971,17 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                       suffixIcon: Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<bool>(
-                            value: _isDiscountPercent,
-                            isDense: true,
-                            items: const [
-                              DropdownMenuItem(value: true, child: Text('%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
-                              DropdownMenuItem(value: false, child: Text('₹', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold))),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) {
-                                setState(() {
-                                  _isDiscountPercent = val;
+                        padding: const EdgeInsets.all(4.0),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: ToggleButtons(
+                            isSelected: [_isDiscountPercent, !_isDiscountPercent],
+                            onPressed: (idx) {
+                                  setState(() {
+                                    
+                                  _isDiscountPercent = idx == 0;
                                   // trigger re-calc
                                   final double? amt = double.tryParse(_discountController.text);
                                   if (_isDiscountPercent) {
@@ -990,9 +989,15 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                   } else {
                                     ref.read(invoiceCartProvider.notifier).setDiscounts(null, amt);
                                   }
-                                });
-                              }
+                                
+                                  });
                             },
+                            borderRadius: BorderRadius.circular(8),
+                            constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                            children: const [
+                              Text('%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              Text('₹', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ],
                           ),
                         ),
                       ),
@@ -1011,10 +1016,14 @@ ref.listen(invoiceCartProvider, (prev, next) {
                 Expanded(
                   flex: 1,
                   child: InkWell(
-                    onTap: () {
-                      setState(() {
-                         _attachedImage = _attachedImage == null ? 'attached.jpg' : null;
-                      });
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        setState(() {
+                          _attachedImage = pickedFile.path;
+                        });
+                      }
                     },
                     child: InputDecorator(
                       decoration: InputDecoration(
