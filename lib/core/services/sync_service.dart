@@ -2509,13 +2509,7 @@ class SyncService {
       case 'CreditNote':
         final e = entity as CreditNote;
         final isarRefCN = _dbService.isar;
-        final cnItemsQuery = isarRefCN.creditNoteItems.filter().isDeletedEqualTo(false).and().group((q) {
-          var sq = q.parentCreditNoteIdEqualTo(e.id);
-          if (e.uuid != null && e.uuid!.isNotEmpty) {
-            sq = sq.or().creditNoteUuidEqualTo(e.uuid!);
-          }
-          return sq;
-        });
+        final cnItemsQuery = isarRefCN.creditNoteItems.filter().isDeletedEqualTo(false).and().parentCreditNoteIdEqualTo(e.id);
         List rawCNItems = [];
         try { rawCNItems = await cnItemsQuery.findAll(); } catch (_) {}
 
@@ -2578,13 +2572,7 @@ class SyncService {
       case 'DebitNote':
         final e = entity as DebitNote;
         final isarRefDN = _dbService.isar;
-        final dnItemsQuery = isarRefDN.debitNoteItems.filter().isDeletedEqualTo(false).and().group((q) {
-          var sq = q.parentDebitNoteIdEqualTo(e.id);
-          if (e.uuid != null && e.uuid!.isNotEmpty) {
-            sq = sq.or().debitNoteUuidEqualTo(e.uuid!);
-          }
-          return sq;
-        });
+        final dnItemsQuery = isarRefDN.debitNoteItems.filter().isDeletedEqualTo(false).and().parentDebitNoteIdEqualTo(e.id);
         List rawDNItems = [];
         try { rawDNItems = await dnItemsQuery.findAll(); } catch (_) {}
 
