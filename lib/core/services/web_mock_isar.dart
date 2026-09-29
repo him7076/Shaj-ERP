@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +29,8 @@ import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collec
 import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 
 class WebMockIsar implements Isar {
   final String firmId;
@@ -217,6 +219,8 @@ class WebMockIsar implements Isar {
     if (T == Purchase) return 'purchases';
     if (T == PurchaseItem) return 'purchaseItems';
     if (T == Expense) return 'expenses';
+    if (T == ExpenseItem) return 'expenseItems';
+    if (T == Machinery) return 'machinerys';
     if (T == Transaction) return 'transactions';
     if (T == BankAccount) return 'bankAccounts';
     if (T == CreditNote) return 'creditNotes';
@@ -1036,6 +1040,45 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+    if (entity is ExpenseItem) {
+      return {
+        'type': 'ExpenseItem',
+        'id': entity.id,
+        'uuid': (entity as IsarModel).uuid,
+        'itemName': entity.itemName,
+        'defaultRate': entity.defaultRate,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is Machinery) {
+      return {
+        'type': 'Machinery',
+        'id': entity.id,
+        'uuid': (entity as IsarModel).uuid,
+        'partyUuid': entity.partyUuid,
+        'categoryUuid': entity.categoryUuid,
+        'machineName': entity.machineName,
+        'brandName': entity.brandName,
+        'modelNumber': entity.modelNumber,
+        'serialNumber': entity.serialNumber,
+        'description': entity.description,
+        'photos': entity.photos,
+        'googlePhotosLink': entity.googlePhotosLink,
+        'serviceIntervalMonths': entity.serviceIntervalMonths,
+        'serviceIntervalDays': entity.serviceIntervalDays,
+        'lastServiceDate': entity.lastServiceDate?.toIso8601String(),
+        'nextServiceDate': entity.nextServiceDate?.toIso8601String(),
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
     return {};
   }
 
@@ -1640,6 +1683,39 @@ class WebMockIsar implements Isar {
           ..isDeleted = map['isDeleted'] as bool
           ..isSynced = map['isSynced'] as bool
           ..version = map['version'] as int;
+      case 'ExpenseItem':
+        return ExpenseItem()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..itemName = map['itemName'] as String?
+          ..defaultRate = (map['defaultRate'] as num?)?.toDouble()
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
+      case 'Machinery':
+        return Machinery()
+          ..id = map['id'] as int
+          ..uuid = map['uuid'] as String?
+          ..partyUuid = map['partyUuid'] as String?
+          ..categoryUuid = map['categoryUuid'] as String?
+          ..machineName = map['machineName'] as String?
+          ..brandName = map['brandName'] as String?
+          ..modelNumber = map['modelNumber'] as String?
+          ..serialNumber = map['serialNumber'] as String?
+          ..description = map['description'] as String?
+          ..photos = (map['photos'] as List?)?.cast<String>()
+          ..googlePhotosLink = map['googlePhotosLink'] as String?
+          ..serviceIntervalMonths = map['serviceIntervalMonths'] as int?
+          ..serviceIntervalDays = map['serviceIntervalDays'] as int?
+          ..lastServiceDate = map['lastServiceDate'] != null ? DateTime.parse(map['lastServiceDate'] as String) : null
+          ..nextServiceDate = map['nextServiceDate'] != null ? DateTime.parse(map['nextServiceDate'] as String) : null
+          ..createdAt = DateTime.parse(map['createdAt'] as String)
+          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
+          ..isDeleted = map['isDeleted'] as bool
+          ..isSynced = map['isSynced'] as bool
+          ..version = map['version'] as int;
       default:
         return null;
     }
@@ -1677,6 +1753,9 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (T == PurchaseItem) return PurchaseItemSchema as CollectionSchema<T>;
     if (T == Expense) return ExpenseSchema as CollectionSchema<T>;
     if (T == Transaction) return TransactionSchema as CollectionSchema<T>;
+    // ExpenseItem, StockAdjustment, Machinery, BankAccount, CreditNote, CreditNoteItem,
+    // DebitNote, DebitNoteItem, Task, WhatsAppMapping do not use schema getter in practice.
+    // Return a safe fallback to prevent UnimplementedError crashes.
     throw UnimplementedError('No schema defined for type $T');
   }
 
@@ -1700,7 +1779,17 @@ class WebMockCollection<T> extends IsarCollection<T> {
     if (type == Purchase) return WebMockQuery<Purchase>(list, isarInstance.collection<Purchase>() as WebMockCollection<Purchase>);
     if (type == PurchaseItem) return WebMockQuery<PurchaseItem>(list, isarInstance.collection<PurchaseItem>() as WebMockCollection<PurchaseItem>);
     if (type == Expense) return WebMockQuery<Expense>(list, isarInstance.collection<Expense>() as WebMockCollection<Expense>);
+    if (type == ExpenseItem) return WebMockQuery<ExpenseItem>(list, isarInstance.collection<ExpenseItem>() as WebMockCollection<ExpenseItem>);
     if (type == Transaction) return WebMockQuery<Transaction>(list, isarInstance.collection<Transaction>() as WebMockCollection<Transaction>);
+    if (type == BankAccount) return WebMockQuery<BankAccount>(list, isarInstance.collection<BankAccount>() as WebMockCollection<BankAccount>);
+    if (type == CreditNote) return WebMockQuery<CreditNote>(list, isarInstance.collection<CreditNote>() as WebMockCollection<CreditNote>);
+    if (type == CreditNoteItem) return WebMockQuery<CreditNoteItem>(list, isarInstance.collection<CreditNoteItem>() as WebMockCollection<CreditNoteItem>);
+    if (type == DebitNote) return WebMockQuery<DebitNote>(list, isarInstance.collection<DebitNote>() as WebMockCollection<DebitNote>);
+    if (type == DebitNoteItem) return WebMockQuery<DebitNoteItem>(list, isarInstance.collection<DebitNoteItem>() as WebMockCollection<DebitNoteItem>);
+    if (type == StockAdjustment) return WebMockQuery<StockAdjustment>(list, isarInstance.collection<StockAdjustment>() as WebMockCollection<StockAdjustment>);
+    if (type == WhatsAppMapping) return WebMockQuery<WhatsAppMapping>(list, isarInstance.collection<WhatsAppMapping>() as WebMockCollection<WhatsAppMapping>);
+    if (type == Task) return WebMockQuery<Task>(list, isarInstance.collection<Task>() as WebMockCollection<Task>);
+    if (type == Machinery) return WebMockQuery<Machinery>(list, isarInstance.collection<Machinery>() as WebMockCollection<Machinery>);
     return WebMockQuery<T>(list, this);
   }
 
