@@ -545,9 +545,6 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
   @override
   void initState() {
     super.initState();
-    if (widget.existingTransaction == null) {
-      _fetchVoucherNumber();
-    }
     _allocations = Map.from(widget.initialAllocations);
     _loadBills();
   }
