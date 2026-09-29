@@ -1174,7 +1174,7 @@ class SyncService {
             for (var itemMap in chunk) {
               final entityType = itemMap['entityType'] as String;
               final entity = itemMap['entity'];
-              (entity as IsarModel).isSynced = true;
+              _setEntityIsSynced(entityType, entity, true);
               switch (entityType) {
                 case 'Party': await isar.partys.put(entity as Party); break;
                 case 'Item': await isar.items.put(entity as Item); break;
@@ -1399,15 +1399,15 @@ class SyncService {
 
             if (localRecord != null) {
               // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
-              if ((localRecord as IsarModel).isSynced == false) {
+              if (_getEntityIsSynced(entityType, localRecord) == false) {
                 logger.info('Conflict: Local Wins (Unsynced Local Draft Lock) for $entityType UUID: $uuid. Keeping local draft.');
-                await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, (localRecord as IsarModel).version, 'Local Wins (Unsynced Draft Lock)');
+                await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, _getEntityVersion(entityType, localRecord), 'Local Wins (Unsynced Draft Lock)');
                 continue;
               }
 
-              final localVersion = ((localRecord as IsarModel).version as int?) ?? 1;
+              final localVersion = (_getEntityVersion(entityType, localRecord) as int?) ?? 1;
               final remoteVersion = data['version'] as int? ?? 1;
-              final localUpdated = ((localRecord as IsarModel).updatedAt as DateTime?) ?? DateTime.fromMillisecondsSinceEpoch(0);
+              final localUpdated = (_getEntityUpdatedAt(entityType, localRecord) as DateTime?) ?? DateTime.fromMillisecondsSinceEpoch(0);
               final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
 
               bool remoteWins = false;
@@ -1421,7 +1421,7 @@ class SyncService {
 
               if (remoteWins) {
                 logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
-                await _overwriteLocalRecord(entityType, (localRecord as IsarModel).id, data);
+                await _overwriteLocalRecord(entityType, _getEntityId(entityType, localRecord), data);
                 await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
               } else {
                 logger.info('Conflict: Local wins for $entityType UUID: $uuid.');
@@ -2049,13 +2049,221 @@ class SyncService {
   }
 
   /// Maps Isar entity to JSON map for Firestore
+  
+  int _getEntityId(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).id;
+      case 'Item': return (entity as Item).id;
+      case 'Invoice': return (entity as Invoice).id;
+      case 'Order': return (entity as Order).id;
+      case 'Purchase': return (entity as Purchase).id;
+      case 'Expense': return (entity as Expense).id;
+      case 'ExpenseItem': return (entity as ExpenseItem).id;
+      case 'StockAdjustment': return (entity as StockAdjustment).id;
+      case 'CreditNote': return (entity as CreditNote).id;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).id;
+      case 'DebitNote': return (entity as DebitNote).id;
+      case 'Transaction': return (entity as Transaction).id;
+      case 'Category': return (entity as Category).id;
+      case 'Unit': return (entity as Unit).id;
+      case 'Brand': return (entity as Brand).id;
+      case 'Settings': return (entity as Settings).id;
+      case 'User': return (entity as User).id;
+      case 'BankAccount': return (entity as BankAccount).id;
+      case 'Task': return (entity as Task).id;
+      case 'Machinery': return (entity as Machinery).id;
+      default: return 0;
+    }
+  }
+
+  String? _getEntityUuid(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).uuid;
+      case 'Item': return (entity as Item).uuid;
+      case 'Invoice': return (entity as Invoice).uuid;
+      case 'Order': return (entity as Order).uuid;
+      case 'Purchase': return (entity as Purchase).uuid;
+      case 'Expense': return (entity as Expense).uuid;
+      case 'ExpenseItem': return (entity as ExpenseItem).uuid;
+      case 'StockAdjustment': return (entity as StockAdjustment).uuid;
+      case 'CreditNote': return (entity as CreditNote).uuid;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).uuid;
+      case 'DebitNote': return (entity as DebitNote).uuid;
+      case 'Transaction': return (entity as Transaction).uuid;
+      case 'Category': return (entity as Category).uuid;
+      case 'Unit': return (entity as Unit).uuid;
+      case 'Brand': return (entity as Brand).uuid;
+      case 'Settings': return (entity as Settings).uuid;
+      case 'User': return (entity as User).uuid;
+      case 'BankAccount': return (entity as BankAccount).uuid;
+      case 'Task': return (entity as Task).uuid;
+      case 'Machinery': return (entity as Machinery).uuid;
+      default: return null;
+    }
+  }
+
+  DateTime _getEntityCreatedAt(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).createdAt;
+      case 'Item': return (entity as Item).createdAt;
+      case 'Invoice': return (entity as Invoice).createdAt;
+      case 'Order': return (entity as Order).createdAt;
+      case 'Purchase': return (entity as Purchase).createdAt;
+      case 'Expense': return (entity as Expense).createdAt;
+      case 'ExpenseItem': return (entity as ExpenseItem).createdAt;
+      case 'StockAdjustment': return (entity as StockAdjustment).createdAt;
+      case 'CreditNote': return (entity as CreditNote).createdAt;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).createdAt;
+      case 'DebitNote': return (entity as DebitNote).createdAt;
+      case 'Transaction': return (entity as Transaction).createdAt;
+      case 'Category': return (entity as Category).createdAt;
+      case 'Unit': return (entity as Unit).createdAt;
+      case 'Brand': return (entity as Brand).createdAt;
+      case 'Settings': return (entity as Settings).createdAt;
+      case 'User': return (entity as User).createdAt;
+      case 'BankAccount': return (entity as BankAccount).createdAt;
+      case 'Task': return (entity as Task).createdAt;
+      case 'Machinery': return (entity as Machinery).createdAt;
+      default: return DateTime.now();
+    }
+  }
+
+  DateTime _getEntityUpdatedAt(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).updatedAt;
+      case 'Item': return (entity as Item).updatedAt;
+      case 'Invoice': return (entity as Invoice).updatedAt;
+      case 'Order': return (entity as Order).updatedAt;
+      case 'Purchase': return (entity as Purchase).updatedAt;
+      case 'Expense': return (entity as Expense).updatedAt;
+      case 'ExpenseItem': return (entity as ExpenseItem).updatedAt;
+      case 'StockAdjustment': return (entity as StockAdjustment).updatedAt;
+      case 'CreditNote': return (entity as CreditNote).updatedAt;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).updatedAt;
+      case 'DebitNote': return (entity as DebitNote).updatedAt;
+      case 'Transaction': return (entity as Transaction).updatedAt;
+      case 'Category': return (entity as Category).updatedAt;
+      case 'Unit': return (entity as Unit).updatedAt;
+      case 'Brand': return (entity as Brand).updatedAt;
+      case 'Settings': return (entity as Settings).updatedAt;
+      case 'User': return (entity as User).updatedAt;
+      case 'BankAccount': return (entity as BankAccount).updatedAt;
+      case 'Task': return (entity as Task).updatedAt;
+      case 'Machinery': return (entity as Machinery).updatedAt;
+      default: return DateTime.now();
+    }
+  }
+
+  int _getEntityVersion(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).version;
+      case 'Item': return (entity as Item).version;
+      case 'Invoice': return (entity as Invoice).version;
+      case 'Order': return (entity as Order).version;
+      case 'Purchase': return (entity as Purchase).version;
+      case 'Expense': return (entity as Expense).version;
+      case 'ExpenseItem': return (entity as ExpenseItem).version;
+      case 'StockAdjustment': return (entity as StockAdjustment).version;
+      case 'CreditNote': return (entity as CreditNote).version;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).version;
+      case 'DebitNote': return (entity as DebitNote).version;
+      case 'Transaction': return (entity as Transaction).version;
+      case 'Category': return (entity as Category).version;
+      case 'Unit': return (entity as Unit).version;
+      case 'Brand': return (entity as Brand).version;
+      case 'Settings': return (entity as Settings).version;
+      case 'User': return (entity as User).version;
+      case 'BankAccount': return (entity as BankAccount).version;
+      case 'Task': return (entity as Task).version;
+      case 'Machinery': return (entity as Machinery).version;
+      default: return 1;
+    }
+  }
+
+  bool _getEntityIsDeleted(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).isDeleted;
+      case 'Item': return (entity as Item).isDeleted;
+      case 'Invoice': return (entity as Invoice).isDeleted;
+      case 'Order': return (entity as Order).isDeleted;
+      case 'Purchase': return (entity as Purchase).isDeleted;
+      case 'Expense': return (entity as Expense).isDeleted;
+      case 'ExpenseItem': return (entity as ExpenseItem).isDeleted;
+      case 'StockAdjustment': return (entity as StockAdjustment).isDeleted;
+      case 'CreditNote': return (entity as CreditNote).isDeleted;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).isDeleted;
+      case 'DebitNote': return (entity as DebitNote).isDeleted;
+      case 'Transaction': return (entity as Transaction).isDeleted;
+      case 'Category': return (entity as Category).isDeleted;
+      case 'Unit': return (entity as Unit).isDeleted;
+      case 'Brand': return (entity as Brand).isDeleted;
+      case 'Settings': return (entity as Settings).isDeleted;
+      case 'User': return (entity as User).isDeleted;
+      case 'BankAccount': return (entity as BankAccount).isDeleted;
+      case 'Task': return (entity as Task).isDeleted;
+      case 'Machinery': return (entity as Machinery).isDeleted;
+      default: return false;
+    }
+  }
+
+  bool _getEntityIsSynced(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).isSynced;
+      case 'Item': return (entity as Item).isSynced;
+      case 'Invoice': return (entity as Invoice).isSynced;
+      case 'Order': return (entity as Order).isSynced;
+      case 'Purchase': return (entity as Purchase).isSynced;
+      case 'Expense': return (entity as Expense).isSynced;
+      case 'ExpenseItem': return (entity as ExpenseItem).isSynced;
+      case 'StockAdjustment': return (entity as StockAdjustment).isSynced;
+      case 'CreditNote': return (entity as CreditNote).isSynced;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).isSynced;
+      case 'DebitNote': return (entity as DebitNote).isSynced;
+      case 'Transaction': return (entity as Transaction).isSynced;
+      case 'Category': return (entity as Category).isSynced;
+      case 'Unit': return (entity as Unit).isSynced;
+      case 'Brand': return (entity as Brand).isSynced;
+      case 'Settings': return (entity as Settings).isSynced;
+      case 'User': return (entity as User).isSynced;
+      case 'BankAccount': return (entity as BankAccount).isSynced;
+      case 'Task': return (entity as Task).isSynced;
+      case 'Machinery': return (entity as Machinery).isSynced;
+      default: return false;
+    }
+  }
+
+  void _setEntityIsSynced(String entityType, dynamic entity, bool value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).isSynced = value; break;
+      case 'Item': (entity as Item).isSynced = value; break;
+      case 'Invoice': (entity as Invoice).isSynced = value; break;
+      case 'Order': (entity as Order).isSynced = value; break;
+      case 'Purchase': (entity as Purchase).isSynced = value; break;
+      case 'Expense': (entity as Expense).isSynced = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).isSynced = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).isSynced = value; break;
+      case 'CreditNote': (entity as CreditNote).isSynced = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).isSynced = value; break;
+      case 'DebitNote': (entity as DebitNote).isSynced = value; break;
+      case 'Transaction': (entity as Transaction).isSynced = value; break;
+      case 'Category': (entity as Category).isSynced = value; break;
+      case 'Unit': (entity as Unit).isSynced = value; break;
+      case 'Brand': (entity as Brand).isSynced = value; break;
+      case 'Settings': (entity as Settings).isSynced = value; break;
+      case 'User': (entity as User).isSynced = value; break;
+      case 'BankAccount': (entity as BankAccount).isSynced = value; break;
+      case 'Task': (entity as Task).isSynced = value; break;
+      case 'Machinery': (entity as Machinery).isSynced = value; break;
+    }
+  }
+
   Future<Map<String, dynamic>> _mapEntityToMap(String entityType, dynamic entity) async {
     final baseMap = {
-      'uuid': (entity as IsarModel).uuid,
-      'createdAt': (entity as IsarModel).createdAt.toUtc().toIso8601String(),
-      'updatedAt': (entity as IsarModel).updatedAt.toUtc().toIso8601String(),
-      'version': (entity as IsarModel).version,
-      'isDeleted': (entity as IsarModel).isDeleted,
+      'uuid': _getEntityUuid(entityType, entity),
+      'createdAt': _getEntityCreatedAt(entityType, entity).toUtc().toIso8601String(),
+      'updatedAt': _getEntityUpdatedAt(entityType, entity).toUtc().toIso8601String(),
+      'version': _getEntityVersion(entityType, entity),
+      'isDeleted': _getEntityIsDeleted(entityType, entity),
       'deviceId': _firebaseService.deviceId,
       'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
       'companyId': _firebaseService.companyId,
@@ -3187,16 +3395,16 @@ class SyncService {
     }
 
     if (entity != null) {
-      (entity as IsarModel).uuid = data['uuid']?.toString();
-      (entity as IsarModel).createdAt = data['createdAt'] != null 
+      _getEntityUuid(entityType, entity) = data['uuid']?.toString();
+      _getEntityCreatedAt(entityType, entity) = data['createdAt'] != null 
           ? (DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now()) 
           : DateTime.now();
-      (entity as IsarModel).updatedAt = data['updatedAt'] != null 
+      _getEntityUpdatedAt(entityType, entity) = data['updatedAt'] != null 
           ? (DateTime.tryParse(data['updatedAt'].toString()) ?? DateTime.now()) 
           : DateTime.now();
-      (entity as IsarModel).isDeleted = data['isDeleted'] == true;
-      (entity as IsarModel).isSynced = true;
-      (entity as IsarModel).version = (data['version'] as num?)?.toInt() ?? 1;
+      _getEntityIsDeleted(entityType, entity) = data['isDeleted'] == true;
+      _setEntityIsSynced(entityType, entity, true);
+      _getEntityVersion(entityType, entity) = (data['version'] as num?)?.toInt() ?? 1;
     }
 
     return entity;
@@ -3804,7 +4012,7 @@ class SyncService {
         });
       }
     } catch (err) {
-      logger.error('Failed to link downloaded relations for $entityType UUID: ${(entity as IsarModel).uuid}', err);
+      logger.error('Failed to link downloaded relations for $entityType UUID: ${_getEntityUuid(entityType, entity)}', err);
     }
   }
 
