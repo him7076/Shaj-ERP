@@ -95,7 +95,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             if (oldParty != null) {
               final oldAmt = oldTransaction.amount ?? 0.0;
               final oldType = oldTransaction.transactionType;
-              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Payment' || oldType == 'Debit Note') {
+              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Payment' || oldType == 'Debit Note' || oldType == 'Transfer') {
                 oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + oldAmt;
               } else if (oldType == 'Sales' || oldType == 'Purchase') {
                 oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - oldAmt;
@@ -126,32 +126,30 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
               final billUuid = entry.key;
               final allocAmt = entry.value;
 
-              if (oldType == 'Receipt' || oldType == 'Credit Note') {
-                final invoice = await _findInvoice(billUuid);
-                if (invoice != null) {
-                  invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
-                  if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
-                  invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-                  if (invoice.pendingAmount! <= 0) {
-                    invoice.paymentStatus = 'Paid';
-                  } else if (invoice.paidAmount! > 0) {
-                    invoice.paymentStatus = 'Partially Paid';
-                  } else {
-                    invoice.paymentStatus = 'Unpaid';
-                  }
-                  invoice.updatedAt = DateTime.now();
-                  invoice.isSynced = false;
-                  await isar.invoices.put(invoice);
-                  await isar.syncQueues.put(SyncQueue()
-                    ..uuid = _generateUuid()
-                    ..entityType = 'Invoice'
-                    ..entityId = invoice.id
-                    ..entityUuid = invoice.uuid
-                    ..operation = 'Update'
-                    ..createdAt = DateTime.now()
-                    ..updatedAt = DateTime.now());
+              final invoice = await _findInvoice(billUuid);
+              if (invoice != null) {
+                invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
+                if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
+                invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
+                if (invoice.pendingAmount! <= 0) {
+                  invoice.paymentStatus = 'Paid';
+                } else if (invoice.paidAmount! > 0) {
+                  invoice.paymentStatus = 'Partially Paid';
+                } else {
+                  invoice.paymentStatus = 'Unpaid';
                 }
-              } else if (oldType == 'Payment' || oldType == 'Debit Note') {
+                invoice.updatedAt = DateTime.now();
+                invoice.isSynced = false;
+                await isar.invoices.put(invoice);
+                await isar.syncQueues.put(SyncQueue()
+                  ..uuid = _generateUuid()
+                  ..entityType = 'Invoice'
+                  ..entityId = invoice.id
+                  ..entityUuid = invoice.uuid
+                  ..operation = 'Update'
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now());
+              } else {
                 final purchase = await _findPurchase(billUuid);
                 if (purchase != null) {
                   purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
@@ -192,7 +190,7 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             final type = transaction.transactionType;
             
-            if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note') {
+            if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note' || type == 'Transfer') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
             } else if (type == 'Sales' || type == 'Purchase') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
@@ -244,31 +242,29 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final billUuid = entry.key;
             final allocAmt = entry.value;
 
-            if (type == 'Receipt' || type == 'Credit Note') {
-              final invoice = await _findInvoice(billUuid);
-              if (invoice != null) {
-                invoice.paidAmount = (invoice.paidAmount ?? 0.0) + allocAmt;
-                invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-                if (invoice.pendingAmount! <= 0) {
-                  invoice.paymentStatus = 'Paid';
-                } else if (invoice.paidAmount! > 0) {
-                  invoice.paymentStatus = 'Partially Paid';
-                } else {
-                  invoice.paymentStatus = 'Unpaid';
-                }
-                invoice.updatedAt = DateTime.now();
-                invoice.isSynced = false;
-                await isar.invoices.put(invoice);
-                await isar.syncQueues.put(SyncQueue()
-                  ..uuid = _generateUuid()
-                  ..entityType = 'Invoice'
-                  ..entityId = invoice.id
-                  ..entityUuid = invoice.uuid
-                  ..operation = 'Update'
-                  ..createdAt = DateTime.now()
-                  ..updatedAt = DateTime.now());
+            final invoice = await _findInvoice(billUuid);
+            if (invoice != null) {
+              invoice.paidAmount = (invoice.paidAmount ?? 0.0) + allocAmt;
+              invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
+              if (invoice.pendingAmount! <= 0) {
+                invoice.paymentStatus = 'Paid';
+              } else if (invoice.paidAmount! > 0) {
+                invoice.paymentStatus = 'Partially Paid';
+              } else {
+                invoice.paymentStatus = 'Unpaid';
               }
-            } else if (type == 'Payment' || type == 'Debit Note') {
+              invoice.updatedAt = DateTime.now();
+              invoice.isSynced = false;
+              await isar.invoices.put(invoice);
+              await isar.syncQueues.put(SyncQueue()
+                ..uuid = _generateUuid()
+                ..entityType = 'Invoice'
+                ..entityId = invoice.id
+                ..entityUuid = invoice.uuid
+                ..operation = 'Update'
+                ..createdAt = DateTime.now()
+                ..updatedAt = DateTime.now());
+            } else {
               final purchase = await _findPurchase(billUuid);
               if (purchase != null) {
                 purchase.paidAmount = (purchase.paidAmount ?? 0.0) + allocAmt;

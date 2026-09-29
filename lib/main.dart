@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -14,6 +14,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:business_sahaj_erp/core/theme/app_theme.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
@@ -129,6 +131,21 @@ void main() {
     try {
       await dbService.init(sharedPrefs).timeout(const Duration(seconds: 3));
       debugPrint('[BOOT] Isar DatabaseService initialized.');
+      // Patch missing transaction numbers
+      try {
+        final nullTxns = await dbService.isar.transactions.filter().transactionNumberIsNull().findAll();
+        if (nullTxns.isNotEmpty) {
+          await dbService.isar.writeTxn(() async {
+            for (var t in nullTxns) {
+              t.transactionNumber = 'PAT-${DateTime.now().microsecondsSinceEpoch}-${t.id}';
+              await dbService.isar.transactions.put(t);
+            }
+          });
+          debugPrint('[BOOT] Patched ${nullTxns.length} null transaction numbers.');
+        }
+      } catch (e) {
+        debugPrint('[BOOT WARNING] Failed to patch null transactions: $e');
+      }
     } catch (e, stack) {
       debugPrint('[BOOT WARNING] DatabaseService init error: $e');
       logger.error('DatabaseService init error on boot', e, stack);

@@ -36,63 +36,14 @@ class _PayablesScreenState extends ConsumerState<PayablesScreen> {
       body: partiesAsync.when(
         data: (allParties) {
           final isar = ref.read(databaseServiceProvider).isar;
-          return FutureBuilder<List<Purchase>>(
-            future: isar.purchases.filter()
-                .isDeletedEqualTo(false)
-                .and()
-                .not().paymentStatusEqualTo('Cancelled')
-                .and()
-                .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid').or().paymentStatusIsNull())
-                .findAll(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final purchases = snapshot.data ?? [];
-              final Map<String, double> partyUuidDues = {};
-              final Map<String, double> partyNameDues = {};
+          double getPartyDue(Party p) {
+            final bal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
+            if (bal < 0) return -bal; // Payable amount is positive here
+            return 0.0;
+          }
 
-              final Map<int, String> partyIdToUuid = {
-                for (var p in allParties)
-                  if (p.id != null && p.uuid != null) p.id!: p.uuid!
-              };
-
-              for (var pur in purchases) {
-                if (pur.paymentStatus == 'Cancelled') continue;
-                final pending = pur.pendingAmount ?? 
-                    ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
-                if (pending > 0) {
-                  final pUuid = pur.partyId != null ? partyIdToUuid[pur.partyId!] : null;
-                  if (pUuid != null && pUuid.isNotEmpty) {
-                    partyUuidDues[pUuid] = (partyUuidDues[pUuid] ?? 0.0) + pending;
-                  }
-                  if (pur.partyName != null && pur.partyName!.trim().isNotEmpty) {
-                    final nameKey = pur.partyName!.trim().toLowerCase();
-                    partyNameDues[nameKey] = (partyNameDues[nameKey] ?? 0.0) + pending;
-                  }
-                }
-              }
-
-              double getPartyDue(Party p) {
-                final hasUuid = p.uuid != null && p.uuid!.isNotEmpty;
-                final uDue = hasUuid ? (partyUuidDues[p.uuid] ?? 0.0) : 0.0;
-                final nameKey = p.partyName?.trim().toLowerCase() ?? '';
-                final nDue = nameKey.isNotEmpty ? (partyNameDues[nameKey] ?? 0.0) : 0.0;
-                final purchaseDue = uDue > 0 ? uDue : nDue;
-
-                if (purchaseDue > 0) return purchaseDue;
-                final rawOut = p.outstandingBalance ?? 0.0;
-                if (rawOut > 0) return rawOut;
-                return p.openingBalance ?? 0.0;
-              }
-
-          final supplierParties = allParties.where((p) {
-            final due = getPartyDue(p);
-            if (due <= 0) return false;
-            final type = (p.partyType ?? '').trim().toLowerCase();
-            return type == 'supplier' || type == 'vendor' || type == 'both' || p.balanceType == 'credit' || (due > 0 && type != 'customer');
-          }).toList();
-
+          final supplierParties = allParties.where((p) => getPartyDue(p) > 0).toList();
+          
           final cities = {'All', ...supplierParties.map((p) => p.city ?? 'Unassigned').where((l) => l.isNotEmpty)};
 
           // Filter by search query & city

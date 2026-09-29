@@ -369,6 +369,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           }
           final t = Transaction()
             ..uuid = _generateUuid()
+            ..transactionNumber = 'RCPT-${DateTime.now().millisecondsSinceEpoch}'
             ..transactionType = 'Receipt'
             ..amount = invoice.paidAmount
             ..transactionDate = DateTime.now()

@@ -214,6 +214,7 @@ class _TransferFundsDialogState extends ConsumerState<TransferFundsDialog> with 
       
       final txn = widget.existingTransaction ?? Transaction()
         ..uuid = widget.existingTransaction?.uuid ?? const Uuid().v4()
+        ..transactionNumber = widget.existingTransaction?.transactionNumber ?? 'TRF-${DateTime.now().millisecondsSinceEpoch}'
         ..transactionType = 'Bank Transfer'
         ..amount = amt
         ..transactionDate = _date

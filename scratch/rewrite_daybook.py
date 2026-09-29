@@ -1,12 +1,12 @@
+import re
+
+code = """
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
-import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
-import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
-import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_credit_note_screen.dart';
-import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_debit_note_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -99,7 +99,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           credit: 0.0,
           totalAmount: inv.grandTotal ?? 0.0,
           remarks: inv.remarks ?? '',
-          entityUuid: inv.uuid,
+          entityId: inv.id?.toString(),
           route: '/sales/invoice',
         ));
       }
@@ -127,7 +127,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           credit: initialPaid,
           totalAmount: pur.grandTotal ?? 0.0,
           remarks: pur.remarks ?? '',
-          entityUuid: pur.uuid,
+          entityId: pur.id?.toString(),
           route: '/purchases/bill',
         ));
       }
@@ -161,7 +161,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           credit: actualCredit,
           totalAmount: amt,
           remarks: t.remarks ?? '',
-          entityUuid: t.uuid,
+          entityId: t.id?.toString(),
           route: '/transactions', // We don't have a direct detailed screen for transaction, so we just pass null route if we want to avoid error
         ));
       }
@@ -185,7 +185,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           credit: exp.amount ?? 0.0,
           totalAmount: exp.amount ?? 0.0,
           remarks: exp.remarks ?? '',
-          entityUuid: null,
+          entityId: null,
           route: null,
         ));
       }
@@ -209,7 +209,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           credit: 0.0, // Credit notes adjust balance, no direct cash flow
           totalAmount: cn.grandTotal ?? 0.0,
           remarks: cn.remarks ?? '',
-          entityUuid: cn.uuid,
+          entityId: cn.id?.toString(),
           route: '/sales/credit-note',
         ));
       }
@@ -233,7 +233,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           credit: 0.0,
           totalAmount: dn.grandTotal ?? 0.0,
           remarks: dn.remarks ?? '',
-          entityUuid: dn.uuid,
+          entityId: dn.id?.toString(),
           route: '/purchases/debit-note',
         ));
       }
@@ -422,22 +422,8 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                           }
 
                           return InkWell(
-                            onTap: v.entityUuid != null ? () {
-                              if (v.voucherType.contains('Sale Invoice')) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailScreen(invoiceUuid: v.entityUuid!)));
-                              } else if (v.voucherType.contains('Purchase Bill')) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditPurchaseScreen(purchaseUuid: v.entityUuid!)));
-                              } else if (v.voucherType.contains('Credit Note')) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCreditNoteScreen(creditNoteUuid: v.entityUuid!)));
-                              } else if (v.voucherType.contains('Debit Note')) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditDebitNoteScreen(debitNoteUuid: v.entityUuid!)));
-                              } else if (v.voucherType == 'Receipt' || v.voucherType == 'Payment' || v.voucherType == 'Other Income' || v.voucherType == 'Transfer') {
-                                // For generic transactions, open the transaction dialog
-                                showDialog(context: context, builder: (_) => AddEditTransactionDialog(
-                                  initialType: v.voucherType,
-                                  transaction: null, // Note: To edit properly we'd need the whole object, but they asked for detailed view
-                                ));
-                              }
+                            onTap: v.route != null && v.entityId != null ? () {
+                              context.push('${v.route}/${v.entityId}');
                             } : null,
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
@@ -538,7 +524,7 @@ class _DayBookVoucher {
   final double credit;
   final double totalAmount;
   final String remarks;
-  final String? entityUuid;
+  final String? entityId;
   final String? route;
 
   _DayBookVoucher({
@@ -551,7 +537,12 @@ class _DayBookVoucher {
     required this.credit,
     required this.totalAmount,
     required this.remarks,
-    this.entityUuid,
+    this.entityId,
     this.route,
   });
 }
+"""
+
+with open('lib/features/reports/presentation/screens/day_book_report_screen.dart', 'w', encoding='utf-8') as f:
+    f.write(code.strip())
+print("Rewrite complete")

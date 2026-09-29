@@ -136,53 +136,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
     double totalOutstanding = 0.0;
     double totalPayable = 0.0;
 
-    final unpaidInvoices = await isar.invoices.filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .not().paymentStatusEqualTo('Cancelled')
-        .and()
-        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid').or().paymentStatusIsNull())
-        .findAll();
-
-    final Map<int, double> partyInvoiceDues = {};
-    for (var inv in unpaidInvoices) {
-      final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
-      if (pending > 0 && inv.partyId != null) {
-        partyInvoiceDues[inv.partyId!] = (partyInvoiceDues[inv.partyId!] ?? 0.0) + pending;
-      }
-    }
-
-    final unpaidPurchases = await isar.collection<Purchase>().filter()
-        .isDeletedEqualTo(false)
-        .and()
-        .not().paymentStatusEqualTo('Cancelled')
-        .and()
-        .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid').or().paymentStatusIsNull())
-        .findAll();
-
-    final Map<int, double> partyPurchaseDues = {};
-    for (var pur in unpaidPurchases) {
-      final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
-      if (pending > 0 && pur.partyId != null) {
-        partyPurchaseDues[pur.partyId!] = (partyPurchaseDues[pur.partyId!] ?? 0.0) + pending;
-      }
-    }
 
     for (var p in parties) {
-      final pType = (p.partyType ?? '').trim().toLowerCase();
-      final bType = (p.balanceType ?? '').trim().toLowerCase();
-      final isSupp = pType == 'supplier' || pType == 'vendor' || bType == 'credit' || bType == 'cr';
-
-      final dbBal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
-      final invDue = p.id != null ? (partyInvoiceDues[p.id!] ?? 0.0) : 0.0;
-      final purDue = p.id != null ? (partyPurchaseDues[p.id!] ?? 0.0) : 0.0;
-
-      if (isSupp) {
-        totalPayable += (purDue > 0) ? purDue : (dbBal > 0 ? dbBal : 0.0);
-      } else {
-        totalOutstanding += (invDue > 0) ? invDue : (dbBal > 0 ? dbBal : 0.0);
+      final bal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
+      if (bal > 0) {
+        totalOutstanding += bal; // Receivable
+      } else if (bal < 0) {
+        totalPayable += (-bal);  // Payable
       }
     }
+
 
     // 5. Low Stock Items Count
     final items = await isar.items.filter().isDeletedEqualTo(false).findAll();

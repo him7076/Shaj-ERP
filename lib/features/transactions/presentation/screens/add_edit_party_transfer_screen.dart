@@ -166,8 +166,13 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
     if (party == null) return [];
     
-    final invs = await isar.invoices.filter().partyIdEqualTo(party.id).isDeletedEqualTo(false).findAll();
-    final purs = await isar.purchases.filter().partyIdEqualTo(party.id).isDeletedEqualTo(false).findAll();
+    final allInvs = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    final allPurs = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    
+    final pNameLower = party.partyName?.trim().toLowerCase();
+    
+    final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
+    final purs = allPurs.where((pur) => (pur.party.value?.uuid == partyUuid) || (pur.partyId == party.id) || (pNameLower != null && pur.partyName?.trim().toLowerCase() == pNameLower)).toList();
     
     final allBills = [...invs, ...purs];
     allBills.sort((a, b) {

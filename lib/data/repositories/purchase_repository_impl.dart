@@ -98,13 +98,13 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           final oldPartyId = oldPurchase.partyId;
           final oldParty = oldPartyId != null ? await isar.partys.get(oldPartyId) : null;
           if (oldParty != null) {
-            oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - (oldPurchase.pendingAmount ?? 0.0);
+            oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + (oldPurchase.pendingAmount ?? 0.0);
             await isar.partys.put(oldParty);
           }
         }
 
         if (party != null) {
-          party.outstandingBalance = (party.outstandingBalance ?? 0.0) + (purchase.pendingAmount ?? 0.0);
+          party.outstandingBalance = (party.outstandingBalance ?? 0.0) - (purchase.pendingAmount ?? 0.0);
           party.updatedAt = DateTime.now();
           await isar.partys.put(party);
         }
