@@ -439,11 +439,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                                 final txn = await isar.transactions.filter().uuidEqualTo(v.entityUuid).findFirst();
                                 if (txn != null && mounted) {
                                    if (txn.transactionType == 'Bank Transfer' || txn.transactionType == 'Cash Adjustment') {
-                                      if (txn.transactionType == 'Cash Adjustment') {
-                                         showDialog(context: context, builder: (_) => AdjustCashDialog(existingTransaction: txn, isAdjustmentIn: (txn.amount ?? 0) > 0));
-                                      } else {
-                                         showDialog(context: context, builder: (_) => TransferFundsDialog(existingTransaction: txn));
-                                      }
+                                      showDialog(context: context, builder: (_) => TransferFundsDialog(existingTransaction: txn));
                                    } else {
                                       showDialog(context: context, builder: (_) => AddEditTransactionDialog(transaction: txn, initialType: txn.transactionType ?? v.voucherType));
                                    }

@@ -161,20 +161,25 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     }
   }
   
-  Future<List<dynamic>> _getPendingBillsForParty(String partyUuid) async {
+  Future<List<dynamic>> _getPendingBillsForParty(String partyUuid, bool isFromParty) async {
     final isar = ref.read(databaseServiceProvider).isar;
     final party = await isar.partys.filter().uuidEqualTo(partyUuid).findFirst();
     if (party == null) return [];
     
-    final allInvs = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
-    final allPurs = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
-    
     final pNameLower = party.partyName?.trim().toLowerCase();
     
-    final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
-    final purs = allPurs.where((pur) => (pur.party.value?.uuid == partyUuid) || (pur.partyId == party.id) || (pNameLower != null && pur.partyName?.trim().toLowerCase() == pNameLower)).toList();
+    List<dynamic> allBills = [];
+
+    if (isFromParty) {
+      final allInvs = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+      final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
+      allBills.addAll(invs);
+    } else {
+      final allPurs = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+      final purs = allPurs.where((pur) => (pur.party.value?.uuid == partyUuid) || (pur.partyId == party.id) || (pNameLower != null && pur.partyName?.trim().toLowerCase() == pNameLower)).toList();
+      allBills.addAll(purs);
+    }
     
-    final allBills = [...invs, ...purs];
     allBills.sort((a, b) {
       final aDate = a is Invoice ? a.invoiceDate : (a as Purchase).purchaseDate;
       final bDate = b is Invoice ? b.invoiceDate : (b as Purchase).purchaseDate;
@@ -185,7 +190,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     return allBills;
   }
 
-  void _showLinkBillsDialog(BuildContext context, Party party) {
+  void _showLinkBillsDialog(BuildContext context, Party party, bool isFromParty) {
     showDialog(
       context: context,
       builder: (ctx) {
@@ -200,7 +205,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
               _linkedAllocations = newAllocations;
             });
           },
-          getPendingBills: () => _getPendingBillsForParty(party.uuid!),
+          getPendingBills: () => _getPendingBillsForParty(party.uuid!, isFromParty),
         );
       },
     );
@@ -328,7 +333,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                                     const Text('FROM PARTY (Giver)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
                                     if (_fromParty != null)
                                       InkWell(
-                                        onTap: () => _showLinkBillsDialog(context, _fromParty!),
+                                        onTap: () => _showLinkBillsDialog(context, _fromParty!, true),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
@@ -376,7 +381,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                                     const Text('TO PARTY (Receiver)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
                                     if (_toParty != null)
                                       InkWell(
-                                        onTap: () => _showLinkBillsDialog(context, _toParty!),
+                                        onTap: () => _showLinkBillsDialog(context, _toParty!, false),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
@@ -541,7 +546,12 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
     });
   }
 
-  double get _totalAllocated => _allocations.values.fold(0.0, (sum, amt) => sum + amt);
+  double get _totalAllocated {
+    final billUuids = _bills.map((b) => b is Invoice ? b.uuid : (b as Purchase).uuid).toSet();
+    return _allocations.entries
+        .where((e) => billUuids.contains(e.key))
+        .fold(0.0, (sum, e) => sum + e.value);
+  }
 
   @override
   Widget build(BuildContext context) {
