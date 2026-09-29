@@ -141,8 +141,8 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
         txn.linkedBillUuid = json.encode(validAllocations);
         
         final isar = ref.read(databaseServiceProvider).isar;
-        final invs = await isar.invoices.filter().uuidAnyOf(validAllocations.keys.toList()).findAll();
-        final purs = await isar.purchases.filter().uuidAnyOf(validAllocations.keys.toList()).findAll();
+        final invs = await isar.invoices.filter().anyOf(validAllocations.keys.toList(), (q, String id) => q.uuidEqualTo(id)).findAll();
+        final purs = await isar.purchases.filter().anyOf(validAllocations.keys.toList(), (q, String id) => q.uuidEqualTo(id)).findAll();
         final Set<String> numbers = {};
         for (var i in invs) if (i.invoiceNumber != null) numbers.add(i.invoiceNumber!);
         for (var p in purs) if (p.purchaseNumber != null) numbers.add(p.purchaseNumber!);
@@ -163,8 +163,11 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
   
   Future<List<dynamic>> _getPendingBillsForParty(String partyUuid) async {
     final isar = ref.read(databaseServiceProvider).isar;
-    final invs = await isar.invoices.filter().partyUuidEqualTo(partyUuid).isDeletedEqualTo(false).findAll();
-    final purs = await isar.purchases.filter().partyUuidEqualTo(partyUuid).isDeletedEqualTo(false).findAll();
+    final party = await isar.parties.filter().uuidEqualTo(partyUuid).findFirst();
+    if (party == null) return [];
+    
+    final invs = await isar.invoices.filter().partyIdEqualTo(party.id).isDeletedEqualTo(false).findAll();
+    final purs = await isar.purchases.filter().partyIdEqualTo(party.id).isDeletedEqualTo(false).findAll();
     
     final allBills = [...invs, ...purs];
     allBills.sort((a, b) {
