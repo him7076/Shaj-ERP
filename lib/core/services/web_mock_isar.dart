@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:isar/isar.dart';
+import 'package:business_sahaj_erp/data/local/collections/isar_model.dart';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
@@ -421,7 +422,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Category',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'categoryName': entity.categoryName,
         'description': entity.description,
         'createdAt': entity.createdAt.toIso8601String(),
@@ -435,7 +436,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Unit',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'unitName': entity.unitName,
         'shortName': entity.shortName,
         'createdAt': entity.createdAt.toIso8601String(),
@@ -449,7 +450,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Brand',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'brandName': entity.brandName,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
@@ -462,7 +463,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Party',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'partyCode': entity.partyCode,
         'partyName': entity.partyName,
         'partyType': entity.partyType,
@@ -503,7 +504,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Item',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'itemCode': entity.itemCode,
         'itemName': entity.itemName,
         'shortName': entity.shortName,
@@ -549,7 +550,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'OrderItem',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
@@ -576,7 +577,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Order',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'orderNumber': entity.orderNumber,
         'orderDate': entity.orderDate?.toIso8601String(),
         'status': entity.status,
@@ -612,7 +613,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'InvoiceItem',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
@@ -643,7 +644,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Invoice',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'invoiceNumber': entity.invoiceNumber,
         'invoiceDate': entity.invoiceDate?.toIso8601String(),
         'invoiceType': entity.invoiceType,
@@ -686,7 +687,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Settings',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'companyName': entity.companyName,
         'companyGST': entity.companyGST,
         'companyAddress': entity.companyAddress,
@@ -705,7 +706,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'User',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'name': entity.name,
         'email': entity.email,
         'role': entity.role,
@@ -720,7 +721,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'SyncQueue',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'entityType': entity.entityType,
         'entityId': entity.entityId,
         'entityUuid': entity.entityUuid,
@@ -739,7 +740,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Purchase',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'purchaseNumber': entity.purchaseNumber,
         'supplierInvoiceNumber': entity.supplierInvoiceNumber,
         'purchaseDate': entity.purchaseDate?.toIso8601String(),
@@ -771,7 +772,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'PurchaseItem',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'purchaseId': entity.purchaseId,
         'purchaseUuid': entity.purchaseUuid,
         'itemId': entity.itemId,
@@ -801,7 +802,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Expense',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'category': entity.category,
         'amount': entity.amount,
         'expenseDate': entity.expenseDate?.toIso8601String(),
@@ -818,7 +819,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Transaction',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'transactionNumber': entity.transactionNumber,
         'transactionDate': entity.transactionDate?.toIso8601String(),
         'partyUuid': entity.partyUuid,
@@ -844,7 +845,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'BankAccount',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'accountName': entity.accountName,
         'bankName': entity.bankName,
         'accountNumber': entity.accountNumber,
@@ -863,7 +864,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'CreditNote',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'creditNoteNumber': entity.creditNoteNumber,
         'creditNoteDate': entity.creditNoteDate?.toIso8601String(),
         'originalInvoiceNumber': entity.originalInvoiceNumber,
@@ -894,7 +895,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'CreditNoteItem',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
@@ -923,7 +924,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'DebitNote',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'debitNoteNumber': entity.debitNoteNumber,
         'debitNoteDate': entity.debitNoteDate?.toIso8601String(),
         'originalPurchaseNumber': entity.originalPurchaseNumber,
@@ -954,7 +955,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'DebitNoteItem',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'itemId': entity.itemId,
         'itemName': entity.itemName,
         'hsnCode': entity.hsnCode,
@@ -985,7 +986,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'DeletedVoucher',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'voucherType': entity.voucherType,
         'voucherNumber': entity.voucherNumber,
         'partyName': entity.partyName,
@@ -1003,7 +1004,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'WhatsAppMapping',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'mappingType': entity.mappingType,
         'rawKey': entity.rawKey,
         'targetUuid': entity.targetUuid,
@@ -1021,7 +1022,7 @@ class WebMockIsar implements Isar {
       return {
         'type': 'Task',
         'id': entity.id,
-        'uuid': entity.uuid,
+        'uuid': (entity as IsarModel).uuid,
         'title': entity.title,
         'description': entity.description,
         'status': entity.status,
@@ -1180,7 +1181,7 @@ class WebMockIsar implements Isar {
         if (catId != null) {
           final catList = _db['categorys'];
           if (catList != null) {
-            final cat = catList.firstWhere((e) => (e as dynamic).id == catId, orElse: () => null);
+            final cat = catList.firstWhere((e) => (e as IsarModel).id == catId, orElse: () => null);
             if (cat != null) item.category.value = cat as Category;
           }
         }
@@ -1189,7 +1190,7 @@ class WebMockIsar implements Isar {
         if (brandId != null) {
           final brandList = _db['brands'];
           if (brandList != null) {
-            final brand = brandList.firstWhere((e) => (e as dynamic).id == brandId, orElse: () => null);
+            final brand = brandList.firstWhere((e) => (e as IsarModel).id == brandId, orElse: () => null);
             if (brand != null) item.brand.value = brand as Brand;
           }
         }
@@ -1198,7 +1199,7 @@ class WebMockIsar implements Isar {
         if (unitId != null) {
           final unitList = _db['units'];
           if (unitList != null) {
-            final unit = unitList.firstWhere((e) => (e as dynamic).id == unitId, orElse: () => null);
+            final unit = unitList.firstWhere((e) => (e as IsarModel).id == unitId, orElse: () => null);
             if (unit != null) item.unit.value = unit as Unit;
           }
         }
@@ -1705,16 +1706,16 @@ class WebMockCollection<T> extends IsarCollection<T> {
 
   @override
   Future<Id> put(T object) async {
-    final entity = object as dynamic;
+    final entity = object as IsarModel;
     if (entity.id == null || entity.id == 0 || entity.id == Isar.autoIncrement) {
       int maxId = 0;
       for (var item in _list) {
-        if (item.id > maxId) maxId = item.id;
+        if ((item as IsarModel).id > maxId) maxId = (item as IsarModel).id;
       }
       entity.id = maxId + 1;
     }
     
-    final idx = _list.indexWhere((e) => e.uuid == entity.uuid || (e.id == entity.id && e.id != null));
+    final idx = _list.indexWhere((e) => (e as IsarModel).uuid == (entity as IsarModel).uuid || ((e as IsarModel).id == (entity as IsarModel).id && e.id != null));
     if (idx != -1) {
       _list[idx] = entity;
     } else {
@@ -1723,7 +1724,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     _attachEntity(entity);
 
     await isarInstance.autoSave();
-    return entity.id as int;
+    return entity.id;
   }
 
   @override
@@ -1738,7 +1739,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
 
   @override
   Future<T?> get(Id id) async {
-    final entity = _list.firstWhere((e) => e.id == id, orElse: () => null);
+    final entity = _list.firstWhere((e) => (e as IsarModel).id == id, orElse: () => null);
     if (entity != null) {
       _attachEntity(entity);
     }
@@ -1747,7 +1748,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
 
   @override
   Future<List<T?>> getAll(List<Id> ids) async {
-    final result = ids.map((id) => _list.firstWhere((e) => e.id == id, orElse: () => null)).toList();
+    final result = ids.map((id) => _list.firstWhere((e) => (e as IsarModel).id == id, orElse: () => null)).toList();
     for (var entity in result) {
       if (entity != null) {
         _attachEntity(entity);
@@ -1927,7 +1928,7 @@ class WebMockCollection<T> extends IsarCollection<T> {
     
     // Common properties for all IsarModel types
     if (prop == 'uuid') return item.uuid;
-    if (prop == 'id') return item.id;
+    if (prop == 'id') return (item as IsarModel).id;
     if (prop == 'isdeleted') return item.isDeleted;
     if (prop == 'issynced') return item.isSynced;
     if (prop == 'createdat') return item.createdAt;
