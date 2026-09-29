@@ -1078,6 +1078,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   ],
                 ),
               ),
+             ),
             );
           },
         );
