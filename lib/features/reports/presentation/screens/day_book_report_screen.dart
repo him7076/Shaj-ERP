@@ -16,6 +16,8 @@ import 'package:business_sahaj_erp/data/local/collections/transaction_collection
 import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/features/bank/presentation/screens/adjust_cash_dialog.dart';
+import 'package:business_sahaj_erp/features/bank/presentation/screens/transfer_funds_dialog.dart';
 import 'package:isar/isar.dart';
 
 class DayBookReportScreen extends ConsumerStatefulWidget {
@@ -423,7 +425,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                           }
 
                           return InkWell(
-                            onTap: v.entityUuid != null ? () {
+                            onTap: v.entityUuid != null ? () async {
                               if (v.voucherType.contains('Sale Invoice')) {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceDetailScreen(invoiceUuid: v.entityUuid!)));
                               } else if (v.voucherType.contains('Purchase Bill')) {
@@ -433,11 +435,19 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                               } else if (v.voucherType.contains('Debit Note')) {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditDebitNoteScreen(parentDebitNoteUuid: v.entityUuid!)));
                               } else if (v.voucherType == 'Receipt' || v.voucherType == 'Payment' || v.voucherType == 'Other Income' || ['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(v.voucherType)) {
-                                // For generic transactions, open the transaction dialog
-                                showDialog(context: context, builder: (_) => AddEditTransactionDialog(
-                                  initialType: v.voucherType,
-                                  transaction: null, // Note: To edit properly we'd need the whole object, but they asked for detailed view
-                                ));
+                                final isar = ref.read(databaseServiceProvider).isar;
+                                final txn = await isar.transactions.filter().uuidEqualTo(v.entityUuid).findFirst();
+                                if (txn != null && mounted) {
+                                   if (txn.transactionType == 'Bank Transfer' || txn.transactionType == 'Cash Adjustment') {
+                                      if (txn.transactionType == 'Cash Adjustment') {
+                                         showDialog(context: context, builder: (_) => AdjustCashDialog(existingTransaction: txn, isAdjustmentIn: (txn.amount ?? 0) > 0));
+                                      } else {
+                                         showDialog(context: context, builder: (_) => TransferFundsDialog(existingTransaction: txn));
+                                      }
+                                   } else {
+                                      showDialog(context: context, builder: (_) => AddEditTransactionDialog(transaction: txn, initialType: txn.transactionType ?? v.voucherType));
+                                   }
+                                }
                               }
                             } : null,
                             borderRadius: BorderRadius.circular(12),
