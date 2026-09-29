@@ -220,7 +220,6 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
             ],
           ),
       body: Center(
-      body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
           child: Column(
