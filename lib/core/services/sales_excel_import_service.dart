@@ -378,8 +378,11 @@ class SalesExcelImportService {
               continue;
             }
 
+            Invoice? preservedInvoice;
             // DuplicateAction.overwrite: Clean old line items, restore item stock, and purge old invoice
             for (var oldInv in matchingInvoices) {
+              if (preservedInvoice == null) preservedInvoice = oldInv;
+              
               final allInvItems = await isar.invoiceItems.filter().isDeletedEqualTo(false).findAll();
               final oldItems = allInvItems.where((oi) => 
                 oi.parentInvoiceId == oldInv.id || 
@@ -421,18 +424,20 @@ class SalesExcelImportService {
                   await isar.invoiceItems.delete(oi.id);
                 }
 
-                // Enqueue Delete for Invoice in Firestore so cloud copy is deleted
-                if (oldInv.uuid != null && oldInv.uuid!.isNotEmpty) {
-                  await isar.syncQueues.put(SyncQueue()
-                    ..uuid = _uuidGen.v4()
-                    ..entityType = 'Invoice'
-                    ..entityId = oldInv.id
-                    ..entityUuid = oldInv.uuid
-                    ..operation = 'Delete'
-                    ..createdAt = DateTime.now()
-                    ..updatedAt = DateTime.now());
+                if (oldInv.id != preservedInvoice!.id) {
+                  // Enqueue Delete for Invoice in Firestore so cloud copy is deleted
+                  if (oldInv.uuid != null && oldInv.uuid!.isNotEmpty) {
+                    await isar.syncQueues.put(SyncQueue()
+                      ..uuid = _uuidGen.v4()
+                      ..entityType = 'Invoice'
+                      ..entityId = oldInv.id
+                      ..entityUuid = oldInv.uuid
+                      ..operation = 'Delete'
+                      ..createdAt = DateTime.now()
+                      ..updatedAt = DateTime.now());
+                  }
+                  await isar.invoices.delete(oldInv.id);
                 }
-                await isar.invoices.delete(oldInv.id);
               });
             }
           }
@@ -459,10 +464,16 @@ class SalesExcelImportService {
             }
           }
 
-          final invoiceUuid = _uuidGen.v4();
+          Invoice? preservedInvoice;
+          if (matchingInvoices.isNotEmpty) {
+             preservedInvoice = matchingInvoices.first;
+          }
+
+          final invoiceUuid = preservedInvoice?.uuid ?? _uuidGen.v4();
 
           // Create Invoice Record
           final invoice = Invoice()
+            ..id = preservedInvoice?.id ?? Isar.autoIncrement
             ..uuid = invoiceUuid
             ..invoiceNumber = effectiveInvNo
             ..invoiceDate = _parseDate(dateStr)
@@ -473,13 +484,17 @@ class SalesExcelImportService {
             ..gstNumber = gstNo
             ..remarks = description.isNotEmpty ? description : 'Imported via Excel'
             ..grandTotal = totalAmount
-            ..paidAmount = paidAmount
-            ..pendingAmount = balanceAmount > 0 ? balanceAmount : (totalAmount - paidAmount)
-            ..paymentStatus = paidAmount >= totalAmount && totalAmount > 0
-                ? 'Paid'
-                : (paidAmount > 0 ? 'Partially Paid' : 'Unpaid')
-            ..invoiceStatus = paidAmount >= totalAmount && totalAmount > 0 ? 'Paid' : 'Unpaid'
-            ..createdAt = DateTime.now()
+            ..paidAmount = preservedInvoice != null ? (preservedInvoice.paidAmount ?? 0.0) : paidAmount
+            ..pendingAmount = preservedInvoice != null ? (preservedInvoice.pendingAmount ?? 0.0) : (balanceAmount > 0 ? balanceAmount : (totalAmount - paidAmount))
+            ..paymentStatus = preservedInvoice != null 
+                ? (preservedInvoice.paymentStatus ?? 'Unpaid') 
+                : (paidAmount >= totalAmount && totalAmount > 0
+                    ? 'Paid'
+                    : (paidAmount > 0 ? 'Partially Paid' : 'Unpaid'))
+            ..invoiceStatus = preservedInvoice != null 
+                ? (preservedInvoice.invoiceStatus ?? 'Unpaid') 
+                : (paidAmount >= totalAmount && totalAmount > 0 ? 'Paid' : 'Unpaid')
+            ..createdAt = preservedInvoice?.createdAt ?? DateTime.now()
             ..updatedAt = DateTime.now();
 
           if (party != null) {
