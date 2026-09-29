@@ -48,7 +48,8 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       else if (type == 'Other Income') prefix = 'OTHER Income';
       else if (type == 'Credit Note') prefix = 'CN';
       else if (type == 'Debit Note') prefix = 'DN';
-      else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) prefix = 'TRF';
+      else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(type)) prefix = 'TRF';
+      else if (type == 'Party Transfer' || type == 'Party to Party Transfer') prefix = 'PT';
 
       final allTxns = await collection.where().findAll();
       int maxNum = 0;

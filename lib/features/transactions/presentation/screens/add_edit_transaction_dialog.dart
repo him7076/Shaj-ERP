@@ -702,29 +702,44 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 ),
                 const SizedBox(height: 16),
 
-                // Date Picker
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _transactionDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2030),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _transactionDate = picked;
-                      });
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      labelText: 'Transaction Date',
-                      
-                      prefixIcon: Icon(Icons.calendar_today),
+                // Date Picker and Voucher
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _transactionDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _transactionDate = picked;
+                            });
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Date',
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          child: Text(DateFormat('dd MMM yy').format(_transactionDate)),
+                        ),
+                      ),
                     ),
-                    child: Text(DateFormat('dd MMMM yyyy').format(_transactionDate)),
-                  ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Voucher No.',
+                          prefixIcon: Icon(Icons.numbers),
+                        ),
+                        child: Text(widget.transaction?.transactionNumber ?? _nextVoucher, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
 
@@ -869,11 +884,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
             final totalAllocated = _linkedAllocations.values.fold(0.0, (sum, val) => sum + val);
             final remainingUnallocated = max(0.0, totalTxn - totalAllocated);
 
-            return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Container(
-                width: min(580.0, MediaQuery.of(context).size.width - 24.0),
-                padding: const EdgeInsets.all(20),
+            return Dialog.fullscreen(
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -958,34 +972,41 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                                 ),
                                 child: ResponsiveFormRow(
                                   children: [
-                                    Checkbox(
-                                      value: isLinked,
-                                      onChanged: (val) {
-                                        setModalState(() {
-                                          if (val == true) {
-                                            final allocVal = min(remainingUnallocated, pendingToPay);
-                                            _linkedAllocations[uuid] = double.parse(allocVal.toStringAsFixed(2));
-                                          } else {
-                                            _linkedAllocations.remove(uuid);
-                                          }
-                                          _updateControllers();
-                                        });
-                                        setState(() {});
-                                      },
-                                    ),
                                     Expanded(
-                                      child: Column(
+                                      child: Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            _transactionType == 'Receipt' || _transactionType == 'Credit Note'
-                                                ? 'Invoice #${bill.invoiceNumber ?? bill.uuid.substring(0, 8)}'
-                                                : 'Bill #${bill.purchaseNumber ?? bill.uuid.substring(0, 8)}',
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          Checkbox(
+                                            value: isLinked,
+                                            onChanged: (val) {
+                                              setModalState(() {
+                                                if (val == true) {
+                                                  final allocVal = min(remainingUnallocated, pendingToPay);
+                                                  _linkedAllocations[uuid] = double.parse(allocVal.toStringAsFixed(2));
+                                                } else {
+                                                  _linkedAllocations.remove(uuid);
+                                                }
+                                                _updateControllers();
+                                              });
+                                              setState(() {});
+                                            },
                                           ),
-                                          Text(
-                                            'Total: ₹${grandTotal.toStringAsFixed(2)} | Pending: ₹${remainingOnInvoice.toStringAsFixed(2)}',
-                                            style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _transactionType == 'Receipt' || _transactionType == 'Credit Note'
+                                                      ? 'Invoice #${bill.invoiceNumber ?? bill.uuid.substring(0, 8)}'
+                                                      : 'Bill #${bill.purchaseNumber ?? bill.uuid.substring(0, 8)}',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                Text(
+                                                  'Total: ₹${grandTotal.toStringAsFixed(2)} | Pending: ₹${remainingOnInvoice.toStringAsFixed(2)}',
+                                                  style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
