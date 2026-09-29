@@ -24,10 +24,10 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
       final allItems = await collection.where().findAll();
       int maxNum = 0;
       for (var item in allItems) {
-        if (item.debitNoteNumber != null && item.debitNoteNumber!.startsWith('DN-')) {
-          final match = RegExp(r'\d+').firstMatch(item.debitNoteNumber!);
-          if (match != null) {
-            final parsed = int.tryParse(match.group(0)!) ?? 0;
+        if (item.debitNoteNumber != null ) {
+          final matches = RegExp(r'\d+').allMatches(item.debitNoteNumber!);
+          if (matches.isNotEmpty) {
+            final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
             if (parsed > maxNum) maxNum = parsed;
           }
         }

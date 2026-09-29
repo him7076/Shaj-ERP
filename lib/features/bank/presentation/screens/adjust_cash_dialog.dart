@@ -16,7 +16,15 @@ import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 
 class AdjustCashDialog extends ConsumerStatefulWidget {
-  const AdjustCashDialog({Key? key}) : super(key: key);
+  final String accountName;
+  final bool isBank;
+  final String? bankUuid;
+  const AdjustCashDialog({
+    Key? key,
+    this.accountName = 'Cash',
+    this.isBank = false,
+    this.bankUuid,
+  }) : super(key: key);
 
   @override
   ConsumerState<AdjustCashDialog> createState() => _AdjustCashDialogState();
@@ -25,7 +33,7 @@ class AdjustCashDialog extends ConsumerStatefulWidget {
 class _AdjustCashDialogState extends ConsumerState<AdjustCashDialog> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   
-  String _adjustmentType = 'Add Cash'; // 'Add Cash', 'Reduce Cash'
+  late String _adjustmentType;
   DateTime _date = DateTime.now();
   final _amountController = TextEditingController();
   final _descController = TextEditingController();
@@ -38,6 +46,7 @@ class _AdjustCashDialogState extends ConsumerState<AdjustCashDialog> with Single
   @override
   void initState() {
     super.initState();
+    _adjustmentType = widget.isBank ? 'Add Bank Balance' : 'Add Cash';
     _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
     _scaleAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeOutBack);
     _animController.forward();
@@ -102,12 +111,12 @@ class _AdjustCashDialogState extends ConsumerState<AdjustCashDialog> with Single
       String paymentMode = '';
       String partyName = '';
       
-      if (_adjustmentType == 'Add Cash') {
-        paymentMode = 'System Adjustment'; // Source
-        partyName = 'Cash'; // Target
+      if (_adjustmentType.startsWith('Add')) {
+        paymentMode = 'System Adjustment';
+        partyName = widget.accountName;
       } else {
-        paymentMode = 'Cash'; // Source
-        partyName = 'System Adjustment'; // Target
+        paymentMode = widget.accountName;
+        partyName = 'System Adjustment';
       }
 
       final txn = Transaction()

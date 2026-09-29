@@ -631,7 +631,7 @@ final theme = Theme.of(context);
                     decoration: InputDecoration(
                       labelText: 'Discount',
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                       suffixIcon: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: DropdownButtonHideUnderline(
@@ -682,7 +682,7 @@ final theme = Theme.of(context);
                       decoration: InputDecoration(
                         labelText: 'Attachment',
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                         prefixIcon: const Icon(Icons.image_outlined, size: 18),
                         suffixIcon: _attachedImage != null 
                            ? IconButton(icon: const Icon(Icons.close, size: 16), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 32), onPressed: () => setState(()=> _attachedImage = null)) 

@@ -28,10 +28,10 @@ class InvoiceNumberService {
       final allInvoices = await isar.invoices.where().findAll();
       int maxNum = 0;
       for (var inv in allInvoices) {
-        if (inv.invoiceNumber != null && inv.invoiceNumber!.startsWith(prefix)) {
-          final match = RegExp(r'\d+').firstMatch(inv.invoiceNumber!);
-          if (match != null) {
-            final parsed = int.tryParse(match.group(0)!) ?? 0;
+        if (inv.invoiceNumber != null ) {
+          final matches = RegExp(r'\d+').allMatches(inv.invoiceNumber!);
+          if (matches.isNotEmpty) {
+            final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
             if (parsed > maxNum) maxNum = parsed;
           }
         }

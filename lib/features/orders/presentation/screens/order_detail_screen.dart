@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
@@ -209,6 +210,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       final prefs = ref.read(sharedPreferencesProvider);
       final isar = ref.read(databaseServiceProvider).isar;
       final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
+      final invoiceBanks = await isar.bankAccounts.filter().printOnInvoiceEqualTo(true).isDeletedEqualTo(false).findAll();
       
       final pdfData = await pdfService.generateOrderPdf(_order!, firmInfo: firmInfo);
       await pdfService.printOrSharePdf(pdfData, 'Order_${_order!.orderNumber}.pdf');
@@ -232,6 +234,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       final prefs = ref.read(sharedPreferencesProvider);
       final isar = ref.read(databaseServiceProvider).isar;
       final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
+      final invoiceBanks = await isar.bankAccounts.filter().printOnInvoiceEqualTo(true).isDeletedEqualTo(false).findAll();
       
       final pdfData = await pdfService.generateOrderPdf(_order!, firmInfo: firmInfo);
       await pdfService.sharePdf(pdfData, 'Order_${_order!.orderNumber}.pdf');

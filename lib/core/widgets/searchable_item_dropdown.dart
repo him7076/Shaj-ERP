@@ -50,22 +50,17 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
       optionsBuilder: (TextEditingValue textEditingValue) {
         final query = textEditingValue.text.trim().toLowerCase();
         List<Item> filtered = [];
-        if (query.isEmpty) {
-          filtered = widget.items.take(20).toList();
-        } else {
+        if (query.isEmpty) return const Iterable<Item>.empty();
+
           filtered = widget.items.where((i) {
             final name = i.itemName?.toLowerCase() ?? '';
             final code = i.itemCode?.toLowerCase() ?? '';
             final barcode = i.barcode?.toLowerCase() ?? '';
             return name.contains(query) || code.contains(query) || barcode.contains(query);
           }).take(30).toList();
-        }
-
         final createActionItem = Item()
           ..uuid = 'NEW_ACTION'
-          ..itemName = query.isNotEmpty
-              ? '+ Create New \ "$query"'
-              : '+ Create New Item';
+          ..itemName = '+ Create New "$query"';
 
         return [...filtered, createActionItem];
       },

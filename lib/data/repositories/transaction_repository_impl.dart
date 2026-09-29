@@ -46,9 +46,9 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
       int maxNum = 0;
       for (var t in allTxns) {
         if (t.transactionType == type && t.transactionNumber != null) {
-          final match = RegExp(r'\d+').firstMatch(t.transactionNumber!);
-          if (match != null) {
-            final parsed = int.tryParse(match.group(0)!) ?? 0;
+          final matches = RegExp(r'\d+').allMatches(t.transactionNumber!);
+          if (matches.isNotEmpty) {
+            final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
             if (parsed > maxNum) maxNum = parsed;
           }
         }

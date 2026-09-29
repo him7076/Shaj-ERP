@@ -226,6 +226,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       final prefs = ref.read(sharedPreferencesProvider);
       final isar = ref.read(databaseServiceProvider).isar;
       final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
+      final invoiceBanks = await isar.bankAccounts.filter().printOnInvoiceEqualTo(true).isDeletedEqualTo(false).findAll();
       
       final isThermal = prefs.getBool('use_thermal_printer') ?? false;
       final thermalSize = prefs.getString('thermal_paper_size') ?? '58mm';
@@ -234,12 +235,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               _invoice!,
               items: _invoiceItems,
               firmInfo: firmInfo,
+              invoiceBanks: invoiceBanks,
               paperSize: thermalSize,
             )
           : await pdfService.generateInvoicePdf(
               _invoice!,
               items: _invoiceItems,
               firmInfo: firmInfo,
+              invoiceBanks: invoiceBanks,
             );
       await pdfService.printOrSharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
     } catch (e) {
@@ -262,6 +265,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       final prefs = ref.read(sharedPreferencesProvider);
       final isar = ref.read(databaseServiceProvider).isar;
       final firmInfo = await FirmInfo.getActiveFirmInfo(prefs, isar);
+      final invoiceBanks = await isar.bankAccounts.filter().printOnInvoiceEqualTo(true).isDeletedEqualTo(false).findAll();
       
       final isThermal = prefs.getBool('use_thermal_printer') ?? false;
       final thermalSize = prefs.getString('thermal_paper_size') ?? '58mm';
@@ -270,12 +274,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               _invoice!,
               items: _invoiceItems,
               firmInfo: firmInfo,
+              invoiceBanks: invoiceBanks,
               paperSize: thermalSize,
             )
           : await pdfService.generateInvoicePdf(
               _invoice!,
               items: _invoiceItems,
               firmInfo: firmInfo,
+              invoiceBanks: invoiceBanks,
             );
       await pdfService.sharePdf(pdfData, 'Invoice_${_invoice!.invoiceNumber}.pdf');
     } catch (e) {

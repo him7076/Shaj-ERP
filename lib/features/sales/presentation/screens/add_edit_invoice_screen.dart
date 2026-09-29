@@ -856,7 +856,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                         decoration: InputDecoration(
                           labelText: 'Payment Mode',
                           isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                           prefixIcon: const Icon(Icons.payment, size: 18),
                           
                         ),
@@ -968,7 +968,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                     decoration: InputDecoration(
                       labelText: 'Discount',
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                       suffixIcon: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: DropdownButtonHideUnderline(
@@ -1020,7 +1020,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                       decoration: InputDecoration(
                         labelText: 'Attachment',
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                         prefixIcon: const Icon(Icons.image_outlined, size: 18),
                         suffixIcon: _attachedImage != null 
                            ? IconButton(icon: const Icon(Icons.close, size: 16), padding: EdgeInsets.zero, constraints: const BoxConstraints(minWidth: 32, minHeight: 32), onPressed: () => setState(()=> _attachedImage = null)) 
@@ -1451,21 +1451,20 @@ ref.listen(invoiceCartProvider, (prev, next) {
                                   decoration: InputDecoration(
                                     labelText: 'Salesman Name',
                                     isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                                    prefixIcon: const Icon(Icons.badge_outlined, size: 18),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
                                     suffixIcon: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         if (_selectedSalesman.isNotEmpty && _selectedSalesman != 'Default Salesman')
-                                          IconButton(
-                                            icon: const Icon(Icons.close, size: 16),
-                                            onPressed: () => setState(() => _selectedSalesman = ''),
-                                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                            padding: EdgeInsets.zero,
+                                          InkWell(
+                                            onTap: () => setState(() => _selectedSalesman = ''),
+                                            child: const Padding(
+                                              padding: EdgeInsets.all(4.0),
+                                              child: Icon(Icons.close, size: 14),
+                                            ),
                                           ),
-                                        
-                                        const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                                        const SizedBox(width: 8),
+                                        const Icon(Icons.arrow_drop_down, color: Colors.grey, size: 20),
+                                        const SizedBox(width: 4),
                                       ],
                                     ),
                                   ),

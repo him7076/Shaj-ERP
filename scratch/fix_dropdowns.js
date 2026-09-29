@@ -1,55 +1,19 @@
 const fs = require('fs');
 
-const filesToFix = [
-  'lib/features/sales/presentation/screens/add_edit_invoice_screen.dart',
-  'lib/features/purchases/presentation/screens/add_edit_purchase_screen.dart',
-  'lib/features/orders/presentation/screens/add_edit_order_screen.dart',
-  'lib/features/transactions/presentation/screens/add_edit_credit_note_screen.dart',
-  'lib/features/transactions/presentation/screens/add_edit_debit_note_screen.dart'
-];
+let c1 = fs.readFileSync('lib/core/widgets/searchable_item_dropdown.dart', 'utf8');
+c1 = c1.replace(/if\s*\(query\.isEmpty\)\s*{[\s\S]*?}\s*else\s*{([\s\S]*?)\s*}\s*final createActionItem = Item\(\)/, (match, p1) => {
+  return 'if (query.isEmpty) return const Iterable<Item>.empty();\n' + p1 + '\n        final createActionItem = Item()';
+});
+c1 = c1.replace(/itemName = query\.isNotEmpty[\s\S]*?\+ Create New Item';/, 'itemName = \'+ Create New "$query"\';');
+fs.writeFileSync('lib/core/widgets/searchable_item_dropdown.dart', c1, 'utf8');
+console.log('Fixed item dropdown');
 
-for (const file of filesToFix) {
-  if (!fs.existsSync(file)) continue;
-  let content = fs.readFileSync(file, 'utf8');
-
-  // Fix Salesman Suffix Icon
-  content = content.replace(
-    /IconButton\(\s*icon: const Icon\(Icons\.person_add, size: 18\),\s*onPressed: _showAddSalesmanDialog,\s*constraints: const BoxConstraints\(minWidth: 32, minHeight: 32\),\s*padding: EdgeInsets\.zero,\s*\),/g,
-    ''
-  );
-
-  // Fix Salesman onChanged
-  content = content.replace(
-    /onChanged:\s*\(val\)\s*\{\s*if\s*\(val\s*!=\s*null\)\s*setState\(\(\)\s*=>\s*_selectedSalesman\s*=\s*val\);\s*\}/g,
-    `onChanged: (val) {
-                                    if (val == 'ADD_NEW_SALESMAN') {
-                                      _showAddSalesmanDialog();
-                                      return;
-                                    }
-                                    if (val != null) setState(() => _selectedSalesman = val);
-                                  }`
-  );
-
-  // Fix Payment Mode Suffix Icon
-  content = content.replace(
-    /suffixIcon:\s*IconButton\(\s*icon: const Icon\(Icons\.add_circle, color: Colors\.blue, size: 20\),\s*padding: EdgeInsets\.zero,\s*constraints: const BoxConstraints\(minWidth: 32, minHeight: 32\),\s*onPressed: _showAddPaymentModeDialog,\s*\),/g,
-    ''
-  );
-
-  // Fix Payment Mode onChanged
-  content = content.replace(
-    /onChanged:\s*\(val\)\s*\{\s*if\s*\(val\s*!=\s*null\)\s*\{\s*setState\(\(\)\s*=>\s*_paymentMode\s*=\s*val\);\s*\}\s*\}/g,
-    `onChanged: (val) {
-                          if (val == 'ADD_NEW_PAYMENT') {
-                            _showAddPaymentModeDialog();
-                            return;
-                          }
-                          if (val != null) {
-                            setState(() => _paymentMode = val);
-                          }
-                        }`
-  );
-
-  fs.writeFileSync(file, content, 'utf8');
+if (fs.existsSync('lib/core/widgets/searchable_party_dropdown.dart')) {
+  let c2 = fs.readFileSync('lib/core/widgets/searchable_party_dropdown.dart', 'utf8');
+  c2 = c2.replace(/if\s*\(query\.isEmpty\)\s*{[\s\S]*?}\s*else\s*{([\s\S]*?)\s*}\s*final createActionParty = Party\(\)/, (match, p1) => {
+    return 'if (query.isEmpty) return const Iterable<Party>.empty();\n' + p1 + '\n        final createActionParty = Party()';
+  });
+  c2 = c2.replace(/partyName = query\.isNotEmpty[\s\S]*?\+ Create New Party';/, 'partyName = \'+ Create New "$query"\';');
+  fs.writeFileSync('lib/core/widgets/searchable_party_dropdown.dart', c2, 'utf8');
+  console.log('Fixed party dropdown');
 }
-console.log('Fixed Dropdowns');

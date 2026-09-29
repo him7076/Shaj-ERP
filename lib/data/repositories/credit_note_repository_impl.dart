@@ -24,10 +24,10 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
       final allItems = await collection.where().findAll();
       int maxNum = 0;
       for (var item in allItems) {
-        if (item.creditNoteNumber != null && item.creditNoteNumber!.startsWith('CN-')) {
-          final match = RegExp(r'\d+').firstMatch(item.creditNoteNumber!);
-          if (match != null) {
-            final parsed = int.tryParse(match.group(0)!) ?? 0;
+        if (item.creditNoteNumber != null ) {
+          final matches = RegExp(r'\d+').allMatches(item.creditNoteNumber!);
+          if (matches.isNotEmpty) {
+            final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
             if (parsed > maxNum) maxNum = parsed;
           }
         }
