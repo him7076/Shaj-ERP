@@ -14,6 +14,7 @@ import 'package:business_sahaj_erp/core/constants/app_constants.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
 
 // Collections
+import 'package:business_sahaj_erp/data/local/collections/isar_model.dart';
 import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
