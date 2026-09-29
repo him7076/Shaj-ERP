@@ -332,7 +332,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
             }
             party.updatedAt = DateTime.now();
+            party.isSynced = false;
             await isar.partys.put(party);
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _generateUuid()
+              ..entityType = 'Party'
+              ..entityId = party.id
+              ..entityUuid = party.uuid
+              ..operation = 'Update'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
           }
         }
 
@@ -342,7 +351,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             targetParty.outstandingBalance = (targetParty.outstandingBalance ?? 0.0) - amt;
             targetParty.updatedAt = DateTime.now();
+            targetParty.isSynced = false;
             await isar.partys.put(targetParty);
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _generateUuid()
+              ..entityType = 'Party'
+              ..entityId = targetParty.id
+              ..entityUuid = targetParty.uuid
+              ..operation = 'Update'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
           }
         }
 
@@ -356,23 +374,30 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final billUuid = entry.key;
             final allocAmt = entry.value;
 
-            if (type == 'Receipt' || type == 'Credit Note') {
-              final invoice = await _findInvoice(billUuid);
-              if (invoice != null) {
-                invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
-                if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
-                invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
-                if (invoice.pendingAmount! <= 0) {
-                  invoice.paymentStatus = 'Paid';
-                } else if (invoice.paidAmount! > 0) {
-                  invoice.paymentStatus = 'Partially Paid';
-                } else {
-                  invoice.paymentStatus = 'Unpaid';
-                }
-                invoice.updatedAt = DateTime.now();
-                await isar.invoices.put(invoice);
+            final invoice = await _findInvoice(billUuid);
+            if (invoice != null) {
+              invoice.paidAmount = (invoice.paidAmount ?? 0.0) - allocAmt;
+              if (invoice.paidAmount! < 0) invoice.paidAmount = 0.0;
+              invoice.pendingAmount = (invoice.grandTotal ?? 0.0) - invoice.paidAmount!;
+              if (invoice.pendingAmount! <= 0) {
+                invoice.paymentStatus = 'Paid';
+              } else if (invoice.paidAmount! > 0) {
+                invoice.paymentStatus = 'Partially Paid';
+              } else {
+                invoice.paymentStatus = 'Unpaid';
               }
-            } else if (type == 'Payment' || type == 'Debit Note') {
+              invoice.updatedAt = DateTime.now();
+              invoice.isSynced = false;
+              await isar.invoices.put(invoice);
+              await isar.syncQueues.put(SyncQueue()
+                ..uuid = _generateUuid()
+                ..entityType = 'Invoice'
+                ..entityId = invoice.id
+                ..entityUuid = invoice.uuid
+                ..operation = 'Update'
+                ..createdAt = DateTime.now()
+                ..updatedAt = DateTime.now());
+            } else {
               final purchase = await _findPurchase(billUuid);
               if (purchase != null) {
                 purchase.paidAmount = (purchase.paidAmount ?? 0.0) - allocAmt;
@@ -386,7 +411,16 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
                   purchase.paymentStatus = 'Unpaid';
                 }
                 purchase.updatedAt = DateTime.now();
+                purchase.isSynced = false;
                 await isar.purchases.put(purchase);
+                await isar.syncQueues.put(SyncQueue()
+                  ..uuid = _generateUuid()
+                  ..entityType = 'Purchase'
+                  ..entityId = purchase.id
+                  ..entityUuid = purchase.uuid
+                  ..operation = 'Update'
+                  ..createdAt = DateTime.now()
+                  ..updatedAt = DateTime.now());
               }
             }
           }
