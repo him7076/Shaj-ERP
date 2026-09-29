@@ -1,0 +1,2388 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:uuid/uuid.dart';
+import 'package:isar/isar.dart' hide Query;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order, Settings, Transaction;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:business_sahaj_erp/core/services/firebase_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
+import 'package:business_sahaj_erp/core/errors/exceptions.dart';
+import 'package:business_sahaj_erp/core/constants/app_constants.dart';
+import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
+
+// Collections
+import 'package:business_sahaj_erp/data/local/collections/isar_model.dart';
+import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
+
+enum SyncStatus { idle, syncing, success, failure }
+
+class SyncState {
+  final SyncStatus status;
+  final String message;
+  final DateTime? lastSyncTime;
+  final double progress; // 0.0 to 1.0
+  final int currentStep;
+  final int totalSteps;
+
+  const SyncState({
+    required this.status,
+    required this.message,
+    this.lastSyncTime,
+    this.progress = 0.0,
+    this.currentStep = 0,
+    this.totalSteps = 0,
+  });
+
+  int get percentage => (progress * 100).clamp(0, 100).toInt();
+
+  SyncState copyWith({
+    SyncStatus? status,
+    String? message,
+    DateTime? lastSyncTime,
+    double? progress,
+    int? currentStep,
+    int? totalSteps,
+  }) {
+    return SyncState(
+      status: status ?? this.status,
+      message: message ?? this.message,
+      lastSyncTime: lastSyncTime ?? this.lastSyncTime,
+      progress: progress ?? this.progress,
+      currentStep: currentStep ?? this.currentStep,
+      totalSteps: totalSteps ?? this.totalSteps,
+    );
+  }
+}
+
+class SyncService {
+  final FirebaseService _firebaseService;
+  final SyncQueueService _queueService;
+  final DatabaseService _dbService;
+  final SharedPreferences _prefs;
+
+  /// Helper to fetch items from Isar in chunks to avoid blocking the Web Wasm thread
+  Future<List<T>> _chunkedFindAll<T>(Future<List<T>> Function(int offset, int limit) queryFn) async {
+    final List<T> results = [];
+    int offset = 0;
+    const int limit = 500;
+    while(true) {
+      final chunk = await queryFn(offset, limit);
+      if (chunk.isEmpty) break;
+      results.addAll(chunk);
+      offset += limit;
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+    return results;
+  }
+
+  final _stateController = StreamController<SyncState>.broadcast();
+  bool _isRecalculating = false; // Lock flag to prevent concurrent stock recalculations
+  SyncState _currentState = const SyncState(
+    status: SyncStatus.idle,
+    message: 'System ready for sync',
+  );
+  DateTime _lastSyncCompleteTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  SyncService(
+    this._firebaseService,
+    this._queueService,
+    this._dbService,
+    this._prefs,
+  ) {
+    _currentState = SyncState(
+      status: SyncStatus.idle,
+      message: 'System ready for sync',
+      lastSyncTime: _loadLastSyncTime(),
+    );
+    _stateController.add(_currentState);
+  }
+
+  Stream<SyncState> get syncStateStream => _stateController.stream;
+  SyncState get currentState => _currentState;
+
+  void _updateState(SyncState newState) {
+    _currentState = newState;
+    _stateController.add(newState);
+  }
+
+  DateTime _loadLastSyncTime() {
+    final activeFirmId = _dbService.activeFirmId;
+    final timestamp = _prefs.getInt('${AppConstants.keyLastSyncTime}_$activeFirmId') ?? _prefs.getInt(AppConstants.keyLastSyncTime);
+    if (timestamp != null) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  Future<void> _saveLastSyncTime(DateTime time) async {
+    final activeFirmId = _dbService.activeFirmId;
+    await _prefs.setInt('${AppConstants.keyLastSyncTime}_$activeFirmId', time.millisecondsSinceEpoch);
+    _currentState = _currentState.copyWith(lastSyncTime: time);
+  }
+
+  /// Clears ALL per-entity cloud sync timestamps for a given firm.
+  /// Call this on firm switch or before force-full-download so incremental filters are reset.
+  Future<void> clearAllFirmTimestamps(String firmId) async {
+    final allEntityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
+      'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+      'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+    for (final et in allEntityTypes) {
+      await _prefs.remove('last_cloud_sync_timestamp_${firmId}_$et');
+      // Also clear legacy non-firm-specific keys
+      await _prefs.remove('last_cloud_sync_timestamp_$et');
+    }
+    await _prefs.remove('${AppConstants.keyLastSyncTime}_$firmId');
+    logger.info('Cleared all sync timestamps for firm: $firmId');
+  }
+
+  /// Synchronizes company/firm definitions with Firestore `firms` collection
+  Future<List<String>> syncFirms() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) {
+      logger.warning('Skipping firm sync: Firebase not authenticated.');
+      return _prefs.getStringList('firms_list') ?? ['firm_default'];
+    }
+
+    try {
+      logger.info('Syncing company/firm definitions with Firebase Firestore...');
+      final companyId = _firebaseService.companyId;
+
+      // 1. Download remote firms from Firestore with 5s timeout
+      final querySnapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: companyId)
+          .get()
+          .timeout(const Duration(seconds: 5));
+
+      final localFirms = List<String>.from(_prefs.getStringList('firms_list') ?? ['firm_default']);
+      final Set<String> updatedFirmsSet = Set.from(localFirms);
+      final Set<String> remoteDeletedFirms = {};
+      final Set<String> existingRemoteIds = {};
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final firmId = data['firmId'] as String? ?? doc.id;
+        final firmName = data['firmName'] as String?;
+        final isDeleted = data['isDeleted'] as bool? ?? false;
+        existingRemoteIds.add(firmId);
+
+        final remoteUpdatedAtStr = data['updatedAt'] as String? ?? '';
+        final remoteUpdatedAt = DateTime.tryParse(remoteUpdatedAtStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final localUpdatedAtStr = _prefs.getString('firm_updated_at_$firmId') ?? '';
+        final localUpdatedAt = DateTime.tryParse(localUpdatedAtStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+        if (isDeleted) {
+          remoteDeletedFirms.add(firmId);
+          updatedFirmsSet.remove(firmId);
+          await _prefs.remove('firm_name_$firmId');
+        } else {
+          updatedFirmsSet.add(firmId);
+          
+          // Conflict resolution: Remote vs Local
+          if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+            // Remote is newer, overwrite local
+            if (firmName != null && firmName.isNotEmpty) {
+              await _prefs.setString('firm_name_$firmId', firmName);
+              await _prefs.setString('firm_updated_at_$firmId', remoteUpdatedAt.toIso8601String());
+              if (data['firmGst'] != null) await _prefs.setString('firm_gst_$firmId', data['firmGst']);
+              if (data['firmMobile'] != null) await _prefs.setString('firm_mobile_$firmId', data['firmMobile']);
+              if (data['firmWhatsapp'] != null) await _prefs.setString('firm_whatsapp_$firmId', data['firmWhatsapp']);
+              if (data['firmEmail'] != null) await _prefs.setString('firm_email_$firmId', data['firmEmail']);
+              if (data['firmPan'] != null) await _prefs.setString('firm_pan_$firmId', data['firmPan']);
+              if (data['firmAddress'] != null) await _prefs.setString('firm_address_$firmId', data['firmAddress']);
+              if (data['firmCity'] != null) await _prefs.setString('firm_city_$firmId', data['firmCity']);
+              if (data['firmState'] != null) await _prefs.setString('firm_state_$firmId', data['firmState']);
+              if (data['firmPincode'] != null) await _prefs.setString('firm_pincode_$firmId', data['firmPincode']);
+              if (data['firmBankName'] != null) await _prefs.setString('firm_bank_name_$firmId', data['firmBankName']);
+              if (data['firmBankAcc'] != null) await _prefs.setString('firm_bank_acc_$firmId', data['firmBankAcc']);
+              if (data['firmIfsc'] != null) await _prefs.setString('firm_ifsc_$firmId', data['firmIfsc']);
+              if (data['firmUpi'] != null) await _prefs.setString('firm_upi_$firmId', data['firmUpi']);
+              if (data['firmCategory'] != null) await _prefs.setString('firm_category_$firmId', data['firmCategory']);
+              if (data['firmFssai'] != null) await _prefs.setString('firm_fssai_$firmId', data['firmFssai']);
+              if (data['firmLogo'] != null) await _prefs.setString('firm_logo_$firmId', data['firmLogo']);
+            }
+          } else if (localUpdatedAt.isAfter(remoteUpdatedAt)) {
+            // Local is newer! We need to upload this local edit to Firebase.
+            // By removing it from existingRemoteIds, it will be uploaded in step 2.
+            existingRemoteIds.remove(firmId);
+          }
+        }
+      }
+
+      if (updatedFirmsSet.isEmpty) {
+        updatedFirmsSet.add('firm_default');
+      }
+
+      final updatedFirmsList = updatedFirmsSet.toList();
+
+      // 2. Upload local firms to Firestore ONLY if missing in Firestore and NOT deleted remotely, OR if local is newer
+      final batch = _firebaseService.firestore.batch();
+      bool hasUploads = false;
+
+      for (var firmId in updatedFirmsList) {
+        if (existingRemoteIds.contains(firmId) || remoteDeletedFirms.contains(firmId)) {
+          continue; // Do NOT overwrite existing remote firms unless local is newer!
+        }
+        final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$firmId') ?? true;
+        if (!isFirmSyncEnabled) {
+          continue; // Do NOT auto-upload local firm definition to cloud if firm sync toggle is OFF!
+        }
+
+        final firmName = _prefs.getString('firm_name_$firmId') ??
+            (firmId == 'firm_default' ? 'Default Company' : 'New Company');
+        final localUpdatedAt = _prefs.getString('firm_updated_at_$firmId') ?? DateTime.now().toUtc().toIso8601String();
+
+        final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
+        batch.set(
+          docRef,
+          {
+            'firmId': firmId,
+            'firmName': firmName,
+            'companyId': companyId,
+            'createdAt': DateTime.now().toIso8601String(), // This will be merged, so it won't overwrite existing
+            'updatedAt': localUpdatedAt,
+            'isDeleted': false,
+            'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
+            'firmGst': _prefs.getString('firm_gst_$firmId') ?? '',
+            'firmMobile': _prefs.getString('firm_mobile_$firmId') ?? '',
+            'firmWhatsapp': _prefs.getString('firm_whatsapp_$firmId') ?? '',
+            'firmEmail': _prefs.getString('firm_email_$firmId') ?? '',
+            'firmPan': _prefs.getString('firm_pan_$firmId') ?? '',
+            'firmAddress': _prefs.getString('firm_address_$firmId') ?? '',
+            'firmCity': _prefs.getString('firm_city_$firmId') ?? '',
+            'firmState': _prefs.getString('firm_state_$firmId') ?? '',
+            'firmPincode': _prefs.getString('firm_pincode_$firmId') ?? '',
+            'firmBankName': _prefs.getString('firm_bank_name_$firmId') ?? '',
+            'firmBankAcc': _prefs.getString('firm_bank_acc_$firmId') ?? '',
+            'firmIfsc': _prefs.getString('firm_ifsc_$firmId') ?? '',
+            'firmUpi': _prefs.getString('firm_upi_$firmId') ?? '',
+            'firmCategory': _prefs.getString('firm_category_$firmId') ?? '',
+            'firmFssai': _prefs.getString('firm_fssai_$firmId') ?? '',
+            'firmLogo': _prefs.getString('firm_logo_$firmId') ?? '',
+          },
+          SetOptions(merge: true),
+        );
+        hasUploads = true;
+      }
+
+      if (hasUploads) {
+        await batch.commit();
+      }
+
+      // 3. Hard delete data for soft-deleted firms
+      await hardDeleteSoftDeletedFirms();
+
+      await _prefs.setStringList('firms_list', updatedFirmsList);
+      logger.info('Firm definitions synced successfully: $updatedFirmsList');
+      return updatedFirmsList;
+    } catch (e, stackTrace) {
+      logger.error('Failed to sync firms with Firestore', e, stackTrace);
+      return _prefs.getStringList('firms_list') ?? ['firm_default'];
+    }
+  }
+
+  Future<void> _hardDeleteFirmData(String firmId) async {
+    final collections = [
+      'parties', 'items', 'categories', 'units', 'brands', 'orders', 'order_items',
+      'invoices', 'invoice_items', 'settings', 'users', 'purchases', 'purchase_items',
+      'expenses', 'expense_items', 'transactions', 'bank_accounts', 'credit_notes',
+      'credit_note_items', 'debit_notes', 'debit_note_items', 'stock_adjustments',
+      'whatsapp_mappings', 'tasks', 'machinerys', 'sync_logs'
+    ];
+    final companyId = _firebaseService.companyId;
+
+    for (final col in collections) {
+      try {
+        final snapshot = await _firebaseService.firestore
+            .collection(col)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: firmId)
+            .get();
+        
+        if (snapshot.docs.isNotEmpty) {
+          WriteBatch batch = _firebaseService.firestore.batch();
+          int count = 0;
+          for (var doc in snapshot.docs) {
+            batch.delete(doc.reference);
+            count++;
+            if (count >= 400) {
+              await batch.commit();
+              batch = _firebaseService.firestore.batch();
+              count = 0;
+            }
+          }
+          if (count > 0) {
+            await batch.commit();
+          }
+        }
+      } catch (e) {
+        logger.error('Error deleting collection $col for firm $firmId', e);
+      }
+    }
+  }
+
+  Future<void> hardDeleteSoftDeletedFirms() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+    try {
+      final snapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: _firebaseService.companyId)
+          .where('isDeleted', isEqualTo: true)
+          .get();
+      
+      for (var doc in snapshot.docs) {
+        final firmId = doc.id;
+        await _hardDeleteFirmData(firmId);
+        await doc.reference.delete();
+        logger.info('Hard deleted soft-deleted firm $firmId and its data.');
+      }
+    } catch (e) {
+      logger.error('Failed to hard delete soft-deleted firms', e);
+    }
+  }
+
+  /// Hard delete firm document and all its data in Firestore
+  Future<void> deleteRemoteFirm(String firmId) async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+    try {
+      await _hardDeleteFirmData(firmId);
+      final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
+      await docRef.delete();
+      logger.info('Hard deleted firm $firmId from Firestore.');
+    } catch (e) {
+      logger.error('Failed to hard delete firm $firmId in Firestore', e);
+    }
+  }
+
+  Timer? _quietSyncDebounceTimer;
+  bool _isUploadingQuietly = false;
+
+  /// Non-blocking, debounced background queue upload.
+  /// Batches multiple rapid saves into a single background upload cycle,
+  /// preventing browser freezes, event-loop starvation, and Isar DB lock contention.
+  void syncPendingChangesQuietly({Duration delay = const Duration(seconds: 2)}) {
+    // Early abort to save CPU and event loop if sync is entirely off
+    if (!_firebaseService.isSyncConfigured) return;
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) return;
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) return;
+
+    _quietSyncDebounceTimer?.cancel();
+    _quietSyncDebounceTimer = Timer(delay, () async {
+      if (_currentState.status == SyncStatus.syncing) return;
+      if (_isUploadingQuietly) return; // Prevent concurrent quiet uploads
+      // Cooldown: skip if a full syncAll just completed within last 5 seconds
+      if (DateTime.now().difference(_lastSyncCompleteTime).inSeconds < 5) return;
+
+      _isUploadingQuietly = true;
+      try {
+        await _firebaseService.ensureAuthenticated();
+        if (_firebaseService.isAuthenticated) {
+          await _uploadLocalChanges(silent: true);
+        }
+      } catch (e) {
+        logger.warning('Quiet background upload encountered non-fatal error: $e');
+      } finally {
+        _isUploadingQuietly = false;
+      }
+    });
+  }
+
+  /// Triggers full synchronization of all collections: upload edits, download changes, resolve conflicts
+  Future<void> syncAll() async {
+    if (!_firebaseService.isSyncConfigured) {
+      logger.info('Firebase keys not configured in Sync Center. Bypassing cloud sync.');
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Offline Mode (Firebase Not Configured)',
+      ));
+      return;
+    }
+
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      logger.info('Firebase Cloud Sync is turned OFF by user. Bypassing cloud sync.');
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) {
+      logger.info('Cloud sync is OFF for active firm ($activeFirmId). Bypassing cloud sync.');
+      _updateState(SyncState(
+        status: SyncStatus.idle,
+        message: 'Firm Cloud Sync OFF for firm ($activeFirmId)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) {
+      logger.warning('Sync already in progress. Ignoring request.');
+      return;
+    }
+
+    await _firebaseService.ensureAuthenticated();
+
+    if (!_firebaseService.isAuthenticated) {
+      logger.warning('Bypassing sync: User not authenticated.');
+      _updateState(const SyncState(
+        status: SyncStatus.failure,
+        message: 'Sync failed: User not logged in',
+      ));
+      return;
+    }
+
+    logger.info('Starting Firebase synchronization engine...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Synchronizing with Firebase...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      // 0. Sync company/firm definitions first
+      await syncFirms();
+
+      // 1. Upload local changes to Firestore
+      await _uploadLocalChanges();
+
+      // 2. Download remote updates from Firestore via Instant Low-Quota Delta Sync Engine
+      final lastSync = _currentState.lastSyncTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final newSyncTime = DateTime.now();
+
+      await _downloadDeltaRemoteUpdates(lastSync);
+
+      // 3. Persist successful sync time
+      await _saveLastSyncTime(newSyncTime);
+      
+      // 4. Log successful synchronization
+      await _logSyncEvent('Success', 'Full sync completed successfully.');
+
+      logger.info('Firebase sync cycle completed successfully.');
+      _lastSyncCompleteTime = DateTime.now();
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Sync completed successfully (100%)',
+        lastSyncTime: newSyncTime,
+        progress: 1.0,
+        currentStep: 22,
+        totalSteps: 22,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Firebase synchronization failed', e, stackTrace);
+      await _logSyncEvent('Failure', 'Sync cycle failed: $e');
+      
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Sync failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Downloads remote updates from Firestore into local Isar DB (Pull Cloud -> Local)
+  /// Safety Action: Wipes local DB for the active firm first, then pulls ALL cloud data freshly!
+  Future<void> syncDataFromCloud() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) {
+      logger.info('Cloud sync is OFF for active firm ($activeFirmId). Skipping download.');
+      _updateState(SyncState(
+        status: SyncStatus.idle,
+        message: 'Firm Cloud Sync OFF for firm ($activeFirmId)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) return;
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    logger.info('Purging local database and downloading fresh data from Firebase Cloud...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Purging local DB & Downloading fresh Cloud data...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
+      final activeFirmId = _dbService.activeFirmId;
+      await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
+      await _prefs.remove(AppConstants.keyLastSyncTime);
+
+      // Clear all firm-specific per-entity timestamps to force full fresh download
+      final allEntityTypes = [
+        'Category', 'Unit', 'Brand', 'Party', 'Item',
+        'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+        'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
+        'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+        'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+      ];
+      for (final et in allEntityTypes) {
+        await _prefs.remove('last_cloud_sync_timestamp_$et');
+        await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
+      }
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
+
+      // 2. PURGE local database completely before downloading fresh cloud data.
+      logger.info('Purging local Isar database for firm: $activeFirmId before fresh cloud download...');
+      await _dbService.clearDatabase();
+      logger.info('Local database purged successfully. Ready for fresh cloud download.');
+
+      // 3. Re-seed standard commercial units in local DB
+      await DemoDataSeeder.seedStandardUnits(_dbService);
+
+      // 4. Download remote firm definitions & all Firestore collections for active firm
+      await syncFirms();
+      final epochStart = DateTime.fromMillisecondsSinceEpoch(0);
+      final newSyncTime = DateTime.now();
+      await _downloadRemoteUpdates(epochStart, forceFullDownload: true);
+      await _saveLastSyncTime(newSyncTime);
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Local DB purged & fresh cloud data downloaded successfully!',
+        lastSyncTime: newSyncTime,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Failed to download cloud data', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Cloud download failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Forces all local records to be uploaded to Firebase Cloud (Push Local -> Cloud)
+  /// Safety Action: Wipes cloud Firestore data for the active firm first, then pushes ALL local records!
+  Future<void> forceLocalDataToCloud() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) return;
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    logger.info('Wiping cloud data and pushing local records to Firebase Cloud...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Wiping cloud DB & Pushing local data to Cloud...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      // 1. Wipe remote Firestore data for active firm first
+      await clearCloudDataForActiveFirm();
+
+      // 2. Reset sync queue retries and enqueue all local records for upload
+      await _queueService.resetAllRetries();
+      await _enqueueAllLocalRecordsForUpload(forceAll: true);
+      await _uploadLocalChanges();
+
+      final newSyncTime = DateTime.now();
+      await _saveLastSyncTime(newSyncTime);
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Cloud data wiped & local data pushed successfully!',
+        lastSyncTime: newSyncTime,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Failed to push local data to cloud', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Cloud upload failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Helper to enqueue unsynced or all local records into SyncQueue
+  Future<void> _enqueueAllLocalRecordsForUpload({bool forceAll = false}) async {
+    final uuidGen = Uuid();
+    final isar = _dbService.isar;
+
+        Future<void> processEnqueuing<T>(
+        Future<List<T>> Function(int offset, int limit) queryFn,
+        String entityType,
+        String? Function(T) getUuid,
+        int Function(T) getId) async {
+      int offset = 0;
+      const int limit = 500;
+      while (true) {
+        final chunk = await queryFn(offset, limit);
+        if (chunk.isEmpty) break;
+        
+        final queues = chunk.map((item) => SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = entityType
+          ..entityId = getId(item)
+          ..entityUuid = getUuid(item)
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now()).toList();
+
+        await isar.writeTxn(() async {
+          await isar.syncQueues.putAll(queues);
+        });
+        
+        offset += limit;
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+    }
+
+    await processEnqueuing<Party>((o, l) => forceAll ? isar.partys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.partys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Party', (Party e) => e.uuid, (Party e) => e.id);
+    await processEnqueuing<Item>((o, l) => forceAll ? isar.items.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.items.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Item', (Item e) => e.uuid, (Item e) => e.id);
+    await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (Invoice e) => e.uuid, (Invoice e) => e.id);
+    await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (Order e) => e.uuid, (Order e) => e.id);
+    await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (Purchase e) => e.uuid, (Purchase e) => e.id);
+    // REMOVED: InvoiceItem uploaded separately
+
+    // REMOVED: PurchaseItem uploaded separately
+
+    await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (Expense e) => e.uuid, (Expense e) => e.id);
+    await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ExpenseItem ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (ExpenseItem e) => e.uuid, (ExpenseItem e) => e.id);
+    await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((StockAdjustment sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment', (StockAdjustment e) => e.uuid, (StockAdjustment e) => e.id);
+    await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((CreditNote cn) => forceAll || !cn.isSynced).toList()), 'CreditNote', (CreditNote e) => e.uuid, (CreditNote e) => e.id);
+    // REMOVED: CreditNoteItem uploaded separately
+
+    await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((WhatsAppMapping wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping', (WhatsAppMapping e) => e.uuid, (WhatsAppMapping e) => e.id);
+    await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((DebitNote dn) => forceAll || !dn.isSynced).toList()), 'DebitNote', (DebitNote e) => e.uuid, (DebitNote e) => e.id);
+    // REMOVED: DebitNoteItem uploaded separately
+
+    await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction', (Transaction e) => e.uuid, (Transaction e) => e.id);
+    await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category', (Category e) => e.uuid, (Category e) => e.id);
+    await processEnqueuing<Unit>((o, l) => forceAll ? isar.units.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.units.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Unit', (Unit e) => e.uuid, (Unit e) => e.id);
+    await processEnqueuing<Brand>((o, l) => forceAll ? isar.brands.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.brands.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Brand', (Brand e) => e.uuid, (Brand e) => e.id);
+    await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings', (Settings e) => e.uuid, (Settings e) => e.id);
+    await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (User e) => e.uuid, (User e) => e.id);
+    await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (BankAccount e) => e.uuid, (BankAccount e) => e.id);
+    // REMOVED: OrderItem uploaded separately
+
+    await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (Task e) => e.uuid, (Task e) => e.id);
+    await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery', (Machinery e) => e.uuid, (Machinery e) => e.id);
+  }
+
+  /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
+  Future<void> clearCloudData() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) {
+      throw StateError('Firebase authentication failed. Enable Anonymous login in console.');
+    }
+
+    final companyId = _firebaseService.companyId;
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .get();
+      } catch (e1) {
+        logger.warning('Cloud wipe query for $entityType failed: $e1. Trying full collection query limit 500.');
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .limit(500)
+              .get();
+        } catch (_) {}
+      }
+
+      if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
+
+      try {
+        // Chunk batch deletes to max 450
+        for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+          final chunk = querySnapshot.docs.skip(i).take(450);
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in chunk) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          await Future.delayed(const Duration(milliseconds: 50)); // Yield
+        }
+      } catch (e) {
+        logger.warning('Physical batch delete failed for $entityType ($e). Falling back to soft delete...');
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.set(
+                doc.reference,
+                {
+                  'isDeleted': true,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50)); // Yield
+          }
+        } catch (softErr) {
+          logger.error('Soft delete fallback failed for $entityType', softErr);
+        }
+      }
+    }
+
+    // Reset local sync state so next sync starts fresh
+    await _prefs.remove(AppConstants.keyLastSyncTime);
+    _currentState = _currentState.copyWith(lastSyncTime: DateTime.fromMillisecondsSinceEpoch(0));
+    _stateController.add(_currentState);
+  }
+
+  /// Deletes all documents belonging to the active firm from Firestore
+  
+  /// Deletes all documents belonging to a specific firm from Firestore (Hard Delete)
+  Future<void> clearCloudDataForFirm(String firmId) async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    final companyId = _firebaseService.companyId;
+    logger.info('Wiping all remote Firestore documents for firm: $firmId');
+
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: firmId)
+            .get();
+      } catch (e1) {
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .where('firmId', isEqualTo: firmId)
+              .get();
+        } catch (_) {}
+      }
+
+      if (querySnapshot != null && querySnapshot.docs.isNotEmpty) {
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.delete(doc.reference); // Hard delete
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50));
+          }
+        } catch (e) {
+          logger.error('Failed to hard delete chunk for $entityType', e);
+        }
+      }
+    }
+    
+    // Also delete the firm document itself
+    try {
+       await _firebaseService.firestore.collection('firms').doc(firmId).delete();
+    } catch (_) {}
+  }
+
+  Future<void> clearCloudDataForActiveFirm() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    final companyId = _firebaseService.companyId;
+    final activeFirmId = _dbService.activeFirmId;
+    logger.info('Wiping all remote Firestore documents for firm: $activeFirmId');
+
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: activeFirmId)
+            .get();
+      } catch (e1) {
+        logger.warning('Primary firm wipe query failed for $entityType: $e1. Trying firmId-only query.');
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .where('firmId', isEqualTo: activeFirmId)
+              .get();
+        } catch (e2) {
+          logger.warning('Secondary firm wipe query failed for $entityType: $e2. Trying companyId query.');
+          try {
+            querySnapshot = await _firebaseService.firestore
+                .collection(collectionName)
+                .where('companyId', isEqualTo: companyId)
+                .get();
+          } catch (_) {}
+        }
+      }
+
+      if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
+
+      try {
+        // Chunk batch deletes to max 450
+        for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+          final chunk = querySnapshot.docs.skip(i).take(450);
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in chunk) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          await Future.delayed(const Duration(milliseconds: 50)); // Yield
+        }
+      } catch (e) {
+        logger.warning('Physical batch delete failed for firm $activeFirmId ($entityType): $e. Falling back to soft delete...');
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.set(
+                doc.reference,
+                {
+                  'isDeleted': true,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50)); // Yield
+          }
+        } catch (softErr) {
+          logger.error('Soft delete fallback failed for firm $activeFirmId ($entityType)', softErr);
+        }
+      }
+    }
+  }
+
+  /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
+  /// [silent] = true when called from background quiet sync Ã¯Â¿Â½ avoids polluting global state
+  Future<void> _uploadLocalChanges({bool silent = false}) async {
+    logger.info('Uploading local dirty changes to Firestore...');
+    final uploadStartTime = DateTime.now();
+
+    if (!silent) {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Checking pending queue...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.05,
+        currentStep: 1,
+        totalSteps: 22,
+      ));
+    }
+    await Future.delayed(Duration.zero); // Yield before heavy DB work
+
+    // NOTE: We do NOT call _enqueueAllLocalRecordsForUpload here.
+    // Records are enqueued by repositories during save/update/delete.
+    // The full sweep is only needed for forceLocalDataToCloud().
+
+    final allQueueItems = await _queueService.getPendingQueue();
+
+    if (allQueueItems.isEmpty) {
+      logger.info('No pending changes to upload.');
+      return;
+    }
+
+    logger.info('Found ${allQueueItems.length} queue items to process.');
+
+    final isar = _dbService.isar;
+    final List<Map<String, dynamic>> syncedItems = [];
+    final List<int> completedQueueIds = [];
+
+    // Deduplicate queue items to minimize Firebase Writes Ã¯Â¿Â½ with event-loop yielding
+    if (!silent) {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Deduplicating ${allQueueItems.length} queue items...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.07,
+        currentStep: 1,
+        totalSteps: 22,
+      ));
+    }
+    await Future.delayed(Duration.zero);
+
+    final uniqueItemsToProcess = <String, SyncQueue>{};
+    for (var i = 0; i < allQueueItems.length; i++) {
+      final q = allQueueItems[i];
+      if (q.retryCount >= 5) continue;
+      
+      final key = '${q.entityType}_${q.entityUuid}';
+      if (q.operation == 'Delete') {
+        if (uniqueItemsToProcess.containsKey(key)) {
+          completedQueueIds.add(uniqueItemsToProcess[key]!.id);
+        }
+        uniqueItemsToProcess[key] = q;
+      } else {
+        if (uniqueItemsToProcess.containsKey(key)) {
+          if (uniqueItemsToProcess[key]!.operation == 'Delete') {
+             completedQueueIds.add(q.id);
+          } else {
+             completedQueueIds.add(uniqueItemsToProcess[key]!.id);
+             uniqueItemsToProcess[key] = q;
+          }
+        } else {
+          uniqueItemsToProcess[key] = q;
+        }
+      }
+
+      // Yield every 200 items to prevent browser freeze during deduplication
+      if (i % 200 == 0 && i > 0) {
+        await Future.delayed(Duration.zero);
+      }
+    }
+
+    final queueItems = uniqueItemsToProcess.values.toList();
+    final totalItems = queueItems.length;
+    logger.info('Deduplicated to $totalItems unique items for upload.');
+
+    WriteBatch currentBatch = _firebaseService.firestore.batch();
+    int batchOpsCount = 0;
+    int totalUploaded = 0;
+    int totalFailed = 0;
+    
+    List<Map<String, dynamic>> currentBatchSyncedItems = [];
+    List<int> currentBatchCompletedIds = [];
+    List<SyncQueue> currentBatchQueueItems = [];
+
+    for (int i = 0; i < queueItems.length; i++) {
+      final queueItem = queueItems[i];
+
+      // Yield event loop every 5 items for responsive UI
+      if (i % 5 == 0) {
+        await Future.delayed(Duration.zero);
+      }
+      // Update progress every 25 items
+      if (i % 25 == 0 && !silent) {
+        final p = 0.10 + ((i / totalItems) * 0.30); // 10% to 40% range
+        _updateState(SyncState(
+          status: SyncStatus.syncing,
+          message: 'Uploading to cloud ($i/$totalItems)...',
+          lastSyncTime: _currentState.lastSyncTime,
+          progress: p,
+          currentStep: 2,
+          totalSteps: 22,
+        ));
+      }
+
+      try {
+        final entityType = queueItem.entityType!;
+        final entityId = queueItem.entityId!;
+
+        dynamic entity;
+        switch (entityType) {
+          case 'Party': entity = await isar.partys.get(entityId); break;
+          case 'Item': entity = await isar.items.get(entityId); break;
+          case 'Category': entity = await isar.categorys.get(entityId); break;
+          case 'Unit': entity = await isar.units.get(entityId); break;
+          case 'Brand': entity = await isar.brands.get(entityId); break;
+          case 'Order': entity = await isar.orders.get(entityId); break;
+          case 'OrderItem': entity = await isar.orderItems.get(entityId); break;
+          case 'Invoice': entity = await isar.invoices.get(entityId); break;
+          case 'InvoiceItem': entity = await isar.invoiceItems.get(entityId); break;
+          case 'Settings': entity = await isar.settings.get(entityId); break;
+          case 'User': entity = await isar.users.get(entityId); break;
+          case 'Purchase': entity = await isar.purchases.get(entityId); break;
+          case 'PurchaseItem': entity = await isar.purchaseItems.get(entityId); break;
+          case 'Expense': entity = await isar.expenses.get(entityId); break;
+          case 'ExpenseItem': entity = await isar.collection<ExpenseItem>().get(entityId); break;
+          case 'Transaction': entity = await isar.transactions.get(entityId); break;
+          case 'BankAccount': entity = await isar.bankAccounts.get(entityId); break;
+          case 'CreditNote': entity = await isar.creditNotes.get(entityId); break;
+          case 'CreditNoteItem': entity = await isar.creditNoteItems.get(entityId); break;
+          case 'DebitNote': entity = await isar.debitNotes.get(entityId); break;
+          case 'DebitNoteItem': entity = await isar.debitNoteItems.get(entityId); break;
+          case 'StockAdjustment': entity = await isar.collection<StockAdjustment>().get(entityId); break;
+          case 'WhatsAppMapping': entity = await isar.whatsAppMappings.get(entityId); break;
+          case 'Task': entity = await isar.tasks.get(entityId); break;
+          case 'Machinery': entity = await isar.collection<Machinery>().get(entityId); break;
+        }
+
+        if (entity == null && queueItem.operation != 'Delete') {
+          logger.warning('Sync queue item ID ${queueItem.id} not found in database. Skipping.');
+          currentBatchCompletedIds.add(queueItem.id);
+          continue;
+        }
+
+        final firestoreCollection = _getFirestoreCollection(entityType);
+        final docRef = _firebaseService.firestore.collection(firestoreCollection).doc(queueItem.entityUuid);
+
+        if (queueItem.operation == 'Delete') {
+          currentBatch.delete(docRef);
+        } else {
+          final map = await _mapEntityToMap(entityType, entity);
+          currentBatch.set(docRef, map, SetOptions(merge: true));
+        }
+
+        batchOpsCount++;
+        if (entity != null) {
+          currentBatchSyncedItems.add({'entityType': entityType, 'entity': entity});
+        }
+        currentBatchCompletedIds.add(queueItem.id);
+        currentBatchQueueItems.add(queueItem);
+      } catch (e) {
+        logger.error('Failed to map queue item ID ${queueItem.id}', e);
+        await _queueService.updateAttempt(queueItem, e.toString());
+        totalFailed++;
+      }
+
+      // Commit WriteBatch if 200 items reached OR if it's the last item
+      if (batchOpsCount >= 200 || (i == queueItems.length - 1 && batchOpsCount > 0)) {
+        try {
+          if (!silent) {
+            _updateState(SyncState(
+              status: SyncStatus.syncing,
+              message: 'Committing batch to Firebase ($totalUploaded/$totalItems)...',
+              lastSyncTime: _currentState.lastSyncTime,
+              progress: 0.10 + ((i / totalItems) * 0.30),
+              currentStep: 2,
+              totalSteps: 22,
+            ));
+          }
+          await currentBatch.commit().timeout(const Duration(seconds: 30));
+          totalUploaded += batchOpsCount;
+          // Only if commit succeeds, we add them to the global lists to be marked as synced locally
+          syncedItems.addAll(currentBatchSyncedItems);
+          completedQueueIds.addAll(currentBatchCompletedIds);
+          logger.info('Batch committed: $batchOpsCount items (total: $totalUploaded/$totalItems)');
+        } catch (e) {
+          logger.error('Failed committing write batch to Firestore. Continuing with next batch...', e);
+          totalFailed += currentBatchQueueItems.length;
+          // Mark attempts for all items in this failed batch
+          for (var q in currentBatchQueueItems) {
+            await _queueService.updateAttempt(q, e.toString());
+          }
+          // NON-FATAL: Continue with remaining batches instead of aborting entire sync
+        }
+
+        // Reset batch state
+        currentBatch = _firebaseService.firestore.batch();
+        batchOpsCount = 0;
+        currentBatchSyncedItems.clear();
+        currentBatchCompletedIds.clear();
+        currentBatchQueueItems.clear();
+        await Future.delayed(const Duration(milliseconds: 50)); // Brief pause between batches
+      }
+    }
+
+    // Mark synced items in local DB Ã¯Â¿Â½ chunked with yields
+    if (!silent) {
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Updating local sync status ($totalUploaded items)...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: 0.42,
+        currentStep: 3,
+        totalSteps: 22,
+      ));
+    }
+
+    if (syncedItems.isNotEmpty || completedQueueIds.isNotEmpty) {
+      if (syncedItems.isNotEmpty) {
+        for (var i = 0; i < syncedItems.length; i += 200) {
+          final chunk = syncedItems.skip(i).take(200);
+          await isar.writeTxn(() async {
+            for (var itemMap in chunk) {
+              final entityType = itemMap['entityType'] as String;
+              final entity = itemMap['entity'];
+              _setEntityIsSynced(entityType, entity, true);
+              switch (entityType) {
+                case 'Party': await isar.partys.put(entity as Party); break;
+                case 'Item': await isar.items.put(entity as Item); break;
+                case 'Category': await isar.categorys.put(entity as Category); break;
+                case 'Unit': await isar.units.put(entity as Unit); break;
+                case 'Brand': await isar.brands.put(entity as Brand); break;
+                case 'Order': await isar.orders.put(entity as Order); break;
+                case 'Invoice': await isar.invoices.put(entity as Invoice); break;
+                case 'Settings': await isar.settings.put(entity as Settings); break;
+                case 'User': await isar.users.put(entity as User); break;
+                case 'Purchase': await isar.purchases.put(entity as Purchase); break;
+                case 'Expense': await isar.expenses.put(entity as Expense); break;
+                case 'ExpenseItem': await isar.collection<ExpenseItem>().put(entity as ExpenseItem); break;
+                case 'StockAdjustment': await isar.collection<StockAdjustment>().put(entity as StockAdjustment); break;
+                case 'Transaction': await isar.transactions.put(entity as Transaction); break;
+                case 'BankAccount': await isar.bankAccounts.put(entity as BankAccount); break;
+                case 'CreditNote': await isar.creditNotes.put(entity as CreditNote); break;
+                case 'DebitNote': await isar.debitNotes.put(entity as DebitNote); break;
+                case 'WhatsAppMapping': await isar.whatsAppMappings.put(entity as WhatsAppMapping); break;
+                case 'Task': await isar.tasks.put(entity as Task); break;
+                case 'Machinery': await isar.collection<Machinery>().put(entity as Machinery); break;
+              }
+            }
+          });
+          await Future.delayed(const Duration(milliseconds: 20)); // Yield between DB chunks
+        }
+      }
+
+      if (completedQueueIds.isNotEmpty) {
+        for (var i = 0; i < completedQueueIds.length; i += 200) {
+          final chunk = completedQueueIds.skip(i).take(200).toList();
+          await isar.writeTxn(() async {
+            await isar.syncQueues.deleteAll(chunk);
+          });
+          await Future.delayed(const Duration(milliseconds: 20)); // Yield
+        }
+      }
+
+      // Atomic Queue Clearing before upload start time to prevent clearing edits made during upload
+      await _queueService.removeQueueItemsBefore(uploadStartTime);
+
+      logger.info('Upload complete: $totalUploaded succeeded, $totalFailed failed out of $totalItems items.');
+    }
+  }
+
+  /// INSTANT LOW-QUOTA DELTA SYNC ENGINE
+  /// Downloads and reconciles remote updates modified after lastSync (where updatedAt > lastSyncTimestamp)
+  Future<void> _downloadDeltaRemoteUpdates(DateTime lastSync) async {
+    await _downloadRemoteUpdates(lastSync, forceFullDownload: false);
+  }
+
+  /// Downloads and reconciles remote updates since lastSync (Pull Cloud -> Local)
+  /// [forceFullDownload] = true: ignores all per-entity timestamps, downloads everything.
+  Future<void> _downloadRemoteUpdates(DateTime lastSync, {bool forceFullDownload = false}) async {
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'Invoice', 'Settings', 'User',
+      'Purchase', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
+      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+    final activeFirmId = _dbService.activeFirmId;
+    final companyId = _firebaseService.companyId;
+    final totalSteps = entityTypes.length + 2;
+
+    logger.info('Starting _downloadRemoteUpdates: firm=$activeFirmId, companyId=$companyId, forceFullDownload=$forceFullDownload');
+
+    for (int i = 0; i < entityTypes.length; i++) {
+      final entityType = entityTypes[i];
+      final stepIndex = i + 2;
+      final progress = stepIndex / totalSteps;
+      final percentage = (progress * 100).toInt();
+
+      _updateState(SyncState(
+        status: SyncStatus.syncing,
+        message: 'Syncing $entityType ($percentage%)...',
+        lastSyncTime: _currentState.lastSyncTime,
+        progress: progress,
+        currentStep: stepIndex,
+        totalSteps: totalSteps,
+      ));
+
+      final collectionName = _getFirestoreCollection(entityType);
+      // Use firm-specific timestamp key to prevent cross-firm pollution
+      final timestampKey = 'last_cloud_sync_timestamp_${activeFirmId}_$entityType';
+      logger.info('Downloading $collectionName (firm: $activeFirmId, companyId: $companyId)...');
+
+      try {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+        // Determine filterCutoff Ã¯Â¿Â½ ONLY for incremental sync, NEVER for forceFullDownload
+        DateTime? filterCutoff;
+        if (!forceFullDownload) {
+          final String? lastCloudSyncStr = prefs.getString(timestampKey);
+          if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
+            final parsed = DateTime.tryParse(lastCloudSyncStr);
+            if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
+              // Subtract 30 seconds (not 2 minutes) as safety overlap Ã¯Â¿Â½ less wasteful reads
+              filterCutoff = parsed.subtract(const Duration(seconds: 30));
+            }
+          }
+        }
+
+        dynamic querySnapshot;
+
+        // Step 1: Paginated compound query (companyId + firmId + filterCutoff)
+        List<dynamic> allDocs = [];
+        try {
+          var baseQuery = _firebaseService.firestore
+              .collection(collectionName)
+              .where('companyId', isEqualTo: companyId)
+              .where('firmId', isEqualTo: activeFirmId);
+
+          if (filterCutoff != null) {
+            baseQuery = baseQuery.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+          }
+
+          dynamic lastDoc;
+          bool hasMore = true;
+          while (hasMore) {
+            var pageQuery = baseQuery.limit(500);
+            if (lastDoc != null) {
+              pageQuery = pageQuery.startAfterDocument(lastDoc);
+            }
+            final pageSnapshot = await pageQuery.get().timeout(const Duration(seconds: 60));
+            if (pageSnapshot.docs.isEmpty) {
+              hasMore = false;
+            } else {
+              allDocs.addAll(pageSnapshot.docs);
+              lastDoc = pageSnapshot.docs.last;
+              if (pageSnapshot.docs.length < 500) {
+                hasMore = false;
+              }
+              await Future.delayed(const Duration(milliseconds: 50));
+            }
+          }
+        } catch (e1) {
+          logger.warning('Primary paginated query failed for $entityType: $e1. Trying firmId-only query...');
+        }
+
+        // Step 2: Fallback to firmId-only paginated query
+        if (allDocs.isEmpty) {
+          try {
+            var firmBaseQuery = _firebaseService.firestore
+                .collection(collectionName)
+                .where('firmId', isEqualTo: activeFirmId);
+            if (filterCutoff != null) {
+              firmBaseQuery = firmBaseQuery.where('updatedAt', isGreaterThan: filterCutoff.toUtc().toIso8601String());
+            }
+            
+            dynamic lastDoc;
+            bool hasMore = true;
+            while (hasMore) {
+              var pageQuery = firmBaseQuery.limit(500);
+              if (lastDoc != null) {
+                pageQuery = pageQuery.startAfterDocument(lastDoc);
+              }
+              final pageSnapshot = await pageQuery.get().timeout(const Duration(seconds: 60));
+              if (pageSnapshot.docs.isEmpty) {
+                hasMore = false;
+              } else {
+                allDocs.addAll(pageSnapshot.docs);
+                lastDoc = pageSnapshot.docs.last;
+                if (pageSnapshot.docs.length < 500) hasMore = false;
+                await Future.delayed(const Duration(milliseconds: 50));
+              }
+            }
+          } catch (e2) {
+            logger.warning('Firm-only paginated query also failed for $entityType: $e2. Skipping.');
+          }
+        }
+
+        if (allDocs.isEmpty) {
+          logger.info('  No documents found for $entityType (companyId=$companyId, firmId=$activeFirmId).');
+          continue;
+        }
+
+        logger.info('  Found ${allDocs.length} documents for $entityType — processing...');
+        await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
+
+        for (int d = 0; d < allDocs.length; d++) {
+          if (kIsWeb ? (d % 5 == 0) : (d % 10 == 0)) await Future.delayed(Duration.zero);
+
+          try {
+            final doc = querySnapshot.docs[d];
+            final data = doc.data() as Map<String, dynamic>?;
+            if (data == null) continue;
+            final uuid = data['uuid'] as String?;
+            if (uuid == null || uuid.isEmpty) continue;
+
+            // Robust firm-wise & company-wise filtering in Dart code:
+            // Match if doc's firmId equals activeFirmId, OR doc has no firmId, OR activeFirmId is firm_default
+            final docFirmId = data['firmId'] as String?;
+            if (docFirmId != null &&
+                docFirmId.isNotEmpty &&
+                docFirmId != activeFirmId &&
+                activeFirmId != 'firm_default') {
+              continue;
+            }
+
+            final isar = _dbService.isar;
+            dynamic localRecord;
+
+            switch (entityType) {
+              case 'Party': localRecord = await isar.partys.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Item': localRecord = await isar.items.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Category': localRecord = await isar.categorys.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'WhatsAppMapping': localRecord = await isar.whatsAppMappings.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Task': localRecord = await isar.tasks.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'Machinery': localRecord = await isar.collection<Machinery>().filter().uuidEqualTo(uuid).findFirst(); break;
+            }
+
+            if (localRecord != null) {
+              // Local Dirty Lock: If local edit is unsynced (isSynced == false), preserve local draft edits!
+              if (_getEntityIsSynced(entityType, localRecord) == false) {
+                logger.info('Conflict: Local Wins (Unsynced Local Draft Lock) for $entityType UUID: $uuid. Keeping local draft.');
+                await _logConflictEvent(entityType, uuid, data['version'] as int? ?? 1, _getEntityVersion(entityType, localRecord), 'Local Wins (Unsynced Draft Lock)');
+                continue;
+              }
+
+              final localVersion = (_getEntityVersion(entityType, localRecord) as int?) ?? 1;
+              final remoteVersion = data['version'] as int? ?? 1;
+              final localUpdated = (_getEntityUpdatedAt(entityType, localRecord) as DateTime?) ?? DateTime.fromMillisecondsSinceEpoch(0);
+              final remoteUpdated = DateTime.tryParse(data['updatedAt'] as String? ?? '') ?? DateTime.now();
+
+              bool remoteWins = false;
+              if (remoteVersion > localVersion) {
+                remoteWins = true;
+              } else if (remoteVersion == localVersion) {
+                if (remoteUpdated.isAfter(localUpdated)) {
+                  remoteWins = true;
+                }
+              }
+
+              if (remoteWins) {
+                logger.info('Conflict: Remote wins for $entityType UUID: $uuid. Overwriting local.');
+                await _overwriteLocalRecord(entityType, _getEntityId(entityType, localRecord), data);
+                await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Remote Wins');
+              } else {
+                logger.info('Conflict: Local wins for $entityType UUID: $uuid.');
+                await _logConflictEvent(entityType, uuid, remoteVersion, localVersion, 'Local Wins');
+              }
+            } else {
+              if (data['isDeleted'] == true) continue;
+              await _insertLocalRecord(entityType, data);
+            }
+          } catch (docErr) {
+            logger.warning('Skipped bad $entityType doc: $docErr');
+          }
+        }
+      } catch (e) {
+        logger.warning('Skipped $entityType sync query due to timeout or network: $e');
+      }
+    }
+
+    // Post-download pass: Re-link relations and recalculate stocks
+    // ONLY run during full download Ã¯Â¿Â½ during delta sync this is wasteful O(NÃ¯Â¿Â½) overhead
+    // that loads ALL records into memory and causes the "96% hang"
+    if (forceFullDownload) {
+      try {
+        _updateState(SyncState(
+          status: SyncStatus.syncing,
+          message: 'Relinking database relationships (96%)...',
+          lastSyncTime: _currentState.lastSyncTime,
+          progress: 0.96,
+          currentStep: totalSteps - 1,
+          totalSteps: totalSteps,
+        ));
+        await Future.delayed(Duration.zero);
+        try {
+          await _relinkAllRelations();
+        } catch (relErr) {
+          logger.warning('Relink relations warning: $relErr');
+        }
+
+        _updateState(SyncState(
+          status: SyncStatus.syncing,
+          message: 'Recalculating inventory stock balances (98%)...',
+          lastSyncTime: _currentState.lastSyncTime,
+          progress: 0.98,
+          currentStep: totalSteps,
+          totalSteps: totalSteps,
+        ));
+        await Future.delayed(Duration.zero);
+        try {
+          await recalculateAllItemStocksFromTransactions();
+          await recalculateAllPartyBalancesFromTransactions();
+        } catch (recalcErr) {
+          logger.warning('Recalculate balances warning: $recalcErr');
+        }
+      } catch (e, stackTrace) {
+        logger.warning('Post-download relation re-linking or stock recalculation warning: $e', e, stackTrace);
+      }
+    } else {
+      logger.info('Delta sync: skipping relinking & stock recalculation (not needed for incremental changes).');
+    }
+  }
+
+  /// Post-sync pass: Relinks all unlinked line items (InvoiceItem, PurchaseItem, OrderItem)
+  /// with their respective parent documents by UUID/ID in local DB.
+  Future<void> _relinkAllRelations() async {
+    final isar = _dbService.isar;
+    logger.info('Executing post-sync pass to re-link all line items to parents and products...');
+
+    try {
+      final allItems = await _chunkedFindAll((o, l) => isar.items.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, Item> itemByUuid = {};
+      for (var it in allItems) {
+        if (it.uuid != null && it.uuid!.isNotEmpty) itemByUuid[it.uuid!] = it;
+      }
+
+      // 1. Invoices
+      final allInvoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, Invoice> invoiceByUuid = {};
+      final Map<int, Invoice> invoiceById = {};
+      for (var inv in allInvoices) {
+        if (inv.uuid != null && inv.uuid!.isNotEmpty) invoiceByUuid[inv.uuid!] = inv;
+        invoiceById[inv.id] = inv;
+      }
+
+      final allInvoiceItems = await _chunkedFindAll((o, l) => isar.invoiceItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<InvoiceItem> modifiedInvItems = [];
+      for (var item in allInvoiceItems) {
+        bool modified = false;
+        Invoice? parent = item.invoice.value;
+        if (parent == null && item.parentInvoiceUuid != null && item.parentInvoiceUuid!.isNotEmpty) parent = invoiceByUuid[item.parentInvoiceUuid!];
+        if (parent == null && (item.parentInvoiceUuid == null || item.parentInvoiceUuid!.isEmpty) && item.parentInvoiceId != null) parent = invoiceById[item.parentInvoiceId!];
+        if (parent != null) {
+          item.invoice.value = parent;
+          item.parentInvoiceId = parent.id;
+          item.parentInvoiceUuid = parent.uuid;
+          modified = true;
+        }
+
+        Item? prod = item.item.value;
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedInvItems.add(item);
+      }
+      if (modifiedInvItems.isNotEmpty) await isar.writeTxn(() async { await isar.invoiceItems.putAll(modifiedInvItems); });
+
+      // 2. Purchases
+      final allPurchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, Purchase> purchaseByUuid = {};
+      final Map<int, Purchase> purchaseById = {};
+      for (var pur in allPurchases) {
+        if (pur.uuid != null && pur.uuid!.isNotEmpty) purchaseByUuid[pur.uuid!] = pur;
+        purchaseById[pur.id] = pur;
+      }
+
+      final allPurchaseItems = await _chunkedFindAll((o, l) => isar.purchaseItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<PurchaseItem> modifiedPurItems = [];
+      for (var item in allPurchaseItems) {
+        bool modified = false;
+        Purchase? parent = item.purchase.value;
+        if (parent == null && item.purchaseUuid != null && item.purchaseUuid!.isNotEmpty) parent = purchaseByUuid[item.purchaseUuid!];
+        if (parent == null && (item.purchaseUuid == null || item.purchaseUuid!.isEmpty) && item.purchaseId != null) parent = purchaseById[item.purchaseId!];
+        if (parent != null) {
+          item.purchase.value = parent;
+          item.purchaseId = parent.id;
+          item.purchaseUuid = parent.uuid;
+          modified = true;
+        }
+
+        Item? prod = item.item.value;
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedPurItems.add(item);
+      }
+      if (modifiedPurItems.isNotEmpty) await isar.writeTxn(() async { await isar.purchaseItems.putAll(modifiedPurItems); });
+
+      // 3. Orders
+      final allOrders = await _chunkedFindAll((o, l) => isar.orders.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, Order> orderByUuid = {};
+      final Map<int, Order> orderById = {};
+      for (var ord in allOrders) {
+        if (ord.uuid != null && ord.uuid!.isNotEmpty) orderByUuid[ord.uuid!] = ord;
+        orderById[ord.id] = ord;
+      }
+      final allOrderItems = await _chunkedFindAll((o, l) => isar.orderItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<OrderItem> modifiedOrderItems = [];
+      for (var item in allOrderItems) {
+        bool modified = false;
+        Order? parent = item.order.value;
+        if (parent == null && item.orderUuid != null && item.orderUuid!.isNotEmpty) parent = orderByUuid[item.orderUuid!];
+        if (parent == null && (item.orderUuid == null || item.orderUuid!.isEmpty) && item.orderId != null) parent = orderById[item.orderId!];
+        if (parent != null) {
+          item.order.value = parent;
+          item.orderId = parent.id;
+          item.orderUuid = parent.uuid;
+          modified = true;
+        }
+        Item? prod = item.item.value;
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedOrderItems.add(item);
+      }
+      if (modifiedOrderItems.isNotEmpty) await isar.writeTxn(() async { await isar.orderItems.putAll(modifiedOrderItems); });
+
+      // 4. Credit Notes
+      final allCN = await _chunkedFindAll((o, l) => isar.creditNotes.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, CreditNote> cnByUuid = {};
+      final Map<int, CreditNote> cnById = {};
+      for (var cn in allCN) {
+        if (cn.uuid != null && cn.uuid!.isNotEmpty) cnByUuid[cn.uuid!] = cn;
+        cnById[cn.id] = cn;
+      }
+      final allCNItems = await _chunkedFindAll((o, l) => isar.creditNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<CreditNoteItem> modifiedCNItems = [];
+      for (var item in allCNItems) {
+        bool modified = false;
+        CreditNote? parent = item.creditNote.value;
+        if (parent == null && item.parentCreditNoteId != null) parent = cnById[item.parentCreditNoteId!];
+        if (parent != null) {
+          item.creditNote.value = parent;
+          item.parentCreditNoteId = parent.id;
+          modified = true;
+        }
+        Item? prod = item.item.value;
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedCNItems.add(item);
+      }
+      if (modifiedCNItems.isNotEmpty) await isar.writeTxn(() async { await isar.creditNoteItems.putAll(modifiedCNItems); });
+
+      // 5. Debit Notes
+      final allDN = await _chunkedFindAll((o, l) => isar.debitNotes.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, DebitNote> dnByUuid = {};
+      final Map<int, DebitNote> dnById = {};
+      for (var dn in allDN) {
+        if (dn.uuid != null && dn.uuid!.isNotEmpty) dnByUuid[dn.uuid!] = dn;
+        dnById[dn.id] = dn;
+      }
+      final allDNItems = await _chunkedFindAll((o, l) => isar.debitNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final List<DebitNoteItem> modifiedDNItems = [];
+      for (var item in allDNItems) {
+        bool modified = false;
+        DebitNote? parent = item.debitNote.value;
+        if (parent == null && item.parentDebitNoteId != null) parent = dnById[item.parentDebitNoteId!];
+        if (parent != null) {
+          item.debitNote.value = parent;
+          item.parentDebitNoteId = parent.id;
+          modified = true;
+        }
+        Item? prod = item.item.value;
+        if (prod != null) {
+          item.item.value = prod;
+          item.itemId = prod.id;
+          modified = true;
+        }
+        if (modified) modifiedDNItems.add(item);
+      }
+      if (modifiedDNItems.isNotEmpty) await isar.writeTxn(() async { await isar.debitNoteItems.putAll(modifiedDNItems); });
+
+    } catch (e) {
+      logger.error('Error during post-sync relation re-linking pass', e);
+    }
+  }
+  /// Recalculates party outstanding balances dynamically from transactions & invoices
+  Future<void> recalculateAllPartyBalancesFromTransactions() async {
+    final isar = _dbService.isar;
+    logger.info('Recalculating party outstanding balances dynamically from transactions...');
+
+    try {
+      final parties = await _chunkedFindAll((o, l) => isar.partys.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      if (parties.isEmpty) return;
+
+      final invoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final purchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+
+      final Map<int, String> partyIdToUuid = {};
+      for (var p in parties) {
+        if (p.uuid != null && p.uuid!.isNotEmpty) {
+          partyIdToUuid[p.id] = p.uuid!;
+        }
+      }
+
+      final Map<String, double> uuidPending = {};
+      final Map<int, double> idPending = {};
+
+      for (var inv in invoices) {
+        if (inv.paymentStatus == 'Cancelled') continue;
+        final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
+        if (pending > 0) {
+          String? pUuid = inv.party.value?.uuid;
+          if ((pUuid == null || pUuid.isEmpty) && inv.partyId != null) {
+            pUuid = partyIdToUuid[inv.partyId!];
+          }
+          if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
+          if (inv.partyId != null && inv.partyId! > 0) idPending[inv.partyId!] = (idPending[inv.partyId!] ?? 0.0) + pending;
+        }
+      }
+
+      for (var pur in purchases) {
+        if (pur.paymentStatus == 'Cancelled') continue;
+        final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+        if (pending > 0) {
+          String? pUuid = pur.party.value?.uuid;
+          if ((pUuid == null || pUuid.isEmpty) && pur.partyId != null) {
+            pUuid = partyIdToUuid[pur.partyId!];
+          }
+          if (pUuid != null && pUuid.isNotEmpty) uuidPending[pUuid] = (uuidPending[pUuid] ?? 0.0) + pending;
+          if (pur.partyId != null && pur.partyId! > 0) idPending[pur.partyId!] = (idPending[pur.partyId!] ?? 0.0) + pending;
+        }
+      }
+
+      final transactions = await _chunkedFindAll((o, l) => isar.transactions.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final Map<String, double> uuidUnlinkedCredits = {};
+      final Map<int, double> idUnlinkedCredits = {};
+
+      for (var tx in transactions) {
+        if (tx.isDeleted == true) continue;
+        final amt = tx.amount ?? 0.0;
+        if (amt <= 0) continue;
+        final type = tx.transactionType;
+        final isUnlinked = tx.linkedBillUuid == null || tx.linkedBillUuid!.isEmpty || tx.linkedBillUuid == '{}';
+
+        if (isUnlinked && (type == 'Receipt' || type == 'Payment In' || type == 'Payment' || type == 'Payment Out')) {
+          String? pUuid = tx.partyUuid;
+          if (pUuid != null && pUuid.isNotEmpty) {
+            uuidUnlinkedCredits[pUuid] = (uuidUnlinkedCredits[pUuid] ?? 0.0) + amt;
+          }
+        }
+      }
+
+      final List<Party> partiesToUpdate = [];
+      for (var p in parties) {
+        final hasUuid = p.uuid != null && p.uuid!.isNotEmpty;
+        final invPending = hasUuid 
+            ? (uuidPending[p.uuid] ?? 0.0) 
+            : (p.id > 0 ? (idPending[p.id] ?? 0.0) : 0.0);
+
+        final uUnlinked = hasUuid ? (uuidUnlinkedCredits[p.uuid] ?? 0.0) : 0.0;
+        final rawBalance = invPending > 0 ? invPending : (p.openingBalance ?? 0.0);
+        final netPending = rawBalance - uUnlinked;
+        final newBal = netPending < 0 ? 0.0 : netPending;
+
+        if ((p.outstandingBalance ?? 0.0) != newBal) {
+          p.outstandingBalance = newBal;
+          p.updatedAt = DateTime.now();
+          partiesToUpdate.add(p);
+        }
+      }
+
+      if (partiesToUpdate.isNotEmpty) {
+        await isar.writeTxn(() async {
+          await isar.partys.putAll(partiesToUpdate);
+        });
+      }
+    } catch (e) {
+      logger.warning('Party balance recalculation error: $e');
+    }
+  }
+
+  /// Dynamically computes real current stock for all items from local transactions:
+  /// Current Stock = (openingStock ?? 0) + (Purchases) - (Sales) + (Sales Returns) - (Purchase Returns)
+  Future<void> recalculateAllItemStocksFromTransactions() async {
+    if (_isRecalculating) {
+      logger.info('Stock recalculation already in progress, skipping duplicate run.');
+      return;
+    }
+    _isRecalculating = true;
+    final isar = _dbService.isar;
+    logger.info('Recalculating item stocks dynamically from local transactions...');
+
+    try {
+      final allItems = await _chunkedFindAll((o, l) => isar.items.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      if (allItems.isEmpty) return;
+
+      final allInvItems = await _chunkedFindAll((o, l) => isar.invoiceItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final allPurItems = await _chunkedFindAll((o, l) => isar.purchaseItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final allCreditNoteItems = await _chunkedFindAll((o, l) => isar.creditNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final allDebitNoteItems = await _chunkedFindAll((o, l) => isar.debitNoteItems.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+
+      // Load item links for accuracy with non-blocking async yielding
+      final Map<int, String> itemIdToUuid = {
+        for (var item in allItems)
+          if (item.id != null && item.uuid != null) item.id!: item.uuid!
+      };
+
+      // Filter out deleted parent invoices/purchases
+      final allInvoices = await _chunkedFindAll((o, l) => isar.invoices.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final validInvIds = allInvoices.map((i) => i.id).toSet();
+      final validInvUuids = allInvoices.map((i) => i.uuid).whereType<String>().toSet();
+
+      final allPurchases = await _chunkedFindAll((o, l) => isar.purchases.filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+      final validPurIds = allPurchases.map((p) => p.id).toSet();
+      final validPurUuids = allPurchases.map((p) => p.uuid).whereType<String>().toSet();
+
+      final allStockAdjustments = await _chunkedFindAll((o, l) => isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).offset(o).limit(l).findAll());
+
+      final List<Item> itemsToUpdate = [];
+
+      for (int k = 0; k < allItems.length; k++) {
+        if (k % 5 == 0) await Future.delayed(Duration.zero);
+        final item = allItems[k];
+        final itemUuid = item.uuid;
+        final itemNameLower = item.itemName?.trim().toLowerCase() ?? '';
+
+        double _toPrimaryQty(String? lineUnit, double rawQty) {
+          if (rawQty <= 0) return 0.0;
+          final secUnit = item.secondaryUnit?.trim().toLowerCase();
+          final conv = item.conversionFactor;
+          final lineUnitLower = lineUnit?.trim().toLowerCase();
+
+          if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 0) {
+            return conv >= 1.0 ? rawQty / conv : rawQty * conv;
+          }
+          return rawQty;
+        }
+
+        // 1. Total Sales (InvoiceItems)
+        double totalSales = 0.0;
+        for (var ii in allInvItems) {
+          final isValidParent = (ii.parentInvoiceId != null && validInvIds.contains(ii.parentInvoiceId)) ||
+              (ii.parentInvoiceUuid != null && validInvUuids.contains(ii.parentInvoiceUuid)) ||
+              ii.invoice.value != null;
+          if (!isValidParent) continue;
+
+          final linkedUuid = ii.itemId != null ? itemIdToUuid[ii.itemId!] : ii.item.value?.uuid;
+          bool isMatch = false;
+          if (ii.itemId != null) {
+            isMatch = ii.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (ii.itemName != null && ii.itemName!.trim().toLowerCase() == itemNameLower);
+          }
+
+          if (isMatch) {
+            totalSales += _toPrimaryQty(ii.unit, ii.quantity ?? 0.0);
+          }
+        }
+
+        // 2. Total Purchases (PurchaseItems)
+        double totalPurchases = 0.0;
+        for (var pi in allPurItems) {
+          final isValidParent = (pi.purchaseId != null && validPurIds.contains(pi.purchaseId)) ||
+              (pi.purchaseUuid != null && validPurUuids.contains(pi.purchaseUuid)) ||
+              pi.purchase.value != null;
+          if (!isValidParent) continue;
+
+          final linkedUuid = pi.itemId != null ? itemIdToUuid[pi.itemId!] : pi.item.value?.uuid;
+          bool isMatch = false;
+          if (pi.itemId != null) {
+            isMatch = pi.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (pi.itemName != null && pi.itemName!.trim().toLowerCase() == itemNameLower);
+          }
+
+          if (isMatch) {
+            totalPurchases += _toPrimaryQty(pi.unit, pi.quantity ?? 0.0);
+          }
+        }
+
+        // 3. Sales Returns / Credit Notes (Stock In)
+        double totalSalesReturns = 0.0;
+        for (var cni in allCreditNoteItems) {
+          final linkedUuid = cni.itemId != null ? itemIdToUuid[cni.itemId!] : cni.item.value?.uuid;
+          bool isMatch = false;
+          if (cni.itemId != null) {
+            isMatch = cni.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (cni.itemName != null && cni.itemName!.trim().toLowerCase() == itemNameLower);
+          }
+          if (isMatch) {
+            totalSalesReturns += _toPrimaryQty(cni.unit, cni.quantity ?? 0.0);
+          }
+        }
+
+        // 4. Purchase Returns / Debit Notes (Stock Out)
+        double totalPurchaseReturns = 0.0;
+        for (var dni in allDebitNoteItems) {
+          final linkedUuid = dni.itemId != null ? itemIdToUuid[dni.itemId!] : dni.item.value?.uuid;
+          bool isMatch = false;
+          if (dni.itemId != null) {
+            isMatch = dni.itemId == item.id;
+          } else if (linkedUuid != null && linkedUuid.isNotEmpty) {
+            isMatch = linkedUuid == itemUuid;
+          } else {
+            isMatch = (dni.itemName != null && dni.itemName!.trim().toLowerCase() == itemNameLower);
+          }
+          if (isMatch) {
+            totalPurchaseReturns += _toPrimaryQty(dni.unit, dni.quantity ?? 0.0);
+          }
+        }
+
+        // 5. Manual Stock Adjustments (Stock In / Stock Out)
+        double totalAdjustments = 0.0;
+        for (var adj in allStockAdjustments) {
+          bool isMatch = false;
+          if (adj.itemId != null) {
+            isMatch = adj.itemId == item.id;
+          } else if (adj.itemUuid != null && adj.itemUuid!.isNotEmpty) {
+            isMatch = adj.itemUuid == itemUuid;
+          } else {
+            isMatch = (adj.itemName != null && adj.itemName!.trim().toLowerCase() == itemNameLower);
+          }
+          if (isMatch) {
+            final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
+            final qty = _toPrimaryQty(adj.unit, adj.quantity ?? 0.0);
+            if (isAdd) {
+              totalAdjustments += qty;
+            } else {
+              totalAdjustments -= qty;
+            }
+          }
+        }
+
+        // Real Calculated Current Stock Formula
+        final opening = item.openingStock ?? 0.0;
+        final computedStock = opening + totalPurchases - totalSales + totalSalesReturns - totalPurchaseReturns + totalAdjustments;
+
+        if (totalSales > 0 || totalPurchases > 0 || totalSalesReturns > 0 || totalPurchaseReturns > 0 || totalAdjustments != 0 || item.currentStock == 0.0) {
+          item.currentStock = computedStock;
+          itemsToUpdate.add(item);
+        }
+      }
+
+      if (itemsToUpdate.isNotEmpty) {
+        await isar.writeTxn(() async {
+          await isar.items.putAll(itemsToUpdate);
+        });
+      }
+
+      logger.info('Recalculated stocks for ${allItems.length} items from local transactions successfully.');
+    } catch (e, stackTrace) {
+      logger.error('Failed to recalculate item stocks from transactions', e, stackTrace);
+    } finally {
+      _isRecalculating = false;
+    }
+  }
+
+  /// Helper to check count of local records for an entity
+  Future<int> _getLocalRecordCount(String entityType) async {
+    final isar = _dbService.isar;
+    try {
+      switch (entityType) {
+        case 'Party': return await isar.partys.filter().idGreaterThan(-1).count();
+        case 'Item': return await isar.items.filter().idGreaterThan(-1).count();
+        case 'Category': return await isar.categorys.filter().idGreaterThan(-1).count();
+        case 'Unit': return await isar.units.filter().idGreaterThan(-1).count();
+        case 'Brand': return await isar.brands.filter().idGreaterThan(-1).count();
+        case 'Order': return await isar.orders.filter().idGreaterThan(-1).count();
+        case 'Invoice': return await isar.invoices.filter().idGreaterThan(-1).count();
+        case 'Purchase': return await isar.purchases.filter().idGreaterThan(-1).count();
+        case 'Expense': return await isar.expenses.filter().idGreaterThan(-1).count();
+        case 'ExpenseItem': return await isar.collection<ExpenseItem>().count();
+        case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
+        case 'Task': return await isar.tasks.filter().idGreaterThan(-1).count();
+        case 'Machinery': return await isar.collection<Machinery>().filter().idGreaterThan(-1).count();
+        default: return 0;
+      }
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Helper to find maximum updatedAt timestamp among local records for an entity
+  Future<DateTime?> _getMaxLocalUpdatedAt(String entityType) async {
+    final isar = _dbService.isar;
+    try {
+      switch (entityType) {
+        case 'Party':
+          final r = await isar.partys.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Item':
+          final r = await isar.items.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Invoice':
+          final r = await isar.invoices.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Purchase':
+          final r = await isar.purchases.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Order':
+          final r = await isar.orders.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Expense':
+          final r = await isar.expenses.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'ExpenseItem':
+          final list = await _chunkedFindAll((o, l) => isar.collection<ExpenseItem>().where().offset(o).limit(l).findAll());
+          if (list.isEmpty) return null;
+          list.sort((a, b) => (a.updatedAt ?? DateTime(1970)).compareTo(b.updatedAt ?? DateTime(1970)));
+          return list.last.updatedAt;
+        case 'Transaction':
+          final r = await isar.transactions.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+        case 'Task':
+          final r = await isar.tasks.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+          return r?.updatedAt;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Helper mapping collection class names to firestore endpoints
+  String _getFirestoreCollection(String entityType) {
+    switch (entityType) {
+      case 'Party': return 'parties';
+      case 'Item': return 'items';
+      case 'Category': return 'categories';
+      case 'Unit': return 'units';
+      case 'Brand': return 'brands';
+      case 'Order': return 'orders';
+      case 'OrderItem': return 'order_items';
+      case 'Invoice': return 'invoices';
+      case 'InvoiceItem': return 'invoice_items';
+      case 'Settings': return 'settings';
+      case 'User': return 'users';
+      case 'Purchase': return 'purchases';
+      case 'PurchaseItem': return 'purchase_items';
+      case 'Expense': return 'expenses';
+      case 'ExpenseItem': return 'expense_items';
+      case 'Transaction': return 'transactions';
+      case 'BankAccount': return 'bank_accounts';
+      case 'CreditNote': return 'credit_notes';
+      case 'CreditNoteItem': return 'credit_note_items';
+      case 'DebitNote': return 'debit_notes';
+      case 'DebitNoteItem': return 'debit_note_items';
+      case 'StockAdjustment': return 'stock_adjustments';
+      case 'WhatsAppMapping': return 'whatsapp_mappings';
+      case 'Task': return 'tasks';
+      case 'Machinery': return 'machinerys';
+      default: return entityType.toLowerCase();
+    }
+  }
+
+  String? _safeGetLinkUuid(dynamic link) {
+    if (link == null) return null;
+    try {
+      return link.value?.uuid;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _safeGetLinkShortName(dynamic link) {
+    if (link == null) return null;
+    try {
+      return link.value?.shortName ?? link.value?.unitName;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Maps Isar entity to JSON map for Firestore
+  
+  int _getEntityId(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).id;
+      case 'Item': return (entity as Item).id;
+      case 'Invoice': return (entity as Invoice).id;
+      case 'Order': return (entity as Order).id;
+      case 'Purchase': return (entity as Purchase).id;
+      case 'Expense': return (entity as Expense).id;
+      case 'ExpenseItem': return (entity as ExpenseItem).id;
+      case 'StockAdjustment': return (entity as StockAdjustment).id;
+      case 'CreditNote': return (entity as CreditNote).id;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).id;
+      case 'DebitNote': return (entity as DebitNote).id;
+      case 'Transaction': return (entity as Transaction).id;
+      case 'Category': return (entity as Category).id;
+      case 'Unit': return (entity as Unit).id;
+      case 'Brand': return (entity as Brand).id;
+      case 'Settings': return (entity as Settings).id;
+      case 'User': return (entity as User).id;
+      case 'BankAccount': return (entity as BankAccount).id;
+      case 'Task': return (entity as Task).id;
+      case 'Machinery': return (entity as Machinery).id;
+      default: return 0;
+    }
+  }
+
+  String? _getEntityUuid(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).uuid;
+      case 'Item': return (entity as Item).uuid;
+      case 'Invoice': return (entity as Invoice).uuid;
+      case 'Order': return (entity as Order).uuid;
+      case 'Purchase': return (entity as Purchase).uuid;
+      case 'Expense': return (entity as Expense).uuid;
+      case 'ExpenseItem': return (entity as ExpenseItem).uuid;
+      case 'StockAdjustment': return (entity as StockAdjustment).uuid;
+      case 'CreditNote': return (entity as CreditNote).uuid;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).uuid;
+      case 'DebitNote': return (entity as DebitNote).uuid;
+      case 'Transaction': return (entity as Transaction).uuid;
+      case 'Category': return (entity as Category).uuid;
+      case 'Unit': return (entity as Unit).uuid;
+      case 'Brand': return (entity as Brand).uuid;
+      case 'Settings': return (entity as Settings).uuid;
+      case 'User': return (entity as User).uuid;
+      case 'BankAccount': return (entity as BankAccount).uuid;
+      case 'Task': return (entity as Task).uuid;
+      case 'Machinery': return (entity as Machinery).uuid;
+      default: return null;
+    }
+  }
+
+  DateTime _getEntityCreatedAt(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).createdAt;
+      case 'Item': return (entity as Item).createdAt;
+      case 'Invoice': return (entity as Invoice).createdAt;
+      case 'Order': return (entity as Order).createdAt;
+      case 'Purchase': return (entity as Purchase).createdAt;
+      case 'Expense': return (entity as Expense).createdAt;
+      case 'ExpenseItem': return (entity as ExpenseItem).createdAt;
+      case 'StockAdjustment': return (entity as StockAdjustment).createdAt;
+      case 'CreditNote': return (entity as CreditNote).createdAt;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).createdAt;
+      case 'DebitNote': return (entity as DebitNote).createdAt;
+      case 'Transaction': return (entity as Transaction).createdAt;
+      case 'Category': return (entity as Category).createdAt;
+      case 'Unit': return (entity as Unit).createdAt;
+      case 'Brand': return (entity as Brand).createdAt;
+      case 'Settings': return (entity as Settings).createdAt;
+      case 'User': return (entity as User).createdAt;
+      case 'BankAccount': return (entity as BankAccount).createdAt;
+      case 'Task': return (entity as Task).createdAt;
+      case 'Machinery': return (entity as Machinery).createdAt;
+      default: return DateTime.now();
+    }
+  }
+
+  DateTime _getEntityUpdatedAt(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).updatedAt;
+      case 'Item': return (entity as Item).updatedAt;
+      case 'Invoice': return (entity as Invoice).updatedAt;
+      case 'Order': return (entity as Order).updatedAt;
+      case 'Purchase': return (entity as Purchase).updatedAt;
+      case 'Expense': return (entity as Expense).updatedAt;
+      case 'ExpenseItem': return (entity as ExpenseItem).updatedAt;
+      case 'StockAdjustment': return (entity as StockAdjustment).updatedAt;
+      case 'CreditNote': return (entity as CreditNote).updatedAt;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).updatedAt;
+      case 'DebitNote': return (entity as DebitNote).updatedAt;
+      case 'Transaction': return (entity as Transaction).updatedAt;
+      case 'Category': return (entity as Category).updatedAt;
+      case 'Unit': return (entity as Unit).updatedAt;
+      case 'Brand': return (entity as Brand).updatedAt;
+      case 'Settings': return (entity as Settings).updatedAt;
+      case 'User': return (entity as User).updatedAt;
+      case 'BankAccount': return (entity as BankAccount).updatedAt;
+      case 'Task': return (entity as Task).updatedAt;
+      case 'Machinery': return (entity as Machinery).updatedAt;
+      default: return DateTime.now();
+    }
+  }
+
+  int _getEntityVersion(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).version;
+      case 'Item': return (entity as Item).version;
+      case 'Invoice': return (entity as Invoice).version;
+      case 'Order': return (entity as Order).version;
+      case 'Purchase': return (entity as Purchase).version;
+      case 'Expense': return (entity as Expense).version;
+      case 'ExpenseItem': return (entity as ExpenseItem).version;
+      case 'StockAdjustment': return (entity as StockAdjustment).version;
+      case 'CreditNote': return (entity as CreditNote).version;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).version;
+      case 'DebitNote': return (entity as DebitNote).version;
+      case 'Transaction': return (entity as Transaction).version;
+      case 'Category': return (entity as Category).version;
+      case 'Unit': return (entity as Unit).version;
+      case 'Brand': return (entity as Brand).version;
+      case 'Settings': return (entity as Settings).version;
+      case 'User': return (entity as User).version;
+      case 'BankAccount': return (entity as BankAccount).version;
+      case 'Task': return (entity as Task).version;
+      case 'Machinery': return (entity as Machinery).version;
+      default: return 1;
+    }
+  }
+
+  bool _getEntityIsDeleted(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).isDeleted;
+      case 'Item': return (entity as Item).isDeleted;
+      case 'Invoice': return (entity as Invoice).isDeleted;
+      case 'Order': return (entity as Order).isDeleted;
+      case 'Purchase': return (entity as Purchase).isDeleted;
+      case 'Expense': return (entity as Expense).isDeleted;
+      case 'ExpenseItem': return (entity as ExpenseItem).isDeleted;
+      case 'StockAdjustment': return (entity as StockAdjustment).isDeleted;
+      case 'CreditNote': return (entity as CreditNote).isDeleted;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).isDeleted;
+      case 'DebitNote': return (entity as DebitNote).isDeleted;
+      case 'Transaction': return (entity as Transaction).isDeleted;
+      case 'Category': return (entity as Category).isDeleted;
+      case 'Unit': return (entity as Unit).isDeleted;
+      case 'Brand': return (entity as Brand).isDeleted;
+      case 'Settings': return (entity as Settings).isDeleted;
+      case 'User': return (entity as User).isDeleted;
+      case 'BankAccount': return (entity as BankAccount).isDeleted;
+      case 'Task': return (entity as Task).isDeleted;
+      case 'Machinery': return (entity as Machinery).isDeleted;
+      default: return false;
+    }
+  }
+
+  bool _getEntityIsSynced(String entityType, dynamic entity) {
+    switch (entityType) {
+      case 'Party': return (entity as Party).isSynced;
+      case 'Item': return (entity as Item).isSynced;
+      case 'Invoice': return (entity as Invoice).isSynced;
+      case 'Order': return (entity as Order).isSynced;
+      case 'Purchase': return (entity as Purchase).isSynced;
+      case 'Expense': return (entity as Expense).isSynced;
+      case 'ExpenseItem': return (entity as ExpenseItem).isSynced;
+      case 'StockAdjustment': return (entity as StockAdjustment).isSynced;
+      case 'CreditNote': return (entity as CreditNote).isSynced;
+      case 'WhatsAppMapping': return (entity as WhatsAppMapping).isSynced;
+      case 'DebitNote': return (entity as DebitNote).isSynced;
+      case 'Transaction': return (entity as Transaction).isSynced;
+      case 'Category': return (entity as Category).isSynced;
+      case 'Unit': return (entity as Unit).isSynced;
+      case 'Brand': return (entity as Brand).isSynced;
+      case 'Settings': return (entity as Settings).isSynced;
+      case 'User': return (entity as User).isSynced;
+      case 'BankAccount': return (entity as BankAccount).isSynced;
+      case 'Task': return (entity as Task).isSynced;
+      case 'Machinery': return (entity as Machinery).isSynced;
+      default: return false;
+    }
+  }
+
+  
+  void _setEntityUuid(String entityType, dynamic entity, String? value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).uuid = value; break;
+      case 'Item': (entity as Item).uuid = value; break;
+      case 'Invoice': (entity as Invoice).uuid = value; break;
+      case 'Order': (entity as Order).uuid = value; break;
+      case 'Purchase': (entity as Purchase).uuid = value; break;
+      case 'Expense': (entity as Expense).uuid = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).uuid = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).uuid = value; break;
+      case 'CreditNote': (entity as CreditNote).uuid = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).uuid = value; break;
+      case 'DebitNote': (entity as DebitNote).uuid = value; break;
+      case 'Transaction': (entity as Transaction).uuid = value; break;
+      case 'Category': (entity as Category).uuid = value; break;
+      case 'Unit': (entity as Unit).uuid = value; break;
+      case 'Brand': (entity as Brand).uuid = value; break;
+      case 'Settings': (entity as Settings).uuid = value; break;
+      case 'User': (entity as User).uuid = value; break;
+      case 'BankAccount': (entity as BankAccount).uuid = value; break;
+      case 'Task': (entity as Task).uuid = value; break;
+      case 'Machinery': (entity as Machinery).uuid = value; break;
+    }
+  }
+
+  void _setEntityCreatedAt(String entityType, dynamic entity, DateTime value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).createdAt = value; break;
+      case 'Item': (entity as Item).createdAt = value; break;
+      case 'Invoice': (entity as Invoice).createdAt = value; break;
+      case 'Order': (entity as Order).createdAt = value; break;
+      case 'Purchase': (entity as Purchase).createdAt = value; break;
+      case 'Expense': (entity as Expense).createdAt = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).createdAt = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).createdAt = value; break;
+      case 'CreditNote': (entity as CreditNote).createdAt = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).createdAt = value; break;
+      case 'DebitNote': (entity as DebitNote).createdAt = value; break;
+      case 'Transaction': (entity as Transaction).createdAt = value; break;
+      case 'Category': (entity as Category).createdAt = value; break;
+      case 'Unit': (entity as Unit).createdAt = value; break;
+      case 'Brand': (entity as Brand).createdAt = value; break;
+      case 'Settings': (entity as Settings).createdAt = value; break;
+      case 'User': (entity as User).createdAt = value; break;
+      case 'BankAccount': (entity as BankAccount).createdAt = value; break;
+      case 'Task': (entity as Task).createdAt = value; break;
+      case 'Machinery': (entity as Machinery).createdAt = value; break;
+    }
+  }
+
+  void _setEntityUpdatedAt(String entityType, dynamic entity, DateTime value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).updatedAt = value; break;
+      case 'Item': (entity as Item).updatedAt = value; break;
+      case 'Invoice': (entity as Invoice).updatedAt = value; break;
+      case 'Order': (entity as Order).updatedAt = value; break;
+      case 'Purchase': (entity as Purchase).updatedAt = value; break;
+      case 'Expense': (entity as Expense).updatedAt = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).updatedAt = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).updatedAt = value; break;
+      case 'CreditNote': (entity as CreditNote).updatedAt = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).updatedAt = value; break;
+      case 'DebitNote': (entity as DebitNote).updatedAt = value; break;
+      case 'Transaction': (entity as Transaction).updatedAt = value; break;
+      case 'Category': (entity as Category).updatedAt = value; break;
+      case 'Unit': (entity as Unit).updatedAt = value; break;
+      case 'Brand': (entity as Brand).updatedAt = value; break;
+      case 'Settings': (entity as Settings).updatedAt = value; break;
+      case 'User': (entity as User).updatedAt = value; break;
+      case 'BankAccount': (entity as BankAccount).updatedAt = value; break;
+      case 'Task': (entity as Task).updatedAt = value; break;
+      case 'Machinery': (entity as Machinery).updatedAt = value; break;
+    }
+  }
+
+  void _setEntityIsDeleted(String entityType, dynamic entity, bool value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).isDeleted = value; break;
+      case 'Item': (entity as Item).isDeleted = value; break;
+      case 'Invoice': (entity as Invoice).isDeleted = value; break;
+      case 'Order': (entity as Order).isDeleted = value; break;
+      case 'Purchase': (entity as Purchase).isDeleted = value; break;
+      case 'Expense': (entity as Expense).isDeleted = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).isDeleted = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).isDeleted = value; break;
+      case 'CreditNote': (entity as CreditNote).isDeleted = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).isDeleted = value; break;
+      case 'DebitNote': (entity as DebitNote).isDeleted = value; break;
+      case 'Transaction': (entity as Transaction).isDeleted = value; break;
+      case 'Category': (entity as Category).isDeleted = value; break;
+      case 'Unit': (entity as Unit).isDeleted = value; break;
+      case 'Brand': (entity as Brand).isDeleted = value; break;
+      case 'Settings': (entity as Settings).isDeleted = value; break;
+      case 'User': (entity as User).isDeleted = value; break;
+      case 'BankAccount': (entity as BankAccount).isDeleted = value; break;
+      case 'Task': (entity as Task).isDeleted = value; break;
+      case 'Machinery': (entity as Machinery).isDeleted = value; break;
+    }
+  }
+
+  void _setEntityVersion(String entityType, dynamic entity, int value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).version = value; break;
+      case 'Item': (entity as Item).version = value; break;
+      case 'Invoice': (entity as Invoice).version = value; break;
+      case 'Order': (entity as Order).version = value; break;
+      case 'Purchase': (entity as Purchase).version = value; break;
+      case 'Expense': (entity as Expense).version = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).version = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).version = value; break;
+      case 'CreditNote': (entity as CreditNote).version = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).version = value; break;
+      case 'DebitNote': (entity as DebitNote).version = value; break;
+      case 'Transaction': (entity as Transaction).version = value; break;
+      case 'Category': (entity as Category).version = value; break;
+      case 'Unit': (entity as Unit).version = value; break;
+      case 'Brand': (entity as Brand).version = value; break;
+      case 'Settings': (entity as Settings).version = value; break;
+      case 'User': (entity as User).version = value; break;
+      case 'BankAccount': (entity as BankAccount).version = value; break;
+      case 'Task': (entity as Task).version = value; break;
+      case 'Machinery': (entity as Machinery).version = value; break;
+    }
+  }
+
+  void _setEntityIsSynced(String entityType, dynamic entity, bool value) {
+    switch (entityType) {
+      case 'Party': (entity as Party).isSynced = value; break;
+      case 'Item': (entity as Item).isSynced = value; break;
+      case 'Invoice': (entity as Invoice).isSynced = value; break;
+      case 'Order': (entity as Order).isSynced = value; break;
+      case 'Purchase': (entity as Purchase).isSynced = value; break;
+      case 'Expense': (entity as Expense).isSynced = value; break;
+      case 'ExpenseItem': (entity as ExpenseItem).isSynced = value; break;
+      case 'StockAdjustment': (entity as StockAdjustment).isSynced = value; break;
+      case 'CreditNote': (entity as CreditNote).isSynced = value; break;
+      case 'WhatsAppMapping': (entity as WhatsAppMapping).isSynced = value; break;
+      case 'DebitNote': (entity as DebitNote).isSynced = value; break;
+      case 'Transaction': (entity as Transaction).isSynced = value; break;
+      case 'Category': (entity as Category).isSynced = value; break;
+      case 'Unit': (entity as Unit).isSynced = value; break;
+      case 'Brand': (entity as Brand).isSynced = value; break;
+      case 'Settings': (entity as Settings).isSynced = value; break;
+      case 'User': (entity as User).isSynced = value; break;
+      case 'BankAccount': (entity as BankAccount).isSynced = value; break;
+      case 'Task': (entity as Task).isSynced = value; break;
+      case 'Machinery': (entity as Machinery).isSynced = value; break;
+    }
+  }
+
+  

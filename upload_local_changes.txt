@@ -1,0 +1,948 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:uuid/uuid.dart';
+import 'package:isar/isar.dart' hide Query;
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order, Settings, Transaction;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/services/database_service.dart';
+import 'package:business_sahaj_erp/core/services/firebase_service.dart';
+import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
+import 'package:business_sahaj_erp/core/errors/exceptions.dart';
+import 'package:business_sahaj_erp/core/constants/app_constants.dart';
+import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
+
+// Collections
+import 'package:business_sahaj_erp/data/local/collections/isar_model.dart';
+import 'package:business_sahaj_erp/data/local/collections/category_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/brand_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/user_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/bank_account_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
+
+enum SyncStatus { idle, syncing, success, failure }
+
+class SyncState {
+  final SyncStatus status;
+  final String message;
+  final DateTime? lastSyncTime;
+  final double progress; // 0.0 to 1.0
+  final int currentStep;
+  final int totalSteps;
+
+  const SyncState({
+    required this.status,
+    required this.message,
+    this.lastSyncTime,
+    this.progress = 0.0,
+    this.currentStep = 0,
+    this.totalSteps = 0,
+  });
+
+  int get percentage => (progress * 100).clamp(0, 100).toInt();
+
+  SyncState copyWith({
+    SyncStatus? status,
+    String? message,
+    DateTime? lastSyncTime,
+    double? progress,
+    int? currentStep,
+    int? totalSteps,
+  }) {
+    return SyncState(
+      status: status ?? this.status,
+      message: message ?? this.message,
+      lastSyncTime: lastSyncTime ?? this.lastSyncTime,
+      progress: progress ?? this.progress,
+      currentStep: currentStep ?? this.currentStep,
+      totalSteps: totalSteps ?? this.totalSteps,
+    );
+  }
+}
+
+class SyncService {
+  final FirebaseService _firebaseService;
+  final SyncQueueService _queueService;
+  final DatabaseService _dbService;
+  final SharedPreferences _prefs;
+
+  /// Helper to fetch items from Isar in chunks to avoid blocking the Web Wasm thread
+  Future<List<T>> _chunkedFindAll<T>(Future<List<T>> Function(int offset, int limit) queryFn) async {
+    final List<T> results = [];
+    int offset = 0;
+    const int limit = 500;
+    while(true) {
+      final chunk = await queryFn(offset, limit);
+      if (chunk.isEmpty) break;
+      results.addAll(chunk);
+      offset += limit;
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+    return results;
+  }
+
+  final _stateController = StreamController<SyncState>.broadcast();
+  bool _isRecalculating = false; // Lock flag to prevent concurrent stock recalculations
+  SyncState _currentState = const SyncState(
+    status: SyncStatus.idle,
+    message: 'System ready for sync',
+  );
+  DateTime _lastSyncCompleteTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+  SyncService(
+    this._firebaseService,
+    this._queueService,
+    this._dbService,
+    this._prefs,
+  ) {
+    _currentState = SyncState(
+      status: SyncStatus.idle,
+      message: 'System ready for sync',
+      lastSyncTime: _loadLastSyncTime(),
+    );
+    _stateController.add(_currentState);
+  }
+
+  Stream<SyncState> get syncStateStream => _stateController.stream;
+  SyncState get currentState => _currentState;
+
+  void _updateState(SyncState newState) {
+    _currentState = newState;
+    _stateController.add(newState);
+  }
+
+  DateTime _loadLastSyncTime() {
+    final activeFirmId = _dbService.activeFirmId;
+    final timestamp = _prefs.getInt('${AppConstants.keyLastSyncTime}_$activeFirmId') ?? _prefs.getInt(AppConstants.keyLastSyncTime);
+    if (timestamp != null) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  Future<void> _saveLastSyncTime(DateTime time) async {
+    final activeFirmId = _dbService.activeFirmId;
+    await _prefs.setInt('${AppConstants.keyLastSyncTime}_$activeFirmId', time.millisecondsSinceEpoch);
+    _currentState = _currentState.copyWith(lastSyncTime: time);
+  }
+
+  /// Clears ALL per-entity cloud sync timestamps for a given firm.
+  /// Call this on firm switch or before force-full-download so incremental filters are reset.
+  Future<void> clearAllFirmTimestamps(String firmId) async {
+    final allEntityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
+      'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+      'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+    for (final et in allEntityTypes) {
+      await _prefs.remove('last_cloud_sync_timestamp_${firmId}_$et');
+      // Also clear legacy non-firm-specific keys
+      await _prefs.remove('last_cloud_sync_timestamp_$et');
+    }
+    await _prefs.remove('${AppConstants.keyLastSyncTime}_$firmId');
+    logger.info('Cleared all sync timestamps for firm: $firmId');
+  }
+
+  /// Synchronizes company/firm definitions with Firestore `firms` collection
+  Future<List<String>> syncFirms() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) {
+      logger.warning('Skipping firm sync: Firebase not authenticated.');
+      return _prefs.getStringList('firms_list') ?? ['firm_default'];
+    }
+
+    try {
+      logger.info('Syncing company/firm definitions with Firebase Firestore...');
+      final companyId = _firebaseService.companyId;
+
+      // 1. Download remote firms from Firestore with 5s timeout
+      final querySnapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: companyId)
+          .get()
+          .timeout(const Duration(seconds: 5));
+
+      final localFirms = List<String>.from(_prefs.getStringList('firms_list') ?? ['firm_default']);
+      final Set<String> updatedFirmsSet = Set.from(localFirms);
+      final Set<String> remoteDeletedFirms = {};
+      final Set<String> existingRemoteIds = {};
+
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        final firmId = data['firmId'] as String? ?? doc.id;
+        final firmName = data['firmName'] as String?;
+        final isDeleted = data['isDeleted'] as bool? ?? false;
+        existingRemoteIds.add(firmId);
+
+        final remoteUpdatedAtStr = data['updatedAt'] as String? ?? '';
+        final remoteUpdatedAt = DateTime.tryParse(remoteUpdatedAtStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final localUpdatedAtStr = _prefs.getString('firm_updated_at_$firmId') ?? '';
+        final localUpdatedAt = DateTime.tryParse(localUpdatedAtStr) ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+        if (isDeleted) {
+          remoteDeletedFirms.add(firmId);
+          updatedFirmsSet.remove(firmId);
+          await _prefs.remove('firm_name_$firmId');
+        } else {
+          updatedFirmsSet.add(firmId);
+          
+          // Conflict resolution: Remote vs Local
+          if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+            // Remote is newer, overwrite local
+            if (firmName != null && firmName.isNotEmpty) {
+              await _prefs.setString('firm_name_$firmId', firmName);
+              await _prefs.setString('firm_updated_at_$firmId', remoteUpdatedAt.toIso8601String());
+              if (data['firmGst'] != null) await _prefs.setString('firm_gst_$firmId', data['firmGst']);
+              if (data['firmMobile'] != null) await _prefs.setString('firm_mobile_$firmId', data['firmMobile']);
+              if (data['firmWhatsapp'] != null) await _prefs.setString('firm_whatsapp_$firmId', data['firmWhatsapp']);
+              if (data['firmEmail'] != null) await _prefs.setString('firm_email_$firmId', data['firmEmail']);
+              if (data['firmPan'] != null) await _prefs.setString('firm_pan_$firmId', data['firmPan']);
+              if (data['firmAddress'] != null) await _prefs.setString('firm_address_$firmId', data['firmAddress']);
+              if (data['firmCity'] != null) await _prefs.setString('firm_city_$firmId', data['firmCity']);
+              if (data['firmState'] != null) await _prefs.setString('firm_state_$firmId', data['firmState']);
+              if (data['firmPincode'] != null) await _prefs.setString('firm_pincode_$firmId', data['firmPincode']);
+              if (data['firmBankName'] != null) await _prefs.setString('firm_bank_name_$firmId', data['firmBankName']);
+              if (data['firmBankAcc'] != null) await _prefs.setString('firm_bank_acc_$firmId', data['firmBankAcc']);
+              if (data['firmIfsc'] != null) await _prefs.setString('firm_ifsc_$firmId', data['firmIfsc']);
+              if (data['firmUpi'] != null) await _prefs.setString('firm_upi_$firmId', data['firmUpi']);
+              if (data['firmCategory'] != null) await _prefs.setString('firm_category_$firmId', data['firmCategory']);
+              if (data['firmFssai'] != null) await _prefs.setString('firm_fssai_$firmId', data['firmFssai']);
+              if (data['firmLogo'] != null) await _prefs.setString('firm_logo_$firmId', data['firmLogo']);
+            }
+          } else if (localUpdatedAt.isAfter(remoteUpdatedAt)) {
+            // Local is newer! We need to upload this local edit to Firebase.
+            // By removing it from existingRemoteIds, it will be uploaded in step 2.
+            existingRemoteIds.remove(firmId);
+          }
+        }
+      }
+
+      if (updatedFirmsSet.isEmpty) {
+        updatedFirmsSet.add('firm_default');
+      }
+
+      final updatedFirmsList = updatedFirmsSet.toList();
+
+      // 2. Upload local firms to Firestore ONLY if missing in Firestore and NOT deleted remotely, OR if local is newer
+      final batch = _firebaseService.firestore.batch();
+      bool hasUploads = false;
+
+      for (var firmId in updatedFirmsList) {
+        if (existingRemoteIds.contains(firmId) || remoteDeletedFirms.contains(firmId)) {
+          continue; // Do NOT overwrite existing remote firms unless local is newer!
+        }
+        final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$firmId') ?? true;
+        if (!isFirmSyncEnabled) {
+          continue; // Do NOT auto-upload local firm definition to cloud if firm sync toggle is OFF!
+        }
+
+        final firmName = _prefs.getString('firm_name_$firmId') ??
+            (firmId == 'firm_default' ? 'Default Company' : 'New Company');
+        final localUpdatedAt = _prefs.getString('firm_updated_at_$firmId') ?? DateTime.now().toUtc().toIso8601String();
+
+        final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
+        batch.set(
+          docRef,
+          {
+            'firmId': firmId,
+            'firmName': firmName,
+            'companyId': companyId,
+            'createdAt': DateTime.now().toIso8601String(), // This will be merged, so it won't overwrite existing
+            'updatedAt': localUpdatedAt,
+            'isDeleted': false,
+            'lastModifiedBy': _firebaseService.currentUserEmail ?? 'admin@sahaj.com',
+            'firmGst': _prefs.getString('firm_gst_$firmId') ?? '',
+            'firmMobile': _prefs.getString('firm_mobile_$firmId') ?? '',
+            'firmWhatsapp': _prefs.getString('firm_whatsapp_$firmId') ?? '',
+            'firmEmail': _prefs.getString('firm_email_$firmId') ?? '',
+            'firmPan': _prefs.getString('firm_pan_$firmId') ?? '',
+            'firmAddress': _prefs.getString('firm_address_$firmId') ?? '',
+            'firmCity': _prefs.getString('firm_city_$firmId') ?? '',
+            'firmState': _prefs.getString('firm_state_$firmId') ?? '',
+            'firmPincode': _prefs.getString('firm_pincode_$firmId') ?? '',
+            'firmBankName': _prefs.getString('firm_bank_name_$firmId') ?? '',
+            'firmBankAcc': _prefs.getString('firm_bank_acc_$firmId') ?? '',
+            'firmIfsc': _prefs.getString('firm_ifsc_$firmId') ?? '',
+            'firmUpi': _prefs.getString('firm_upi_$firmId') ?? '',
+            'firmCategory': _prefs.getString('firm_category_$firmId') ?? '',
+            'firmFssai': _prefs.getString('firm_fssai_$firmId') ?? '',
+            'firmLogo': _prefs.getString('firm_logo_$firmId') ?? '',
+          },
+          SetOptions(merge: true),
+        );
+        hasUploads = true;
+      }
+
+      if (hasUploads) {
+        await batch.commit();
+      }
+
+      // 3. Hard delete data for soft-deleted firms
+      await hardDeleteSoftDeletedFirms();
+
+      await _prefs.setStringList('firms_list', updatedFirmsList);
+      logger.info('Firm definitions synced successfully: $updatedFirmsList');
+      return updatedFirmsList;
+    } catch (e, stackTrace) {
+      logger.error('Failed to sync firms with Firestore', e, stackTrace);
+      return _prefs.getStringList('firms_list') ?? ['firm_default'];
+    }
+  }
+
+  Future<void> _hardDeleteFirmData(String firmId) async {
+    final collections = [
+      'parties', 'items', 'categories', 'units', 'brands', 'orders', 'order_items',
+      'invoices', 'invoice_items', 'settings', 'users', 'purchases', 'purchase_items',
+      'expenses', 'expense_items', 'transactions', 'bank_accounts', 'credit_notes',
+      'credit_note_items', 'debit_notes', 'debit_note_items', 'stock_adjustments',
+      'whatsapp_mappings', 'tasks', 'machinerys', 'sync_logs'
+    ];
+    final companyId = _firebaseService.companyId;
+
+    for (final col in collections) {
+      try {
+        final snapshot = await _firebaseService.firestore
+            .collection(col)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: firmId)
+            .get();
+        
+        if (snapshot.docs.isNotEmpty) {
+          WriteBatch batch = _firebaseService.firestore.batch();
+          int count = 0;
+          for (var doc in snapshot.docs) {
+            batch.delete(doc.reference);
+            count++;
+            if (count >= 400) {
+              await batch.commit();
+              batch = _firebaseService.firestore.batch();
+              count = 0;
+            }
+          }
+          if (count > 0) {
+            await batch.commit();
+          }
+        }
+      } catch (e) {
+        logger.error('Error deleting collection $col for firm $firmId', e);
+      }
+    }
+  }
+
+  Future<void> hardDeleteSoftDeletedFirms() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+    try {
+      final snapshot = await _firebaseService.firestore
+          .collection('firms')
+          .where('companyId', isEqualTo: _firebaseService.companyId)
+          .where('isDeleted', isEqualTo: true)
+          .get();
+      
+      for (var doc in snapshot.docs) {
+        final firmId = doc.id;
+        await _hardDeleteFirmData(firmId);
+        await doc.reference.delete();
+        logger.info('Hard deleted soft-deleted firm $firmId and its data.');
+      }
+    } catch (e) {
+      logger.error('Failed to hard delete soft-deleted firms', e);
+    }
+  }
+
+  /// Hard delete firm document and all its data in Firestore
+  Future<void> deleteRemoteFirm(String firmId) async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+    try {
+      await _hardDeleteFirmData(firmId);
+      final docRef = _firebaseService.firestore.collection('firms').doc(firmId);
+      await docRef.delete();
+      logger.info('Hard deleted firm $firmId from Firestore.');
+    } catch (e) {
+      logger.error('Failed to hard delete firm $firmId in Firestore', e);
+    }
+  }
+
+  Timer? _quietSyncDebounceTimer;
+  bool _isUploadingQuietly = false;
+
+  /// Non-blocking, debounced background queue upload.
+  /// Batches multiple rapid saves into a single background upload cycle,
+  /// preventing browser freezes, event-loop starvation, and Isar DB lock contention.
+  void syncPendingChangesQuietly({Duration delay = const Duration(seconds: 2)}) {
+    // Early abort to save CPU and event loop if sync is entirely off
+    if (!_firebaseService.isSyncConfigured) return;
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) return;
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) return;
+
+    _quietSyncDebounceTimer?.cancel();
+    _quietSyncDebounceTimer = Timer(delay, () async {
+      if (_currentState.status == SyncStatus.syncing) return;
+      if (_isUploadingQuietly) return; // Prevent concurrent quiet uploads
+      // Cooldown: skip if a full syncAll just completed within last 5 seconds
+      if (DateTime.now().difference(_lastSyncCompleteTime).inSeconds < 5) return;
+
+      _isUploadingQuietly = true;
+      try {
+        await _firebaseService.ensureAuthenticated();
+        if (_firebaseService.isAuthenticated) {
+          await _uploadLocalChanges(silent: true);
+        }
+      } catch (e) {
+        logger.warning('Quiet background upload encountered non-fatal error: $e');
+      } finally {
+        _isUploadingQuietly = false;
+      }
+    });
+  }
+
+  /// Triggers full synchronization of all collections: upload edits, download changes, resolve conflicts
+  Future<void> syncAll() async {
+    if (!_firebaseService.isSyncConfigured) {
+      logger.info('Firebase keys not configured in Sync Center. Bypassing cloud sync.');
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Offline Mode (Firebase Not Configured)',
+      ));
+      return;
+    }
+
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      logger.info('Firebase Cloud Sync is turned OFF by user. Bypassing cloud sync.');
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) {
+      logger.info('Cloud sync is OFF for active firm ($activeFirmId). Bypassing cloud sync.');
+      _updateState(SyncState(
+        status: SyncStatus.idle,
+        message: 'Firm Cloud Sync OFF for firm ($activeFirmId)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) {
+      logger.warning('Sync already in progress. Ignoring request.');
+      return;
+    }
+
+    await _firebaseService.ensureAuthenticated();
+
+    if (!_firebaseService.isAuthenticated) {
+      logger.warning('Bypassing sync: User not authenticated.');
+      _updateState(const SyncState(
+        status: SyncStatus.failure,
+        message: 'Sync failed: User not logged in',
+      ));
+      return;
+    }
+
+    logger.info('Starting Firebase synchronization engine...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Synchronizing with Firebase...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      // 0. Sync company/firm definitions first
+      await syncFirms();
+
+      // 1. Upload local changes to Firestore
+      await _uploadLocalChanges();
+
+      // 2. Download remote updates from Firestore via Instant Low-Quota Delta Sync Engine
+      final lastSync = _currentState.lastSyncTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final newSyncTime = DateTime.now();
+
+      await _downloadDeltaRemoteUpdates(lastSync);
+
+      // 3. Persist successful sync time
+      await _saveLastSyncTime(newSyncTime);
+      
+      // 4. Log successful synchronization
+      await _logSyncEvent('Success', 'Full sync completed successfully.');
+
+      logger.info('Firebase sync cycle completed successfully.');
+      _lastSyncCompleteTime = DateTime.now();
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Sync completed successfully (100%)',
+        lastSyncTime: newSyncTime,
+        progress: 1.0,
+        currentStep: 22,
+        totalSteps: 22,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Firebase synchronization failed', e, stackTrace);
+      await _logSyncEvent('Failure', 'Sync cycle failed: $e');
+      
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Sync failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Downloads remote updates from Firestore into local Isar DB (Pull Cloud -> Local)
+  /// Safety Action: Wipes local DB for the active firm first, then pulls ALL cloud data freshly!
+  Future<void> syncDataFromCloud() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    final activeFirmId = _dbService.activeFirmId;
+    final isFirmSyncEnabled = _prefs.getBool('enable_firm_sync_$activeFirmId') ?? true;
+    if (!isFirmSyncEnabled) {
+      logger.info('Cloud sync is OFF for active firm ($activeFirmId). Skipping download.');
+      _updateState(SyncState(
+        status: SyncStatus.idle,
+        message: 'Firm Cloud Sync OFF for firm ($activeFirmId)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) return;
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    logger.info('Purging local database and downloading fresh data from Firebase Cloud...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Purging local DB & Downloading fresh Cloud data...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      // 1. Clear ALL sync timestamps (main + per-entity) so incremental filter is FULLY disabled.
+      final activeFirmId = _dbService.activeFirmId;
+      await _prefs.remove('${AppConstants.keyLastSyncTime}_$activeFirmId');
+      await _prefs.remove(AppConstants.keyLastSyncTime);
+
+      // Clear all firm-specific per-entity timestamps to force full fresh download
+      final allEntityTypes = [
+        'Category', 'Unit', 'Brand', 'Party', 'Item',
+        'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+        'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
+        'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+        'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+      ];
+      for (final et in allEntityTypes) {
+        await _prefs.remove('last_cloud_sync_timestamp_$et');
+        await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
+      }
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
+
+      // 2. PURGE local database completely before downloading fresh cloud data.
+      logger.info('Purging local Isar database for firm: $activeFirmId before fresh cloud download...');
+      await _dbService.clearDatabase();
+      logger.info('Local database purged successfully. Ready for fresh cloud download.');
+
+      // 3. Re-seed standard commercial units in local DB
+      await DemoDataSeeder.seedStandardUnits(_dbService);
+
+      // 4. Download remote firm definitions & all Firestore collections for active firm
+      await syncFirms();
+      final epochStart = DateTime.fromMillisecondsSinceEpoch(0);
+      final newSyncTime = DateTime.now();
+      await _downloadRemoteUpdates(epochStart, forceFullDownload: true);
+      await _saveLastSyncTime(newSyncTime);
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Local DB purged & fresh cloud data downloaded successfully!',
+        lastSyncTime: newSyncTime,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Failed to download cloud data', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Cloud download failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Forces all local records to be uploaded to Firebase Cloud (Push Local -> Cloud)
+  /// Safety Action: Wipes cloud Firestore data for the active firm first, then pushes ALL local records!
+  Future<void> forceLocalDataToCloud() async {
+    final cloudSyncEnabled = _prefs.getBool('enable_firebase_cloud_sync') ?? true;
+    if (!cloudSyncEnabled) {
+      _updateState(const SyncState(
+        status: SyncStatus.idle,
+        message: 'Local Storage Mode Active (Cloud Sync OFF)',
+      ));
+      return;
+    }
+
+    if (_currentState.status == SyncStatus.syncing) return;
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    logger.info('Wiping cloud data and pushing local records to Firebase Cloud...');
+    _updateState(SyncState(
+      status: SyncStatus.syncing,
+      message: 'Wiping cloud DB & Pushing local data to Cloud...',
+      lastSyncTime: _currentState.lastSyncTime,
+    ));
+
+    try {
+      // 1. Wipe remote Firestore data for active firm first
+      await clearCloudDataForActiveFirm();
+
+      // 2. Reset sync queue retries and enqueue all local records for upload
+      await _queueService.resetAllRetries();
+      await _enqueueAllLocalRecordsForUpload(forceAll: true);
+      await _uploadLocalChanges();
+
+      final newSyncTime = DateTime.now();
+      await _saveLastSyncTime(newSyncTime);
+
+      _updateState(SyncState(
+        status: SyncStatus.success,
+        message: 'Cloud data wiped & local data pushed successfully!',
+        lastSyncTime: newSyncTime,
+      ));
+    } catch (e, stackTrace) {
+      logger.error('Failed to push local data to cloud', e, stackTrace);
+      _updateState(SyncState(
+        status: SyncStatus.failure,
+        message: 'Cloud upload failed: ${e.toString()}',
+        lastSyncTime: _currentState.lastSyncTime,
+      ));
+      rethrow;
+    }
+  }
+
+  /// Helper to enqueue unsynced or all local records into SyncQueue
+  Future<void> _enqueueAllLocalRecordsForUpload({bool forceAll = false}) async {
+    final uuidGen = Uuid();
+    final isar = _dbService.isar;
+
+        Future<void> processEnqueuing<T>(
+        Future<List<T>> Function(int offset, int limit) queryFn,
+        String entityType,
+        String? Function(T) getUuid,
+        int Function(T) getId) async {
+      int offset = 0;
+      const int limit = 500;
+      while (true) {
+        final chunk = await queryFn(offset, limit);
+        if (chunk.isEmpty) break;
+        
+        final queues = chunk.map((item) => SyncQueue()
+          ..uuid = uuidGen.v4()
+          ..entityType = entityType
+          ..entityId = getId(item)
+          ..entityUuid = getUuid(item)
+          ..operation = 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now()).toList();
+
+        await isar.writeTxn(() async {
+          await isar.syncQueues.putAll(queues);
+        });
+        
+        offset += limit;
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+    }
+
+    await processEnqueuing<Party>((o, l) => forceAll ? isar.partys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.partys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Party', (Party e) => e.uuid, (Party e) => e.id);
+    await processEnqueuing<Item>((o, l) => forceAll ? isar.items.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.items.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Item', (Item e) => e.uuid, (Item e) => e.id);
+    await processEnqueuing<Invoice>((o, l) => forceAll ? isar.invoices.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.invoices.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Invoice', (Invoice e) => e.uuid, (Invoice e) => e.id);
+    await processEnqueuing<Order>((o, l) => forceAll ? isar.orders.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.orders.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Order', (Order e) => e.uuid, (Order e) => e.id);
+    await processEnqueuing<Purchase>((o, l) => forceAll ? isar.purchases.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.purchases.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Purchase', (Purchase e) => e.uuid, (Purchase e) => e.id);
+    // REMOVED: InvoiceItem uploaded separately
+
+    // REMOVED: PurchaseItem uploaded separately
+
+    await processEnqueuing<Expense>((o, l) => forceAll ? isar.expenses.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.expenses.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Expense', (Expense e) => e.uuid, (Expense e) => e.id);
+    await processEnqueuing<ExpenseItem>((o, l) => isar.expenseItems.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((ExpenseItem ei) => forceAll || !ei.isSynced).toList()), 'ExpenseItem', (ExpenseItem e) => e.uuid, (ExpenseItem e) => e.id);
+    await processEnqueuing<StockAdjustment>((o, l) => isar.collection<StockAdjustment>().filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((StockAdjustment sa) => forceAll || !sa.isSynced).toList()), 'StockAdjustment', (StockAdjustment e) => e.uuid, (StockAdjustment e) => e.id);
+    await processEnqueuing<CreditNote>((o, l) => isar.creditNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((CreditNote cn) => forceAll || !cn.isSynced).toList()), 'CreditNote', (CreditNote e) => e.uuid, (CreditNote e) => e.id);
+    // REMOVED: CreditNoteItem uploaded separately
+
+    await processEnqueuing<WhatsAppMapping>((o, l) => isar.whatsAppMappings.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((WhatsAppMapping wm) => forceAll || !wm.isSynced).toList()), 'WhatsAppMapping', (WhatsAppMapping e) => e.uuid, (WhatsAppMapping e) => e.id);
+    await processEnqueuing<DebitNote>((o, l) => isar.debitNotes.filter().idGreaterThan(-1).offset(o).limit(l).findAll().then((list) => list.where((DebitNote dn) => forceAll || !dn.isSynced).toList()), 'DebitNote', (DebitNote e) => e.uuid, (DebitNote e) => e.id);
+    // REMOVED: DebitNoteItem uploaded separately
+
+    await processEnqueuing<Transaction>((o, l) => forceAll ? isar.transactions.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.transactions.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Transaction', (Transaction e) => e.uuid, (Transaction e) => e.id);
+    await processEnqueuing<Category>((o, l) => forceAll ? isar.categorys.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.categorys.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Category', (Category e) => e.uuid, (Category e) => e.id);
+    await processEnqueuing<Unit>((o, l) => forceAll ? isar.units.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.units.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Unit', (Unit e) => e.uuid, (Unit e) => e.id);
+    await processEnqueuing<Brand>((o, l) => forceAll ? isar.brands.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.brands.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Brand', (Brand e) => e.uuid, (Brand e) => e.id);
+    await processEnqueuing<Settings>((o, l) => forceAll ? isar.settings.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.settings.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Settings', (Settings e) => e.uuid, (Settings e) => e.id);
+    await processEnqueuing<User>((o, l) => forceAll ? isar.users.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.users.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'User', (User e) => e.uuid, (User e) => e.id);
+    await processEnqueuing<BankAccount>((o, l) => forceAll ? isar.bankAccounts.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.bankAccounts.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'BankAccount', (BankAccount e) => e.uuid, (BankAccount e) => e.id);
+    // REMOVED: OrderItem uploaded separately
+
+    await processEnqueuing<Task>((o, l) => forceAll ? isar.tasks.filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.tasks.filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Task', (Task e) => e.uuid, (Task e) => e.id);
+    await processEnqueuing<Machinery>((o, l) => forceAll ? isar.collection<Machinery>().filter().idGreaterThan(-1).offset(o).limit(l).findAll() : isar.collection<Machinery>().filter().isSyncedEqualTo(false).offset(o).limit(l).findAll(), 'Machinery', (Machinery e) => e.uuid, (Machinery e) => e.id);
+  }
+
+  /// Deletes or soft-deletes all documents belonging to the active company context from Firestore.
+  Future<void> clearCloudData() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) {
+      throw StateError('Firebase authentication failed. Enable Anonymous login in console.');
+    }
+
+    final companyId = _firebaseService.companyId;
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .get();
+      } catch (e1) {
+        logger.warning('Cloud wipe query for $entityType failed: $e1. Trying full collection query limit 500.');
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .limit(500)
+              .get();
+        } catch (_) {}
+      }
+
+      if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
+
+      try {
+        // Chunk batch deletes to max 450
+        for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+          final chunk = querySnapshot.docs.skip(i).take(450);
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in chunk) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          await Future.delayed(const Duration(milliseconds: 50)); // Yield
+        }
+      } catch (e) {
+        logger.warning('Physical batch delete failed for $entityType ($e). Falling back to soft delete...');
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.set(
+                doc.reference,
+                {
+                  'isDeleted': true,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50)); // Yield
+          }
+        } catch (softErr) {
+          logger.error('Soft delete fallback failed for $entityType', softErr);
+        }
+      }
+    }
+
+    // Reset local sync state so next sync starts fresh
+    await _prefs.remove(AppConstants.keyLastSyncTime);
+    _currentState = _currentState.copyWith(lastSyncTime: DateTime.fromMillisecondsSinceEpoch(0));
+    _stateController.add(_currentState);
+  }
+
+  /// Deletes all documents belonging to the active firm from Firestore
+  
+  /// Deletes all documents belonging to a specific firm from Firestore (Hard Delete)
+  Future<void> clearCloudDataForFirm(String firmId) async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    final companyId = _firebaseService.companyId;
+    logger.info('Wiping all remote Firestore documents for firm: $firmId');
+
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: firmId)
+            .get();
+      } catch (e1) {
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .where('firmId', isEqualTo: firmId)
+              .get();
+        } catch (_) {}
+      }
+
+      if (querySnapshot != null && querySnapshot.docs.isNotEmpty) {
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.delete(doc.reference); // Hard delete
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50));
+          }
+        } catch (e) {
+          logger.error('Failed to hard delete chunk for $entityType', e);
+        }
+      }
+    }
+    
+    // Also delete the firm document itself
+    try {
+       await _firebaseService.firestore.collection('firms').doc(firmId).delete();
+    } catch (_) {}
+  }
+
+  Future<void> clearCloudDataForActiveFirm() async {
+    await _firebaseService.ensureAuthenticated();
+    if (!_firebaseService.isAuthenticated) return;
+
+    final companyId = _firebaseService.companyId;
+    final activeFirmId = _dbService.activeFirmId;
+    logger.info('Wiping all remote Firestore documents for firm: $activeFirmId');
+
+    final entityTypes = [
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'Transaction', 'BankAccount',
+      'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
+
+    for (var entityType in entityTypes) {
+      final collectionName = _getFirestoreCollection(entityType);
+      QuerySnapshot? querySnapshot;
+
+      try {
+        querySnapshot = await _firebaseService.firestore
+            .collection(collectionName)
+            .where('companyId', isEqualTo: companyId)
+            .where('firmId', isEqualTo: activeFirmId)
+            .get();
+      } catch (e1) {
+        logger.warning('Primary firm wipe query failed for $entityType: $e1. Trying firmId-only query.');
+        try {
+          querySnapshot = await _firebaseService.firestore
+              .collection(collectionName)
+              .where('firmId', isEqualTo: activeFirmId)
+              .get();
+        } catch (e2) {
+          logger.warning('Secondary firm wipe query failed for $entityType: $e2. Trying companyId query.');
+          try {
+            querySnapshot = await _firebaseService.firestore
+                .collection(collectionName)
+                .where('companyId', isEqualTo: companyId)
+                .get();
+          } catch (_) {}
+        }
+      }
+
+      if (querySnapshot == null || querySnapshot.docs.isEmpty) continue;
+
+      try {
+        // Chunk batch deletes to max 450
+        for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+          final chunk = querySnapshot.docs.skip(i).take(450);
+          final batch = _firebaseService.firestore.batch();
+          for (var doc in chunk) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+          await Future.delayed(const Duration(milliseconds: 50)); // Yield
+        }
+      } catch (e) {
+        logger.warning('Physical batch delete failed for firm $activeFirmId ($entityType): $e. Falling back to soft delete...');
+        try {
+          for (var i = 0; i < querySnapshot.docs.length; i += 450) {
+            final chunk = querySnapshot.docs.skip(i).take(450);
+            final batch = _firebaseService.firestore.batch();
+            for (var doc in chunk) {
+              batch.set(
+                doc.reference,
+                {
+                  'isDeleted': true,
+                  'updatedAt': DateTime.now().toIso8601String(),
+                },
+                SetOptions(merge: true),
+              );
+            }
+            await batch.commit();
+            await Future.delayed(const Duration(milliseconds: 50)); // Yield
+          }
+        } catch (softErr) {
+          logger.error('Soft delete fallback failed for firm $activeFirmId ($entityType)', softErr);
+        }
+      }
+    }
+  }
+
+  /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
+  /// [silent] = true when called from background quiet sync Ã¯Â¿Â½ avoids polluting global state
+  

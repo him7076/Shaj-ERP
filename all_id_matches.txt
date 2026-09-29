@@ -1,0 +1,554 @@
+lib\core\models\firm_info.dart:64: final isarSettings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\core\services\database_service.dart:297: final mapItem = items.firstWhere((e) => e['id'] == actualItem.id, orElse: () => {});
+lib\core\services\database_service.dart:299: mapItem['categoryId'] = actualItem.category.value?.id;
+lib\core\services\database_service.dart:300: mapItem['brandId'] = actualItem.brand.value?.id;
+lib\core\services\database_service.dart:301: mapItem['unitId'] = actualItem.unit.value?.id;
+lib\core\services\database_service.dart:563: final partyId = party.id;
+lib\core\services\database_service.dart:628: final itemId = item.id;
+lib\core\services\database_service.dart:792: ii.itemId = match.id;
+lib\core\services\database_service.dart:805: oi.itemId = match.id;
+lib\core\services\database_service.dart:818: pi.itemId = match.id;
+lib\core\services\item_excel_import_service.dart:404: catObj!.id = await isar.categorys.put(catObj!);
+lib\core\services\item_excel_import_service.dart:421: brandObj!.id = await isar.brands.put(brandObj!);
+lib\core\services\item_excel_import_service.dart:439: unitObj!.id = await isar.units.put(unitObj!);
+lib\core\services\item_excel_import_service.dart:453: await isar.writeTxn(() async { secUnitObj!.id = await isar.units.put(secUnitObj!); });
+lib\core\services\item_excel_import_service.dart:467: await isar.writeTxn(() async { terUnitObj!.id = await isar.units.put(terUnitObj!); });
+lib\core\services\item_excel_import_service.dart:528: ..entityId = existingItem.id
+lib\core\services\item_excel_import_service.dart:579: newItem.id = await isar.items.put(newItem);
+lib\core\services\item_excel_import_service.dart:589: ..entityId = newItem.id
+lib\core\services\party_excel_import_service.dart:255: ..entityId = existingParty.id
+lib\core\services\party_excel_import_service.dart:295: newParty.id = await isar.partys.put(newParty);
+lib\core\services\party_excel_import_service.dart:302: ..entityId = newParty.id
+lib\core\services\profit_service.dart:31: final validInvoiceIds = invoices.map((i) => i.id).toSet();
+lib\core\services\purchase_excel_import_service.dart:420: oi.purchaseId == oldP.id ||
+lib\core\services\purchase_excel_import_service.dart:422: oi.purchase.value?.id == oldP.id
+lib\core\services\purchase_excel_import_service.dart:450: ..entityId = oi.id
+lib\core\services\purchase_excel_import_service.dart:456: await isar.purchaseItems.delete(oi.id);
+lib\core\services\purchase_excel_import_service.dart:464: ..entityId = oldP.id
+lib\core\services\purchase_excel_import_service.dart:470: await isar.purchases.delete(oldP.id);
+lib\core\services\purchase_excel_import_service.dart:491: party!.id = await isar.partys.put(party!);
+lib\core\services\purchase_excel_import_service.dart:505: ..partyId = party?.id
+lib\core\services\purchase_excel_import_service.dart:590: catalogItem!.id = await isar.items.put(catalogItem!);
+lib\core\services\purchase_excel_import_service.dart:607: matchedUnit!.id = await isar.units.put(matchedUnit!);
+lib\core\services\purchase_excel_import_service.dart:647: ..itemId = catalogItem?.id
+lib\core\services\purchase_excel_import_service.dart:685: pItem.id = await isar.purchaseItems.put(pItem);
+lib\core\services\purchase_excel_import_service.dart:707: ..entityId = item.id
+lib\core\services\purchase_excel_import_service.dart:845: list.sort((a, b) => b.id.compareTo(a.id));
+lib\core\services\purchase_excel_import_service.dart:850: oi.purchaseId == oldP.id ||
+lib\core\services\purchase_excel_import_service.dart:852: oi.purchase.value?.id == oldP.id
+lib\core\services\purchase_excel_import_service.dart:861: ..entityId = oi.id
+lib\core\services\purchase_excel_import_service.dart:867: await isar.purchaseItems.delete(oi.id);
+lib\core\services\purchase_excel_import_service.dart:873: ..entityId = oldP.id
+lib\core\services\purchase_excel_import_service.dart:879: await isar.purchases.delete(oldP.id);
+lib\core\services\receipt_excel_import_service.dart:156: matchedParty!.id = await isar.partys.put(matchedParty!);
+lib\core\services\receipt_excel_import_service.dart:184: txn.id = await isar.transactions.put(txn);
+lib\core\services\receipt_excel_import_service.dart:194: ..entityId = txn.id
+lib\core\services\report_service.dart:49: .partyIdEqualTo(party.id)
+lib\core\services\report_service.dart:56: query = query.and().idEqualTo(-1); // return empty
+lib\core\services\report_service.dart:114: list = list.where((o) => o.partyId == party.id).toList();
+lib\core\services\report_service.dart:179: final validInvoiceIds = invoices.map((i) => i.id).toSet();
+lib\core\services\report_service.dart:229: final items = (itemsByInvoiceId[inv.id] ?? itemsByInvoiceUuid[inv.uuid] ?? []);
+lib\core\services\report_service.dart:461: .where((inv) => inv.partyId == party.id && (inv.paymentStatus == 'Unpaid' || inv.paymentStatus == 'Partially Paid'))
+lib\core\services\report_service.dart:488: partyId: party.id,
+lib\core\services\report_service.dart:521: final targetPartyId = party?.id ?? -1;
+lib\core\services\report_service.dart:643: final validPurIds = allPurchases.map((p) => p.id).toSet();
+lib\core\services\report_service.dart:654: if (i.id != null && i.uuid != null) i.id!: i.uuid!
+lib\core\services\report_service.dart:709: final key1 = item.id.toString();
+lib\core\services\sales_excel_import_service.dart:388: oi.parentInvoiceId == oldInv.id ||
+lib\core\services\sales_excel_import_service.dart:390: oi.invoice.value?.id == oldInv.id
+lib\core\services\sales_excel_import_service.dart:418: ..entityId = oi.id
+lib\core\services\sales_excel_import_service.dart:424: await isar.invoiceItems.delete(oi.id);
+lib\core\services\sales_excel_import_service.dart:427: if (oldInv.id != preservedInvoice!.id) {
+lib\core\services\sales_excel_import_service.dart:433: ..entityId = oldInv.id
+lib\core\services\sales_excel_import_service.dart:439: await isar.invoices.delete(oldInv.id);
+lib\core\services\sales_excel_import_service.dart:461: party!.id = await isar.partys.put(party!);
+lib\core\services\sales_excel_import_service.dart:476: ..id = preservedInvoice?.id ?? Isar.autoIncrement
+lib\core\services\sales_excel_import_service.dart:482: ..partyId = party?.id
+lib\core\services\sales_excel_import_service.dart:562: if (!allItems.any((i) => i.id == catalogItem!.id)) {
+lib\core\services\sales_excel_import_service.dart:586: catalogItem!.id = await isar.items.put(catalogItem!);
+lib\core\services\sales_excel_import_service.dart:604: matchedUnit!.id = await isar.units.put(matchedUnit!);
+lib\core\services\sales_excel_import_service.dart:643: ..itemId = catalogItem?.id
+lib\core\services\sales_excel_import_service.dart:682: invItem.id = await isar.invoiceItems.put(invItem);
+lib\core\services\sales_excel_import_service.dart:704: ..entityId = item.id
+lib\core\services\sales_excel_import_service.dart:840: list.sort((a, b) => b.id.compareTo(a.id));
+lib\core\services\sales_excel_import_service.dart:845: oi.parentInvoiceId == oldInv.id ||
+lib\core\services\sales_excel_import_service.dart:847: oi.invoice.value?.id == oldInv.id
+lib\core\services\sales_excel_import_service.dart:856: ..entityId = oi.id
+lib\core\services\sales_excel_import_service.dart:862: await isar.invoiceItems.delete(oi.id);
+lib\core\services\sales_excel_import_service.dart:868: ..entityId = oldInv.id
+lib\core\services\sales_excel_import_service.dart:874: await isar.invoices.delete(oldInv.id);
+lib\core\services\sync_manager.dart:130: logger.info('SyncQueue item ID ${item.id} is due for retry attempt #${item.retryCount + 1}.');
+lib\core\services\sync_queue_service.dart:98: logger.debug('Incremented retryCount for SyncQueue ID ${queueItem.id} to ${queueItem.retryCount}. Error: $errorMessage');
+lib\core\services\sync_queue_service.dart:100: logger.error('Failed to update SyncQueue attempt for ID ${queueItem.id}', e);
+lib\core\services\sync_queue_service.dart:129: final chunk = await _queueCollection.filter().idGreaterThan(-1).offset(offset).limit(limit).findAll();
+lib\core\services\sync_service.dart:110: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:122: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:433: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:443: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:454: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:531: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:542: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:616: status: SyncStatus.idle,
+lib\core\services\sync_service.dart:1002: completedQueueIds.add(uniqueItemsToProcess[key]!.id);
+lib\core\services\sync_service.dart:1008: completedQueueIds.add(q.id);
+lib\core\services\sync_service.dart:1010: completedQueueIds.add(uniqueItemsToProcess[key]!.id);
+lib\core\services\sync_service.dart:1091: logger.warning('Sync queue item ID ${queueItem.id} not found in database. Skipping.');
+lib\core\services\sync_service.dart:1092: currentBatchCompletedIds.add(queueItem.id);
+lib\core\services\sync_service.dart:1110: currentBatchCompletedIds.add(queueItem.id);
+lib\core\services\sync_service.dart:1113: logger.error('Failed to map queue item ID ${queueItem.id}', e);
+lib\core\services\sync_service.dart:1507: invoiceById[inv.id] = inv;
+lib\core\services\sync_service.dart:1519: item.parentInvoiceId = parent.id;
+lib\core\services\sync_service.dart:1527: item.itemId = prod.id;
+lib\core\services\sync_service.dart:1540: purchaseById[pur.id] = pur;
+lib\core\services\sync_service.dart:1552: item.purchaseId = parent.id;
+lib\core\services\sync_service.dart:1560: item.itemId = prod.id;
+lib\core\services\sync_service.dart:1573: orderById[ord.id] = ord;
+lib\core\services\sync_service.dart:1584: item.orderId = parent.id;
+lib\core\services\sync_service.dart:1591: item.itemId = prod.id;
+lib\core\services\sync_service.dart:1604: cnById[cn.id] = cn;
+lib\core\services\sync_service.dart:1614: item.parentCreditNoteId = parent.id;
+lib\core\services\sync_service.dart:1620: item.itemId = prod.id;
+lib\core\services\sync_service.dart:1633: dnById[dn.id] = dn;
+lib\core\services\sync_service.dart:1643: item.parentDebitNoteId = parent.id;
+lib\core\services\sync_service.dart:1649: item.itemId = prod.id;
+lib\core\services\sync_service.dart:1675: partyIdToUuid[p.id] = p.uuid!;
+lib\core\services\sync_service.dart:1732: : (p.id > 0 ? (idPending[p.id] ?? 0.0) : 0.0);
+lib\core\services\sync_service.dart:1779: if (item.id != null && item.uuid != null) item.id!: item.uuid!
+lib\core\services\sync_service.dart:1784: final validInvIds = allInvoices.map((i) => i.id).toSet();
+lib\core\services\sync_service.dart:1788: final validPurIds = allPurchases.map((p) => p.id).toSet();
+lib\core\services\sync_service.dart:1824: isMatch = ii.itemId == item.id;
+lib\core\services\sync_service.dart:1847: isMatch = pi.itemId == item.id;
+lib\core\services\sync_service.dart:1865: isMatch = cni.itemId == item.id;
+lib\core\services\sync_service.dart:1882: isMatch = dni.itemId == item.id;
+lib\core\services\sync_service.dart:1898: isMatch = adj.itemId == item.id;
+lib\core\services\sync_service.dart:1944: case 'Party': return await isar.partys.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1945: case 'Item': return await isar.items.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1946: case 'Category': return await isar.categorys.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1947: case 'Unit': return await isar.units.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1948: case 'Brand': return await isar.brands.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1949: case 'Order': return await isar.orders.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1950: case 'Invoice': return await isar.invoices.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1951: case 'Purchase': return await isar.purchases.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1952: case 'Expense': return await isar.expenses.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1954: case 'Transaction': return await isar.transactions.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1955: case 'Task': return await isar.tasks.filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1956: case 'Machinery': return await isar.collection<Machinery>().filter().idGreaterThan(-1).count();
+lib\core\services\sync_service.dart:1970: final r = await isar.partys.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1973: final r = await isar.items.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1976: final r = await isar.invoices.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1979: final r = await isar.purchases.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1982: final r = await isar.orders.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1985: final r = await isar.expenses.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1993: final r = await isar.transactions.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:1996: final r = await isar.tasks.filter().idGreaterThan(-1).sortByUpdatedAtDesc().findFirst();
+lib\core\services\sync_service.dart:2057: case 'Party': return (entity as Party).id;
+lib\core\services\sync_service.dart:2058: case 'Item': return (entity as Item).id;
+lib\core\services\sync_service.dart:2059: case 'Invoice': return (entity as Invoice).id;
+lib\core\services\sync_service.dart:2060: case 'Order': return (entity as Order).id;
+lib\core\services\sync_service.dart:2061: case 'Purchase': return (entity as Purchase).id;
+lib\core\services\sync_service.dart:2062: case 'Expense': return (entity as Expense).id;
+lib\core\services\sync_service.dart:2063: case 'ExpenseItem': return (entity as ExpenseItem).id;
+lib\core\services\sync_service.dart:2064: case 'StockAdjustment': return (entity as StockAdjustment).id;
+lib\core\services\sync_service.dart:2065: case 'CreditNote': return (entity as CreditNote).id;
+lib\core\services\sync_service.dart:2066: case 'WhatsAppMapping': return (entity as WhatsAppMapping).id;
+lib\core\services\sync_service.dart:2067: case 'DebitNote': return (entity as DebitNote).id;
+lib\core\services\sync_service.dart:2068: case 'Transaction': return (entity as Transaction).id;
+lib\core\services\sync_service.dart:2069: case 'Category': return (entity as Category).id;
+lib\core\services\sync_service.dart:2070: case 'Unit': return (entity as Unit).id;
+lib\core\services\sync_service.dart:2071: case 'Brand': return (entity as Brand).id;
+lib\core\services\sync_service.dart:2072: case 'Settings': return (entity as Settings).id;
+lib\core\services\sync_service.dart:2073: case 'User': return (entity as User).id;
+lib\core\services\sync_service.dart:2074: case 'BankAccount': return (entity as BankAccount).id;
+lib\core\services\sync_service.dart:2075: case 'Task': return (entity as Task).id;
+lib\core\services\sync_service.dart:2076: case 'Machinery': return (entity as Machinery).id;
+lib\core\services\sync_service.dart:3545: entity.id = localId;
+lib\core\services\sync_service.dart:3759: final itemUuid = itemMap['uuid'] as String? ?? legacyDoc.id;
+lib\core\services\sync_service.dart:3869: final itemUuid = itemMap['uuid'] as String? ?? legacyDoc.id;
+lib\core\services\sync_service.dart:3911: e.parentInvoiceId = parentInv.id;
+lib\core\services\sync_service.dart:3979: final itemUuid = itemMap['uuid'] as String? ?? legacyDoc.id;
+lib\core\services\web_mock_isar.dart:423: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:437: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:451: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:464: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:505: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:538: 'categoryId': entity.category.value?.id,
+lib\core\services\web_mock_isar.dart:539: 'brandId': entity.brand.value?.id,
+lib\core\services\web_mock_isar.dart:540: 'unitId': entity.unit.value?.id,
+lib\core\services\web_mock_isar.dart:551: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:578: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:614: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:645: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:688: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:707: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:722: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:741: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:773: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:803: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:820: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:846: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:865: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:896: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:925: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:956: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:987: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:1005: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:1023: 'id': entity.id,
+lib\core\services\web_mock_isar.dart:1047: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1058: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1073: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1084: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1094: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1132: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1183: final cat = catList.firstWhere((e) => (e as dynamic).id == catId, orElse: () => null);
+lib\core\services\web_mock_isar.dart:1192: final brand = brandList.firstWhere((e) => (e as dynamic).id == brandId, orElse: () => null);
+lib\core\services\web_mock_isar.dart:1201: final unit = unitList.firstWhere((e) => (e as dynamic).id == unitId, orElse: () => null);
+lib\core\services\web_mock_isar.dart:1208: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1232: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1265: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1293: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1333: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1349: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1361: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1377: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1406: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1433: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1447: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1470: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1486: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1514: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1541: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1569: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1596: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1611: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1629: ..id = map['id'] as int
+lib\core\services\web_mock_isar.dart:1709: if (entity.id == null || entity.id == 0 || entity.id == Isar.autoIncrement) {
+lib\core\services\web_mock_isar.dart:1712: if (item.id > maxId) maxId = item.id;
+lib\core\services\web_mock_isar.dart:1714: entity.id = maxId + 1;
+lib\core\services\web_mock_isar.dart:1726: return entity.id as int;
+lib\core\services\web_mock_isar.dart:1930: if (prop == 'id') return item.id;
+lib\core\services\whatsapp_mapping_service.dart:219: ..entityId = mapping.id
+lib\core\services\whatsapp_mapping_service.dart:269: ..entityId = existing.id
+lib\core\services\whatsapp_mapping_service.dart:471: ..entityId = entity.id
+lib\core\services\whatsapp_mapping_service.dart:520: ..entityId = existing.id
+lib\core\services\whatsapp_mapping_service.dart:732: ..entityId = entity.id
+lib\core\utils\demo_data_seeder.dart:167: ..partyId = customer1.id
+lib\core\utils\demo_data_seeder.dart:188: ..partyId = customer2.id
+lib\core\utils\demo_data_seeder.dart:204: invoiceItem1.parentInvoiceId = invoice1.id;
+lib\core\utils\demo_data_seeder.dart:219: ..partyId = customer3.id
+lib\core\utils\demo_data_seeder.dart:296: final existingUnits = await db.isar.units.filter().idGreaterThan(-1).findAll();
+lib\core\widgets\item_search_picker_modal.dart:154: items.sort((a, b) => b.id.compareTo(a.id));
+lib\core\widgets\item_search_picker_modal.dart:187: items.sort((a, b) => b.id.compareTo(a.id));
+lib\core\widgets\item_search_picker_modal.dart:225: items.sort((a, b) => b.id.compareTo(a.id));
+lib\data\local\collections\bank_account_collection.g.dart:206: object.id = id;
+lib\data\local\collections\bank_account_collection.g.dart:256: return object.id;
+lib\data\local\collections\bank_account_collection.g.dart:265: object.id = id;
+lib\data\local\collections\brand_collection.g.dart:129: object.id = id;
+lib\data\local\collections\brand_collection.g.dart:165: return object.id;
+lib\data\local\collections\brand_collection.g.dart:173: object.id = id;
+lib\data\local\collections\category_collection.g.dart:156: object.id = id;
+lib\data\local\collections\category_collection.g.dart:194: return object.id;
+lib\data\local\collections\category_collection.g.dart:202: object.id = id;
+lib\data\local\collections\credit_note_collection.g.dart:313: object.id = id;
+lib\data\local\collections\credit_note_collection.g.dart:396: return object.id;
+lib\data\local\collections\credit_note_collection.g.dart:404: object.id = id;
+lib\data\local\collections\credit_note_item_collection.g.dart:292: object.id = id;
+lib\data\local\collections\credit_note_item_collection.g.dart:373: return object.id;
+lib\data\local\collections\credit_note_item_collection.g.dart:382: object.id = id;
+lib\data\local\collections\debit_note_collection.g.dart:313: object.id = id;
+lib\data\local\collections\debit_note_collection.g.dart:396: return object.id;
+lib\data\local\collections\debit_note_collection.g.dart:404: object.id = id;
+lib\data\local\collections\debit_note_item_collection.g.dart:292: object.id = id;
+lib\data\local\collections\debit_note_item_collection.g.dart:373: return object.id;
+lib\data\local\collections\debit_note_item_collection.g.dart:382: object.id = id;
+lib\data\local\collections\deleted_voucher_collection.g.dart:204: object.id = id;
+lib\data\local\collections\deleted_voucher_collection.g.dart:254: return object.id;
+lib\data\local\collections\deleted_voucher_collection.g.dart:263: object.id = id;
+lib\data\local\collections\expense_collection.g.dart:241: object.id = id;
+lib\data\local\collections\expense_collection.g.dart:302: return object.id;
+lib\data\local\collections\expense_collection.g.dart:310: object.id = id;
+lib\data\local\collections\expense_item_collection.g.dart:148: object.id = id;
+lib\data\local\collections\expense_item_collection.g.dart:187: return object.id;
+lib\data\local\collections\expense_item_collection.g.dart:196: object.id = id;
+lib\data\local\collections\invoice_collection.g.dart:470: object.id = id;
+lib\data\local\collections\invoice_collection.g.dart:585: return object.id;
+lib\data\local\collections\invoice_collection.g.dart:593: object.id = id;
+lib\data\local\collections\invoice_item_collection.g.dart:387: object.id = id;
+lib\data\local\collections\invoice_item_collection.g.dart:480: return object.id;
+lib\data\local\collections\invoice_item_collection.g.dart:489: object.id = id;
+lib\data\local\collections\item_collection.g.dart:639: object.id = id;
+lib\data\local\collections\item_collection.g.dart:786: return object.id;
+lib\data\local\collections\item_collection.g.dart:794: object.id = id;
+lib\data\local\collections\order_collection.g.dart:407: object.id = id;
+lib\data\local\collections\order_collection.g.dart:506: return object.id;
+lib\data\local\collections\order_collection.g.dart:514: object.id = id;
+lib\data\local\collections\order_item_collection.g.dart:324: object.id = id;
+lib\data\local\collections\order_item_collection.g.dart:410: return object.id;
+lib\data\local\collections\order_item_collection.g.dart:418: object.id = id;
+lib\data\local\collections\party_collection.g.dart:504: object.id = id;
+lib\data\local\collections\party_collection.g.dart:613: return object.id;
+lib\data\local\collections\party_collection.g.dart:621: object.id = id;
+lib\data\local\collections\purchase_collection.g.dart:323: object.id = id;
+lib\data\local\collections\purchase_collection.g.dart:412: return object.id;
+lib\data\local\collections\purchase_collection.g.dart:420: object.id = id;
+lib\data\local\collections\purchase_item_collection.g.dart:323: object.id = id;
+lib\data\local\collections\purchase_item_collection.g.dart:405: return object.id;
+lib\data\local\collections\purchase_item_collection.g.dart:414: object.id = id;
+lib\data\local\collections\settings_collection.g.dart:205: object.id = id;
+lib\data\local\collections\settings_collection.g.dart:255: return object.id;
+lib\data\local\collections\settings_collection.g.dart:263: object.id = id;
+lib\data\local\collections\stock_adjustment_collection.g.dart:233: object.id = id;
+lib\data\local\collections\stock_adjustment_collection.g.dart:298: return object.id;
+lib\data\local\collections\stock_adjustment_collection.g.dart:307: object.id = id;
+lib\data\local\collections\sync_queue_collection.g.dart:211: object.id = id;
+lib\data\local\collections\sync_queue_collection.g.dart:263: return object.id;
+lib\data\local\collections\sync_queue_collection.g.dart:271: object.id = id;
+lib\data\local\collections\task_collection.g.dart:179: object.id = id;
+lib\data\local\collections\task_collection.g.dart:228: return object.id;
+lib\data\local\collections\task_collection.g.dart:236: object.id = id;
+lib\data\local\collections\transaction_collection.g.dart:306: object.id = id;
+lib\data\local\collections\transaction_collection.g.dart:381: return object.id;
+lib\data\local\collections\transaction_collection.g.dart:390: object.id = id;
+lib\data\local\collections\unit_collection.g.dart:146: object.id = id;
+lib\data\local\collections\unit_collection.g.dart:189: return object.id;
+lib\data\local\collections\unit_collection.g.dart:197: object.id = id;
+lib\data\local\collections\user_collection.g.dart:153: object.id = id;
+lib\data\local\collections\user_collection.g.dart:195: return object.id;
+lib\data\local\collections\user_collection.g.dart:203: object.id = id;
+lib\data\local\collections\whatsapp_mapping_collection.g.dart:215: object.id = id;
+lib\data\local\collections\whatsapp_mapping_collection.g.dart:272: return object.id;
+lib\data\local\collections\whatsapp_mapping_collection.g.dart:281: object.id = id;
+lib\data\local\party_local_data_source.dart:66: .idNotEqualTo(excludeId)
+lib\data\local\party_local_data_source.dart:89: .idNotEqualTo(excludeId)
+lib\data\repositories\analytics_repository_impl.dart:174: (p) => p.id == inv.partyId,
+lib\data\repositories\analytics_repository_impl.dart:196: final recentInvIds = recentInvoices.map((i) => i.id).toSet().toList();
+lib\data\repositories\base_isar_repository.dart:74: entity.id = id;
+lib\data\repositories\base_isar_repository.dart:102: final existing = await collection.get(entity.id);
+lib\data\repositories\base_isar_repository.dart:123: ..entityId = entity.id
+lib\data\repositories\base_isar_repository.dart:225: ..entityId = entity.id
+lib\data\repositories\category_repository_impl.dart:34: .parentCategory((q) => q.idEqualTo(parentId))
+lib\data\repositories\credit_note_repository_impl.dart:126: ..entityId = txn.id
+lib\data\repositories\credit_note_repository_impl.dart:150: ..entityId = item.id
+lib\data\repositories\debit_note_repository_impl.dart:126: ..entityId = txn.id
+lib\data\repositories\debit_note_repository_impl.dart:150: ..entityId = item.id
+lib\data\repositories\invoice_repository_impl.dart:138: targetItemMap[item.id] = item;
+lib\data\repositories\invoice_repository_impl.dart:174: if (allOldIds.add(oi.id)) oldItems.add(oi);
+lib\data\repositories\invoice_repository_impl.dart:207: modifiedItems[cItem.id] = cItem;
+lib\data\repositories\invoice_repository_impl.dart:211: ..itemId = cItem.id
+lib\data\repositories\invoice_repository_impl.dart:226: modifiedItems[dbItem.id] = dbItem;
+lib\data\repositories\invoice_repository_impl.dart:290: modifiedItems[cItem.id] = cItem;
+lib\data\repositories\invoice_repository_impl.dart:294: ..itemId = cItem.id
+lib\data\repositories\invoice_repository_impl.dart:327: modifiedItems[dbItem.id] = dbItem;
+lib\data\repositories\invoice_repository_impl.dart:353: ..entityId = item.id
+lib\data\repositories\invoice_repository_impl.dart:455: targetItemMap[item.id] = item;
+lib\data\repositories\invoice_repository_impl.dart:502: modifiedItems[cItem.id] = cItem;
+lib\data\repositories\invoice_repository_impl.dart:506: ..itemId = cItem.id
+lib\data\repositories\invoice_repository_impl.dart:523: modifiedItems[dbItem.id] = dbItem;
+lib\data\repositories\invoice_repository_impl.dart:580: ..sourceOrderId = order.id
+lib\data\repositories\invoice_repository_impl.dart:607: final companySettings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\data\repositories\invoice_repository_impl.dart:644: List<OrderItem> sourceItems = await isar.orderItems.filter().orderIdEqualTo(order.id).findAll();
+lib\data\repositories\invoice_repository_impl.dart:671: targetItemMap[item.id] = item;
+lib\data\repositories\invoice_repository_impl.dart:757: modifiedItems[dbItem.id] = dbItem;
+lib\data\repositories\invoice_repository_impl.dart:783: ..entityId = item.id
+lib\data\repositories\invoice_repository_impl.dart:795: ..entityId = order.id
+lib\data\repositories\item_repository_impl.dart:122: entity.id = id;
+lib\data\repositories\item_repository_impl.dart:163: if (entity.id == null) {
+lib\data\repositories\item_repository_impl.dart:174: final managedItem = await collection.get(entity.id!);
+lib\data\repositories\item_repository_impl.dart:194: ..entityId = entity.id!
+lib\data\repositories\order_repository_impl.dart:57: final isNew = order.id == Isar.autoIncrement;
+lib\data\repositories\order_repository_impl.dart:71: order.id = orderId;
+lib\data\repositories\order_repository_impl.dart:89: if (allOldIds.add(oi.id)) oldItems.add(oi);
+lib\data\repositories\order_repository_impl.dart:210: ..entityId = order.id
+lib\data\repositories\purchase_repository_impl.dart:128: if (allOldIds.add(oi.id)) oldItems.add(oi);
+lib\data\repositories\purchase_repository_impl.dart:159: if (item != null) item.id: item
+lib\data\repositories\transaction_repository_impl.dart:76: final isNew = transaction.id == Isar.autoIncrement;
+lib\data\repositories\transaction_repository_impl.dart:89: oldTransaction = await collection.get(transaction.id);
+lib\data\repositories\transaction_repository_impl.dart:186: transaction.id = transactionId;
+lib\data\repositories\transaction_repository_impl.dart:209: ..entityId = party.id
+lib\data\repositories\transaction_repository_impl.dart:229: ..entityId = targetParty.id
+lib\data\repositories\transaction_repository_impl.dart:342: ..entityId = party.id
+lib\data\repositories\transaction_repository_impl.dart:361: ..entityId = targetParty.id
+lib\data\repositories\transaction_repository_impl.dart:449: ..entityId = transaction.id
+lib\features\backup\presentation\screens\data_repair_screen.dart:131: partyByIdMap[p.id] = p;
+lib\features\backup\presentation\screens\data_repair_screen.dart:142: itemByIdMap[item.id] = item;
+lib\features\backup\presentation\screens\data_repair_screen.dart:206: if (cat.uuid == null || cat.uuid!.isEmpty) { cat.uuid = _generateUuid(cat.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:221: if (brand.uuid == null || brand.uuid!.isEmpty) { brand.uuid = _generateUuid(brand.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:230: if (p.uuid == null || p.uuid!.isEmpty) { p.uuid = _generateUuid(p.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:242: if (item.uuid == null || item.uuid!.isEmpty) { item.uuid = _generateUuid(item.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:257: if (inv.uuid == null || inv.uuid!.isEmpty) { inv.uuid = _generateUuid(inv.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:300: if (ii.uuid == null || ii.uuid!.isEmpty) { ii.uuid = _generateUuid(ii.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:316: if (pur.uuid == null || pur.uuid!.isEmpty) { pur.uuid = _generateUuid(pur.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:358: if (pi.uuid == null || pi.uuid!.isEmpty) { pi.uuid = _generateUuid(pi.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:374: if (ord.uuid == null || ord.uuid!.isEmpty) { ord.uuid = _generateUuid(ord.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:389: if (oi.uuid == null || oi.uuid!.isEmpty) { oi.uuid = _generateUuid(oi.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:405: if (txn.uuid == null || txn.uuid!.isEmpty) { txn.uuid = _generateUuid(txn.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:421: if (exp.uuid == null || exp.uuid!.isEmpty) { exp.uuid = _generateUuid(exp.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:432: if (ei.uuid == null || ei.uuid!.isEmpty) { ei.uuid = _generateUuid(ei.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:441: if (cn.uuid == null || cn.uuid!.isEmpty) { cn.uuid = _generateUuid(cn.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:456: if (cni.uuid == null || cni.uuid!.isEmpty) { cni.uuid = _generateUuid(cni.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:471: if (dn.uuid == null || dn.uuid!.isEmpty) { dn.uuid = _generateUuid(dn.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:486: if (dni.uuid == null || dni.uuid!.isEmpty) { dni.uuid = _generateUuid(dni.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:501: if (ba.uuid == null || ba.uuid!.isEmpty) { ba.uuid = _generateUuid(ba.id); needsFix = true; }
+lib\features\backup\presentation\screens\data_repair_screen.dart:512: if (sa.uuid == null || sa.uuid!.isEmpty) { sa.uuid = _generateUuid(sa.id); needsFix = true; }
+lib\features\bank\presentation\screens\manage_cash_and_bank_screen.dart:436: ..entityId = acc.id
+lib\features\expenses\presentation\screens\add_edit_expense_screen.dart:526: final success = await ref.read(expenseNotifierProvider.notifier).deleteExpense(_existingExpense!.id);
+lib\features\items\presentation\providers\item_providers.dart:165: queryBuilder = queryBuilder.and().category((q) => q.idEqualTo(filter.categoryId!));
+lib\features\items\presentation\providers\item_providers.dart:169: queryBuilder = queryBuilder.and().brand((q) => q.idEqualTo(filter.brandId!));
+lib\features\items\presentation\screens\add_edit_fixed_asset_screen.dart:118: item.id = id;
+lib\features\items\presentation\screens\add_edit_item_screen.dart:318: _selectedCategory = categories.where((c) => c.id == item.category.value!.id || (c.uuid != null && c.uuid == item.category.value!.uuid)).firstOrNull;
+lib\features\items\presentation\screens\add_edit_item_screen.dart:321: _selectedBrand = brands.where((b) => b.id == item.brand.value!.id || (b.uuid != null && b.uuid == item.brand.value!.uuid)).firstOrNull;
+lib\features\items\presentation\screens\add_edit_item_screen.dart:327: _selectedUnit = units.where((u) => u.id == item.unit.value!.id).firstOrNull;
+lib\features\items\presentation\screens\add_edit_item_screen.dart:820: ? (_selectedSecUnit?.id == unit.id)
+lib\features\items\presentation\screens\add_edit_item_screen.dart:821: : (_selectedUnit?.id == unit.id);
+lib\features\items\presentation\screens\add_edit_item_screen.dart:904: items: itemsList.where((i) => i.id != _existingItem?.id).toList(), // Prevent self-adding
+lib\features\items\presentation\screens\add_edit_item_screen.dart:907: final exists = _bundleComponents.any((c) => (c['item'] as Item).id == selected.id);
+lib\features\items\presentation\screens\add_edit_item_screen.dart:1592: final exists = _selectedCategory != null && list.any((c) => c.id == _selectedCategory!.id);
+lib\features\items\presentation\screens\add_edit_item_screen.dart:1630: final exists = _selectedBrand != null && list.any((b) => b.id == _selectedBrand!.id);
+lib\features\items\presentation\screens\add_edit_item_screen.dart:2233: final exists = _selectedUnit != null && list.any((u) => u.id == _selectedUnit!.id);
+lib\features\items\presentation\screens\add_edit_item_screen.dart:2278: final exists = _selectedSecUnit != null && list.any((u) => u.id == _selectedSecUnit!.id);
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:32: if (!_editedItemsMap.containsKey(item.id)) {
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:33: _editedItemsMap[item.id] = {
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:34: 'id': item.id,
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:39: _editedItemsMap[item.id]![fieldName] = val;
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:59: final itemToSave = await isar.items.get(originalItem.id) ?? originalItem;
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:349: final isEdited = _editedItemsMap.containsKey(item.id);
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:372: _editedItemsMap[item.id]?['primaryUnitName'] ?? item.primaryUnitName ?? item.unit.value?.shortName ?? 'PCS',
+lib\features\items\presentation\screens\bulk_item_edit_screen.dart:383: _editedItemsMap[item.id]?['secondaryUnit'] ?? item.secondaryUnit ?? '',
+lib\features\items\presentation\screens\items_screen.dart:664: final isSelected = isAll ? filter.categoryId == null : filter.categoryId == cat?.id;
+lib\features\items\presentation\screens\items_screen.dart:674: categoryId: selected ? cat?.id : null,
+lib\features\items\presentation\screens\items_screen.dart:770: ...brands.map((b) => DropdownMenuItem<int?>(value: b.id, child: Text(b.brandName ?? ''))),
+lib\features\items\presentation\screens\items_screen.dart:988: final matchId = pi.itemId != null && pi.itemId! > 0 && pi.itemId == item.id;
+lib\features\items\presentation\screens\items_screen.dart:1008: final matchId = sa.itemId != null && sa.itemId! > 0 && sa.itemId == item.id;
+lib\features\items\presentation\screens\items_screen.dart:1031: final matchId = ii.itemId != null && ii.itemId! > 0 && ii.itemId == item.id;
+lib\features\items\presentation\screens\item_detail_screen.dart:96: if (ii.itemId == fetchedItem.id) return true;
+lib\features\items\presentation\screens\item_detail_screen.dart:103: final invoicesMap = { for (var inv in invoicesBatch) if (inv != null) inv.id: inv };
+lib\features\items\presentation\screens\item_detail_screen.dart:133: targetUuid: inv.uuid ?? inv.id.toString(),
+lib\features\items\presentation\screens\item_detail_screen.dart:141: if (pi.itemId == fetchedItem.id) return true;
+lib\features\items\presentation\screens\item_detail_screen.dart:148: final purchasesMap = { for (var pur in purchasesBatch) if (pur != null) pur.id: pur };
+lib\features\items\presentation\screens\item_detail_screen.dart:178: targetUuid: pur.uuid ?? pur.id.toString(),
+lib\features\items\presentation\screens\item_detail_screen.dart:186: if (oi.itemId == fetchedItem.id) return true;
+lib\features\items\presentation\screens\item_detail_screen.dart:193: final ordersMap = { for (var ord in ordersBatch) if (ord != null) ord.id: ord };
+lib\features\items\presentation\screens\item_detail_screen.dart:211: targetUuid: ord.uuid ?? ord.id.toString(),
+lib\features\items\presentation\screens\item_detail_screen.dart:219: if (adj.itemId == fetchedItem.id) return true;
+lib\features\items\presentation\screens\item_detail_screen.dart:239: targetUuid: adj.uuid ?? adj.id.toString(),
+lib\features\items\presentation\screens\item_detail_screen.dart:283: await repo.delete(_item!.id);
+lib\features\items\presentation\screens\item_detail_screen.dart:435: ..entityId = adj.id
+lib\features\items\presentation\screens\stock_adjustments_screen.dart:139: ..entityId = adj.id
+lib\features\items\presentation\screens\stock_adjustments_screen.dart:654: (i) => i.uuid == adjItemUuid || i.id == widget.existingAdjustment!.itemId,
+lib\features\items\presentation\screens\stock_adjustments_screen.dart:659: (i) => i.uuid == widget.prefilledItem!.uuid || i.id == widget.prefilledItem!.id,
+lib\features\items\presentation\screens\stock_adjustments_screen.dart:878: adj.itemId = _selectedItem!.id;
+lib\features\items\presentation\screens\stock_adjustments_screen.dart:894: adj.id = id;
+lib\features\items\presentation\screens\stock_adjustments_screen.dart:896: final dbItem = await isar.items.get(_selectedItem!.id);
+lib\features\items\presentation\widgets\stock_adjustment_dialog.dart:117: adj.itemId = _selectedItem!.id;
+lib\features\items\presentation\widgets\stock_adjustment_dialog.dart:134: adj.id = id;
+lib\features\items\presentation\widgets\stock_adjustment_dialog.dart:238: (i) => i.uuid == adjUuid || i.id == adjId,
+lib\features\items\presentation\widgets\stock_adjustment_dialog.dart:243: (i) => i.uuid == widget.initialItem!.uuid || i.id == widget.initialItem!.id,
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:181: final targetId = order.id;
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:306: final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:327: order.partyId = cart.selectedParty!.id;
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:346: ..itemId = cartItem.item.id
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:746: future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:1054: ..itemId = item.id
+lib\features\orders\presentation\screens\add_edit_order_screen.dart:1187: future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
+lib\features\orders\presentation\screens\orders_screen.dart:330: ...parties.map((p) => DropdownMenuItem<int?>(value: p.id, child: Text(p.partyName ?? ''))),
+lib\features\orders\presentation\screens\order_detail_screen.dart:69: final targetId = fetched.id;
+lib\features\orders\presentation\screens\order_detail_screen.dart:73: if (targetId > 0 && (i.orderId == targetId || i.order.value?.id == targetId)) return true;
+lib\features\orders\presentation\screens\order_detail_screen.dart:84: .group((q) => q.sourceOrderIdEqualTo(fetched.id).or().sourceOrderNumberEqualTo(fetched.orderNumber))
+lib\features\orders\presentation\screens\whatsapp_order_importer_screen.dart:742: ..itemId = item.id
+lib\features\orders\presentation\screens\whatsapp_order_importer_screen.dart:766: ..partyId = _selectedParty!.id
+lib\features\parties\presentation\screens\add_edit_party_screen.dart:1091: MaterialPageRoute(builder: (context) => AddEditMachineryScreen(machineryId: m.id, partyUuid: widget.party!.uuid)),
+lib\features\parties\presentation\screens\party_detail_screen.dart:71: final partyId = item.id;
+lib\features\parties\presentation\screens\party_detail_screen.dart:507: final partyId = _party!.id;
+lib\features\parties\presentation\screens\party_detail_screen.dart:526: id: inv.id,
+lib\features\parties\presentation\screens\party_detail_screen.dart:528: number: inv.invoiceNumber ?? 'INV-${inv.id}',
+lib\features\parties\presentation\screens\party_detail_screen.dart:554: id: pur.id,
+lib\features\parties\presentation\screens\party_detail_screen.dart:556: number: pur.purchaseNumber ?? 'PUR-${pur.id}',
+lib\features\parties\presentation\screens\party_detail_screen.dart:581: id: t.id,
+lib\features\parties\presentation\screens\party_detail_screen.dart:583: number: t.transactionNumber ?? 'TXN-${t.id}',
+lib\features\parties\presentation\screens\party_detail_screen.dart:671: final targetUuid = (txn.uuid != null && txn.uuid!.isNotEmpty) ? txn.uuid! : txn.id.toString();
+lib\features\parties\presentation\screens\party_detail_screen.dart:895: required this.id,
+lib\features\purchases\presentation\screens\add_edit_purchase_screen.dart:149: final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\features\purchases\presentation\screens\add_edit_purchase_screen.dart:302: ..itemId = item.id
+lib\features\purchases\presentation\screens\add_edit_purchase_screen.dart:345: ..itemId = item.id
+lib\features\purchases\presentation\screens\add_edit_purchase_screen.dart:406: ..partyId = _selectedParty!.id
+lib\features\purchases\presentation\screens\add_edit_purchase_screen.dart:859: selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\purchases\presentation\screens\add_edit_purchase_screen.dart:860: ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\reports\presentation\screens\batch_report_screen.dart:77: final purchaseItems = await isar.purchaseItems.filter().idGreaterThan(-1).findAll();
+lib\features\reports\presentation\screens\batch_report_screen.dart:78: final invoiceItems = await isar.invoiceItems.filter().idGreaterThan(-1).findAll();
+lib\features\reports\presentation\screens\batch_report_screen.dart:79: final orderItems = await isar.orderItems.filter().idGreaterThan(-1).findAll();
+lib\features\reports\presentation\screens\batch_report_screen.dart:80: final creditItems = await isar.creditNoteItems.filter().idGreaterThan(-1).findAll();
+lib\features\reports\presentation\screens\batch_report_screen.dart:81: final debitItems = await isar.debitNoteItems.filter().idGreaterThan(-1).findAll();
+lib\features\reports\presentation\screens\payables_screen.dart:215: context.push('/parties/detail/${party.id}');
+lib\features\reports\presentation\screens\profit_loss_report_screen.dart:259: final itemPurchases = purchaseItems.where((p) => p.itemId == item.id).toList();
+lib\features\reports\presentation\screens\receivables_screen.dart:216: context.push('/parties/detail/${party.id}');
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:371: final targetId = order.id;
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:521: final companySettings = await ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:547: ..partyId = cart.selectedParty!.id
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:592: ..itemId = cartItem.item.id
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:622: ..sourceOrderId = _sourceOrder!.id
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:646: ..entityId = _sourceOrder!.id
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:1215: ..itemId = item.id
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:1307: : [Party()..partyName = 'Cash'..id = -1, ...parties];
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:1311: selectedParty: cart.selectedParty != null && listWithCash.any((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:1312: ? listWithCash.firstWhere((p) => (p.uuid != null && p.uuid == cart.selectedParty!.uuid) || p.id == cart.selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == cart.selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\sales\presentation\screens\add_edit_invoice_screen.dart:1703: future: ref.read(databaseServiceProvider).isar.settings.filter().idGreaterThan(-1).findFirst(),
+lib\features\sales\presentation\screens\invoice_detail_screen.dart:63: final targetId = fetched.id;
+lib\features\sales\presentation\screens\invoice_detail_screen.dart:92: .invoice((q) => q.idEqualTo(targetId))
+lib\features\sales\presentation\screens\sales_screen.dart:734: ...parties.map((p) => DropdownMenuItem<int?>(value: p.id, child: Text(p.partyName ?? ''))),
+lib\features\sales\presentation\widgets\pos_product_grid.dart:95: final catId = i.category.value?.id;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:153: (_selectedCategoryId != null && category != null && _selectedCategoryId == category.id);
+lib\features\sales\presentation\widgets\pos_product_grid.dart:164: _selectedCategoryId = category?.id;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:254: final current = _itemQuantities[item.id] ?? 1.0;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:256: _itemQuantities[item.id] = current - 1.0;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:275: key: ValueKey('qty_${item.id}_${_itemQuantities[item.id] ?? 1.0}'),
+lib\features\sales\presentation\widgets\pos_product_grid.dart:276: initialValue: (_itemQuantities[item.id] ?? 1.0).toStringAsFixed(0),
+lib\features\sales\presentation\widgets\pos_product_grid.dart:287: _itemQuantities[item.id] = parsed;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:298: final current = _itemQuantities[item.id] ?? 1.0;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:299: _itemQuantities[item.id] = current + 1.0;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:315: final qty = _itemQuantities[item.id] ?? 1.0;
+lib\features\sales\presentation\widgets\pos_product_grid.dart:340: _itemQuantities.remove(item.id);
+lib\features\settings\presentation\screens\settings_screen.dart:1503: final settings = await isar.settings.filter().idGreaterThan(-1).findFirst() ?? Settings();
+lib\features\tasks\presentation\providers\machinery_category_providers.dart:37: if (category.id == Isar.autoIncrement) {
+lib\features\tasks\presentation\providers\machinery_category_providers.dart:49: ..entityId = category.id
+lib\features\tasks\presentation\providers\machinery_category_providers.dart:80: ..entityId = category.id
+lib\features\tasks\presentation\providers\machinery_providers.dart:27: final isNew = machinery.id == Isar.autoIncrement;
+lib\features\tasks\presentation\providers\machinery_providers.dart:41: ..entityId = machinery.id
+lib\features\tasks\presentation\providers\machinery_providers.dart:65: ..entityId = machinery.id
+lib\features\tasks\presentation\screens\manage_machinery_categories_screen.dart:120: await ref.read(machineryCategoryProvider).deleteCategory(category.id);
+lib\features\tasks\presentation\screens\tasks_screen.dart:173: onTap: () => context.push('/tasks/edit/${task.id}'),
+lib\features\tasks\presentation\widgets\machinery_list_tab.dart:74: onTap: () => context.push('/machinery/edit/${machinery.id}'),
+lib\features\transactions\presentation\providers\transaction_providers.dart:71: if (p != null) targetPartyId = p.id;
+lib\features\transactions\presentation\providers\transaction_providers.dart:169: if (p != null && p.uuid != null) partyUuidMap[p.id] = p.uuid!;
+lib\features\transactions\presentation\providers\transaction_providers.dart:200: ..id = 100000000 + (inv.id ?? 0)
+lib\features\transactions\presentation\providers\transaction_providers.dart:252: if (p != null && p.uuid != null) orderPartyUuidMap[p.id] = p.uuid!;
+lib\features\transactions\presentation\providers\transaction_providers.dart:266: ..id = 200000000 + (ord.id ?? 0)
+lib\features\transactions\presentation\providers\transaction_providers.dart:320: if (p != null && p.uuid != null) purPartyUuidMap[p.id] = p.uuid!;
+lib\features\transactions\presentation\providers\transaction_providers.dart:343: ..id = 300000000 + (pur.id ?? 0)
+lib\features\transactions\presentation\providers\transaction_providers.dart:397: if (p != null) targetPartyId = p.id;
+lib\features\transactions\presentation\screens\add_edit_credit_note_screen.dart:151: final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\features\transactions\presentation\screens\add_edit_credit_note_screen.dart:290: ..itemId = item.id
+lib\features\transactions\presentation\screens\add_edit_credit_note_screen.dart:316: ..itemId = item.id
+lib\features\transactions\presentation\screens\add_edit_credit_note_screen.dart:369: ..partyId = _selectedParty!.id
+lib\features\transactions\presentation\screens\add_edit_credit_note_screen.dart:604: selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\transactions\presentation\screens\add_edit_credit_note_screen.dart:605: ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\transactions\presentation\screens\add_edit_debit_note_screen.dart:151: final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+lib\features\transactions\presentation\screens\add_edit_debit_note_screen.dart:290: ..itemId = item.id
+lib\features\transactions\presentation\screens\add_edit_debit_note_screen.dart:316: ..itemId = item.id
+lib\features\transactions\presentation\screens\add_edit_debit_note_screen.dart:369: ..partyId = _selectedParty!.id
+lib\features\transactions\presentation\screens\add_edit_debit_note_screen.dart:605: selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\transactions\presentation\screens\add_edit_debit_note_screen.dart:606: ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+lib\features\transactions\presentation\screens\add_edit_party_transfer_screen.dart:186: final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
+lib\features\transactions\presentation\screens\add_edit_party_transfer_screen.dart:190: final purs = allPurs.where((pur) => (pur.party.value?.uuid == partyUuid) || (pur.partyId == party.id) || (pNameLower != null && pur.partyName?.trim().toLowerCase() == pNameLower)).toList();
+lib\features\transactions\presentation\screens\add_edit_personal_transaction_dialog.dart:139: if (txn.id == Isar.autoIncrement || txn.transactionNumber == null) {
+lib\features\transactions\presentation\screens\add_edit_transaction_dialog.dart:199: final partyId = _selectedParty!.id;
+lib\features\transactions\presentation\screens\add_edit_transaction_dialog.dart:217: _linkedAllocations.containsKey(inv.id.toString()) ||
+lib\features\transactions\presentation\screens\add_edit_transaction_dialog.dart:221: widget.transaction!.linkedBillUuid!.contains(inv.id.toString())
+lib\features\transactions\presentation\screens\add_edit_transaction_dialog.dart:243: _linkedAllocations.containsKey(pur.id.toString()) ||
+lib\features\transactions\presentation\screens\add_edit_transaction_dialog.dart:247: widget.transaction!.linkedBillUuid!.contains(pur.id.toString())
+lib\features\transactions\presentation\screens\add_edit_transaction_dialog.dart:593: if (target.id > 0 && p.id == target.id) return true;
+lib\features\transactions\presentation\screens\transactions_screen.dart:85: MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: txn.uuid ?? txn.id.toString())),
+lib\features\transactions\presentation\screens\transactions_screen.dart:91: MaterialPageRoute(builder: (context) => OrderDetailScreen(orderUuid: txn.uuid ?? txn.id.toString())),
+lib\features\vault\domain\models\vault_item.dart:53: id: id ?? this.id,
+lib\features\vault\presentation\screens\personal_account_details_screen.dart:78: await ref.read(bankAccountRepositoryProvider).delete(account.id);
+lib\features\vault\presentation\screens\vault_screen.dart:57: id: item?.id,
+lib\features\vault\presentation\screens\vault_screen.dart:153: ref.read(vaultItemsProvider.notifier).deleteItem(item.id);
+lib\main.dart:140: t.transactionNumber = 'PAT-${DateTime.now().microsecondsSinceEpoch}-${t.id}';
