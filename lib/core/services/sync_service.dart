@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:uuid/uuid.dart';
@@ -574,7 +574,7 @@ class SyncService {
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
       }
-      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId — forcing full fresh download.');
+      logger.info('Cleared all entity-level sync timestamps for firm: $activeFirmId â€” forcing full fresh download.');
 
       // 2. PURGE local database completely before downloading fresh cloud data.
       logger.info('Purging local Isar database for firm: $activeFirmId before fresh cloud download...');
@@ -944,7 +944,7 @@ class SyncService {
   }
 
   /// Uploads all dirty local records marked isSynced == false via batched WriteBatch (max 200 docs per batch)
-  /// [silent] = true when called from background quiet sync Ã¯Â¿Â½ avoids polluting global state
+  /// [silent] = true when called from background quiet sync ÃƒÂ¯Ã‚Â¿Ã‚Â½ avoids polluting global state
   Future<void> _uploadLocalChanges({bool silent = false}) async {
     logger.info('Uploading local dirty changes to Firestore...');
     final uploadStartTime = DateTime.now();
@@ -978,7 +978,7 @@ class SyncService {
     final List<Map<String, dynamic>> syncedItems = [];
     final List<int> completedQueueIds = [];
 
-    // Deduplicate queue items to minimize Firebase Writes Ã¯Â¿Â½ with event-loop yielding
+    // Deduplicate queue items to minimize Firebase Writes ÃƒÂ¯Ã‚Â¿Ã‚Â½ with event-loop yielding
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1154,7 +1154,7 @@ class SyncService {
       }
     }
 
-    // Mark synced items in local DB Ã¯Â¿Â½ chunked with yields
+    // Mark synced items in local DB ÃƒÂ¯Ã‚Â¿Ã‚Â½ chunked with yields
     if (!silent) {
       _updateState(SyncState(
         status: SyncStatus.syncing,
@@ -1230,10 +1230,15 @@ class SyncService {
   /// [forceFullDownload] = true: ignores all per-entity timestamps, downloads everything.
   Future<void> _downloadRemoteUpdates(DateTime lastSync, {bool forceFullDownload = false}) async {
     final entityTypes = [
+      // Master data first (no dependencies)
       'Category', 'Unit', 'Brand', 'Party', 'Item',
-      'Order', 'Invoice', 'Settings', 'User',
-      'Purchase', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
-      'CreditNote', 'DebitNote', 'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+      'Settings', 'User', 'BankAccount', 'WhatsAppMapping', 'Task', 'Machinery',
+      // Transaction headers (depend on Party/Item)
+      'Order', 'Invoice', 'Purchase', 'Expense', 'CreditNote', 'DebitNote',
+      'Transaction', 'StockAdjustment',
+      // Line items (depend on parent headers + items) - must come AFTER headers
+      'OrderItem', 'InvoiceItem', 'PurchaseItem', 'ExpenseItem',
+      'CreditNoteItem', 'DebitNoteItem',
     ];
     final activeFirmId = _dbService.activeFirmId;
     final companyId = _firebaseService.companyId;
@@ -1264,14 +1269,14 @@ class SyncService {
       try {
         final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        // Determine filterCutoff Ã¯Â¿Â½ ONLY for incremental sync, NEVER for forceFullDownload
+        // Determine filterCutoff ÃƒÂ¯Ã‚Â¿Ã‚Â½ ONLY for incremental sync, NEVER for forceFullDownload
         DateTime? filterCutoff;
         if (!forceFullDownload) {
           final String? lastCloudSyncStr = prefs.getString(timestampKey);
           if (lastCloudSyncStr != null && lastCloudSyncStr.isNotEmpty) {
             final parsed = DateTime.tryParse(lastCloudSyncStr);
             if (parsed != null && parsed.millisecondsSinceEpoch > 0) {
-              // Subtract 30 seconds (not 2 minutes) as safety overlap Ã¯Â¿Â½ less wasteful reads
+              // Subtract 30 seconds (not 2 minutes) as safety overlap ÃƒÂ¯Ã‚Â¿Ã‚Â½ less wasteful reads
               filterCutoff = parsed.subtract(const Duration(seconds: 30));
             }
           }
@@ -1351,14 +1356,13 @@ class SyncService {
           continue;
         }
 
-        logger.info('  Found ${allDocs.length} documents for $entityType — processing...');
+        logger.info('  Found ${allDocs.length} documents for $entityType â€” processing...');
         await prefs.setString(timestampKey, DateTime.now().toUtc().toIso8601String());
 
         for (int d = 0; d < allDocs.length; d++) {
           if (kIsWeb ? (d % 5 == 0) : (d % 10 == 0)) await Future.delayed(Duration.zero);
-
           try {
-            final doc = querySnapshot.docs[d];
+            final doc = allDocs[d];
             final data = doc.data() as Map<String, dynamic>?;
             if (data == null) continue;
             final uuid = data['uuid'] as String?;
@@ -1384,15 +1388,21 @@ class SyncService {
               case 'Unit': localRecord = await isar.units.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Brand': localRecord = await isar.brands.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Order': localRecord = await isar.orders.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'OrderItem': localRecord = await isar.orderItems.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Invoice': localRecord = await isar.invoices.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'InvoiceItem': localRecord = await isar.invoiceItems.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Settings': localRecord = await isar.settings.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'User': localRecord = await isar.users.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Purchase': localRecord = await isar.purchases.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'PurchaseItem': localRecord = await isar.purchaseItems.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Expense': localRecord = await isar.expenses.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'ExpenseItem': localRecord = await isar.collection<ExpenseItem>().filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Transaction': localRecord = await isar.transactions.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'BankAccount': localRecord = await isar.bankAccounts.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'CreditNote': localRecord = await isar.creditNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'CreditNoteItem': localRecord = await isar.creditNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'DebitNote': localRecord = await isar.debitNotes.filter().uuidEqualTo(uuid).findFirst(); break;
+              case 'DebitNoteItem': localRecord = await isar.debitNoteItems.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'StockAdjustment': localRecord = await isar.collection<StockAdjustment>().filter().uuidEqualTo(uuid).findFirst(); break;
               case 'WhatsAppMapping': localRecord = await isar.whatsAppMappings.filter().uuidEqualTo(uuid).findFirst(); break;
               case 'Task': localRecord = await isar.tasks.filter().uuidEqualTo(uuid).findFirst(); break;
@@ -1443,7 +1453,7 @@ class SyncService {
     }
 
     // Post-download pass: Re-link relations and recalculate stocks
-    // ONLY run during full download Ã¯Â¿Â½ during delta sync this is wasteful O(NÃ¯Â¿Â½) overhead
+    // ONLY run during full download ÃƒÂ¯Ã‚Â¿Ã‚Â½ during delta sync this is wasteful O(NÃƒÂ¯Ã‚Â¿Ã‚Â½) overhead
     // that loads ALL records into memory and causes the "96% hang"
     if (forceFullDownload) {
       try {
@@ -4144,7 +4154,7 @@ class SyncService {
     }
   }
 
-  /// Appends log items Ã¯Â¿Â½ Success logs to local SharedPreferences only, Failures to Firestore
+  /// Appends log items ÃƒÂ¯Ã‚Â¿Ã‚Â½ Success logs to local SharedPreferences only, Failures to Firestore
   Future<void> _logSyncEvent(String result, String message) async {
     // Success logs: local-only to minimize Firebase writes
     if (result == 'Success') {
@@ -4182,7 +4192,7 @@ class SyncService {
     try {
       final logMsg = '[$resolution] ${DateTime.now().toIso8601String()}: $entityType ($uuid) Remote v$remoteVersion vs Local v$localVersion';
       logger.info('Sync Conflict: $logMsg');
-      // Save to local prefs only — not Firestore
+      // Save to local prefs only â€” not Firestore
       final existingLogs = _prefs.getStringList('sync_conflict_logs') ?? [];
       existingLogs.add(logMsg);
       // Keep only last 100 conflict logs to prevent prefs bloat
@@ -4200,6 +4210,7 @@ class SyncService {
     _stateController.close();
   }
 }
+
 
 
 
