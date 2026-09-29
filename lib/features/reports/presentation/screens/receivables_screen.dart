@@ -244,8 +244,6 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
             ],
           );
         },
-          );
-        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error loading receivables: $e')),
       ),
