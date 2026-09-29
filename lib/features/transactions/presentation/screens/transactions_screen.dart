@@ -1067,7 +1067,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                               SizedBox(
                                                 height: 24,
                                                 width: 24,
-                                                child: child: PopupMenuButton<String>(
+                                                child: PopupMenuButton<String>(
                                                   padding: EdgeInsets.zero,
                                                   icon: const Icon(Icons.more_vert, size: 20),
                                                   onSelected: (action) async {

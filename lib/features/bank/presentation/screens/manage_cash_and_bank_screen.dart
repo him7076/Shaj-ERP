@@ -219,14 +219,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
               ),
             ],
           ),
-              );
-              if (res == true) {
-                _loadTransactions();
-              }
-            },
-            icon: const Icon(Icons.add_circle_outline),
-            label: const Text('Add Bank Transaction'),
-          ),
+      body: Center(
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 800),
