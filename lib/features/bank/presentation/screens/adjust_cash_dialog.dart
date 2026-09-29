@@ -191,7 +191,7 @@ class _AdjustCashDialogState extends ConsumerState<AdjustCashDialog> with Single
               children: [
                 const Icon(Icons.account_balance_wallet, color: Colors.white, size: 28),
                 const SizedBox(width: 12),
-                const Expanded(child: Text('Adjust Cash', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
+                Expanded(child: Text(widget.isBank ? 'Adjust Bank Balance' : 'Adjust Cash', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
                 IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
               ],
             ),
@@ -222,9 +222,9 @@ class _AdjustCashDialogState extends ConsumerState<AdjustCashDialog> with Single
                     ),
                     const SizedBox(height: 20),
                     SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'Add Cash', label: Text('Add Cash'), icon: Icon(Icons.add_circle)),
-                        ButtonSegment(value: 'Reduce Cash', label: Text('Reduce Cash'), icon: Icon(Icons.remove_circle)),
+                      segments: [
+                        ButtonSegment(value: widget.isBank ? 'Add Bank Balance' : 'Add Cash', label: Text(widget.isBank ? 'Add Balance' : 'Add Cash'), icon: const Icon(Icons.add_circle)),
+                        ButtonSegment(value: widget.isBank ? 'Reduce Bank Balance' : 'Reduce Cash', label: Text(widget.isBank ? 'Reduce Balance' : 'Reduce Cash'), icon: const Icon(Icons.remove_circle)),
                       ],
                       selected: {_adjustmentType},
                       onSelectionChanged: (set) => setState(() => _adjustmentType = set.first),

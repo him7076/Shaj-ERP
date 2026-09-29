@@ -207,11 +207,12 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     final partiesAsync = ref.watch(partiesListProvider);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.existingTransaction != null ? 'Edit Party Transfer' : 'New Party Transfer'),
+        title: Text(widget.existingTransaction != null ? 'Edit Party Transfer' : 'New Party Transfer', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
         elevation: 0,
         backgroundColor: theme.colorScheme.surface,
+        centerTitle: true,
       ),
       body: partiesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -229,181 +230,227 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        NeuCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () async {
-                                    final picked = await showDatePicker(
-                                      context: context, initialDate: _date,
-                                      firstDate: DateTime(2000), lastDate: DateTime(2100),
-                                    );
-                                    if (picked != null) setState(() => _date = picked);
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    decoration: BoxDecoration(border: Border.all(color: theme.dividerColor), borderRadius: BorderRadius.circular(8)),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Date', style: TextStyle(color: theme.hintColor, fontSize: 12)),
-                                        Text(DateFormat('dd MMM yyyy').format(_date), style: const TextStyle(fontWeight: FontWeight.bold)),
-                                      ],
+                        // Amount & Date in one sleek card
+                        Card(
+                          elevation: 0,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () async {
+                                          final picked = await showDatePicker(
+                                            context: context, initialDate: _date,
+                                            firstDate: DateTime(2000), lastDate: DateTime(2100),
+                                          );
+                                          if (picked != null) setState(() => _date = picked);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant.withOpacity(0.3), borderRadius: BorderRadius.circular(8)),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text('Date', style: TextStyle(color: theme.hintColor, fontSize: 12)),
+                                              Text(DateFormat('dd MMM yy').format(_date), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        decoration: BoxDecoration(color: theme.colorScheme.surfaceVariant.withOpacity(0.3), borderRadius: BorderRadius.circular(8)),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text('No.', style: TextStyle(color: theme.hintColor, fontSize: 12)),
+                                            Text(widget.existingTransaction?.transactionNumber ?? 'Auto', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  decoration: BoxDecoration(color: theme.highlightColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('No.', style: TextStyle(color: theme.hintColor, fontSize: 12)),
-                                      Text(widget.existingTransaction?.transactionNumber ?? 'Auto', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    ],
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: _amountController,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                  decoration: InputDecoration(
+                                    labelText: 'Transfer Amount',
+                                    alignLabelWithHint: true,
+                                    prefixIcon: Icon(Icons.currency_rupee, color: theme.colorScheme.primary),
+                                    filled: true,
+                                    fillColor: theme.colorScheme.primary.withOpacity(0.05),
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                                   ),
+                                  onChanged: (v) => setState((){}),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         
-                        const SizedBox(height: 16),
-                        
-                        TextFormField(
-                          controller: _amountController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                          decoration: InputDecoration(
-                            labelText: 'Transfer Amount',
-                            prefixIcon: Icon(Icons.currency_rupee, color: theme.colorScheme.primary),
-                            filled: true,
-                            fillColor: theme.colorScheme.primary.withOpacity(0.05),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                          ),
-                          onChanged: (v) => setState((){}),
-                        ),
-                        
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         // FROM PARTY
-                        NeuCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('FROM PARTY (Giver)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
-                                  if (_fromParty != null)
-                                    TextButton.icon(
-                                      onPressed: () => _showLinkBillsDialog(context, _fromParty!),
-                                      icon: const Icon(Icons.link, size: 16, color: Colors.red),
-                                      label: const Text('Link Bills', style: TextStyle(color: Colors.red, fontSize: 12)),
-                                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                    )
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              SearchablePartyDropdown(
-                                parties: parties,
-                                selectedParty: _fromParty,
-                                labelText: 'Select From Party',
-                                onChanged: (p) => setState(() => _fromParty = p),
-                              ),
-                            ],
+                        Card(
+                          elevation: 0,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.red.withOpacity(0.3))),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('FROM PARTY (Giver)', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    if (_fromParty != null)
+                                      InkWell(
+                                        onTap: () => _showLinkBillsDialog(context, _fromParty!),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                                          child: const Row(
+                                            children: [
+                                              Icon(Icons.link, size: 14, color: Colors.red),
+                                              SizedBox(width: 4),
+                                              Text('Link Bills', style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                SearchablePartyDropdown(
+                                  parties: parties,
+                                  selectedParty: _fromParty,
+                                  labelText: 'Select From Party',
+                                  onChanged: (p) => setState(() => _fromParty = p),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
 
                         const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 8),
-                          child: Center(child: Icon(Icons.arrow_downward_rounded, color: Colors.grey, size: 28)),
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Center(child: Icon(Icons.swap_vert, color: Colors.grey, size: 24)),
                         ),
 
                         // TO PARTY
-                        NeuCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text('TO PARTY (Receiver)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
-                                  if (_toParty != null)
-                                    TextButton.icon(
-                                      onPressed: () => _showLinkBillsDialog(context, _toParty!),
-                                      icon: const Icon(Icons.link, size: 16, color: Colors.green),
-                                      label: const Text('Link Bills', style: TextStyle(color: Colors.green, fontSize: 12)),
-                                      style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 0), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                                    )
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              SearchablePartyDropdown(
-                                parties: parties,
-                                selectedParty: _toParty,
-                                labelText: 'Select To Party',
-                                onChanged: (p) => setState(() => _toParty = p),
-                              ),
-                            ],
+                        Card(
+                          elevation: 0,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.green.withOpacity(0.3))),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('TO PARTY (Receiver)', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12)),
+                                    if (_toParty != null)
+                                      InkWell(
+                                        onTap: () => _showLinkBillsDialog(context, _toParty!),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                                          child: const Row(
+                                            children: [
+                                              Icon(Icons.link, size: 14, color: Colors.green),
+                                              SizedBox(width: 4),
+                                              Text('Link Bills', style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                SearchablePartyDropdown(
+                                  parties: parties,
+                                  selectedParty: _toParty,
+                                  labelText: 'Select To Party',
+                                  onChanged: (p) => setState(() => _toParty = p),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         
-                        NeuCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const Text('Remarks & Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _remarksController,
-                                maxLines: 2,
-                                decoration: InputDecoration(
-                                  hintText: 'Enter remarks...',
-                                  isDense: true,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        // Remarks
+                        Card(
+                          elevation: 0,
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: theme.dividerColor.withOpacity(0.5))),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Text('Remarks & Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _remarksController,
+                                  maxLines: 2,
+                                  style: const TextStyle(fontSize: 13),
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter remarks...',
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.all(10),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 12),
-                              if (_imagePath != null)
-                                Stack(
-                                  alignment: Alignment.topRight,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: kIsWeb ? Image.network(_imagePath!, height: 120, width: double.infinity, fit: BoxFit.cover) 
-                                                    : Image.file(File(_imagePath!), height: 120, width: double.infinity, fit: BoxFit.cover),
-                                    ),
-                                    IconButton(
-                                      onPressed: () => setState(() => _imagePath = null),
-                                      icon: const Icon(Icons.cancel, color: Colors.red),
-                                      padding: EdgeInsets.zero,
-                                    ),
-                                  ],
-                                )
-                              else
-                                Row(
-                                  children: [
-                                    Expanded(child: OutlinedButton.icon(onPressed: () => _pickImage(ImageSource.camera), icon: const Icon(Icons.camera_alt, size: 18), label: const Text('Camera'))),
-                                    const SizedBox(width: 8),
-                                    Expanded(child: OutlinedButton.icon(onPressed: () => _pickImage(ImageSource.gallery), icon: const Icon(Icons.photo_library, size: 18), label: const Text('Gallery'))),
-                                  ],
-                                ),
-                            ],
+                                const SizedBox(height: 8),
+                                if (_imagePath != null)
+                                  Stack(
+                                    alignment: Alignment.topRight,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: kIsWeb ? Image.network(_imagePath!, height: 80, width: double.infinity, fit: BoxFit.cover) 
+                                                      : Image.file(File(_imagePath!), height: 80, width: double.infinity, fit: BoxFit.cover),
+                                      ),
+                                      IconButton(
+                                        onPressed: () => setState(() => _imagePath = null),
+                                        icon: const Icon(Icons.cancel, color: Colors.red),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  Row(
+                                    children: [
+                                      Expanded(child: OutlinedButton.icon(onPressed: () => _pickImage(ImageSource.camera), icon: const Icon(Icons.camera_alt, size: 14), label: const Text('Camera', style: TextStyle(fontSize: 12)), style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact))),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: OutlinedButton.icon(onPressed: () => _pickImage(ImageSource.gallery), icon: const Icon(Icons.photo_library, size: 14), label: const Text('Gallery', style: TextStyle(fontSize: 12)), style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact))),
+                                    ],
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -413,10 +460,10 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                 
                 // Bottom Sticky Area
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: theme.scaffoldBackgroundColor,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), offset: const Offset(0, -4), blurRadius: 10)],
+                    border: Border(top: BorderSide(color: theme.dividerColor.withOpacity(0.2))),
                   ),
                   child: Row(
                     children: [
@@ -424,18 +471,18 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
                         flex: 1,
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                          child: const Text('Cancel', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                          child: const Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         flex: 2,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _save,
-                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                          child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                            : const Text('Save Transfer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), backgroundColor: theme.colorScheme.primary, foregroundColor: Colors.white),
+                          child: _isLoading ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                            : const Text('Save Transfer', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
