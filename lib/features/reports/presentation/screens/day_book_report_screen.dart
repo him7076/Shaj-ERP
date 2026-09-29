@@ -429,9 +429,9 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
                               } else if (v.voucherType.contains('Purchase Bill')) {
                                 Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditPurchaseScreen(purchaseUuid: v.entityUuid!)));
                               } else if (v.voucherType.contains('Credit Note')) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCreditNoteScreen(creditNoteUuid: v.entityUuid!)));
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditCreditNoteScreen(parentCreditNoteUuid: v.entityUuid!)));
                               } else if (v.voucherType.contains('Debit Note')) {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditDebitNoteScreen(debitNoteUuid: v.entityUuid!)));
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => AddEditDebitNoteScreen(parentDebitNoteUuid: v.entityUuid!)));
                               } else if (v.voucherType == 'Receipt' || v.voucherType == 'Payment' || v.voucherType == 'Other Income' || v.voucherType == 'Transfer') {
                                 // For generic transactions, open the transaction dialog
                                 showDialog(context: context, builder: (_) => AddEditTransactionDialog(
