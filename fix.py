@@ -1,10 +1,14 @@
-const fs = require('fs');
+import re
 
-let code = fs.readFileSync('lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart', 'utf8');
+with open('lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart', 'r', encoding='utf-8') as f:
+    code = f.read()
 
-const regex = /final Set<String> linkedInvoiceUuids = txns\.where\(\(t\) => t\.linkedBillUuid != null\)\.map\(\(t\) => t\.linkedBillUuid!\)\.toSet\(\);[\s\S]*?for \(var exp in expenses\) \{[\s\S]*?bankOutflows \+= \(exp\.amount \?\? 0\.0\);\s*\}\s*\}/;
+# We need to replace everything from "final Set<String> linkedInvoiceUuids = txns.where((t) => t.linkedBillUuid != null).map((t) => t.linkedBillUuid!).toSet();"
+# Down to the end of the `for (var exp in expenses)` block in `_loadAccounts`
 
-const replacement = `      final Map<String, double> linkedInvoiceAllocations = {};
+regex = re.compile(r"final Set<String> linkedInvoiceUuids = txns\.where\(\(t\) => t\.linkedBillUuid != null\)\.map\(\(t\) => t\.linkedBillUuid!\)\.toSet\(\);.*?for \(var exp in expenses\) \{.*?bankOutflows \+= \(exp\.amount \?\? 0\.0\);\s*\}\s*\}", re.DOTALL)
+
+replacement = """      final Map<String, double> linkedInvoiceAllocations = {};
       final Map<String, double> linkedPurchaseAllocations = {};
 
       for (var t in txns) {
@@ -157,8 +161,11 @@ const replacement = `      final Map<String, double> linkedInvoiceAllocations = 
           if (mode == accName || mode.contains(accName)) {
             bankOutflows += (exp.amount ?? 0.0);
           }
-        }`;
+        }"""
 
-let newCode = code.replace(regex, replacement);
-fs.writeFileSync('lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart', newCode);
-console.log('Done');
+new_code = regex.sub(replacement, code)
+
+with open('lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart', 'w', encoding='utf-8') as f:
+    f.write(new_code)
+
+print("Done replacing.")

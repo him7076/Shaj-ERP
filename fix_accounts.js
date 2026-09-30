@@ -2,57 +2,22 @@ const fs = require('fs');
 
 let code = fs.readFileSync('lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart', 'utf8');
 
-const regex = /final Set<String> linkedInvoiceUuids = txns\.where\(\(t\) => t\.linkedBillUuid != null\)\.map\(\(t\) => t\.linkedBillUuid!\)\.toSet\(\);[\s\S]*?for \(var exp in expenses\) \{[\s\S]*?bankOutflows \+= \(exp\.amount \?\? 0\.0\);\s*\}\s*\}/;
+// We need to fix the logic in four places:
+// 1. _loadAccounts() - Invoices (Cash)
+// 2. _loadAccounts() - Purchases (Cash)
+// 3. _loadAccounts() - Invoices (Bank)
+// 4. _loadAccounts() - Purchases (Bank)
+// 5. _loadTransactions() - Invoices (Cash/Bank)
+// 6. _loadTransactions() - Purchases (Cash/Bank)
 
-const replacement = `      final Map<String, double> linkedInvoiceAllocations = {};
-      final Map<String, double> linkedPurchaseAllocations = {};
+function replaceAll(str, find, replace) {
+  return str.split(find).join(replace);
+}
 
-      for (var t in txns) {
-        if (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty) {
-          try {
-            final allocs = json.decode(t.linkedBillUuid!);
-            if (allocs is Map) {
-              for (var entry in allocs.entries) {
-                final uuid = entry.key.toString();
-                final amt = (entry.value as num).toDouble();
-                if (t.transactionType == 'Receipt' || t.transactionType == 'Credit Note') {
-                  linkedInvoiceAllocations[uuid] = (linkedInvoiceAllocations[uuid] ?? 0.0) + amt;
-                } else if (t.transactionType == 'Payment' || t.transactionType == 'Debit Note') {
-                  linkedPurchaseAllocations[uuid] = (linkedPurchaseAllocations[uuid] ?? 0.0) + amt;
-                }
-              }
-            }
-          } catch (_) {
-          }
-        }
-      }
+// FIX _loadAccounts
+const accountsRegex = /for \(var inv in invoices\) \{[\s\S]*?bankOutflows \+= initialPaid;\s*\}/g;
 
-      // 1. Calculate Live Cash in Hand Balance
-      double cashInflows = 0.0;
-      double cashOutflows = 0.0;
-
-      for (var t in txns) {
-        final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
-        final target = (t.partyName ?? '').trim().toLowerCase();
-        final amt = t.amount ?? 0.0;
-        
-        bool matches = mode == 'cash' || mode.contains('cash') || mode.isEmpty;
-        if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == 'cash' || target.contains('cash'))) {
-          matches = true;
-        }
-
-        if (matches) {
-          bool isCredit = false;
-          if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
-            isCredit = true;
-          } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {
-             isCredit = (target == 'cash' || target.contains('cash'));
-          }
-          if (isCredit) cashInflows += amt; else cashOutflows += amt;
-        }
-      }
-
-      for (var inv in invoices) {
+const accountsReplacement = `for (var inv in invoices) {
         final mode = (inv.paymentMode ?? '').trim().toLowerCase();
         final status = (inv.paymentStatus ?? '').trim().toLowerCase();
         final remarks = (inv.remarks ?? '').trim().toLowerCase();
@@ -150,15 +115,26 @@ const replacement = `      final Map<String, double> linkedInvoiceAllocations = 
           if (initialPaid > 0 && isBank) {
             bankOutflows += initialPaid;
           }
-        }
-
-        for (var exp in expenses) {
-          final mode = (exp.paymentMode ?? '').trim().toLowerCase();
-          if (mode == accName || mode.contains(accName)) {
-            bankOutflows += (exp.amount ?? 0.0);
-          }
         }`;
 
-let newCode = code.replace(regex, replacement);
-fs.writeFileSync('lib/features/bank/presentation/screens/manage_cash_and_bank_screen.dart', newCode);
-console.log('Done');
+// Wait, the regex `accountsRegex` will match the FIRST occurrence.
+// Since `_loadAccounts` STILL has the original `inv.paidAmount ?? inv.grandTotal`, it won't match `initialPaid`.
+// Let me use a custom search/replace for `_loadAccounts` using string indices.
+
+let startIndex = code.indexOf('for (var inv in invoices) {\n        if (inv.uuid != null && linkedInvoiceUuids.contains(inv.uuid)) continue;');
+if (startIndex === -1) {
+    startIndex = code.indexOf('for (var inv in invoices) {\n        final status = (inv.paymentStatus ?? \\'\\').trim().toLowerCase();');
+}
+
+let code2 = code;
+
+if (startIndex !== -1) {
+    let endIndex = code.indexOf('      // 3. Overall Totals for display');
+    if (endIndex === -1) {
+        endIndex = code.indexOf('    } catch (e) {', startIndex);
+    }
+    
+    // We'll just replace the loops using a more robust way.
+}
+
+console.log("Found");
