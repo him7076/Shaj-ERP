@@ -155,8 +155,11 @@ class SyncService {
     final allEntityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
-      'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 
+      'Transaction_receipt', 'Transaction_payment', 'Transaction_other_income', 
+      'Transaction_credit_note', 'Transaction_debit_note', 'Transaction_transfer', 
+      'Transaction_journal', 'Transaction_unknown',
+      'Transaction', 'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
       'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
     for (final et in allEntityTypes) {
@@ -564,12 +567,15 @@ class SyncService {
 
       // Clear all firm-specific per-entity timestamps to force full fresh download
       final allEntityTypes = [
-        'Category', 'Unit', 'Brand', 'Party', 'Item',
-        'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-        'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction',
-        'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
-        'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
-      ];
+      'Category', 'Unit', 'Brand', 'Party', 'Item',
+      'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 
+      'Transaction_receipt', 'Transaction_payment', 'Transaction_other_income', 
+      'Transaction_credit_note', 'Transaction_debit_note', 'Transaction_transfer', 
+      'Transaction_journal', 'Transaction_unknown',
+      'Transaction', 'BankAccount', 'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem',
+      'StockAdjustment', 'WhatsAppMapping', 'Task', 'Machinery'
+    ];
       for (final et in allEntityTypes) {
         await _prefs.remove('last_cloud_sync_timestamp_$et');
         await _prefs.remove('last_cloud_sync_timestamp_${activeFirmId}_$et');
@@ -734,7 +740,11 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem',
+      'Transaction_receipt', 'Transaction_payment', 'Transaction_other_income', 
+      'Transaction_credit_note', 'Transaction_debit_note', 'Transaction_transfer', 
+      'Transaction_journal', 'Transaction_unknown',
+      'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
@@ -814,7 +824,11 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem',
+      'Transaction_receipt', 'Transaction_payment', 'Transaction_other_income', 
+      'Transaction_credit_note', 'Transaction_debit_note', 'Transaction_transfer', 
+      'Transaction_journal', 'Transaction_unknown',
+      'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
@@ -871,7 +885,11 @@ class SyncService {
     final entityTypes = [
       'Category', 'Unit', 'Brand', 'Party', 'Item',
       'Order', 'OrderItem', 'Invoice', 'InvoiceItem', 'Settings', 'User',
-      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem', 'Transaction', 'BankAccount',
+      'Purchase', 'PurchaseItem', 'Expense', 'ExpenseItem',
+      'Transaction_receipt', 'Transaction_payment', 'Transaction_other_income', 
+      'Transaction_credit_note', 'Transaction_debit_note', 'Transaction_transfer', 
+      'Transaction_journal', 'Transaction_unknown',
+      'Transaction', 'BankAccount',
       'CreditNote', 'CreditNoteItem', 'DebitNote', 'DebitNoteItem', 'WhatsAppMapping', 'Task', 'Machinery'
     ];
 
