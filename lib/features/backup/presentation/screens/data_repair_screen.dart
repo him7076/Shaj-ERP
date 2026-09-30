@@ -87,6 +87,10 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) => _updateTimer());
 
     try {
+      setState(() => _currentTask = 'Initializing Deep Repair...');
+      await ref.read(databaseServiceProvider).repairLegacyData();
+      setState(() => _currentTask = 'Counting records...');
+
       // Phase 1: Count ALL collections
       final counts = <String, int>{};
       counts['Categories'] = await isar.categorys.count();
@@ -201,7 +205,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 1. Categories
       await processCollection('Categories', isar.categorys, (record) {
         final cat = record as Category;
-        bool needsFix = false;
+        bool needsFix = true;
         if (cat.categoryName == null || cat.categoryName!.trim().isEmpty) { cat.categoryName = 'Unknown'; needsFix = true; }
         if (cat.uuid == null || cat.uuid!.isEmpty) { cat.uuid = _generateUuid(cat.id); needsFix = true; }
         return true;
@@ -210,14 +214,14 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 2. Units
       await processCollection('Units', isar.units, (record) {
         final unit = record as Unit;
-        bool needsFix = false;
+        bool needsFix = true;
         return true; // Force save to initialize missing Isar default booleans like isDeleted
       });
 
       // 3. Brands
       await processCollection('Brands', isar.collection<Brand>(), (record) {
         final brand = record as Brand;
-        bool needsFix = false;
+        bool needsFix = true;
         if (brand.uuid == null || brand.uuid!.isEmpty) { brand.uuid = _generateUuid(brand.id); needsFix = true; }
         if (brand.brandName == null || brand.brandName!.trim().isEmpty) { brand.brandName = 'Unknown Brand'; needsFix = true; }
         return true;
@@ -226,7 +230,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 4. Parties
       await processCollection('Parties', isar.partys, (record) {
         final p = record as Party;
-        bool needsFix = false;
+        bool needsFix = true;
         if (p.uuid == null || p.uuid!.isEmpty) { p.uuid = _generateUuid(p.id); needsFix = true; }
         if (p.partyName == null || p.partyName!.trim().isEmpty) { p.partyName = 'Unknown Party'; needsFix = true; }
         if (p.partyType == null || p.partyType!.trim().isEmpty) { p.partyType = 'Customer'; needsFix = true; }
@@ -238,7 +242,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 5. Items
       await processCollection('Items', isar.items, (record) {
         final item = record as Item;
-        bool needsFix = false;
+        bool needsFix = true;
         if (item.uuid == null || item.uuid!.isEmpty) { item.uuid = _generateUuid(item.id); needsFix = true; }
         if (item.itemName == null || item.itemName!.trim().isEmpty) { item.itemName = 'Unknown Item'; needsFix = true; }
         if (item.currentStock == null) { item.currentStock = item.openingStock ?? 0.0; needsFix = true; }
@@ -253,7 +257,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 6. Invoices — with paymentStatus recalculation + partyName resolution
       await processCollection('Invoices', isar.invoices, (record) {
         final inv = record as Invoice;
-        bool needsFix = false;
+        bool needsFix = true;
         if (inv.uuid == null || inv.uuid!.isEmpty) { inv.uuid = _generateUuid(inv.id); needsFix = true; }
         if (inv.grandTotal == null) { inv.grandTotal = 0.0; needsFix = true; }
         if (inv.paidAmount == null) { inv.paidAmount = 0.0; needsFix = true; }
@@ -296,7 +300,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 7. Invoice Items
       await processCollection('Invoice Items', isar.collection<InvoiceItem>(), (record) {
         final ii = record as InvoiceItem;
-        bool needsFix = false;
+        bool needsFix = true;
         if (ii.uuid == null || ii.uuid!.isEmpty) { ii.uuid = _generateUuid(ii.id); needsFix = true; }
         if (ii.quantity == null) { ii.quantity = 0.0; needsFix = true; }
         if (ii.rate == null) { ii.rate = 0.0; needsFix = true; }
@@ -312,7 +316,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 8. Purchases — with paymentStatus recalculation + partyName resolution
       await processCollection('Purchases', isar.collection<Purchase>(), (record) {
         final pur = record as Purchase;
-        bool needsFix = false;
+        bool needsFix = true;
         if (pur.uuid == null || pur.uuid!.isEmpty) { pur.uuid = _generateUuid(pur.id); needsFix = true; }
         if (pur.grandTotal == null) { pur.grandTotal = 0.0; needsFix = true; }
         if (pur.paidAmount == null) { pur.paidAmount = 0.0; needsFix = true; }
@@ -354,7 +358,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 9. Purchase Items
       await processCollection('Purchase Items', isar.collection<PurchaseItem>(), (record) {
         final pi = record as PurchaseItem;
-        bool needsFix = false;
+        bool needsFix = true;
         if (pi.uuid == null || pi.uuid!.isEmpty) { pi.uuid = _generateUuid(pi.id); needsFix = true; }
         if (pi.quantity == null) { pi.quantity = 0.0; needsFix = true; }
         if (pi.rate == null) { pi.rate = 0.0; needsFix = true; }
@@ -370,7 +374,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 10. Orders — with partyName resolution + status default
       await processCollection('Orders', isar.orders, (record) {
         final ord = record as Order;
-        bool needsFix = false;
+        bool needsFix = true;
         if (ord.uuid == null || ord.uuid!.isEmpty) { ord.uuid = _generateUuid(ord.id); needsFix = true; }
         if (ord.grandTotal == null) { ord.grandTotal = 0.0; needsFix = true; }
         if (ord.status == null || ord.status!.trim().isEmpty) { ord.status = 'Pending'; needsFix = true; }
@@ -385,7 +389,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 11. Order Items
       await processCollection('Order Items', isar.collection<OrderItem>(), (record) {
         final oi = record as OrderItem;
-        bool needsFix = false;
+        bool needsFix = true;
         if (oi.uuid == null || oi.uuid!.isEmpty) { oi.uuid = _generateUuid(oi.id); needsFix = true; }
         if (oi.quantity == null) { oi.quantity = 0.0; needsFix = true; }
         if (oi.rate == null) { oi.rate = 0.0; needsFix = true; }
@@ -401,7 +405,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 12. Transactions — with partyName resolution + defaults
       await processCollection('Transactions', isar.transactions, (record) {
         final txn = record as Transaction;
-        bool needsFix = false;
+        bool needsFix = true;
         if (txn.uuid == null || txn.uuid!.isEmpty) { txn.uuid = _generateUuid(txn.id); needsFix = true; }
         if (txn.amount == null) { txn.amount = 0.0; needsFix = true; }
         if (txn.transactionType == null || txn.transactionType!.trim().isEmpty) { txn.transactionType = 'Receipt'; needsFix = true; }
@@ -417,7 +421,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 13. Expenses
       await processCollection('Expenses', isar.collection<Expense>(), (record) {
         final exp = record as Expense;
-        bool needsFix = false;
+        bool needsFix = true;
         if (exp.uuid == null || exp.uuid!.isEmpty) { exp.uuid = _generateUuid(exp.id); needsFix = true; }
         if (exp.amount == null) { exp.amount = 0.0; needsFix = true; }
         if (exp.category == null || exp.category!.trim().isEmpty) { exp.category = 'Other'; needsFix = true; }
@@ -428,7 +432,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 14. Expense Items (master list)
       await processCollection('Expense Items', isar.collection<ExpenseItem>(), (record) {
         final ei = record as ExpenseItem;
-        bool needsFix = false;
+        bool needsFix = true;
         if (ei.uuid == null || ei.uuid!.isEmpty) { ei.uuid = _generateUuid(ei.id); needsFix = true; }
         if (ei.itemName == null || ei.itemName!.trim().isEmpty) { ei.itemName = 'Unknown Expense'; needsFix = true; }
         return true;
@@ -437,7 +441,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 15. Credit Notes — with partyName resolution
       await processCollection('Credit Notes', isar.collection<CreditNote>(), (record) {
         final cn = record as CreditNote;
-        bool needsFix = false;
+        bool needsFix = true;
         if (cn.uuid == null || cn.uuid!.isEmpty) { cn.uuid = _generateUuid(cn.id); needsFix = true; }
         if (cn.grandTotal == null) { cn.grandTotal = 0.0; needsFix = true; }
         if (cn.subtotal == null) { cn.subtotal = cn.grandTotal ?? 0.0; needsFix = true; }
@@ -452,7 +456,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 16. Credit Note Items
       await processCollection('Credit Note Items', isar.collection<CreditNoteItem>(), (record) {
         final cni = record as CreditNoteItem;
-        bool needsFix = false;
+        bool needsFix = true;
         if (cni.uuid == null || cni.uuid!.isEmpty) { cni.uuid = _generateUuid(cni.id); needsFix = true; }
         if (cni.quantity == null) { cni.quantity = 0.0; needsFix = true; }
         if (cni.rate == null) { cni.rate = 0.0; needsFix = true; }
@@ -467,7 +471,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 17. Debit Notes — with partyName resolution
       await processCollection('Debit Notes', isar.collection<DebitNote>(), (record) {
         final dn = record as DebitNote;
-        bool needsFix = false;
+        bool needsFix = true;
         if (dn.uuid == null || dn.uuid!.isEmpty) { dn.uuid = _generateUuid(dn.id); needsFix = true; }
         if (dn.grandTotal == null) { dn.grandTotal = 0.0; needsFix = true; }
         if (dn.subtotal == null) { dn.subtotal = dn.grandTotal ?? 0.0; needsFix = true; }
@@ -482,7 +486,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 18. Debit Note Items
       await processCollection('Debit Note Items', isar.collection<DebitNoteItem>(), (record) {
         final dni = record as DebitNoteItem;
-        bool needsFix = false;
+        bool needsFix = true;
         if (dni.uuid == null || dni.uuid!.isEmpty) { dni.uuid = _generateUuid(dni.id); needsFix = true; }
         if (dni.quantity == null) { dni.quantity = 0.0; needsFix = true; }
         if (dni.rate == null) { dni.rate = 0.0; needsFix = true; }
@@ -497,7 +501,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 19. Bank Accounts
       await processCollection('Bank Accounts', isar.collection<BankAccount>(), (record) {
         final ba = record as BankAccount;
-        bool needsFix = false;
+        bool needsFix = true;
         if (ba.uuid == null || ba.uuid!.isEmpty) { ba.uuid = _generateUuid(ba.id); needsFix = true; }
         if (ba.accountName == null || ba.accountName!.trim().isEmpty) { ba.accountName = 'Unknown Account'; needsFix = true; }
         if (ba.openingBalance == null) { ba.openingBalance = 0.0; needsFix = true; }
@@ -508,7 +512,7 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       // 20. Stock Adjustments — with itemName resolution
       await processCollection('Stock Adjustments', isar.collection<StockAdjustment>(), (record) {
         final sa = record as StockAdjustment;
-        bool needsFix = false;
+        bool needsFix = true;
         if (sa.uuid == null || sa.uuid!.isEmpty) { sa.uuid = _generateUuid(sa.id); needsFix = true; }
         if (sa.quantity == null) { sa.quantity = 0.0; needsFix = true; }
         if (sa.adjustmentType == null || sa.adjustmentType!.trim().isEmpty) { sa.adjustmentType = 'Add'; needsFix = true; }
