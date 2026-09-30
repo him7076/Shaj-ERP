@@ -543,7 +543,28 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
       final expenses = await isar.expenses.filter().isDeletedEqualTo(false).findAll();
 
       final List<AccountTransactionDisplayItem> items = [];
-      final Set<String> linkedInvoiceUuids = rawTxns.where((t) => t.linkedBillUuid != null).map((t) => t.linkedBillUuid!).toSet();
+            final Map<String, double> linkedInvoiceAllocations = {};
+      final Map<String, double> linkedPurchaseAllocations = {};
+
+      for (var t in rawTxns) {
+        if (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty) {
+          try {
+            final allocs = json.decode(t.linkedBillUuid!);
+            if (allocs is Map) {
+              for (var entry in allocs.entries) {
+                final uuid = entry.key.toString();
+                final amt = (entry.value as num).toDouble();
+                if (t.transactionType == 'Receipt' || t.transactionType == 'Credit Note') {
+                  linkedInvoiceAllocations[uuid] = (linkedInvoiceAllocations[uuid] ?? 0.0) + amt;
+                } else if (t.transactionType == 'Payment' || t.transactionType == 'Debit Note') {
+                  linkedPurchaseAllocations[uuid] = (linkedPurchaseAllocations[uuid] ?? 0.0) + amt;
+                }
+              }
+            }
+          } catch (_) {
+          }
+        }
+      }
 
       for (var t in rawTxns) {
         final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
@@ -569,7 +590,6 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
           if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
             isCredit = true;
           } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {
-             // If this account was the target, it's a credit!
              if (widget.isCash) {
                 isCredit = (target == 'cash' || target.contains('cash'));
              } else {
@@ -600,19 +620,21 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
       }
 
       for (var inv in invoices) {
-        if (inv.uuid != null && linkedInvoiceUuids.contains(inv.uuid)) continue;
         final status = (inv.paymentStatus ?? '').trim().toLowerCase();
         final remarks = (inv.remarks ?? '').trim().toLowerCase();
-        final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
+        
+        final totalPaidInDb = inv.paidAmount ?? 0.0;
+        final linkedAlloc = linkedInvoiceAllocations[inv.uuid] ?? 0.0;
+        final initialPaid = totalPaidInDb - linkedAlloc;
         
         bool matches = false;
         if (widget.isCash) {
-           if (paid > 0 && (status == 'paid' || status == 'cash' || status.contains('cash') || remarks.contains('paid via cash'))) {
+           if (initialPaid > 0 && (status == 'paid' || status == 'cash' || status.contains('cash') || remarks.contains('paid via cash'))) {
               matches = true;
            }
         } else {
            final accName = widget.accountName.trim().toLowerCase();
-           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
+           if (initialPaid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
               matches = true;
            }
         }
@@ -623,7 +645,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             partyName: inv.partyName ?? 'Customer',
             transactionType: 'Sales',
             date: inv.invoiceDate ?? inv.createdAt,
-            amount: paid,
+            amount: initialPaid,
             isCredit: true,
             remarks: inv.remarks,
             entityUuid: inv.uuid,
@@ -633,19 +655,21 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
       }
 
       for (var pur in purchases) {
-        if (pur.uuid != null && linkedInvoiceUuids.contains(pur.uuid)) continue;
         final status = (pur.paymentStatus ?? '').trim().toLowerCase();
         final remarks = (pur.remarks ?? '').trim().toLowerCase();
-        final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
+        
+        final totalPaidInDb = pur.paidAmount ?? 0.0;
+        final linkedAlloc = linkedPurchaseAllocations[pur.uuid] ?? 0.0;
+        final initialPaid = totalPaidInDb - linkedAlloc;
         
         bool matches = false;
         if (widget.isCash) {
-           if (paid > 0 && (status == 'paid' || status == 'cash' || status.contains('cash') || remarks.contains('paid via cash'))) {
+           if (initialPaid > 0 && (status == 'paid' || status == 'cash' || status.contains('cash') || remarks.contains('paid via cash'))) {
               matches = true;
            }
         } else {
            final accName = widget.accountName.trim().toLowerCase();
-           if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
+           if (initialPaid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
               matches = true;
            }
         }
@@ -656,7 +680,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
             partyName: pur.partyName ?? 'Supplier',
             transactionType: 'Purchase',
             date: pur.purchaseDate ?? pur.createdAt,
-            amount: paid,
+            amount: initialPaid,
             isCredit: false,
             remarks: pur.remarks,
             entityUuid: pur.uuid,
