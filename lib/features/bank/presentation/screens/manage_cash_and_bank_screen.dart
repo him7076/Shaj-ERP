@@ -74,6 +74,14 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
               }
             }
           } catch (_) {
+            // Fallback for legacy data where linkedBillUuid is just a plain UUID string
+            final uuid = t.linkedBillUuid!;
+            final amt = t.amount ?? 0.0;
+            if (t.transactionType == 'Receipt' || t.transactionType == 'Credit Note') {
+              linkedInvoiceAllocations[uuid] = (linkedInvoiceAllocations[uuid] ?? 0.0) + amt;
+            } else if (t.transactionType == 'Payment' || t.transactionType == 'Debit Note') {
+              linkedPurchaseAllocations[uuid] = (linkedPurchaseAllocations[uuid] ?? 0.0) + amt;
+            }
           }
         }
       }
@@ -607,6 +615,14 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
               }
             }
           } catch (_) {
+            // Fallback for legacy data where linkedBillUuid is just a plain UUID string
+            final uuid = t.linkedBillUuid!;
+            final amt = t.amount ?? 0.0;
+            if (t.transactionType == 'Receipt' || t.transactionType == 'Credit Note') {
+              linkedInvoiceAllocations[uuid] = (linkedInvoiceAllocations[uuid] ?? 0.0) + amt;
+            } else if (t.transactionType == 'Payment' || t.transactionType == 'Debit Note') {
+              linkedPurchaseAllocations[uuid] = (linkedPurchaseAllocations[uuid] ?? 0.0) + amt;
+            }
           }
         }
       }
