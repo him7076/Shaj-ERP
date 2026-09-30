@@ -117,7 +117,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
         final remarks = (inv.remarks ?? '').trim().toLowerCase();
         
         final totalPaidInDb = inv.paidAmount ?? 0.0;
-        final linkedAlloc = linkedInvoiceAllocations[inv.uuid] ?? 0.0;
+        final linkedAlloc = (linkedInvoiceAllocations[inv.uuid] ?? 0.0) + (linkedInvoiceAllocations[inv.invoiceNumber] ?? 0.0);
         final initialPaid = totalPaidInDb - linkedAlloc;
 
         bool isCash = mode == 'cash' || mode.contains('cash') || (mode.isEmpty && (status == 'cash' || status.contains('cash') || remarks.contains('paid via cash') || status == 'paid'));
@@ -133,7 +133,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
         final remarks = (pur.remarks ?? '').trim().toLowerCase();
         
         final totalPaidInDb = pur.paidAmount ?? 0.0;
-        final linkedAlloc = linkedPurchaseAllocations[pur.uuid] ?? 0.0;
+        final linkedAlloc = (linkedPurchaseAllocations[pur.uuid] ?? 0.0) + (linkedPurchaseAllocations[pur.purchaseNumber] ?? 0.0);
         final initialPaid = totalPaidInDb - linkedAlloc;
 
         bool isCash = mode == 'cash' || mode.contains('cash') || (mode.isEmpty && (status == 'cash' || status.contains('cash') || remarks.contains('paid via cash') || status == 'paid'));
@@ -185,7 +185,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final remarks = (inv.remarks ?? '').trim().toLowerCase();
           
           final totalPaidInDb = inv.paidAmount ?? 0.0;
-          final linkedAlloc = linkedInvoiceAllocations[inv.uuid] ?? 0.0;
+          final linkedAlloc = (linkedInvoiceAllocations[inv.uuid] ?? 0.0) + (linkedInvoiceAllocations[inv.invoiceNumber] ?? 0.0);
           final initialPaid = totalPaidInDb - linkedAlloc;
 
           bool isBank = mode == accName || mode.contains(accName) || (mode.isEmpty && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName)));
@@ -201,7 +201,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final remarks = (pur.remarks ?? '').trim().toLowerCase();
           
           final totalPaidInDb = pur.paidAmount ?? 0.0;
-          final linkedAlloc = linkedPurchaseAllocations[pur.uuid] ?? 0.0;
+          final linkedAlloc = (linkedPurchaseAllocations[pur.uuid] ?? 0.0) + (linkedPurchaseAllocations[pur.purchaseNumber] ?? 0.0);
           final initialPaid = totalPaidInDb - linkedAlloc;
 
           bool isBank = mode == accName || mode.contains(accName) || (mode.isEmpty && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName)));
@@ -686,7 +686,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
         final remarks = (inv.remarks ?? '').trim().toLowerCase();
         
         final totalPaidInDb = inv.paidAmount ?? 0.0;
-        final linkedAlloc = linkedInvoiceAllocations[inv.uuid] ?? 0.0;
+        final linkedAlloc = (linkedInvoiceAllocations[inv.uuid] ?? 0.0) + (linkedInvoiceAllocations[inv.invoiceNumber] ?? 0.0);
         final initialPaid = totalPaidInDb - linkedAlloc;
         
         bool matches = false;
@@ -724,7 +724,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
         final remarks = (pur.remarks ?? '').trim().toLowerCase();
         
         final totalPaidInDb = pur.paidAmount ?? 0.0;
-        final linkedAlloc = linkedPurchaseAllocations[pur.uuid] ?? 0.0;
+        final linkedAlloc = (linkedPurchaseAllocations[pur.uuid] ?? 0.0) + (linkedPurchaseAllocations[pur.purchaseNumber] ?? 0.0);
         final initialPaid = totalPaidInDb - linkedAlloc;
         
         bool matches = false;
