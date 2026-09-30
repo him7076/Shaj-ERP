@@ -369,25 +369,12 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                             subtitle: Padding(
                               padding: const EdgeInsets.only(top: 4.0),
                               child: Text(
-                                '${acc.bankName ?? "Bank"} • A/C: ${acc.accountNumber ?? "N/A"} • IFSC: ${acc.ifscCode ?? "N/A"}',
+                                '${acc.bankName ?? "Bank"} • A/C: ${acc.accountNumber ?? "N/A"}',
                                 style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                                  tooltip: 'Edit Account',
-                                  onPressed: () => _showAddEditAccountDialog(existingAccount: acc),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                  tooltip: 'Delete Account',
-                                  onPressed: () => _deleteAccount(acc),
-                                ),
-                              ],
-                            ),
+                            trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                           ),
                         );
                       },
@@ -563,8 +550,10 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
         bool matches = false;
         if (widget.isCash) {
           matches = mode == 'cash' || mode.contains('cash') || mode.isEmpty;
-          if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == 'cash' || target.contains('cash'))) {
-            matches = true;
+          if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {
+            if (mode == 'cash' || mode.contains('cash') || target == 'cash' || target.contains('cash')) {
+              matches = true;
+            }
           }
         } else {
           final accName = widget.accountName.trim().toLowerCase();
@@ -929,38 +918,47 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
                         children: [
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
-                                child: const Icon(Icons.arrow_downward_rounded, color: Colors.greenAccent, size: 16),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Total Inflows (+)', style: TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600)),
+                              const Icon(Icons.arrow_downward_rounded, color: Colors.greenAccent, size: 14),
+                              const SizedBox(width: 4),
+                              const Text('Inflows (+)', style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(currencyFormat.format(totalInflow), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)),
+                          const SizedBox(height: 4),
+                          Text(currencyFormat.format(totalInflow), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
-                    Container(height: 40, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 16)),
+                    Container(height: 30, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 8)),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
-                                child: const Icon(Icons.arrow_upward_rounded, color: Colors.redAccent, size: 16),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text('Total Outflows (-)', style: TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600)),
+                              const Icon(Icons.arrow_upward_rounded, color: Colors.redAccent, size: 14),
+                              const SizedBox(width: 4),
+                              const Text('Outflows (-)', style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(currencyFormat.format(totalOutflow), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white)),
+                          const SizedBox(height: 4),
+                          Text(currencyFormat.format(totalOutflow), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                    Container(height: 30, width: 1, color: Colors.white30, margin: const EdgeInsets.symmetric(horizontal: 8)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.account_balance_wallet_rounded, color: Colors.blueAccent, size: 14),
+                              const SizedBox(width: 4),
+                              const Text('Balance', style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(currencyFormat.format(currentBalance), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: currentBalance >= 0 ? Colors.white : Colors.redAccent), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                       ),
                     ),
