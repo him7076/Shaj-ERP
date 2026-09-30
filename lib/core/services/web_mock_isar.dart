@@ -1091,6 +1091,34 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+    if (entity is StockAdjustment) {
+      return {
+        'type': 'StockAdjustment',
+        'id': entity.id,
+        'uuid': (entity as IsarModel).uuid,
+        'adjustmentDate': entity.adjustmentDate?.toIso8601String(),
+        'remarks': entity.remarks,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
+    if (entity is MachineryCategory) {
+      return {
+        'type': 'MachineryCategory',
+        'id': entity.id,
+        'uuid': (entity as IsarModel).uuid,
+        'name': entity.name,
+        'description': entity.description,
+        'createdAt': entity.createdAt.toIso8601String(),
+        'updatedAt': entity.updatedAt.toIso8601String(),
+        'isDeleted': entity.isDeleted,
+        'isSynced': entity.isSynced,
+        'version': entity.version,
+      };
+    }
     return {};
   }
 
