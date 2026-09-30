@@ -707,7 +707,6 @@ if (_isPaidAmountAutoFill) {
               controller: _remarksController,
               decoration: InputDecoration(labelText: 'Remarks / Notes', ),
             ),
-            ),
             const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
             const SizedBox(height: 20),
