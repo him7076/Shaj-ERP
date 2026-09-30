@@ -64,19 +64,20 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
         final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
         final target = (t.partyName ?? '').trim().toLowerCase();
         final amt = t.amount ?? 0.0;
-
-        if (mode == 'cash' || mode.contains('cash') || mode.isEmpty) {
-          if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
-            cashInflows += amt;
-          } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense') {
-            cashOutflows += amt;
-          } else if (t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') {
-            cashOutflows += amt;
-          }
+        
+        bool matches = mode == 'cash' || mode.contains('cash') || mode.isEmpty;
+        if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == 'cash' || target.contains('cash'))) {
+          matches = true;
         }
 
-        if ((t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') && (target == 'cash' || target.contains('cash'))) {
-          cashInflows += amt;
+        if (matches) {
+          bool isCredit = false;
+          if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
+            isCredit = true;
+          } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {
+             isCredit = (target == 'cash' || target.contains('cash'));
+          }
+          if (isCredit) cashInflows += amt; else cashOutflows += amt;
         }
       }
 
@@ -111,7 +112,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
 
       // 2. Calculate Live Bank Account Balances
       for (var acc in _accounts) {
-        final name = (acc.accountName ?? '').trim().toLowerCase();
+        final accName = (acc.accountName ?? '').trim().toLowerCase();
         double bankInflows = 0.0;
         double bankOutflows = 0.0;
 
@@ -120,16 +121,19 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final target = (t.partyName ?? '').trim().toLowerCase();
           final amt = t.amount ?? 0.0;
 
-          if (mode == name || (mode.isNotEmpty && name.isNotEmpty && mode.contains(name))) {
-            if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
-              bankInflows += amt;
-            } else if (t.transactionType == 'Payment' || t.transactionType == 'Expense' || t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') {
-              bankOutflows += amt;
-            }
+          bool matches = mode == accName || mode.contains(accName) || (accName.contains('bank') && (mode == 'bank' || mode == 'online' || mode == 'upi' || mode == 'cheque'));
+          if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType) && (target == accName || target.contains(accName))) {
+            matches = true;
           }
 
-          if ((t.transactionType == 'Transfer' || t.transactionType == 'Bank Transfer' || t.transactionType == 'Cash Adjustment') && (target == name || (target.isNotEmpty && name.isNotEmpty && target.contains(name)))) {
-            bankInflows += amt;
+          if (matches) {
+            bool isCredit = false;
+            if (t.transactionType == 'Receipt' || t.transactionType == 'Other Income') {
+              isCredit = true;
+            } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(t.transactionType)) {
+               isCredit = (target == accName || target.contains(accName));
+            }
+            if (isCredit) bankInflows += amt; else bankOutflows += amt;
           }
         }
 
@@ -138,7 +142,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final status = (inv.paymentStatus ?? '').trim().toLowerCase();
           final remarks = (inv.remarks ?? '').trim().toLowerCase();
           final paid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
-          if (paid > 0 && (status == name || status.contains(name) || remarks.contains('paid via $name') || remarks.contains(name))) {
+          if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
             bankInflows += paid;
           }
         }
@@ -148,14 +152,14 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
           final status = (pur.paymentStatus ?? '').trim().toLowerCase();
           final remarks = (pur.remarks ?? '').trim().toLowerCase();
           final paid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
-          if (paid > 0 && (status == name || status.contains(name) || remarks.contains('paid via $name') || remarks.contains(name))) {
+          if (paid > 0 && (status == accName || status.contains(accName) || remarks.contains('paid via $accName') || remarks.contains(accName))) {
             bankOutflows += paid;
           }
         }
 
         for (var exp in expenses) {
           final mode = (exp.paymentMode ?? '').trim().toLowerCase();
-          if (mode == name || (mode.isNotEmpty && name.isNotEmpty && mode.contains(name))) {
+          if (mode == accName || mode.contains(accName)) {
             bankOutflows += (exp.amount ?? 0.0);
           }
         }
@@ -357,8 +361,9 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
                             ),
                             title: Row(
                               children: [
-                                Expanded(child: Text(acc.accountName ?? 'Bank Account', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                                Text(currencyFormat.format(balance), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2E7D32))),
+                                Expanded(child: Text(acc.accountName ?? 'Bank Account', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                const SizedBox(width: 8),
+                                Text(currencyFormat.format(balance), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: balance >= 0 ? const Color(0xFF2E7D32) : Colors.red)),
                               ],
                             ),
                             subtitle: Padding(
@@ -742,6 +747,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
 
     final double totalInflow = txns.where((t) => t.isCredit).fold(0.0, (s, t) => s + t.amount);
     final double totalOutflow = txns.where((t) => !t.isCredit).fold(0.0, (s, t) => s + t.amount);
+    final double currentBalance = widget.isCash ? (totalInflow - totalOutflow) : ((widget.account?.openingBalance ?? 0.0) + totalInflow - totalOutflow);
 
     return Scaffold(
       appBar: AppBar(
