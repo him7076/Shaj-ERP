@@ -58,6 +58,19 @@ class WebMockIsar implements Isar {
     return null;
   }
 
+
+  DateTime? _parseDateTime(dynamic val) {
+    if (val == null) return null;
+    if (val is DateTime) return val;
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+    if (val is String) {
+      final t = int.tryParse(val);
+      if (t != null) return DateTime.fromMillisecondsSinceEpoch(t);
+      return DateTime.tryParse(val);
+    }
+    return null;
+  }
+
   String? _parseString(dynamic val) {
     if (val == null) return null;
     if (val is String) return val;
@@ -1256,8 +1269,8 @@ class WebMockIsar implements Isar {
           ..uuid = _parseString(map['uuid'])
           ..categoryName = _parseString(map['categoryName'])
           ..description = _parseString(map['description'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1271,8 +1284,8 @@ class WebMockIsar implements Isar {
           ..pcsPerBundle = _parseDouble(map['pcsPerBundle'])
           ..pcsPerCarton = _parseDouble(map['pcsPerCarton'])
           ..customRate = _parseDouble(map['customRate'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1282,8 +1295,8 @@ class WebMockIsar implements Isar {
           ..uuid = _parseString(map['uuid'])
           ..unitName = _parseString(map['unitName'])
           ..shortName = _parseString(map['shortName'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1292,8 +1305,8 @@ class WebMockIsar implements Isar {
           ..id = _parseInt(map['id']) ?? Isar.autoIncrement
           ..uuid = _parseString(map['uuid'])
           ..brandName = _parseString(map['brandName'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1330,8 +1343,8 @@ class WebMockIsar implements Isar {
           ..notes = _parseString(map['notes'])
           ..shopPhotos = (map['shopPhotos'] as List<dynamic>?)?.cast<String>()
           ..shopPhotoUrls = (map['shopPhotoUrls'] as List<dynamic>?)?.cast<String>()
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1378,8 +1391,8 @@ class WebMockIsar implements Isar {
           ..bundleComponentUuids = (map['bundleComponentUuids'] as List<dynamic>?)?.cast<String>()
           ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List<dynamic>?)?.cast<num>().map((e) => e.toDouble()).toList()
           ..bundleComponentUnits = (map['bundleComponentUnits'] as List<dynamic>?)?.cast<String>()
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1430,8 +1443,8 @@ class WebMockIsar implements Isar {
           ..gstPercent = _parseDouble(map['gstPercent'])
           ..gstAmount = _parseDouble(map['gstAmount'])
           ..totalAmount = _parseDouble(map['totalAmount'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1440,7 +1453,7 @@ class WebMockIsar implements Isar {
           ..id = _parseInt(map['id']) ?? Isar.autoIncrement
           ..uuid = _parseString(map['uuid'])
           ..orderNumber = _parseString(map['orderNumber'])
-          ..orderDate = map['orderDate'] != null ? DateTime.parse(map['orderDate'] as String) : null
+          ..orderDate = _parseDateTime(map['orderDate'])
           ..status = _parseString(map['status'])
           ..partyId = _parseInt(map['partyId'])
           ..partyName = _parseString(map['partyName'])
@@ -1458,13 +1471,13 @@ class WebMockIsar implements Isar {
           ..remarks = _parseString(map['remarks'])
           ..internalNotes = _parseString(map['internalNotes'])
           ..cancelledBy = _parseString(map['cancelledBy'])
-          ..cancelledDate = map['cancelledDate'] != null ? DateTime.parse(map['cancelledDate'] as String) : null
+          ..cancelledDate = _parseDateTime(map['cancelledDate'])
           ..cancellationReason = _parseString(map['cancellationReason'])
           ..createdBy = _parseString(map['createdBy'])
           ..editedBy = _parseString(map['editedBy'])
-          ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime'] as String) : null
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..editTime = _parseDateTime(map['editTime'])
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1501,8 +1514,8 @@ class WebMockIsar implements Isar {
           ..bundleComponentBuyRates = (map['bundleComponentBuyRates'] as List?)?.map((e) => (e as num).toDouble()).toList()
           ..bundleComponentGstPercents = (map['bundleComponentGstPercents'] as List?)?.map((e) => (e as num).toDouble()).toList()
           ..bundleComponentDescriptions = (map['bundleComponentDescriptions'] as List?)?.cast<String>()
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1511,7 +1524,7 @@ class WebMockIsar implements Isar {
           ..id = _parseInt(map['id']) ?? Isar.autoIncrement
           ..uuid = _parseString(map['uuid'])
           ..invoiceNumber = _parseString(map['invoiceNumber'])
-          ..invoiceDate = map['invoiceDate'] != null ? DateTime.parse(map['invoiceDate'] as String) : null
+          ..invoiceDate = _parseDateTime(map['invoiceDate'])
           ..invoiceType = _parseString(map['invoiceType'])
           ..invoiceStatus = _parseString(map['invoiceStatus'])
           ..sourceOrderId = _parseInt(map['sourceOrderId'])
@@ -1532,17 +1545,17 @@ class WebMockIsar implements Isar {
           ..paymentStatus = _parseString(map['paymentStatus'])
           ..paidAmount = _parseDouble(map['paidAmount'])
           ..pendingAmount = _parseDouble(map['pendingAmount'])
-          ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
+          ..dueDate = _parseDateTime(map['dueDate'])
           ..remarks = _parseString(map['remarks'])
           ..termsAndConditions = _parseString(map['termsAndConditions'])
           ..cancelledBy = _parseString(map['cancelledBy'])
-          ..cancelledDate = map['cancelledDate'] != null ? DateTime.parse(map['cancelledDate'] as String) : null
+          ..cancelledDate = _parseDateTime(map['cancelledDate'])
           ..cancellationReason = _parseString(map['cancellationReason'])
           ..createdBy = _parseString(map['createdBy'])
           ..editedBy = _parseString(map['editedBy'])
-          ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime'] as String) : null
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..editTime = _parseDateTime(map['editTime'])
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1557,8 +1570,8 @@ class WebMockIsar implements Isar {
           ..companyEmail = _parseString(map['companyEmail'])
           ..logoPath = _parseString(map['logoPath'])
           ..themeMode = _parseString(map['themeMode'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1569,8 +1582,8 @@ class WebMockIsar implements Isar {
           ..name = _parseString(map['name'])
           ..email = _parseString(map['email'])
           ..role = _parseString(map['role'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1583,10 +1596,10 @@ class WebMockIsar implements Isar {
           ..entityUuid = _parseString(map['entityUuid'])
           ..operation = _parseString(map['operation'])
           ..retryCount = _parseInt(map['retryCount']) ?? 0
-          ..lastAttempt = map['lastAttempt'] != null ? DateTime.parse(map['lastAttempt'] as String) : null
+          ..lastAttempt = _parseDateTime(map['lastAttempt'])
           ..lastError = _parseString(map['lastError'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1596,7 +1609,7 @@ class WebMockIsar implements Isar {
           ..uuid = _parseString(map['uuid'])
           ..purchaseNumber = _parseString(map['purchaseNumber'])
           ..supplierInvoiceNumber = _parseString(map['supplierInvoiceNumber'])
-          ..purchaseDate = map['purchaseDate'] != null ? DateTime.parse(map['purchaseDate'] as String) : null
+          ..purchaseDate = _parseDateTime(map['purchaseDate'])
           ..partyId = _parseInt(map['partyId'])
           ..partyName = _parseString(map['partyName'])
           ..gstNumber = _parseString(map['gstNumber'])
@@ -1614,8 +1627,8 @@ class WebMockIsar implements Isar {
           ..paidAmount = _parseDouble(map['paidAmount'])
           ..pendingAmount = _parseDouble(map['pendingAmount'])
           ..remarks = _parseString(map['remarks'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1641,8 +1654,8 @@ class WebMockIsar implements Isar {
           ..batchNumber = _parseString(map['batchNumber'])
           ..expiryDate = _parseString(map['expiryDate'])
           ..mfgDate = _parseString(map['mfgDate'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1652,11 +1665,11 @@ class WebMockIsar implements Isar {
           ..uuid = _parseString(map['uuid'])
           ..category = _parseString(map['category'])
           ..amount = _parseDouble(map['amount'])
-          ..expenseDate = map['expenseDate'] != null ? DateTime.parse(map['expenseDate'] as String) : null
+          ..expenseDate = _parseDateTime(map['expenseDate'])
           ..paymentMode = _parseString(map['paymentMode'])
           ..remarks = _parseString(map['remarks'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1665,7 +1678,7 @@ class WebMockIsar implements Isar {
           ..id = _parseInt(map['id']) ?? Isar.autoIncrement
           ..uuid = _parseString(map['uuid'])
           ..transactionNumber = _parseString(map['transactionNumber'])
-          ..transactionDate = map['transactionDate'] != null ? DateTime.parse(map['transactionDate'] as String) : null
+          ..transactionDate = _parseDateTime(map['transactionDate'])
           ..partyUuid = _parseString(map['partyUuid'])
           ..partyName = _parseString(map['partyName'])
           ..transactionType = _parseString(map['transactionType'])
@@ -1678,8 +1691,8 @@ class WebMockIsar implements Isar {
           ..linkedBillNumber = _parseString(map['linkedBillNumber'])
           ..targetPartyUuid = _parseString(map['targetPartyUuid'])
           ..targetPartyName = _parseString(map['targetPartyName'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1694,8 +1707,8 @@ class WebMockIsar implements Isar {
           ..branchName = _parseString(map['branchName'])
           ..openingBalance = _parseDouble(map['openingBalance'])
           ..currentBalance = _parseDouble(map['currentBalance'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1704,7 +1717,7 @@ class WebMockIsar implements Isar {
           ..id = _parseInt(map['id']) ?? Isar.autoIncrement
           ..uuid = _parseString(map['uuid'])
           ..creditNoteNumber = _parseString(map['creditNoteNumber'])
-          ..creditNoteDate = map['creditNoteDate'] != null ? DateTime.parse(map['creditNoteDate'] as String) : null
+          ..creditNoteDate = _parseDateTime(map['creditNoteDate'])
           ..originalInvoiceNumber = _parseString(map['originalInvoiceNumber'])
           ..originalInvoiceUuid = _parseString(map['originalInvoiceUuid'])
           ..partyId = _parseInt(map['partyId'])
@@ -1722,8 +1735,8 @@ class WebMockIsar implements Isar {
           ..grandTotal = _parseDouble(map['grandTotal'])
           ..remarks = _parseString(map['remarks'])
           ..createdBy = _parseString(map['createdBy'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1749,8 +1762,8 @@ class WebMockIsar implements Isar {
           ..batchNumber = _parseString(map['batchNumber'])
           ..expiryDate = _parseString(map['expiryDate'])
           ..mfgDate = _parseString(map['mfgDate'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1759,7 +1772,7 @@ class WebMockIsar implements Isar {
           ..id = _parseInt(map['id']) ?? Isar.autoIncrement
           ..uuid = _parseString(map['uuid'])
           ..debitNoteNumber = _parseString(map['debitNoteNumber'])
-          ..debitNoteDate = map['debitNoteDate'] != null ? DateTime.parse(map['debitNoteDate'] as String) : null
+          ..debitNoteDate = _parseDateTime(map['debitNoteDate'])
           ..originalPurchaseNumber = _parseString(map['originalPurchaseNumber'])
           ..originalPurchaseUuid = _parseString(map['originalPurchaseUuid'])
           ..partyId = _parseInt(map['partyId'])
@@ -1777,8 +1790,8 @@ class WebMockIsar implements Isar {
           ..grandTotal = _parseDouble(map['grandTotal'])
           ..remarks = _parseString(map['remarks'])
           ..createdBy = _parseString(map['createdBy'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1804,8 +1817,8 @@ class WebMockIsar implements Isar {
           ..batchNumber = _parseString(map['batchNumber'])
           ..expiryDate = _parseString(map['expiryDate'])
           ..mfgDate = _parseString(map['mfgDate'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1818,9 +1831,9 @@ class WebMockIsar implements Isar {
           ..partyName = _parseString(map['partyName'])
           ..amount = _parseDouble(map['amount'])
           ..remarks = _parseString(map['remarks'])
-          ..deletedAt = map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..deletedAt = _parseDateTime(map['deletedAt'])
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1834,11 +1847,11 @@ class WebMockIsar implements Isar {
           ..adjustmentType = _parseString(map['adjustmentType'])
           ..quantity = _parseDouble(map['quantity'])
           ..unit = _parseString(map['unit'])
-          ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate'] as String) : null
+          ..adjustmentDate = _parseDateTime(map['adjustmentDate'])
           ..reason = _parseString(map['reason'])
           ..notes = _parseString(map['notes'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1850,10 +1863,10 @@ class WebMockIsar implements Isar {
           ..description = _parseString(map['description'])
           ..status = _parseString(map['status'])
           ..priority = _parseString(map['priority'])
-          ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
-          ..completedAt = map['completedAt'] != null ? DateTime.parse(map['completedAt'] as String) : null
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..dueDate = _parseDateTime(map['dueDate'])
+          ..completedAt = _parseDateTime(map['completedAt'])
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1863,8 +1876,8 @@ class WebMockIsar implements Isar {
           ..uuid = _parseString(map['uuid'])
           ..itemName = _parseString(map['itemName'])
           ..defaultRate = _parseDouble(map['defaultRate'])
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
@@ -1883,10 +1896,10 @@ class WebMockIsar implements Isar {
           ..googlePhotosLink = _parseString(map['googlePhotosLink'])
           ..serviceIntervalMonths = _parseInt(map['serviceIntervalMonths'])
           ..serviceIntervalDays = _parseInt(map['serviceIntervalDays'])
-          ..lastServiceDate = map['lastServiceDate'] != null ? DateTime.parse(map['lastServiceDate'] as String) : null
-          ..nextServiceDate = map['nextServiceDate'] != null ? DateTime.parse(map['nextServiceDate'] as String) : null
-          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
-          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..lastServiceDate = _parseDateTime(map['lastServiceDate'])
+          ..nextServiceDate = _parseDateTime(map['nextServiceDate'])
+          ..createdAt = _parseDateTime(map['createdAt']) ?? DateTime.now()
+          ..updatedAt = _parseDateTime(map['updatedAt']) ?? DateTime.now()
           ..isDeleted = (_parseBool(map['isDeleted']) == true)
           ..isSynced = (_parseBool(map['isSynced']) == true)
           ..version = _parseInt(map['version']) ?? 1;
