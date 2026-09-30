@@ -435,7 +435,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     if (true) {
       // Credit Note -> Link to Sales Invoices
       final invoices = await isar.invoices.filter()
-          .partyUuidEqualTo(_selectedParty!.uuid)
+          .partyNameEqualTo(_selectedParty!.partyName)
           .and()
           .isDeletedEqualTo(false)
           .findAll();
@@ -447,7 +447,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     } else {
       // Debit Note -> Link to Purchases
       final purchases = await isar.purchases.filter()
-          .partyUuidEqualTo(_selectedParty!.uuid)
+          .partyNameEqualTo(_selectedParty!.partyName)
           .and()
           .isDeletedEqualTo(false)
           .findAll();
@@ -833,8 +833,8 @@ if (_isPaidAmountAutoFill) {
                 final supplierParties = parties; // All parties
                 return SearchablePartyDropdown(
                   parties: supplierParties,
-                  selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
-                      ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                  selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.partyName) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                      ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.partyName) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
                       : _selectedParty,
                   labelText: 'Select Account',
                   onChanged: (party) {
