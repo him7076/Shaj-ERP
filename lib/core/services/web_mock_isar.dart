@@ -2031,7 +2031,8 @@ class WebMockCollection<T> extends IsarCollection<T> {
       }
     }
     
-    return true;
+    // Unsupported filter type (like Link filters in Web Mock) should NOT match all items!
+    return false;
   }
 
   dynamic _getPropertyValue(dynamic item, String propName) {
