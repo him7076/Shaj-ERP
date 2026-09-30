@@ -398,14 +398,14 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (pi.rate == null) { pi.rate = 0.0; needsFix = true; }
         if (pi.totalAmount == null) { pi.totalAmount = (pi.quantity ?? 0.0) * (pi.rate ?? 0.0); needsFix = true; }
         // Fix parentPurchase links
-        if (pi.parentPurchaseId == null || pi.parentPurchaseId == 0) {
-          if (pi.parentPurchaseUuid != null && purchaseByUuidMap.containsKey(pi.parentPurchaseUuid)) {
-            pi.parentPurchaseId = purchaseByUuidMap[pi.parentPurchaseUuid!]!.id;
+        if (pi.purchaseId == null || pi.purchaseId == 0) {
+          if (pi.purchaseUuid != null && purchaseByUuidMap.containsKey(pi.purchaseUuid)) {
+            pi.purchaseId = purchaseByUuidMap[pi.purchaseUuid!]!.id;
           }
         }
-        if (pi.parentPurchaseUuid == null || pi.parentPurchaseUuid!.isEmpty) {
-          if (pi.parentPurchaseId != null && purchaseByIdMap.containsKey(pi.parentPurchaseId)) {
-            pi.parentPurchaseUuid = purchaseByIdMap[pi.parentPurchaseId!]!.uuid;
+        if (pi.purchaseUuid == null || pi.purchaseUuid!.isEmpty) {
+          if (pi.purchaseId != null && purchaseByIdMap.containsKey(pi.purchaseId)) {
+            pi.purchaseUuid = purchaseByIdMap[pi.purchaseId!]!.uuid;
           }
         }
         
@@ -441,14 +441,14 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (oi.rate == null) { oi.rate = 0.0; needsFix = true; }
         if (oi.totalAmount == null) { oi.totalAmount = (oi.quantity ?? 0.0) * (oi.rate ?? 0.0); needsFix = true; }
         // Fix parentOrder links
-        if (oi.parentOrderId == null || oi.parentOrderId == 0) {
-          if (oi.parentOrderUuid != null && orderByUuidMap.containsKey(oi.parentOrderUuid)) {
-            oi.parentOrderId = orderByUuidMap[oi.parentOrderUuid!]!.id;
+        if (oi.orderId == null || oi.orderId == 0) {
+          if (oi.orderUuid != null && orderByUuidMap.containsKey(oi.orderUuid)) {
+            oi.orderId = orderByUuidMap[oi.orderUuid!]!.id;
           }
         }
-        if (oi.parentOrderUuid == null || oi.parentOrderUuid!.isEmpty) {
-          if (oi.parentOrderId != null && orderByIdMap.containsKey(oi.parentOrderId)) {
-            oi.parentOrderUuid = orderByIdMap[oi.parentOrderId!]!.uuid;
+        if (oi.orderUuid == null || oi.orderUuid!.isEmpty) {
+          if (oi.orderId != null && orderByIdMap.containsKey(oi.orderId)) {
+            oi.orderUuid = orderByIdMap[oi.orderId!]!.uuid;
           }
         }
         
@@ -520,16 +520,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (cni.rate == null) { cni.rate = 0.0; needsFix = true; }
         if (cni.totalAmount == null) { cni.totalAmount = (cni.quantity ?? 0.0) * (cni.rate ?? 0.0); needsFix = true; }
         // Fix parent links
-        if (cni.parentCreditNoteId == null || cni.parentCreditNoteId == 0) {
-          if (cni.parentCreditNoteUuid != null && cnByUuidMap.containsKey(cni.parentCreditNoteUuid)) {
-            cni.parentCreditNoteId = cnByUuidMap[cni.parentCreditNoteUuid!]!.id;
-          }
-        }
-        if (cni.parentCreditNoteUuid == null || cni.parentCreditNoteUuid!.isEmpty) {
-          if (cni.parentCreditNoteId != null && cnByIdMap.containsKey(cni.parentCreditNoteId)) {
-            cni.parentCreditNoteUuid = cnByIdMap[cni.parentCreditNoteId!]!.uuid;
-          }
-        }
+        // CreditNoteItem model currently lacks parentCreditNoteUuid. 
+        // If needed in the future, it should be added to the model and repaired here.
         
         if (cni.itemId != null && (cni.itemName == null || cni.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[cni.itemId!];
@@ -562,16 +554,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (dni.rate == null) { dni.rate = 0.0; needsFix = true; }
         if (dni.totalAmount == null) { dni.totalAmount = (dni.quantity ?? 0.0) * (dni.rate ?? 0.0); needsFix = true; }
         // Fix parent links
-        if (dni.parentDebitNoteId == null || dni.parentDebitNoteId == 0) {
-          if (dni.parentDebitNoteUuid != null && dnByUuidMap.containsKey(dni.parentDebitNoteUuid)) {
-            dni.parentDebitNoteId = dnByUuidMap[dni.parentDebitNoteUuid!]!.id;
-          }
-        }
-        if (dni.parentDebitNoteUuid == null || dni.parentDebitNoteUuid!.isEmpty) {
-          if (dni.parentDebitNoteId != null && dnByIdMap.containsKey(dni.parentDebitNoteId)) {
-            dni.parentDebitNoteUuid = dnByIdMap[dni.parentDebitNoteId!]!.uuid;
-          }
-        }
+        // DebitNoteItem model currently lacks parentDebitNoteUuid.
+        // If needed in the future, it should be added to the model and repaired here.
         
         if (dni.itemId != null && (dni.itemName == null || dni.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[dni.itemId!];
