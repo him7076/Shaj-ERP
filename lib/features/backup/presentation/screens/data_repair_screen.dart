@@ -230,6 +230,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = true;
         if (cat.categoryName == null || cat.categoryName!.trim().isEmpty) { cat.categoryName = 'Unknown'; needsFix = true; }
         if (cat.uuid == null || cat.uuid!.isEmpty) { cat.uuid = _generateUuid(cat.id); needsFix = true; }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -237,6 +239,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
       await processCollection('Units', isar.units, (record) {
         final unit = record as Unit;
         bool needsFix = true;
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true; // Force save to initialize missing Isar default booleans like isDeleted
       });
 
@@ -246,6 +250,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = true;
         if (brand.uuid == null || brand.uuid!.isEmpty) { brand.uuid = _generateUuid(brand.id); needsFix = true; }
         if (brand.brandName == null || brand.brandName!.trim().isEmpty) { brand.brandName = 'Unknown Brand'; needsFix = true; }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -258,6 +264,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (p.partyType == null || p.partyType!.trim().isEmpty) { p.partyType = 'Customer'; needsFix = true; }
         if (p.outstandingBalance == null) { p.outstandingBalance = 0.0; needsFix = true; }
         if (p.openingBalance == null) { p.openingBalance = 0.0; needsFix = true; }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -273,6 +281,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (item.gstRate == null) { item.gstRate = 0.0; needsFix = true; }
         if (item.openingStock == null) { item.openingStock = 0.0; needsFix = true; }
         if (item.reorderLevel == null) { item.reorderLevel = 0.0; needsFix = true; }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -285,6 +295,9 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (inv.paidAmount == null) { inv.paidAmount = 0.0; needsFix = true; }
         if (inv.subtotal == null) { inv.subtotal = inv.grandTotal ?? 0.0; needsFix = true; }
         if (inv.invoiceType == null || inv.invoiceType!.trim().isEmpty) { inv.invoiceType = 'Tax Invoice'; needsFix = true; }
+        if (inv.invoiceDate == null) { inv.invoiceDate = inv.createdAt; needsFix = true; }
+        inv.isDeleted = false; // Force undelete/reset boolean status
+
         
         // Resolve partyName from partyId if missing
         if (inv.partyId != null && (inv.partyName == null || inv.partyName!.trim().isEmpty)) {
@@ -316,6 +329,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           needsFix = true;
         }
         
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -344,6 +359,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[ii.itemId!];
           if (item != null) { ii.itemName = item.itemName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -355,6 +372,9 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (pur.grandTotal == null) { pur.grandTotal = 0.0; needsFix = true; }
         if (pur.paidAmount == null) { pur.paidAmount = 0.0; needsFix = true; }
         if (pur.subtotal == null) { pur.subtotal = pur.grandTotal ?? 0.0; needsFix = true; }
+        if (pur.purchaseDate == null) { pur.purchaseDate = pur.createdAt; needsFix = true; }
+        pur.isDeleted = false; // Force undelete/reset boolean status
+
         
         // Resolve partyName from partyId if missing
         if (pur.partyId != null && (pur.partyName == null || pur.partyName!.trim().isEmpty)) {
@@ -386,6 +406,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           needsFix = true;
         }
         
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -414,6 +436,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[pi.itemId!];
           if (item != null) { pi.itemName = item.itemName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -424,11 +448,16 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (ord.uuid == null || ord.uuid!.isEmpty) { ord.uuid = _generateUuid(ord.id); needsFix = true; }
         if (ord.grandTotal == null) { ord.grandTotal = 0.0; needsFix = true; }
         if (ord.status == null || ord.status!.trim().isEmpty) { ord.status = 'Pending'; needsFix = true; }
+        if (ord.orderDate == null) { ord.orderDate = ord.createdAt; needsFix = true; }
+        ord.isDeleted = false;
+
         // Resolve partyName from partyId if missing
         if (ord.partyId != null && (ord.partyName == null || ord.partyName!.trim().isEmpty)) {
           final p = partyByIdMap[ord.partyId!];
           if (p != null) { ord.partyName = p.partyName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -457,6 +486,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[oi.itemId!];
           if (item != null) { oi.itemName = item.itemName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -468,11 +499,16 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (txn.amount == null) { txn.amount = 0.0; needsFix = true; }
         if (txn.transactionType == null || txn.transactionType!.trim().isEmpty) { txn.transactionType = 'Receipt'; needsFix = true; }
         if (txn.paymentMode == null || txn.paymentMode!.trim().isEmpty) { txn.paymentMode = 'Cash'; needsFix = true; }
+        if (txn.transactionDate == null) { txn.transactionDate = txn.createdAt; needsFix = true; }
+        txn.isDeleted = false;
+
         // Resolve partyName from partyUuid if missing
         if (txn.partyUuid != null && txn.partyUuid!.isNotEmpty && (txn.partyName == null || txn.partyName!.trim().isEmpty)) {
           final p = partyByUuidMap[txn.partyUuid!];
           if (p != null) { txn.partyName = p.partyName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -484,6 +520,11 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (exp.amount == null) { exp.amount = 0.0; needsFix = true; }
         if (exp.category == null || exp.category!.trim().isEmpty) { exp.category = 'Other'; needsFix = true; }
         if (exp.paymentMode == null || exp.paymentMode!.trim().isEmpty) { exp.paymentMode = 'Cash'; needsFix = true; }
+        if (exp.expenseDate == null) { exp.expenseDate = exp.createdAt; needsFix = true; }
+        exp.isDeleted = false;
+
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -493,6 +534,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         bool needsFix = true;
         if (ei.uuid == null || ei.uuid!.isEmpty) { ei.uuid = _generateUuid(ei.id); needsFix = true; }
         if (ei.itemName == null || ei.itemName!.trim().isEmpty) { ei.itemName = 'Unknown Expense'; needsFix = true; }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -503,11 +546,16 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (cn.uuid == null || cn.uuid!.isEmpty) { cn.uuid = _generateUuid(cn.id); needsFix = true; }
         if (cn.grandTotal == null) { cn.grandTotal = 0.0; needsFix = true; }
         if (cn.subtotal == null) { cn.subtotal = cn.grandTotal ?? 0.0; needsFix = true; }
+        if (cn.creditNoteDate == null) { cn.creditNoteDate = cn.createdAt; needsFix = true; }
+        cn.isDeleted = false;
+
         // Resolve partyName from partyId if missing
         if (cn.partyId != null && (cn.partyName == null || cn.partyName!.trim().isEmpty)) {
           final p = partyByIdMap[cn.partyId!];
           if (p != null) { cn.partyName = p.partyName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -527,6 +575,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[cni.itemId!];
           if (item != null) { cni.itemName = item.itemName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -537,11 +587,16 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (dn.uuid == null || dn.uuid!.isEmpty) { dn.uuid = _generateUuid(dn.id); needsFix = true; }
         if (dn.grandTotal == null) { dn.grandTotal = 0.0; needsFix = true; }
         if (dn.subtotal == null) { dn.subtotal = dn.grandTotal ?? 0.0; needsFix = true; }
+        if (dn.debitNoteDate == null) { dn.debitNoteDate = dn.createdAt; needsFix = true; }
+        dn.isDeleted = false;
+
         // Resolve partyName from partyId if missing
         if (dn.partyId != null && (dn.partyName == null || dn.partyName!.trim().isEmpty)) {
           final p = partyByIdMap[dn.partyId!];
           if (p != null) { dn.partyName = p.partyName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -561,6 +616,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[dni.itemId!];
           if (item != null) { dni.itemName = item.itemName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -572,6 +629,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (ba.accountName == null || ba.accountName!.trim().isEmpty) { ba.accountName = 'Unknown Account'; needsFix = true; }
         if (ba.openingBalance == null) { ba.openingBalance = 0.0; needsFix = true; }
         if (ba.currentBalance == null) { ba.currentBalance = ba.openingBalance ?? 0.0; needsFix = true; }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
@@ -582,6 +641,9 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (sa.uuid == null || sa.uuid!.isEmpty) { sa.uuid = _generateUuid(sa.id); needsFix = true; }
         if (sa.quantity == null) { sa.quantity = 0.0; needsFix = true; }
         if (sa.adjustmentType == null || sa.adjustmentType!.trim().isEmpty) { sa.adjustmentType = 'Add'; needsFix = true; }
+        if (sa.adjustmentDate == null) { sa.adjustmentDate = sa.createdAt; needsFix = true; }
+        sa.isDeleted = false;
+
         // Resolve itemName from itemUuid if missing
         if (sa.itemUuid != null && sa.itemUuid!.isNotEmpty && (sa.itemName == null || sa.itemName!.trim().isEmpty)) {
           final item = itemByUuidMap[sa.itemUuid!];
@@ -592,6 +654,8 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
           final item = itemByIdMap[sa.itemId!];
           if (item != null) { sa.itemName = item.itemName; needsFix = true; }
         }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
+        if (record is dynamic) { try { record.isDeleted = false; record.isSynced = false; } catch (_) {} }
         return true;
       });
 
