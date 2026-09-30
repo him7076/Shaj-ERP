@@ -360,6 +360,9 @@ class SalesExcelImportService {
         final paidAmount = _parseDouble(_getCellValue(row, colS1PaidAmt));
         final balanceAmount = _parseDouble(_getCellValue(row, colS1BalAmt));
         final description = _getCellValue(row, colS1Desc);
+        
+        final paymentTypeStr = _getCellValue(row, colS1PayType).trim();
+        final finalPaymentMode = paymentTypeStr.isNotEmpty ? paymentTypeStr : 'Cash';
 
         try {
           final normEffInvNoCheck = _normalizeKey(effectiveInvNo);
@@ -494,6 +497,7 @@ class SalesExcelImportService {
             ..invoiceStatus = preservedInvoice != null 
                 ? (preservedInvoice.invoiceStatus ?? 'Unpaid') 
                 : (paidAmount >= totalAmount && totalAmount > 0 ? 'Paid' : 'Unpaid')
+            ..paymentMode = finalPaymentMode
             ..createdAt = preservedInvoice?.createdAt ?? DateTime.now()
             ..updatedAt = DateTime.now();
 

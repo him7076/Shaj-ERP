@@ -271,6 +271,7 @@ class PurchaseExcelImportService {
       final colS1BillNo = _findCol(s1ColMap, ['purchase bill number', 'purchase bill no', 'bill number', 'bill no', 'bill #', 'voucher number', 'voucher no', 'voucher #', 'ref no', 'ref number', 'no.'], 5);
       final colS1SupplierInvNo = _findCol(s1ColMap, ['supplier invoice number', 'supplier invoice no', 'supplier bill number', 'supplier bill no', 'invoice number', 'invoice no', 'invoice #', 'bill number', 'bill no', 'inv no', 'invoice'], 6);
       final colS1TotalAmt = _findCol(s1ColMap, ['total amount', 'grand total', 'total', 'amount'], 8);
+      final colS1PayType = _findCol(s1ColMap, ['payment type', 'payment mode', 'pay mode', 'mode'], 9);
       final colS1PaidAmt = _findCol(s1ColMap, ['paid amount', 'paid'], 10);
       final colS1BalAmt = _findCol(s1ColMap, ['balance amount', 'due amount', 'balance', 'pending'], 11);
       final colS1Desc = _findCol(s1ColMap, ['description', 'remarks', 'notes'], 12);
@@ -390,6 +391,9 @@ class PurchaseExcelImportService {
         final paidAmount = _parseDouble(_getCellValue(row, colS1PaidAmt));
         final balanceAmount = _parseDouble(_getCellValue(row, colS1BalAmt));
         final description = _getCellValue(row, colS1Desc);
+
+        final paymentTypeStr = _getCellValue(row, colS1PayType).trim();
+        final finalPaymentMode = paymentTypeStr.isNotEmpty ? paymentTypeStr : 'Cash';
 
         try {
           final normBillNo = _normalizeKey(effectiveBillNo);
@@ -512,6 +516,7 @@ class PurchaseExcelImportService {
             ..paymentStatus = paidAmount >= totalAmount && totalAmount > 0
                 ? 'Paid'
                 : (paidAmount > 0 ? 'Partially Paid' : 'Unpaid')
+            ..paymentMode = finalPaymentMode
             ..createdAt = DateTime.now()
             ..updatedAt = DateTime.now();
 
