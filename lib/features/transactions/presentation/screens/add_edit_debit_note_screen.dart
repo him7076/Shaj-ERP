@@ -1,6 +1,6 @@
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
-import 'package:business_sahaj_erp/features/bank/presentation/providers/bank_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_payment_mode_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/round_off_field.dart';
 import 'package:flutter/material.dart';
@@ -500,12 +500,12 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                                   if (val == true) {
                                     _originalBillNumberController.text = billNo ?? '';
                                     if (_existingDebitNote != null) {
-                                      _existingDebitNote!.originalInvoiceUuid = bill.uuid;
+                                      _existingDebitNote!.originalPurchaseUuid = bill.uuid;
                                     }
                                   } else {
                                     _originalBillNumberController.clear();
                                     if (_existingDebitNote != null) {
-                                      _existingDebitNote!.originalInvoiceUuid = null;
+                                      _existingDebitNote!.originalPurchaseUuid = null;
                                     }
                                   }
                                 });
@@ -535,7 +535,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                                   setModalState(() {
                                     _originalBillNumberController.clear();
                                     if (_existingDebitNote != null) {
-                                      _existingDebitNote!.originalInvoiceUuid = null;
+                                      _existingDebitNote!.originalPurchaseUuid = null;
                                     }
                                   });
                                   setState((){});

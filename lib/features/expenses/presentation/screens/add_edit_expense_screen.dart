@@ -1198,7 +1198,7 @@ final theme = Theme.of(context);
                 ),
                 SizedBox(
                   width: 100,
-                  child: RoundOffField(value: _roundOff, onChanged: (val) { setState(() { _customRoundOff = double.tryParse(val); }); _recalculateTotals(); }),
+                  child: RoundOffField(value: _roundOff, onChanged: (val) { setState(() { _customRoundOff = double.tryParse(val); }); _calculateTotals(); }),
                 ),
               ],
             ),

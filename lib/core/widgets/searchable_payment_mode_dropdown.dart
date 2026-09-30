@@ -105,7 +105,7 @@ class _SearchablePaymentModeDropdownState extends ConsumerState<SearchablePaymen
                             InkWell(
                               onTap: () async {
                                 FocusScope.of(context).unfocus();
-                                await AddEditBankAccountDialog.show(context);
+                                await showDialog(context: context, builder: (context) => const AddEditBankAccountDialog());
                               },
                               child: Row(
                                 children: [
