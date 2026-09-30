@@ -787,7 +787,12 @@ class DatabaseService {
   }
 
   /// Utility to repair missing parent links and item links in imported data
-  Future<Map<String, int>> repairLegacyData() async {\n    return {};\n  }\n\n  /// Internal schema migration runner (migration hook)\n   async {
+  Future<Map<String, int>> repairLegacyData() async {
+    return {};
+  }
+
+  /// Internal schema migration runner (migration hook)
+  Future<void> _checkAndRunMigrations() async {
     // Read the version from local storage settings if any, or run custom migration logic
     // Currently at Version 1, so no active migrations.
     logger.debug('Database migration check complete. No migrations pending.');
