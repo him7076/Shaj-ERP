@@ -1097,7 +1097,16 @@ class WebMockIsar implements Isar {
         'type': 'StockAdjustment',
         'id': entity.id,
         'uuid': (entity as IsarModel).uuid,
+        'itemUuid': entity.itemUuid,
+        'itemId': entity.itemId,
+        'itemName': entity.itemName,
+        'adjustmentType': entity.adjustmentType,
+        'quantity': entity.quantity,
+        'unit': entity.unit,
+        'ratePerUnit': entity.ratePerUnit,
+        'totalValue': entity.totalValue,
         'adjustmentDate': entity.adjustmentDate?.toIso8601String(),
+        'reason': entity.reason,
         'notes': entity.notes,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
@@ -1120,6 +1129,14 @@ class WebMockIsar implements Isar {
         'version': entity.version,
       };
     }
+    // CRITICAL FALLBACK: If entity is a raw Map (failed _mapToEntity during load),
+    // return it as-is so data is NOT lost during export/backup/save.
+    if (entity is Map<String, dynamic>) {
+      return entity;
+    }
+    if (entity is Map) {
+      return Map<String, dynamic>.from(entity);
+    }
     return {};
   }
 
@@ -1129,18 +1146,18 @@ class WebMockIsar implements Isar {
     switch (type) {
       case 'Category':
         return Category()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..categoryName = map['categoryName'] as String?
           ..description = map['description'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'WhatsAppMapping':
         return WhatsAppMapping()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..mappingType = map['mappingType'] as String?
           ..rawKey = map['rawKey'] as String?
@@ -1148,35 +1165,35 @@ class WebMockIsar implements Isar {
           ..pcsPerBundle = (map['pcsPerBundle'] as num?)?.toDouble()
           ..pcsPerCarton = (map['pcsPerCarton'] as num?)?.toDouble()
           ..customRate = (map['customRate'] as num?)?.toDouble()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Unit':
         return Unit()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..unitName = map['unitName'] as String?
           ..shortName = map['shortName'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Brand':
         return Brand()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..brandName = map['brandName'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Party':
         return Party()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..partyCode = map['partyCode'] as String?
           ..partyName = map['partyName'] as String?
@@ -1207,21 +1224,21 @@ class WebMockIsar implements Isar {
           ..notes = map['notes'] as String?
           ..shopPhotos = (map['shopPhotos'] as List<dynamic>?)?.cast<String>()
           ..shopPhotoUrls = (map['shopPhotoUrls'] as List<dynamic>?)?.cast<String>()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Item':
         final item = Item()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemCode = map['itemCode'] as String?
           ..itemName = map['itemName'] as String?
           ..shortName = map['shortName'] as String?
           ..description = map['description'] as String?
           ..hsnCode = map['hsnCode'] as String?
-          ..gstApplicable = map['gstApplicable'] as bool
+          ..gstApplicable = map['gstApplicable'] == true
           ..gstRate = (map['gstRate'] as num?)?.toDouble()
           ..cessRate = (map['cessRate'] as num?)?.toDouble()
           ..buyRate = (map['buyRate'] as num?)?.toDouble()
@@ -1255,11 +1272,11 @@ class WebMockIsar implements Isar {
           ..bundleComponentUuids = (map['bundleComponentUuids'] as List<dynamic>?)?.cast<String>()
           ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List<dynamic>?)?.cast<num>().map((e) => e.toDouble()).toList()
           ..bundleComponentUnits = (map['bundleComponentUnits'] as List<dynamic>?)?.cast<String>()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
 
         final catId = map['categoryId'] as int?;
         if (catId != null) {
@@ -1290,7 +1307,7 @@ class WebMockIsar implements Isar {
         return item;
       case 'OrderItem':
         return OrderItem()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
@@ -1307,14 +1324,14 @@ class WebMockIsar implements Isar {
           ..gstPercent = (map['gstPercent'] as num?)?.toDouble()
           ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
           ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Order':
         return Order()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..orderNumber = map['orderNumber'] as String?
           ..orderDate = map['orderDate'] != null ? DateTime.parse(map['orderDate'] as String) : null
@@ -1340,14 +1357,14 @@ class WebMockIsar implements Isar {
           ..createdBy = map['createdBy'] as String?
           ..editedBy = map['editedBy'] as String?
           ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime'] as String) : null
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'InvoiceItem':
         return InvoiceItem()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
@@ -1378,14 +1395,14 @@ class WebMockIsar implements Isar {
           ..bundleComponentBuyRates = (map['bundleComponentBuyRates'] as List?)?.map((e) => (e as num).toDouble()).toList()
           ..bundleComponentGstPercents = (map['bundleComponentGstPercents'] as List?)?.map((e) => (e as num).toDouble()).toList()
           ..bundleComponentDescriptions = (map['bundleComponentDescriptions'] as List?)?.cast<String>()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Invoice':
         return Invoice()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..invoiceNumber = map['invoiceNumber'] as String?
           ..invoiceDate = map['invoiceDate'] != null ? DateTime.parse(map['invoiceDate'] as String) : null
@@ -1418,14 +1435,14 @@ class WebMockIsar implements Isar {
           ..createdBy = map['createdBy'] as String?
           ..editedBy = map['editedBy'] as String?
           ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime'] as String) : null
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Settings':
         return Settings()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..companyName = map['companyName'] as String?
           ..companyGST = map['companyGST'] as String?
@@ -1434,42 +1451,42 @@ class WebMockIsar implements Isar {
           ..companyEmail = map['companyEmail'] as String?
           ..logoPath = map['logoPath'] as String?
           ..themeMode = map['themeMode'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'User':
         return User()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..name = map['name'] as String?
           ..email = map['email'] as String?
           ..role = map['role'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'SyncQueue':
         return SyncQueue()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..entityType = map['entityType'] as String?
           ..entityId = map['entityId'] as int?
           ..entityUuid = map['entityUuid'] as String?
           ..operation = map['operation'] as String?
-          ..retryCount = map['retryCount'] as int
+          ..retryCount = (map['retryCount'] as int?) ?? 0
           ..lastAttempt = map['lastAttempt'] != null ? DateTime.parse(map['lastAttempt'] as String) : null
           ..lastError = map['lastError'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Purchase':
         return Purchase()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..purchaseNumber = map['purchaseNumber'] as String?
           ..supplierInvoiceNumber = map['supplierInvoiceNumber'] as String?
@@ -1491,14 +1508,14 @@ class WebMockIsar implements Isar {
           ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
           ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'PurchaseItem':
         return PurchaseItem()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..purchaseId = map['purchaseId'] as int?
           ..purchaseUuid = map['purchaseUuid'] as String?
@@ -1518,28 +1535,28 @@ class WebMockIsar implements Isar {
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Expense':
         return Expense()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..category = map['category'] as String?
           ..amount = (map['amount'] as num?)?.toDouble()
           ..expenseDate = map['expenseDate'] != null ? DateTime.parse(map['expenseDate'] as String) : null
           ..paymentMode = map['paymentMode'] as String?
           ..remarks = map['remarks'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Transaction':
         return Transaction()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..transactionNumber = map['transactionNumber'] as String?
           ..transactionDate = map['transactionDate'] != null ? DateTime.parse(map['transactionDate'] as String) : null
@@ -1555,14 +1572,14 @@ class WebMockIsar implements Isar {
           ..linkedBillNumber = map['linkedBillNumber'] as String?
           ..targetPartyUuid = map['targetPartyUuid'] as String?
           ..targetPartyName = map['targetPartyName'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'BankAccount':
         return BankAccount()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..accountName = map['accountName'] as String?
           ..bankName = map['bankName'] as String?
@@ -1571,14 +1588,14 @@ class WebMockIsar implements Isar {
           ..branchName = map['branchName'] as String?
           ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
           ..currentBalance = (map['currentBalance'] as num?)?.toDouble()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'CreditNote':
         return CreditNote()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..creditNoteNumber = map['creditNoteNumber'] as String?
           ..creditNoteDate = map['creditNoteDate'] != null ? DateTime.parse(map['creditNoteDate'] as String) : null
@@ -1599,14 +1616,14 @@ class WebMockIsar implements Isar {
           ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..createdBy = map['createdBy'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'CreditNoteItem':
         return CreditNoteItem()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
@@ -1626,14 +1643,14 @@ class WebMockIsar implements Isar {
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'DebitNote':
         return DebitNote()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..debitNoteNumber = map['debitNoteNumber'] as String?
           ..debitNoteDate = map['debitNoteDate'] != null ? DateTime.parse(map['debitNoteDate'] as String) : null
@@ -1654,14 +1671,14 @@ class WebMockIsar implements Isar {
           ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..createdBy = map['createdBy'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'DebitNoteItem':
         return DebitNoteItem()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemId = map['itemId'] as int?
           ..itemName = map['itemName'] as String?
@@ -1681,14 +1698,14 @@ class WebMockIsar implements Isar {
           ..batchNumber = map['batchNumber'] as String?
           ..expiryDate = map['expiryDate'] as String?
           ..mfgDate = map['mfgDate'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'DeletedVoucher':
         return DeletedVoucher()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..voucherType = map['voucherType'] as String?
           ..voucherNumber = map['voucherNumber'] as String?
@@ -1696,14 +1713,14 @@ class WebMockIsar implements Isar {
           ..amount = (map['amount'] as num?)?.toDouble()
           ..remarks = map['remarks'] as String?
           ..deletedAt = map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'StockAdjustment':
         return StockAdjustment()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemUuid = map['itemUuid'] as String?
           ..itemId = map['itemId'] as int?
@@ -1714,14 +1731,14 @@ class WebMockIsar implements Isar {
           ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate'] as String) : null
           ..reason = map['reason'] as String?
           ..notes = map['notes'] as String?
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Task':
         return Task()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..title = map['title'] as String?
           ..description = map['description'] as String?
@@ -1729,25 +1746,25 @@ class WebMockIsar implements Isar {
           ..priority = map['priority'] as String?
           ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
           ..completedAt = map['completedAt'] != null ? DateTime.parse(map['completedAt'] as String) : null
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'ExpenseItem':
         return ExpenseItem()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..itemName = map['itemName'] as String?
           ..defaultRate = (map['defaultRate'] as num?)?.toDouble()
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       case 'Machinery':
         return Machinery()
-          ..id = map['id'] as int
+          ..id = (map['id'] as int?) ?? Isar.autoIncrement
           ..uuid = map['uuid'] as String?
           ..partyUuid = map['partyUuid'] as String?
           ..categoryUuid = map['categoryUuid'] as String?
@@ -1762,11 +1779,11 @@ class WebMockIsar implements Isar {
           ..serviceIntervalDays = map['serviceIntervalDays'] as int?
           ..lastServiceDate = map['lastServiceDate'] != null ? DateTime.parse(map['lastServiceDate'] as String) : null
           ..nextServiceDate = map['nextServiceDate'] != null ? DateTime.parse(map['nextServiceDate'] as String) : null
-          ..createdAt = DateTime.parse(map['createdAt'] as String)
-          ..updatedAt = DateTime.parse(map['updatedAt'] as String)
-          ..isDeleted = map['isDeleted'] as bool
-          ..isSynced = map['isSynced'] as bool
-          ..version = map['version'] as int;
+          ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
+          ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
+          ..isDeleted = map['isDeleted'] == true
+          ..isSynced = map['isSynced'] == true
+          ..version = (map['version'] as int?) ?? 1;
       default:
         return null;
     }
@@ -2067,6 +2084,16 @@ class WebMockCollection<T> extends IsarCollection<T> {
   dynamic _getPropertyValue(dynamic item, String propName) {
     final prop = propName.toLowerCase();
     
+    // CRITICAL: If item is a raw Map (failed _mapToEntity), read from map directly
+    if (item is Map) {
+      final mapItem = item is Map<String, dynamic> ? item : Map<String, dynamic>.from(item);
+      if (mapItem.containsKey(propName)) return mapItem[propName];
+      for (final key in mapItem.keys) {
+        if (key.toLowerCase() == prop) return mapItem[key];
+      }
+      return null;
+    }
+    
     // Common properties for all IsarModel types
     if (prop == 'uuid') return item.uuid;
     if (prop == 'id') return (item as IsarModel).id;
@@ -2205,6 +2232,24 @@ class WebMockCollection<T> extends IsarCollection<T> {
       if (prop == 'title') return item.title;
       if (prop == 'status') return item.status;
       if (prop == 'priority') return item.priority;
+    }
+    
+    // CRITICAL FALLBACK: If item is a raw Map (failed _mapToEntity during load),
+    // read properties directly from map keys so filters still work.
+    if (item is Map<String, dynamic>) {
+      // Try exact prop name first, then camelCase variations
+      if (item.containsKey(propName)) return item[propName];
+      // propName comes in lowercase from FilterCondition, try original camelCase keys
+      for (final key in item.keys) {
+        if (key.toLowerCase() == prop) return item[key];
+      }
+    }
+    if (item is Map) {
+      final mapItem = Map<String, dynamic>.from(item);
+      if (mapItem.containsKey(propName)) return mapItem[propName];
+      for (final key in mapItem.keys) {
+        if (key.toLowerCase() == prop) return mapItem[key];
+      }
     }
     
     return null;

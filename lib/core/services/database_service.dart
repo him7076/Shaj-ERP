@@ -371,7 +371,22 @@ class DatabaseService {
     
     List<Map<String, dynamic>> _getList(String key) {
       if (collectionsData.containsKey(key) && collectionsData[key] is List) {
-        return (collectionsData[key] as List).map((e) => e as Map<String, dynamic>).toList();
+        return (collectionsData[key] as List).map((e) {
+          final map = Map<String, dynamic>.from(e as Map);
+          // Remove 'type' field added by web exports — native Isar's importJson rejects unknown fields
+          map.remove('type');
+          // Convert ISO date strings to epoch (int) for native Isar compatibility
+          for (final dateKey in ['createdAt', 'updatedAt', 'invoiceDate', 'purchaseDate', 'orderDate',
+              'adjustmentDate', 'dueDate', 'cancelledDate', 'editTime', 'expenseDate',
+              'transactionDate', 'lastAttempt', 'deletedAt', 'lastServiceDate', 'nextServiceDate']) {
+            if (map.containsKey(dateKey) && map[dateKey] is String) {
+              try {
+                map[dateKey] = DateTime.parse(map[dateKey] as String).millisecondsSinceEpoch;
+              } catch (_) {}
+            }
+          }
+          return map;
+        }).toList();
       }
       return [];
     }
