@@ -1002,13 +1002,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
             ),
-            // Diagnostics & Repair Card
+            // Diagnostics & Deep Repair Card
             NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0)),
+                side: BorderSide(color: Colors.amber.withOpacity(0.6)),
               ),
+              color: Colors.amber.withOpacity(isDark ? 0.08 : 0.04),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -1016,69 +1017,187 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.build_circle_outlined, color: theme.colorScheme.primary),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.build_circle_rounded, color: Colors.amber, size: 22),
+                        ),
                         const SizedBox(width: 12),
-                        Text(
-                          'Diagnostics & Repair',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
+                        Expanded(
+                          child: Text(
+                            'Deep Repair & Diagnostics',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: Colors.amber.shade800,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const Divider(height: 24),
                     const Text(
-                      'If you recently imported data from Excel and are noticing missing items in invoices or sales orders, run this repair utility to fix broken links.',
-                      style: TextStyle(fontSize: 13, height: 1.4),
+                      'If invoices show "No items", or data appears corrupted after updates, run Deep Repair. '
+                      'It will re-read, re-validate, and re-save EVERY record in the local database — '
+                      'fixing broken types, missing fields, corrupt entries, and orphaned links. '
+                      'Your data will NOT be deleted — only healed.',
+                      style: TextStyle(fontSize: 13, height: 1.5),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue, size: 16),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Safe to run multiple times. Does not delete data. Works like "edit & save" on every record automatically.',
+                              style: TextStyle(fontSize: 11.5, color: Colors.blue, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.handyman_rounded),
-                      label: const Text('Repair Legacy Data (Fix Missing Links)'),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: theme.colorScheme.primary),
-                      ),
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Repair Legacy Data'),
-                            content: const Text('This will scan and fix orphaned items in invoices, orders, and purchases. This operation may take a few seconds.'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                              ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Run Repair')),
-                            ],
-                          ),
-                        );
-                        
-                        if (confirm == true) {
-                          try {
-                            // Show loading indicator in dialog
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (ctx) => const Center(child: CircularProgressIndicator()),
-                            );
-                            
-                            await ref.read(databaseServiceProvider).repairLegacyData();
-                            
-                            if (context.mounted) Navigator.of(context, rootNavigator: true).pop(); // close loader
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Data repair completed successfully!'), backgroundColor: Colors.green),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.amber.shade700,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.auto_fix_high_rounded, size: 20),
+                        label: const Text('Run Deep Repair Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: const Row(
+                                children: [
+                                  Icon(Icons.auto_fix_high_rounded, color: Colors.amber),
+                                  SizedBox(width: 10),
+                                  Text('Run Deep Repair'),
+                                ],
+                              ),
+                              content: const Text(
+                                'This will scan ALL collections, re-parse every record, fix broken types and missing fields, '
+                                'repair orphaned invoice items, and save everything back.\n\n'
+                                'Your data will NOT be deleted. This may take a few seconds.',
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Run Deep Repair'),
+                                ),
+                              ],
+                            ),
+                          );
+                          
+                          if (confirm == true) {
+                            try {
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (ctx) => const Center(
+                                  child: Card(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          CircularProgressIndicator(),
+                                          SizedBox(height: 16),
+                                          Text('Running Deep Repair...', style: TextStyle(fontWeight: FontWeight.bold)),
+                                          SizedBox(height: 4),
+                                          Text('Re-parsing all records...', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               );
-                            }
-                          } catch (e) {
-                            if (context.mounted) Navigator.of(context, rootNavigator: true).pop(); // close loader
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to repair data: $e'), backgroundColor: Colors.red),
-                              );
+                              
+                              final stats = await ref.read(databaseServiceProvider).repairLegacyData();
+                              
+                              if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+                              
+                              if (context.mounted) {
+                                final totalRepaired = stats.values.fold<int>(0, (sum, v) => sum + v);
+                                await showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    title: const Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.green, size: 28),
+                                        SizedBox(width: 10),
+                                        Text('Deep Repair Complete!'),
+                                      ],
+                                    ),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('$totalRepaired records repaired across ${stats.length} collections.',
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                        ),
+                                        if (stats.isNotEmpty) ...[
+                                          const SizedBox(height: 12),
+                                          const Text('Breakdown:', style: TextStyle(fontWeight: FontWeight.w600)),
+                                          const SizedBox(height: 6),
+                                          ...stats.entries.map((e) => Padding(
+                                            padding: const EdgeInsets.symmetric(vertical: 2),
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.check, color: Colors.green, size: 16),
+                                                const SizedBox(width: 6),
+                                                Text('${e.key}: ${e.value} fixed', style: const TextStyle(fontSize: 13)),
+                                              ],
+                                            ),
+                                          )),
+                                        ],
+                                        const SizedBox(height: 12),
+                                        const Text('Please refresh the page (Ctrl+Shift+R) to see the changes.',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: const Text('OK'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              ref.invalidate(dashboardAnalyticsProvider);
+                              ref.invalidate(filteredPartiesProvider);
+                              ref.invalidate(filteredItemsProvider);
+                            } catch (e) {
+                              if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Deep Repair Failed: $e'), backgroundColor: Colors.red),
+                                );
+                              }
                             }
                           }
-                        }
-                      },
+                        },
+                      ),
                     ),
                   ],
                 ),

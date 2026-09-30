@@ -787,29 +787,60 @@ class DatabaseService {
   }
 
   /// Utility to repair missing parent links and item links in imported data
-  Future<void> repairLegacyData() async {
+  Future<Map<String, int>> repairLegacyData() async {
     try {
       logger.info('Starting legacy data repair...');
 
+      // ===== WEB DEEP REPAIR: Re-parse all raw Maps to typed entities =====
+      Map<String, int> deepRepairStats = {};
+      if (kIsWeb && _isar is WebMockIsar) {
+        deepRepairStats = await (_isar as WebMockIsar).deepRepairAllEntities();
+        logger.info('Web Deep Repair completed: $deepRepairStats');
+      }
+
+      // ===== COMMON REPAIR: Fix missing itemId links =====
       // Step 1: READ all data OUTSIDE the write transaction
       final allItems = await isar.items.where().findAll();
       final invItems = await isar.invoiceItems.where().findAll();
       final ordItems = await isar.orderItems.where().findAll();
       final purItems = await isar.purchaseItems.where().findAll();
+      final allInvoices = await isar.invoices.where().findAll();
 
       // Build a name-to-item map for fast lookup
       final Map<String, Item> itemByName = {
         for (var i in allItems) if (i.itemName != null) i.itemName!: i,
       };
 
+      // Build invoice lookup maps
+      final Map<int, Invoice> invoiceById = {
+        for (var inv in allInvoices) inv.id: inv,
+      };
+      final Map<String, Invoice> invoiceByUuid = {
+        for (var inv in allInvoices) if (inv.uuid != null) inv.uuid!: inv,
+      };
+
       // Step 2: Identify what needs to change (outside transaction)
       final List<InvoiceItem> invToUpdate = [];
       for (var ii in invItems) {
         bool changed = false;
+        // Fix missing itemId
         if ((ii.itemId == null || ii.itemId == 0) && ii.itemName != null) {
           final match = itemByName[ii.itemName!];
           if (match != null) {
             ii.itemId = match.id;
+            changed = true;
+          }
+        }
+        // Fix missing parentInvoiceId/Uuid — try to find matching invoice
+        if (ii.parentInvoiceId == null || ii.parentInvoiceId == 0) {
+          if (ii.parentInvoiceUuid != null && invoiceByUuid.containsKey(ii.parentInvoiceUuid)) {
+            ii.parentInvoiceId = invoiceByUuid[ii.parentInvoiceUuid!]!.id;
+            changed = true;
+          }
+        }
+        if ((ii.parentInvoiceUuid == null || ii.parentInvoiceUuid!.isEmpty) && ii.parentInvoiceId != null) {
+          if (invoiceById.containsKey(ii.parentInvoiceId)) {
+            ii.parentInvoiceUuid = invoiceById[ii.parentInvoiceId!]!.uuid;
             changed = true;
           }
         }
@@ -853,7 +884,15 @@ class DatabaseService {
         });
       }
 
-      logger.info('Legacy data repair completed. Fixed ${invToUpdate.length + ordToUpdate.length + purToUpdate.length} records.');
+      // Step 4: Save repaired data on Web
+      if (kIsWeb && _isar is WebMockIsar && _prefs != null) {
+        await (_isar as WebMockIsar).saveToPrefs(_prefs!);
+      }
+
+      final totalFixed = invToUpdate.length + ordToUpdate.length + purToUpdate.length;
+      logger.info('Legacy data repair completed. Fixed $totalFixed link records. Deep repair: $deepRepairStats');
+      
+      return deepRepairStats;
     } catch (e) {
       logger.error('Failed to repair legacy data', e);
       rethrow;

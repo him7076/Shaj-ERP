@@ -146,6 +146,82 @@ class WebMockIsar implements Isar {
     }
   }
 
+  /// Deep Repair: Re-parse every entity in every collection.
+  /// Converts raw Maps back to typed entities, fixes null/missing fields,
+  /// and saves everything back to SharedPreferences.
+  /// Returns a map of collection name -> number of items repaired.
+  Future<Map<String, int>> deepRepairAllEntities() async {
+    final Map<String, int> repairStats = {};
+    int totalRepaired = 0;
+    int totalSkipped = 0;
+
+    for (final collectionName in _db.keys.toList()) {
+      final list = _db[collectionName];
+      if (list == null || list.isEmpty) continue;
+
+      final expectedType = _getTypeForCol(collectionName);
+      if (expectedType.isEmpty) continue;
+
+      int repairedInCollection = 0;
+      final repairedList = <dynamic>[];
+
+      for (int i = 0; i < list.length; i++) {
+        final item = list[i];
+        
+        try {
+          if (item is Map) {
+            // Item is a raw Map — needs conversion to typed entity
+            final map = item is Map<String, dynamic> ? item : Map<String, dynamic>.from(item);
+            final repaired = _mapToEntity(map, expectedType);
+            if (repaired != null) {
+              repairedList.add(repaired);
+              repairedInCollection++;
+            } else {
+              repairedList.add(item); // Keep as-is if parsing fails
+              totalSkipped++;
+            }
+          } else {
+            // Item is already a typed entity — re-serialize and re-parse to fix any field issues
+            try {
+              final map = _entityToMap(item);
+              if (map.isNotEmpty && map.containsKey('id')) {
+                final reparsed = _mapToEntity(map, expectedType);
+                if (reparsed != null) {
+                  repairedList.add(reparsed);
+                  repairedInCollection++;
+                } else {
+                  repairedList.add(item);
+                }
+              } else {
+                repairedList.add(item);
+              }
+            } catch (_) {
+              repairedList.add(item); // Keep original if re-parse fails
+            }
+          }
+        } catch (e) {
+          print('Deep repair failed for $expectedType item $i: $e');
+          repairedList.add(item); // Keep original
+          totalSkipped++;
+        }
+      }
+
+      _db[collectionName] = repairedList;
+      if (repairedInCollection > 0) {
+        repairStats[collectionName] = repairedInCollection;
+        totalRepaired += repairedInCollection;
+      }
+    }
+
+    // Save repaired data to SharedPreferences
+    if (prefs != null) {
+      await saveToPrefs(prefs!);
+    }
+
+    print('Deep Repair Complete: $totalRepaired entities repaired across ${repairStats.length} collections. $totalSkipped skipped.');
+    return repairStats;
+  }
+
   bool get hasData {
     final partyList = _db['partys'] ?? [];
     final itemList = _db['items'] ?? [];
