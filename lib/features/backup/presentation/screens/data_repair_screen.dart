@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/core/services/deep_repair_service.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
@@ -72,23 +73,69 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
   }
 
   Future<void> _startRepair() async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final dbService = ref.read(databaseServiceProvider);
+    final deepRepairService = ref.read(deepRepairServiceProvider);
+
     setState(() {
       _isRepairing = true;
-      _currentTask = 'Clearing deep repair...';
+      _progress = 0.0;
+      _processedRecords = 0;
+      _fixedRecords = 0;
+      _currentTask = 'Initializing Deep Repair to a NEW firm...';
     });
 
-    await Future.delayed(const Duration(seconds: 1));
-    
-    setState(() {
-      _isRepairing = false;
-      _currentTask = 'Old deep repair system has been completely cleared out.';
-      _progress = 1.0;
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deep repair logic cleared successfully.')),
+    try {
+      await deepRepairService.runDeepRepair(
+        dbService: dbService,
+        prefs: prefs,
+        onProgress: (task, progress) {
+          if (mounted) {
+            setState(() {
+              _currentTask = task;
+              _progress = progress;
+            });
+          }
+        },
       );
+      
+      if (mounted) {
+        setState(() {
+          _isRepairing = false;
+          _progress = 1.0;
+          _currentTask = 'Deep Repair Complete!';
+        });
+
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.green, size: 28),
+                SizedBox(width: 10),
+                Expanded(child: Text('Firm Migrated Successfully', style: TextStyle(fontWeight: FontWeight.bold))),
+              ],
+            ),
+            content: const Text(
+              'A completely new database (firm) has been created with all transactions strictly repaired and restored.\n\nYou are now actively logged into the new repaired firm.',
+              style: TextStyle(fontWeight: FontWeight.w600, height: 1.5),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRepairing = false;
+          _currentTask = 'Repair failed: $e';
+        });
+      }
     }
   }
 
