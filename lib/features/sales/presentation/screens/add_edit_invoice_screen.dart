@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/core/widgets/round_off_field.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
@@ -1775,24 +1776,7 @@ ref.listen(invoiceCartProvider, (prev, next) {
                   ),
                   SizedBox(
                     width: 90,
-                    child: TextFormField(
-                      initialValue: totals['roundOff']!.toStringAsFixed(2),
-                      key: ValueKey('roundoff_${cart.customRoundOff}_${totals['roundOff']}'),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                      textAlign: TextAlign.end,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        
-                      ),
-                      onChanged: (val) {
-                        final parsed = double.tryParse(val);
-                        if (parsed != null) {
-                          ref.read(invoiceCartProvider.notifier).setCustomRoundOff(parsed);
-                        }
-                      },
-                    ),
+                    child: RoundOffField(value: totals['roundOff'] ?? 0.0, onChanged: (val) { ref.read(invoiceCartProvider.notifier).setCustomRoundOff(double.tryParse(val)); }),
                   ),
                 ],
               ),

@@ -970,7 +970,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                                   borderRadius: BorderRadius.circular(8),
                                   color: isLinked ? theme.colorScheme.primaryContainer.withOpacity(0.1) : Colors.transparent,
                                 ),
-                                child: ResponsiveFormRow(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Expanded(
                                       child: Row(

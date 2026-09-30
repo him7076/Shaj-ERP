@@ -1,3 +1,4 @@
+import 'package:business_sahaj_erp/core/widgets/round_off_field.dart';
 ﻿import 'dart:convert';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/material.dart';
@@ -1197,26 +1198,7 @@ final theme = Theme.of(context);
                 ),
                 SizedBox(
                   width: 100,
-                  child: TextFormField(
-                    initialValue: _roundOff.toStringAsFixed(2),
-                    key: ValueKey('roundoff_${_customRoundOff}_$_roundOff'),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                    textAlign: TextAlign.end,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      
-                    ),
-                    onChanged: (val) {
-                      final parsed = double.tryParse(val);
-                      if (parsed != null) {
-                        setState(() {
-                          _customRoundOff = parsed;
-                        });
-                      }
-                    },
-                  ),
+                  child: RoundOffField(value: _roundOff, onChanged: (val) { setState(() { _customRoundOff = double.tryParse(val); }); _recalculateTotals(); }),
                 ),
               ],
             ),

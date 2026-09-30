@@ -1,3 +1,8 @@
+import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
+import 'package:business_sahaj_erp/features/bank/presentation/providers/bank_providers.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_payment_mode_dropdown.dart';
+import 'package:business_sahaj_erp/core/widgets/round_off_field.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/widgets/full_screen_item_entry.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
@@ -270,7 +275,8 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       tax += lineTax;
     }
 
-    _discountAmount = double.tryParse(_discountController.text) ?? 0.0;
+    final discInput = double.tryParse(_discountController.text) ?? 0.0;
+    _discountAmount = _isDiscountPercent ? (sub * (discInput / 100.0)) : discInput;
     final double rawTotal = (sub - _discountAmount) + tax;
     _roundOff = _customRoundOff ?? (rawTotal.roundToDouble() - rawTotal);
 
@@ -416,6 +422,145 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   }
 
   @override
+  
+  void _showLinkBillsModal() async {
+    if (_selectedParty == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select an account first.')));
+      return;
+    }
+
+    final isar = ref.read(databaseServiceProvider).isar;
+    List<dynamic> pendingBills = [];
+    
+    if (false) {
+      // Credit Note -> Link to Sales Invoices
+      final invoices = await isar.invoices.filter()
+          .partyUuidEqualTo(_selectedParty!.uuid)
+          .and()
+          .isDeletedEqualTo(false)
+          .findAll();
+      pendingBills = invoices.where((inv) {
+        final grandTotal = inv.grandTotal ?? 0.0;
+        final pendingAmount = inv.pendingAmount ?? grandTotal;
+        return pendingAmount > 0 || _originalBillNumberController.text == inv.invoiceNumber;
+      }).toList();
+    } else {
+      // Debit Note -> Link to Purchases
+      final purchases = await isar.purchases.filter()
+          .partyUuidEqualTo(_selectedParty!.uuid)
+          .and()
+          .isDeletedEqualTo(false)
+          .findAll();
+      pendingBills = purchases.where((pur) {
+        final grandTotal = pur.grandTotal ?? 0.0;
+        final pendingAmount = pur.pendingAmount ?? grandTotal;
+        return pendingAmount > 0 || _originalBillNumberController.text == pur.purchaseNumber;
+      }).toList();
+    }
+
+    if (pendingBills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No pending bills found for this account.')));
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final theme = Theme.of(context);
+            return AlertDialog(
+              title: const Text('Link Bill'),
+              content: SizedBox(
+                width: 500,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: pendingBills.map((bill) {
+                      final isLinked = _originalBillNumberController.text == (false ? bill.invoiceNumber : bill.purchaseNumber);
+                      final grandTotal = bill.grandTotal ?? 0.0;
+                      final pendingToPay = bill.pendingAmount ?? grandTotal;
+                      final billNo = false ? bill.invoiceNumber : bill.purchaseNumber;
+                      
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: isLinked ? theme.colorScheme.primary.withOpacity(0.5) : theme.dividerColor),
+                          borderRadius: BorderRadius.circular(8),
+                          color: isLinked ? theme.colorScheme.primaryContainer.withOpacity(0.1) : Colors.transparent,
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Checkbox(
+                              value: isLinked,
+                              onChanged: (val) {
+                                setModalState(() {
+                                  if (val == true) {
+                                    _originalBillNumberController.text = billNo ?? '';
+                                    if (_existingDebitNote != null) {
+                                      _existingDebitNote!.originalInvoiceUuid = bill.uuid;
+                                    }
+                                  } else {
+                                    _originalBillNumberController.clear();
+                                    if (_existingDebitNote != null) {
+                                      _existingDebitNote!.originalInvoiceUuid = null;
+                                    }
+                                  }
+                                });
+                                setState((){});
+                              },
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Bill #${billNo ?? bill.uuid.substring(0, 8)}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  Text(
+                                    'Total: ₹${grandTotal.toStringAsFixed(2)} | Pending: ₹${pendingToPay.toStringAsFixed(2)}',
+                                    style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isLinked)
+                              IconButton(
+                                tooltip: 'Unlink',
+                                icon: const Icon(Icons.link_off_rounded, color: Colors.red, size: 20),
+                                onPressed: () {
+                                  setModalState(() {
+                                    _originalBillNumberController.clear();
+                                    if (_existingDebitNote != null) {
+                                      _existingDebitNote!.originalInvoiceUuid = null;
+                                    }
+                                  });
+                                  setState((){});
+                                },
+                              ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          }
+        );
+      }
+    );
+  }
+
   Widget build(BuildContext context) {
 if (_isPaidAmountAutoFill) {
        final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
@@ -465,16 +610,104 @@ if (_isPaidAmountAutoFill) {
             Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
-            TextFormField(
-              controller: _discountController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'Bill Level Discount (₹)', ),
-              onChanged: (val) => _recalculateTotals(),
+                        Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: Checkbox(
+                    value: _isPaidAmountAutoFill,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onChanged: (val) {
+                      setState(() {
+                        _isPaidAmountAutoFill = val ?? false;
+                        if (_isPaidAmountAutoFill) {
+                          _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+                        } else {
+                          _paidAmountController.clear();
+                        }
+                      });
+                    },
+                  ),
+                ),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: _paidAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: true ? 'Received (₹)' : 'Paid (₹)',
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      setState(() => _isPaidAmountAutoFill = false);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: ref.watch(bankAccountsListProvider).when(
+                    data: (accounts) {
+                      final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+                      final modes = ['Cash', 'Credit', 'Cheque', 'UPI', 'Bank Transfer', ...activeAccounts.map((a) => a.bankName ?? '')].toSet().toList();
+                      return SearchablePaymentModeDropdown(
+                        paymentModes: modes,
+                        selectedMode: _paymentMode,
+                        onChanged: (val) {
+                          if (val != null) setState(() => _paymentMode = val);
+                        },
+                      );
+                    },
+                    loading: () => const CircularProgressIndicator(),
+                    error: (_, __) => const Text('Error'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: TextFormField(
+                    controller: _discountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Discount',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Container(
+                          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+                          child: ToggleButtons(
+                            isSelected: [_isDiscountPercent, !_isDiscountPercent],
+                            onPressed: (idx) {
+                              setState(() {
+                                _isDiscountPercent = idx == 0;
+                                _recalculateTotals();
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+                            children: const [
+                              Text('%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                              Text('₹', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    onChanged: (val) => _recalculateTotals(),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _remarksController,
               decoration: InputDecoration(labelText: 'Remarks / Notes', ),
+            ),
             ),
             const Divider(height: 32),
             _buildTotalsSummaryPanel(theme),
@@ -599,13 +832,13 @@ if (_isPaidAmountAutoFill) {
             const SizedBox(height: 12),
             partiesAsync.when(
               data: (parties) {
-                final supplierParties = parties.where((p) => p.partyType == 'Supplier').toList();
+                final supplierParties = parties; // All parties
                 return SearchablePartyDropdown(
                   parties: supplierParties,
                   selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
                       ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
                       : _selectedParty,
-                  labelText: 'Select Supplier Account',
+                  labelText: 'Select Account',
                   onChanged: (party) {
                     setState(() {
                       _selectedParty = party;
@@ -639,7 +872,7 @@ if (_isPaidAmountAutoFill) {
               ),
             ],
             const Divider(height: 24),
-            ResponsiveFormRow(
+            Row(
               children: [
                 Expanded(
                   child: InkWell(
@@ -672,7 +905,14 @@ if (_isPaidAmountAutoFill) {
                 Expanded(
                   child: TextFormField(
                     controller: _originalBillNumberController,
-                    decoration: InputDecoration(labelText: 'Supplier Invoice #',  isDense: true),
+                    decoration: InputDecoration(
+                      labelText: 'Supplier Invoice #',
+                      isDense: true,
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.link, color: Colors.blue),
+                        onPressed: _showLinkBillsModal,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -980,25 +1220,7 @@ if (_isPaidAmountAutoFill) {
               ),
               SizedBox(
                 width: 90,
-                child: TextFormField(
-                  initialValue: _roundOff.toStringAsFixed(2),
-                  key: ValueKey('roundoff_${_customRoundOff}_$_roundOff'),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    
-                  ),
-                  onChanged: (val) {
-                    final parsed = double.tryParse(val);
-                    if (parsed != null) {
-                      _customRoundOff = parsed;
-                      _recalculateTotals();
-                    }
-                  },
-                ),
+                child: RoundOffField(value: _roundOff, onChanged: (val) { setState(() { _customRoundOff = double.tryParse(val); }); _recalculateTotals(); }),
               ),
             ],
           ),
