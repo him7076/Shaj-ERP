@@ -31,6 +31,7 @@ import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_colle
 import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 
 class WebMockIsar implements Isar {
   final String firmId;
@@ -1097,7 +1098,7 @@ class WebMockIsar implements Isar {
         'id': entity.id,
         'uuid': (entity as IsarModel).uuid,
         'adjustmentDate': entity.adjustmentDate?.toIso8601String(),
-        'remarks': entity.remarks,
+        'notes': entity.notes,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
         'isDeleted': entity.isDeleted,
@@ -1110,7 +1111,7 @@ class WebMockIsar implements Isar {
         'type': 'MachineryCategory',
         'id': entity.id,
         'uuid': (entity as IsarModel).uuid,
-        'name': entity.name,
+        'categoryName': entity.categoryName,
         'description': entity.description,
         'createdAt': entity.createdAt.toIso8601String(),
         'updatedAt': entity.updatedAt.toIso8601String(),
