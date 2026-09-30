@@ -34,6 +34,36 @@ import 'package:business_sahaj_erp/data/local/collections/machinery_collection.d
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 
 class WebMockIsar implements Isar {
+  int? _parseInt(dynamic val) {
+    if (val == null) return null;
+    if (val is int) return val;
+    if (val is double) return val.toInt();
+    if (val is String) return int.tryParse(val);
+    return null;
+  }
+
+  double? _parseDouble(dynamic val) {
+    if (val == null) return null;
+    if (val is double) return val;
+    if (val is int) return val.toDouble();
+    if (val is String) return double.tryParse(val);
+    return null;
+  }
+
+  bool? _parseBool(dynamic val) {
+    if (val == null) return null;
+    if (val is bool) return val;
+    if (val is String) return val.toLowerCase() == 'true';
+    if (val is int) return val == 1;
+    return null;
+  }
+
+  String? _parseString(dynamic val) {
+    if (val == null) return null;
+    if (val is String) return val;
+    return val.toString();
+  }
+
   final String firmId;
   final SharedPreferences? prefs;
   static final Map<String, Map<String, List<dynamic>>> _dbs = {};
@@ -1218,143 +1248,143 @@ class WebMockIsar implements Isar {
 
 
   dynamic _mapToEntity(Map<String, dynamic> map, [String? defaultType]) {
-    final type = (map['type'] as String?) ?? defaultType ?? '';
+    final type = _parseString(map['type']) ?? defaultType ?? '';
     switch (type) {
       case 'Category':
         return Category()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..categoryName = map['categoryName'] as String?
-          ..description = map['description'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..categoryName = _parseString(map['categoryName'])
+          ..description = _parseString(map['description'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'WhatsAppMapping':
         return WhatsAppMapping()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..mappingType = map['mappingType'] as String?
-          ..rawKey = map['rawKey'] as String?
-          ..targetUuid = map['targetUuid'] as String?
-          ..pcsPerBundle = (map['pcsPerBundle'] as num?)?.toDouble()
-          ..pcsPerCarton = (map['pcsPerCarton'] as num?)?.toDouble()
-          ..customRate = (map['customRate'] as num?)?.toDouble()
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..mappingType = _parseString(map['mappingType'])
+          ..rawKey = _parseString(map['rawKey'])
+          ..targetUuid = _parseString(map['targetUuid'])
+          ..pcsPerBundle = _parseDouble(map['pcsPerBundle'])
+          ..pcsPerCarton = _parseDouble(map['pcsPerCarton'])
+          ..customRate = _parseDouble(map['customRate'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Unit':
         return Unit()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..unitName = map['unitName'] as String?
-          ..shortName = map['shortName'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..unitName = _parseString(map['unitName'])
+          ..shortName = _parseString(map['shortName'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Brand':
         return Brand()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..brandName = map['brandName'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..brandName = _parseString(map['brandName'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Party':
         return Party()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..partyCode = map['partyCode'] as String?
-          ..partyName = map['partyName'] as String?
-          ..partyType = map['partyType'] as String?
-          ..mobileNumber = map['mobileNumber'] as String?
-          ..whatsappNumber = map['whatsappNumber'] as String?
-          ..email = map['email'] as String?
-          ..gstNumber = map['gstNumber'] as String?
-          ..panNumber = map['panNumber'] as String?
-          ..gstType = map['gstType'] as String?
-          ..addressLine1 = map['addressLine1'] as String?
-          ..addressLine2 = map['addressLine2'] as String?
-          ..city = map['city'] as String?
-          ..state = map['state'] as String?
-          ..pincode = map['pincode'] as String?
-          ..latitude = (map['latitude'] as num?)?.toDouble()
-          ..longitude = (map['longitude'] as num?)?.toDouble()
-          ..locationAddress = map['locationAddress'] as String?
-          ..googleMapUrl = map['googleMapUrl'] as String?
-          ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
-          ..balanceType = map['balanceType'] as String?
-          ..creditLimit = (map['creditLimit'] as num?)?.toDouble()
-          ..outstandingBalance = (map['outstandingBalance'] as num?)?.toDouble()
-          ..paymentTerms = map['paymentTerms'] as String?
-          ..dueDays = map['dueDays'] as int?
-          ..contactPerson = map['contactPerson'] as String?
-          ..businessCategory = map['businessCategory'] as String?
-          ..notes = map['notes'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..partyCode = _parseString(map['partyCode'])
+          ..partyName = _parseString(map['partyName'])
+          ..partyType = _parseString(map['partyType'])
+          ..mobileNumber = _parseString(map['mobileNumber'])
+          ..whatsappNumber = _parseString(map['whatsappNumber'])
+          ..email = _parseString(map['email'])
+          ..gstNumber = _parseString(map['gstNumber'])
+          ..panNumber = _parseString(map['panNumber'])
+          ..gstType = _parseString(map['gstType'])
+          ..addressLine1 = _parseString(map['addressLine1'])
+          ..addressLine2 = _parseString(map['addressLine2'])
+          ..city = _parseString(map['city'])
+          ..state = _parseString(map['state'])
+          ..pincode = _parseString(map['pincode'])
+          ..latitude = _parseDouble(map['latitude'])
+          ..longitude = _parseDouble(map['longitude'])
+          ..locationAddress = _parseString(map['locationAddress'])
+          ..googleMapUrl = _parseString(map['googleMapUrl'])
+          ..openingBalance = _parseDouble(map['openingBalance'])
+          ..balanceType = _parseString(map['balanceType'])
+          ..creditLimit = _parseDouble(map['creditLimit'])
+          ..outstandingBalance = _parseDouble(map['outstandingBalance'])
+          ..paymentTerms = _parseString(map['paymentTerms'])
+          ..dueDays = _parseInt(map['dueDays'])
+          ..contactPerson = _parseString(map['contactPerson'])
+          ..businessCategory = _parseString(map['businessCategory'])
+          ..notes = _parseString(map['notes'])
           ..shopPhotos = (map['shopPhotos'] as List<dynamic>?)?.cast<String>()
           ..shopPhotoUrls = (map['shopPhotoUrls'] as List<dynamic>?)?.cast<String>()
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Item':
         final item = Item()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemCode = map['itemCode'] as String?
-          ..itemName = map['itemName'] as String?
-          ..shortName = map['shortName'] as String?
-          ..description = map['description'] as String?
-          ..hsnCode = map['hsnCode'] as String?
-          ..gstApplicable = map['gstApplicable'] == true
-          ..gstRate = (map['gstRate'] as num?)?.toDouble()
-          ..cessRate = (map['cessRate'] as num?)?.toDouble()
-          ..buyRate = (map['buyRate'] as num?)?.toDouble()
-          ..mrp = (map['mrp'] as num?)?.toDouble()
-          ..sellRate = (map['sellRate'] as num?)?.toDouble()
-          ..wholesaleRate = (map['wholesaleRate'] as num?)?.toDouble()
-          ..minimumSellingPrice = (map['minimumSellingPrice'] as num?)?.toDouble()
-          ..openingStock = (map['openingStock'] as num?)?.toDouble()
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemCode = _parseString(map['itemCode'])
+          ..itemName = _parseString(map['itemName'])
+          ..shortName = _parseString(map['shortName'])
+          ..description = _parseString(map['description'])
+          ..hsnCode = _parseString(map['hsnCode'])
+          ..gstApplicable = (_parseBool(map['gstApplicable']) == true)
+          ..gstRate = _parseDouble(map['gstRate'])
+          ..cessRate = _parseDouble(map['cessRate'])
+          ..buyRate = _parseDouble(map['buyRate'])
+          ..mrp = _parseDouble(map['mrp'])
+          ..sellRate = _parseDouble(map['sellRate'])
+          ..wholesaleRate = _parseDouble(map['wholesaleRate'])
+          ..minimumSellingPrice = _parseDouble(map['minimumSellingPrice'])
+          ..openingStock = _parseDouble(map['openingStock'])
           ..currentStock = (() {
-            final c = (map['currentStock'] as num?)?.toDouble() ?? 0.0;
-            final s = (map['stock'] as num?)?.toDouble() ?? 0.0;
-            final o = (map['openingStock'] as num?)?.toDouble() ?? 0.0;
+            final c = _parseDouble(map['currentStock']) ?? 0.0;
+            final s = _parseDouble(map['stock']) ?? 0.0;
+            final o = _parseDouble(map['openingStock']) ?? 0.0;
             if (c > 0.0) return c;
             if (s > 0.0) return s;
             if (o > 0.0) return o;
             return c;
           })()
-          ..reorderLevel = (map['reorderLevel'] as num?)?.toDouble()
-          ..minimumStock = (map['minimumStock'] as num?)?.toDouble()
-          ..secondaryUnit = map['secondaryUnit'] as String?
-          ..primaryUnitName = map['primaryUnitName'] as String?
-          ..conversionFactor = (map['conversionFactor'] as num?)?.toDouble()
-          ..barcode = map['barcode'] as String?
-          ..sku = map['sku'] as String?
-          ..skuCode = map['skuCode'] as String?
+          ..reorderLevel = _parseDouble(map['reorderLevel'])
+          ..minimumStock = _parseDouble(map['minimumStock'])
+          ..secondaryUnit = _parseString(map['secondaryUnit'])
+          ..primaryUnitName = _parseString(map['primaryUnitName'])
+          ..conversionFactor = _parseDouble(map['conversionFactor'])
+          ..barcode = _parseString(map['barcode'])
+          ..sku = _parseString(map['sku'])
+          ..skuCode = _parseString(map['skuCode'])
           ..imagePaths = (map['imagePaths'] as List<dynamic>?)?.cast<String>()
           ..firebaseImageUrls = (map['firebaseImageUrls'] as List<dynamic>?)?.cast<String>()
-          ..thumbnailImage = map['thumbnailImage'] as String?
+          ..thumbnailImage = _parseString(map['thumbnailImage'])
           ..isBundle = map['isBundle'] as bool? ?? false
-          ..itemType = map['itemType'] as String?
+          ..itemType = _parseString(map['itemType'])
           ..bundleComponentUuids = (map['bundleComponentUuids'] as List<dynamic>?)?.cast<String>()
           ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List<dynamic>?)?.cast<num>().map((e) => e.toDouble()).toList()
           ..bundleComponentUnits = (map['bundleComponentUnits'] as List<dynamic>?)?.cast<String>()
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
 
-        final catId = map['categoryId'] as int?;
+        final catId = _parseInt(map['categoryId']);
         if (catId != null) {
           final catList = _db['categorys'];
           if (catList != null) {
@@ -1363,7 +1393,7 @@ class WebMockIsar implements Isar {
           }
         }
 
-        final brandId = map['brandId'] as int?;
+        final brandId = _parseInt(map['brandId']);
         if (brandId != null) {
           final brandList = _db['brands'];
           if (brandList != null) {
@@ -1372,7 +1402,7 @@ class WebMockIsar implements Isar {
           }
         }
 
-        final unitId = map['unitId'] as int?;
+        final unitId = _parseInt(map['unitId']);
         if (unitId != null) {
           final unitList = _db['units'];
           if (unitList != null) {
@@ -1383,87 +1413,87 @@ class WebMockIsar implements Isar {
         return item;
       case 'OrderItem':
         return OrderItem()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemId = map['itemId'] as int?
-          ..itemName = map['itemName'] as String?
-          ..hsnCode = map['hsnCode'] as String?
-          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
-          ..selectedSubItemName = map['selectedSubItemName'] as String?
-          ..quantity = (map['quantity'] as num?)?.toDouble()
-          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
-          ..unit = map['unit'] as String?
-          ..rate = (map['rate'] as num?)?.toDouble()
-          ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
-          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..gstPercent = (map['gstPercent'] as num?)?.toDouble()
-          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemId = _parseInt(map['itemId'])
+          ..itemName = _parseString(map['itemName'])
+          ..hsnCode = _parseString(map['hsnCode'])
+          ..selectedSubItemUuid = _parseString(map['selectedSubItemUuid'])
+          ..selectedSubItemName = _parseString(map['selectedSubItemName'])
+          ..quantity = _parseDouble(map['quantity'])
+          ..freeQuantity = _parseDouble(map['freeQuantity'])
+          ..unit = _parseString(map['unit'])
+          ..rate = _parseDouble(map['rate'])
+          ..discountPercent = _parseDouble(map['discountPercent'])
+          ..discountAmount = _parseDouble(map['discountAmount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..gstPercent = _parseDouble(map['gstPercent'])
+          ..gstAmount = _parseDouble(map['gstAmount'])
+          ..totalAmount = _parseDouble(map['totalAmount'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Order':
         return Order()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..orderNumber = map['orderNumber'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..orderNumber = _parseString(map['orderNumber'])
           ..orderDate = map['orderDate'] != null ? DateTime.parse(map['orderDate'] as String) : null
-          ..status = map['status'] as String?
-          ..partyId = map['partyId'] as int?
-          ..partyName = map['partyName'] as String?
-          ..mobileNumber = map['mobileNumber'] as String?
-          ..gstNumber = map['gstNumber'] as String?
-          ..latitude = (map['latitude'] as num?)?.toDouble()
-          ..longitude = (map['longitude'] as num?)?.toDouble()
-          ..locationAddress = map['locationAddress'] as String?
-          ..subtotal = (map['subtotal'] as num?)?.toDouble()
-          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-          ..discountPercent = (map['discountPercent'] as num?)?.toDouble()
-          ..totalGST = (map['totalGST'] as num?)?.toDouble()
-          ..roundOff = (map['roundOff'] as num?)?.toDouble()
-          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
-          ..remarks = map['remarks'] as String?
-          ..internalNotes = map['internalNotes'] as String?
-          ..cancelledBy = map['cancelledBy'] as String?
+          ..status = _parseString(map['status'])
+          ..partyId = _parseInt(map['partyId'])
+          ..partyName = _parseString(map['partyName'])
+          ..mobileNumber = _parseString(map['mobileNumber'])
+          ..gstNumber = _parseString(map['gstNumber'])
+          ..latitude = _parseDouble(map['latitude'])
+          ..longitude = _parseDouble(map['longitude'])
+          ..locationAddress = _parseString(map['locationAddress'])
+          ..subtotal = _parseDouble(map['subtotal'])
+          ..discountAmount = _parseDouble(map['discountAmount'])
+          ..discountPercent = _parseDouble(map['discountPercent'])
+          ..totalGST = _parseDouble(map['totalGST'])
+          ..roundOff = _parseDouble(map['roundOff'])
+          ..grandTotal = _parseDouble(map['grandTotal'])
+          ..remarks = _parseString(map['remarks'])
+          ..internalNotes = _parseString(map['internalNotes'])
+          ..cancelledBy = _parseString(map['cancelledBy'])
           ..cancelledDate = map['cancelledDate'] != null ? DateTime.parse(map['cancelledDate'] as String) : null
-          ..cancellationReason = map['cancellationReason'] as String?
-          ..createdBy = map['createdBy'] as String?
-          ..editedBy = map['editedBy'] as String?
+          ..cancellationReason = _parseString(map['cancellationReason'])
+          ..createdBy = _parseString(map['createdBy'])
+          ..editedBy = _parseString(map['editedBy'])
           ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime'] as String) : null
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'InvoiceItem':
         return InvoiceItem()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemId = map['itemId'] as int?
-          ..itemName = map['itemName'] as String?
-          ..hsnCode = map['hsnCode'] as String?
-          ..description = map['description'] as String?
-          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
-          ..selectedSubItemName = map['selectedSubItemName'] as String?
-          ..parentInvoiceId = map['parentInvoiceId'] as int?
-          ..parentInvoiceUuid = map['parentInvoiceUuid'] as String?
-          ..quantity = (map['quantity'] as num?)?.toDouble()
-          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
-          ..unit = map['unit'] as String?
-          ..rate = (map['rate'] as num?)?.toDouble()
-          ..buyRate = (map['buyRate'] as num?)?.toDouble()
-          ..discount = (map['discount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..gstRate = (map['gstRate'] as num?)?.toDouble()
-          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
-          ..batchNumber = map['batchNumber'] as String?
-          ..expiryDate = map['expiryDate'] as String?
-          ..mfgDate = map['mfgDate'] as String?
-          ..isBundle = map['isBundle'] == true
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemId = _parseInt(map['itemId'])
+          ..itemName = _parseString(map['itemName'])
+          ..hsnCode = _parseString(map['hsnCode'])
+          ..description = _parseString(map['description'])
+          ..selectedSubItemUuid = _parseString(map['selectedSubItemUuid'])
+          ..selectedSubItemName = _parseString(map['selectedSubItemName'])
+          ..parentInvoiceId = _parseInt(map['parentInvoiceId'])
+          ..parentInvoiceUuid = _parseString(map['parentInvoiceUuid'])
+          ..quantity = _parseDouble(map['quantity'])
+          ..freeQuantity = _parseDouble(map['freeQuantity'])
+          ..unit = _parseString(map['unit'])
+          ..rate = _parseDouble(map['rate'])
+          ..buyRate = _parseDouble(map['buyRate'])
+          ..discount = _parseDouble(map['discount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..gstRate = _parseDouble(map['gstRate'])
+          ..gstAmount = _parseDouble(map['gstAmount'])
+          ..totalAmount = _parseDouble(map['totalAmount'])
+          ..batchNumber = _parseString(map['batchNumber'])
+          ..expiryDate = _parseString(map['expiryDate'])
+          ..mfgDate = _parseString(map['mfgDate'])
+          ..isBundle = (_parseBool(map['isBundle']) == true)
           ..bundleComponentUuids = (map['bundleComponentUuids'] as List?)?.cast<String>()
           ..bundleComponentQuantities = (map['bundleComponentQuantities'] as List?)?.map((e) => (e as num).toDouble()).toList()
           ..bundleComponentUnits = (map['bundleComponentUnits'] as List?)?.cast<String>()
@@ -1473,393 +1503,393 @@ class WebMockIsar implements Isar {
           ..bundleComponentDescriptions = (map['bundleComponentDescriptions'] as List?)?.cast<String>()
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Invoice':
         return Invoice()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..invoiceNumber = map['invoiceNumber'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..invoiceNumber = _parseString(map['invoiceNumber'])
           ..invoiceDate = map['invoiceDate'] != null ? DateTime.parse(map['invoiceDate'] as String) : null
-          ..invoiceType = map['invoiceType'] as String?
-          ..invoiceStatus = map['invoiceStatus'] as String?
-          ..sourceOrderId = map['sourceOrderId'] as int?
-          ..sourceOrderNumber = map['sourceOrderNumber'] as String?
-          ..partyId = map['partyId'] as int?
-          ..partyName = map['partyName'] as String?
-          ..gstNumber = map['gstNumber'] as String?
-          ..address = map['address'] as String?
-          ..subtotal = (map['subtotal'] as num?)?.toDouble()
-          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
-          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
-          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
-          ..totalGST = (map['totalGST'] as num?)?.toDouble()
-          ..roundOff = (map['roundOff'] as num?)?.toDouble()
-          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
-          ..paymentStatus = map['paymentStatus'] as String?
-          ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
-          ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
+          ..invoiceType = _parseString(map['invoiceType'])
+          ..invoiceStatus = _parseString(map['invoiceStatus'])
+          ..sourceOrderId = _parseInt(map['sourceOrderId'])
+          ..sourceOrderNumber = _parseString(map['sourceOrderNumber'])
+          ..partyId = _parseInt(map['partyId'])
+          ..partyName = _parseString(map['partyName'])
+          ..gstNumber = _parseString(map['gstNumber'])
+          ..address = _parseString(map['address'])
+          ..subtotal = _parseDouble(map['subtotal'])
+          ..discountAmount = _parseDouble(map['discountAmount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..cgstAmount = _parseDouble(map['cgstAmount'])
+          ..sgstAmount = _parseDouble(map['sgstAmount'])
+          ..igstAmount = _parseDouble(map['igstAmount'])
+          ..totalGST = _parseDouble(map['totalGST'])
+          ..roundOff = _parseDouble(map['roundOff'])
+          ..grandTotal = _parseDouble(map['grandTotal'])
+          ..paymentStatus = _parseString(map['paymentStatus'])
+          ..paidAmount = _parseDouble(map['paidAmount'])
+          ..pendingAmount = _parseDouble(map['pendingAmount'])
           ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
-          ..remarks = map['remarks'] as String?
-          ..termsAndConditions = map['termsAndConditions'] as String?
-          ..cancelledBy = map['cancelledBy'] as String?
+          ..remarks = _parseString(map['remarks'])
+          ..termsAndConditions = _parseString(map['termsAndConditions'])
+          ..cancelledBy = _parseString(map['cancelledBy'])
           ..cancelledDate = map['cancelledDate'] != null ? DateTime.parse(map['cancelledDate'] as String) : null
-          ..cancellationReason = map['cancellationReason'] as String?
-          ..createdBy = map['createdBy'] as String?
-          ..editedBy = map['editedBy'] as String?
+          ..cancellationReason = _parseString(map['cancellationReason'])
+          ..createdBy = _parseString(map['createdBy'])
+          ..editedBy = _parseString(map['editedBy'])
           ..editTime = map['editTime'] != null ? DateTime.parse(map['editTime'] as String) : null
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Settings':
         return Settings()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..companyName = map['companyName'] as String?
-          ..companyGST = map['companyGST'] as String?
-          ..companyAddress = map['companyAddress'] as String?
-          ..companyPhone = map['companyPhone'] as String?
-          ..companyEmail = map['companyEmail'] as String?
-          ..logoPath = map['logoPath'] as String?
-          ..themeMode = map['themeMode'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..companyName = _parseString(map['companyName'])
+          ..companyGST = _parseString(map['companyGST'])
+          ..companyAddress = _parseString(map['companyAddress'])
+          ..companyPhone = _parseString(map['companyPhone'])
+          ..companyEmail = _parseString(map['companyEmail'])
+          ..logoPath = _parseString(map['logoPath'])
+          ..themeMode = _parseString(map['themeMode'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'User':
         return User()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..name = map['name'] as String?
-          ..email = map['email'] as String?
-          ..role = map['role'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..name = _parseString(map['name'])
+          ..email = _parseString(map['email'])
+          ..role = _parseString(map['role'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'SyncQueue':
         return SyncQueue()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..entityType = map['entityType'] as String?
-          ..entityId = map['entityId'] as int?
-          ..entityUuid = map['entityUuid'] as String?
-          ..operation = map['operation'] as String?
-          ..retryCount = (map['retryCount'] as int?) ?? 0
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..entityType = _parseString(map['entityType'])
+          ..entityId = _parseInt(map['entityId'])
+          ..entityUuid = _parseString(map['entityUuid'])
+          ..operation = _parseString(map['operation'])
+          ..retryCount = _parseInt(map['retryCount']) ?? 0
           ..lastAttempt = map['lastAttempt'] != null ? DateTime.parse(map['lastAttempt'] as String) : null
-          ..lastError = map['lastError'] as String?
+          ..lastError = _parseString(map['lastError'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Purchase':
         return Purchase()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..purchaseNumber = map['purchaseNumber'] as String?
-          ..supplierInvoiceNumber = map['supplierInvoiceNumber'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..purchaseNumber = _parseString(map['purchaseNumber'])
+          ..supplierInvoiceNumber = _parseString(map['supplierInvoiceNumber'])
           ..purchaseDate = map['purchaseDate'] != null ? DateTime.parse(map['purchaseDate'] as String) : null
-          ..partyId = map['partyId'] as int?
-          ..partyName = map['partyName'] as String?
-          ..gstNumber = map['gstNumber'] as String?
-          ..address = map['address'] as String?
-          ..subtotal = (map['subtotal'] as num?)?.toDouble()
-          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
-          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
-          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
-          ..totalGST = (map['totalGST'] as num?)?.toDouble()
-          ..roundOff = (map['roundOff'] as num?)?.toDouble()
-          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
-          ..paymentStatus = map['paymentStatus'] as String?
-          ..paidAmount = (map['paidAmount'] as num?)?.toDouble()
-          ..pendingAmount = (map['pendingAmount'] as num?)?.toDouble()
-          ..remarks = map['remarks'] as String?
+          ..partyId = _parseInt(map['partyId'])
+          ..partyName = _parseString(map['partyName'])
+          ..gstNumber = _parseString(map['gstNumber'])
+          ..address = _parseString(map['address'])
+          ..subtotal = _parseDouble(map['subtotal'])
+          ..discountAmount = _parseDouble(map['discountAmount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..cgstAmount = _parseDouble(map['cgstAmount'])
+          ..sgstAmount = _parseDouble(map['sgstAmount'])
+          ..igstAmount = _parseDouble(map['igstAmount'])
+          ..totalGST = _parseDouble(map['totalGST'])
+          ..roundOff = _parseDouble(map['roundOff'])
+          ..grandTotal = _parseDouble(map['grandTotal'])
+          ..paymentStatus = _parseString(map['paymentStatus'])
+          ..paidAmount = _parseDouble(map['paidAmount'])
+          ..pendingAmount = _parseDouble(map['pendingAmount'])
+          ..remarks = _parseString(map['remarks'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'PurchaseItem':
         return PurchaseItem()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..purchaseId = map['purchaseId'] as int?
-          ..purchaseUuid = map['purchaseUuid'] as String?
-          ..itemId = map['itemId'] as int?
-          ..itemName = map['itemName'] as String?
-          ..hsnCode = map['hsnCode'] as String?
-          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
-          ..selectedSubItemName = map['selectedSubItemName'] as String?
-          ..quantity = (map['quantity'] as num?)?.toDouble()
-          ..unit = map['unit'] as String?
-          ..rate = (map['rate'] as num?)?.toDouble()
-          ..discount = (map['discount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..gstRate = (map['gstRate'] as num?)?.toDouble()
-          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
-          ..batchNumber = map['batchNumber'] as String?
-          ..expiryDate = map['expiryDate'] as String?
-          ..mfgDate = map['mfgDate'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..purchaseId = _parseInt(map['purchaseId'])
+          ..purchaseUuid = _parseString(map['purchaseUuid'])
+          ..itemId = _parseInt(map['itemId'])
+          ..itemName = _parseString(map['itemName'])
+          ..hsnCode = _parseString(map['hsnCode'])
+          ..selectedSubItemUuid = _parseString(map['selectedSubItemUuid'])
+          ..selectedSubItemName = _parseString(map['selectedSubItemName'])
+          ..quantity = _parseDouble(map['quantity'])
+          ..unit = _parseString(map['unit'])
+          ..rate = _parseDouble(map['rate'])
+          ..discount = _parseDouble(map['discount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..gstRate = _parseDouble(map['gstRate'])
+          ..gstAmount = _parseDouble(map['gstAmount'])
+          ..totalAmount = _parseDouble(map['totalAmount'])
+          ..batchNumber = _parseString(map['batchNumber'])
+          ..expiryDate = _parseString(map['expiryDate'])
+          ..mfgDate = _parseString(map['mfgDate'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Expense':
         return Expense()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..category = map['category'] as String?
-          ..amount = (map['amount'] as num?)?.toDouble()
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..category = _parseString(map['category'])
+          ..amount = _parseDouble(map['amount'])
           ..expenseDate = map['expenseDate'] != null ? DateTime.parse(map['expenseDate'] as String) : null
-          ..paymentMode = map['paymentMode'] as String?
-          ..remarks = map['remarks'] as String?
+          ..paymentMode = _parseString(map['paymentMode'])
+          ..remarks = _parseString(map['remarks'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Transaction':
         return Transaction()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..transactionNumber = map['transactionNumber'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..transactionNumber = _parseString(map['transactionNumber'])
           ..transactionDate = map['transactionDate'] != null ? DateTime.parse(map['transactionDate'] as String) : null
-          ..partyUuid = map['partyUuid'] as String?
-          ..partyName = map['partyName'] as String?
-          ..transactionType = map['transactionType'] as String?
+          ..partyUuid = _parseString(map['partyUuid'])
+          ..partyName = _parseString(map['partyName'])
+          ..transactionType = _parseString(map['transactionType'])
           ..tags = (map['tags'] as List?)?.map((e) => e.toString()).toList()
-          ..amount = (map['amount'] as num?)?.toDouble()
-          ..paymentMode = map['paymentMode'] as String?
-          ..referenceNumber = map['referenceNumber'] as String?
-          ..remarks = map['remarks'] as String?
-          ..linkedBillUuid = map['linkedBillUuid'] as String?
-          ..linkedBillNumber = map['linkedBillNumber'] as String?
-          ..targetPartyUuid = map['targetPartyUuid'] as String?
-          ..targetPartyName = map['targetPartyName'] as String?
+          ..amount = _parseDouble(map['amount'])
+          ..paymentMode = _parseString(map['paymentMode'])
+          ..referenceNumber = _parseString(map['referenceNumber'])
+          ..remarks = _parseString(map['remarks'])
+          ..linkedBillUuid = _parseString(map['linkedBillUuid'])
+          ..linkedBillNumber = _parseString(map['linkedBillNumber'])
+          ..targetPartyUuid = _parseString(map['targetPartyUuid'])
+          ..targetPartyName = _parseString(map['targetPartyName'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'BankAccount':
         return BankAccount()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..accountName = map['accountName'] as String?
-          ..bankName = map['bankName'] as String?
-          ..accountNumber = map['accountNumber'] as String?
-          ..ifscCode = map['ifscCode'] as String?
-          ..branchName = map['branchName'] as String?
-          ..openingBalance = (map['openingBalance'] as num?)?.toDouble()
-          ..currentBalance = (map['currentBalance'] as num?)?.toDouble()
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..accountName = _parseString(map['accountName'])
+          ..bankName = _parseString(map['bankName'])
+          ..accountNumber = _parseString(map['accountNumber'])
+          ..ifscCode = _parseString(map['ifscCode'])
+          ..branchName = _parseString(map['branchName'])
+          ..openingBalance = _parseDouble(map['openingBalance'])
+          ..currentBalance = _parseDouble(map['currentBalance'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'CreditNote':
         return CreditNote()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..creditNoteNumber = map['creditNoteNumber'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..creditNoteNumber = _parseString(map['creditNoteNumber'])
           ..creditNoteDate = map['creditNoteDate'] != null ? DateTime.parse(map['creditNoteDate'] as String) : null
-          ..originalInvoiceNumber = map['originalInvoiceNumber'] as String?
-          ..originalInvoiceUuid = map['originalInvoiceUuid'] as String?
-          ..partyId = map['partyId'] as int?
-          ..partyName = map['partyName'] as String?
-          ..gstNumber = map['gstNumber'] as String?
-          ..address = map['address'] as String?
-          ..subtotal = (map['subtotal'] as num?)?.toDouble()
-          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
-          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
-          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
-          ..totalGST = (map['totalGST'] as num?)?.toDouble()
-          ..roundOff = (map['roundOff'] as num?)?.toDouble()
-          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
-          ..remarks = map['remarks'] as String?
-          ..createdBy = map['createdBy'] as String?
+          ..originalInvoiceNumber = _parseString(map['originalInvoiceNumber'])
+          ..originalInvoiceUuid = _parseString(map['originalInvoiceUuid'])
+          ..partyId = _parseInt(map['partyId'])
+          ..partyName = _parseString(map['partyName'])
+          ..gstNumber = _parseString(map['gstNumber'])
+          ..address = _parseString(map['address'])
+          ..subtotal = _parseDouble(map['subtotal'])
+          ..discountAmount = _parseDouble(map['discountAmount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..cgstAmount = _parseDouble(map['cgstAmount'])
+          ..sgstAmount = _parseDouble(map['sgstAmount'])
+          ..igstAmount = _parseDouble(map['igstAmount'])
+          ..totalGST = _parseDouble(map['totalGST'])
+          ..roundOff = _parseDouble(map['roundOff'])
+          ..grandTotal = _parseDouble(map['grandTotal'])
+          ..remarks = _parseString(map['remarks'])
+          ..createdBy = _parseString(map['createdBy'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'CreditNoteItem':
         return CreditNoteItem()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemId = map['itemId'] as int?
-          ..itemName = map['itemName'] as String?
-          ..hsnCode = map['hsnCode'] as String?
-          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
-          ..selectedSubItemName = map['selectedSubItemName'] as String?
-          ..parentCreditNoteId = map['parentCreditNoteId'] as int?
-          ..quantity = (map['quantity'] as num?)?.toDouble()
-          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
-          ..unit = map['unit'] as String?
-          ..rate = (map['rate'] as num?)?.toDouble()
-          ..discount = (map['discount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..gstRate = (map['gstRate'] as num?)?.toDouble()
-          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
-          ..batchNumber = map['batchNumber'] as String?
-          ..expiryDate = map['expiryDate'] as String?
-          ..mfgDate = map['mfgDate'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemId = _parseInt(map['itemId'])
+          ..itemName = _parseString(map['itemName'])
+          ..hsnCode = _parseString(map['hsnCode'])
+          ..selectedSubItemUuid = _parseString(map['selectedSubItemUuid'])
+          ..selectedSubItemName = _parseString(map['selectedSubItemName'])
+          ..parentCreditNoteId = _parseInt(map['parentCreditNoteId'])
+          ..quantity = _parseDouble(map['quantity'])
+          ..freeQuantity = _parseDouble(map['freeQuantity'])
+          ..unit = _parseString(map['unit'])
+          ..rate = _parseDouble(map['rate'])
+          ..discount = _parseDouble(map['discount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..gstRate = _parseDouble(map['gstRate'])
+          ..gstAmount = _parseDouble(map['gstAmount'])
+          ..totalAmount = _parseDouble(map['totalAmount'])
+          ..batchNumber = _parseString(map['batchNumber'])
+          ..expiryDate = _parseString(map['expiryDate'])
+          ..mfgDate = _parseString(map['mfgDate'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'DebitNote':
         return DebitNote()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..debitNoteNumber = map['debitNoteNumber'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..debitNoteNumber = _parseString(map['debitNoteNumber'])
           ..debitNoteDate = map['debitNoteDate'] != null ? DateTime.parse(map['debitNoteDate'] as String) : null
-          ..originalPurchaseNumber = map['originalPurchaseNumber'] as String?
-          ..originalPurchaseUuid = map['originalPurchaseUuid'] as String?
-          ..partyId = map['partyId'] as int?
-          ..partyName = map['partyName'] as String?
-          ..gstNumber = map['gstNumber'] as String?
-          ..address = map['address'] as String?
-          ..subtotal = (map['subtotal'] as num?)?.toDouble()
-          ..discountAmount = (map['discountAmount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..cgstAmount = (map['cgstAmount'] as num?)?.toDouble()
-          ..sgstAmount = (map['sgstAmount'] as num?)?.toDouble()
-          ..igstAmount = (map['igstAmount'] as num?)?.toDouble()
-          ..totalGST = (map['totalGST'] as num?)?.toDouble()
-          ..roundOff = (map['roundOff'] as num?)?.toDouble()
-          ..grandTotal = (map['grandTotal'] as num?)?.toDouble()
-          ..remarks = map['remarks'] as String?
-          ..createdBy = map['createdBy'] as String?
+          ..originalPurchaseNumber = _parseString(map['originalPurchaseNumber'])
+          ..originalPurchaseUuid = _parseString(map['originalPurchaseUuid'])
+          ..partyId = _parseInt(map['partyId'])
+          ..partyName = _parseString(map['partyName'])
+          ..gstNumber = _parseString(map['gstNumber'])
+          ..address = _parseString(map['address'])
+          ..subtotal = _parseDouble(map['subtotal'])
+          ..discountAmount = _parseDouble(map['discountAmount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..cgstAmount = _parseDouble(map['cgstAmount'])
+          ..sgstAmount = _parseDouble(map['sgstAmount'])
+          ..igstAmount = _parseDouble(map['igstAmount'])
+          ..totalGST = _parseDouble(map['totalGST'])
+          ..roundOff = _parseDouble(map['roundOff'])
+          ..grandTotal = _parseDouble(map['grandTotal'])
+          ..remarks = _parseString(map['remarks'])
+          ..createdBy = _parseString(map['createdBy'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'DebitNoteItem':
         return DebitNoteItem()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemId = map['itemId'] as int?
-          ..itemName = map['itemName'] as String?
-          ..hsnCode = map['hsnCode'] as String?
-          ..selectedSubItemUuid = map['selectedSubItemUuid'] as String?
-          ..selectedSubItemName = map['selectedSubItemName'] as String?
-          ..parentDebitNoteId = map['parentDebitNoteId'] as int?
-          ..quantity = (map['quantity'] as num?)?.toDouble()
-          ..freeQuantity = (map['freeQuantity'] as num?)?.toDouble()
-          ..unit = map['unit'] as String?
-          ..rate = (map['rate'] as num?)?.toDouble()
-          ..discount = (map['discount'] as num?)?.toDouble()
-          ..taxableAmount = (map['taxableAmount'] as num?)?.toDouble()
-          ..gstRate = (map['gstRate'] as num?)?.toDouble()
-          ..gstAmount = (map['gstAmount'] as num?)?.toDouble()
-          ..totalAmount = (map['totalAmount'] as num?)?.toDouble()
-          ..batchNumber = map['batchNumber'] as String?
-          ..expiryDate = map['expiryDate'] as String?
-          ..mfgDate = map['mfgDate'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemId = _parseInt(map['itemId'])
+          ..itemName = _parseString(map['itemName'])
+          ..hsnCode = _parseString(map['hsnCode'])
+          ..selectedSubItemUuid = _parseString(map['selectedSubItemUuid'])
+          ..selectedSubItemName = _parseString(map['selectedSubItemName'])
+          ..parentDebitNoteId = _parseInt(map['parentDebitNoteId'])
+          ..quantity = _parseDouble(map['quantity'])
+          ..freeQuantity = _parseDouble(map['freeQuantity'])
+          ..unit = _parseString(map['unit'])
+          ..rate = _parseDouble(map['rate'])
+          ..discount = _parseDouble(map['discount'])
+          ..taxableAmount = _parseDouble(map['taxableAmount'])
+          ..gstRate = _parseDouble(map['gstRate'])
+          ..gstAmount = _parseDouble(map['gstAmount'])
+          ..totalAmount = _parseDouble(map['totalAmount'])
+          ..batchNumber = _parseString(map['batchNumber'])
+          ..expiryDate = _parseString(map['expiryDate'])
+          ..mfgDate = _parseString(map['mfgDate'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'DeletedVoucher':
         return DeletedVoucher()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..voucherType = map['voucherType'] as String?
-          ..voucherNumber = map['voucherNumber'] as String?
-          ..partyName = map['partyName'] as String?
-          ..amount = (map['amount'] as num?)?.toDouble()
-          ..remarks = map['remarks'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..voucherType = _parseString(map['voucherType'])
+          ..voucherNumber = _parseString(map['voucherNumber'])
+          ..partyName = _parseString(map['partyName'])
+          ..amount = _parseDouble(map['amount'])
+          ..remarks = _parseString(map['remarks'])
           ..deletedAt = map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'StockAdjustment':
         return StockAdjustment()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemUuid = map['itemUuid'] as String?
-          ..itemId = map['itemId'] as int?
-          ..itemName = map['itemName'] as String?
-          ..adjustmentType = map['adjustmentType'] as String?
-          ..quantity = (map['quantity'] as num?)?.toDouble()
-          ..unit = map['unit'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemUuid = _parseString(map['itemUuid'])
+          ..itemId = _parseInt(map['itemId'])
+          ..itemName = _parseString(map['itemName'])
+          ..adjustmentType = _parseString(map['adjustmentType'])
+          ..quantity = _parseDouble(map['quantity'])
+          ..unit = _parseString(map['unit'])
           ..adjustmentDate = map['adjustmentDate'] != null ? DateTime.parse(map['adjustmentDate'] as String) : null
-          ..reason = map['reason'] as String?
-          ..notes = map['notes'] as String?
+          ..reason = _parseString(map['reason'])
+          ..notes = _parseString(map['notes'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Task':
         return Task()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..title = map['title'] as String?
-          ..description = map['description'] as String?
-          ..status = map['status'] as String?
-          ..priority = map['priority'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..title = _parseString(map['title'])
+          ..description = _parseString(map['description'])
+          ..status = _parseString(map['status'])
+          ..priority = _parseString(map['priority'])
           ..dueDate = map['dueDate'] != null ? DateTime.parse(map['dueDate'] as String) : null
           ..completedAt = map['completedAt'] != null ? DateTime.parse(map['completedAt'] as String) : null
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'ExpenseItem':
         return ExpenseItem()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..itemName = map['itemName'] as String?
-          ..defaultRate = (map['defaultRate'] as num?)?.toDouble()
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..itemName = _parseString(map['itemName'])
+          ..defaultRate = _parseDouble(map['defaultRate'])
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       case 'Machinery':
         return Machinery()
-          ..id = (map['id'] as int?) ?? Isar.autoIncrement
-          ..uuid = map['uuid'] as String?
-          ..partyUuid = map['partyUuid'] as String?
-          ..categoryUuid = map['categoryUuid'] as String?
-          ..machineName = map['machineName'] as String?
-          ..brandName = map['brandName'] as String?
-          ..modelNumber = map['modelNumber'] as String?
-          ..serialNumber = map['serialNumber'] as String?
-          ..description = map['description'] as String?
+          ..id = _parseInt(map['id']) ?? Isar.autoIncrement
+          ..uuid = _parseString(map['uuid'])
+          ..partyUuid = _parseString(map['partyUuid'])
+          ..categoryUuid = _parseString(map['categoryUuid'])
+          ..machineName = _parseString(map['machineName'])
+          ..brandName = _parseString(map['brandName'])
+          ..modelNumber = _parseString(map['modelNumber'])
+          ..serialNumber = _parseString(map['serialNumber'])
+          ..description = _parseString(map['description'])
           ..photos = (map['photos'] as List?)?.cast<String>()
-          ..googlePhotosLink = map['googlePhotosLink'] as String?
-          ..serviceIntervalMonths = map['serviceIntervalMonths'] as int?
-          ..serviceIntervalDays = map['serviceIntervalDays'] as int?
+          ..googlePhotosLink = _parseString(map['googlePhotosLink'])
+          ..serviceIntervalMonths = _parseInt(map['serviceIntervalMonths'])
+          ..serviceIntervalDays = _parseInt(map['serviceIntervalDays'])
           ..lastServiceDate = map['lastServiceDate'] != null ? DateTime.parse(map['lastServiceDate'] as String) : null
           ..nextServiceDate = map['nextServiceDate'] != null ? DateTime.parse(map['nextServiceDate'] as String) : null
           ..createdAt = map['createdAt'] != null ? DateTime.parse(map['createdAt'] as String) : DateTime.now()
           ..updatedAt = map['updatedAt'] != null ? DateTime.parse(map['updatedAt'] as String) : DateTime.now()
-          ..isDeleted = map['isDeleted'] == true
-          ..isSynced = map['isSynced'] == true
-          ..version = (map['version'] as int?) ?? 1;
+          ..isDeleted = (_parseBool(map['isDeleted']) == true)
+          ..isSynced = (_parseBool(map['isSynced']) == true)
+          ..version = _parseInt(map['version']) ?? 1;
       default:
         return null;
     }

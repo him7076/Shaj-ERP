@@ -138,6 +138,28 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         }
       }
 
+      // Pre-build parent lookup maps for orphaned items
+      setState(() => _currentTask = 'Building parent lookup indexes...');
+      final allInvoices = await isar.invoices.where().findAll();
+      final Map<int, Invoice> invoiceByIdMap = {for (var v in allInvoices) v.id: v};
+      final Map<String, Invoice> invoiceByUuidMap = {for (var v in allInvoices) if (v.uuid != null && v.uuid!.isNotEmpty) v.uuid!: v};
+
+      final allPurchases = await isar.collection<Purchase>().where().findAll();
+      final Map<int, Purchase> purchaseByIdMap = {for (var v in allPurchases) v.id: v};
+      final Map<String, Purchase> purchaseByUuidMap = {for (var v in allPurchases) if (v.uuid != null && v.uuid!.isNotEmpty) v.uuid!: v};
+
+      final allOrders = await isar.orders.where().findAll();
+      final Map<int, Order> orderByIdMap = {for (var v in allOrders) v.id: v};
+      final Map<String, Order> orderByUuidMap = {for (var v in allOrders) if (v.uuid != null && v.uuid!.isNotEmpty) v.uuid!: v};
+
+      final allCreditNotes = await isar.collection<CreditNote>().where().findAll();
+      final Map<int, CreditNote> cnByIdMap = {for (var v in allCreditNotes) v.id: v};
+      final Map<String, CreditNote> cnByUuidMap = {for (var v in allCreditNotes) if (v.uuid != null && v.uuid!.isNotEmpty) v.uuid!: v};
+
+      final allDebitNotes = await isar.collection<DebitNote>().where().findAll();
+      final Map<int, DebitNote> dnByIdMap = {for (var v in allDebitNotes) v.id: v};
+      final Map<String, DebitNote> dnByUuidMap = {for (var v in allDebitNotes) if (v.uuid != null && v.uuid!.isNotEmpty) v.uuid!: v};
+
       // Pre-build item lookup map for itemName resolution
       final allItems = await isar.items.where().findAll();
       final Map<int, Item> itemByIdMap = {};
@@ -305,6 +327,18 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (ii.quantity == null) { ii.quantity = 0.0; needsFix = true; }
         if (ii.rate == null) { ii.rate = 0.0; needsFix = true; }
         if (ii.totalAmount == null) { ii.totalAmount = (ii.quantity ?? 0.0) * (ii.rate ?? 0.0); needsFix = true; }
+        // Fix parentInvoice links
+        if (ii.parentInvoiceId == null || ii.parentInvoiceId == 0) {
+          if (ii.parentInvoiceUuid != null && invoiceByUuidMap.containsKey(ii.parentInvoiceUuid)) {
+            ii.parentInvoiceId = invoiceByUuidMap[ii.parentInvoiceUuid!]!.id;
+          }
+        }
+        if (ii.parentInvoiceUuid == null || ii.parentInvoiceUuid!.isEmpty) {
+          if (ii.parentInvoiceId != null && invoiceByIdMap.containsKey(ii.parentInvoiceId)) {
+            ii.parentInvoiceUuid = invoiceByIdMap[ii.parentInvoiceId!]!.uuid;
+          }
+        }
+        
         // Resolve itemName from itemId if missing
         if (ii.itemId != null && (ii.itemName == null || ii.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[ii.itemId!];
@@ -363,6 +397,18 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (pi.quantity == null) { pi.quantity = 0.0; needsFix = true; }
         if (pi.rate == null) { pi.rate = 0.0; needsFix = true; }
         if (pi.totalAmount == null) { pi.totalAmount = (pi.quantity ?? 0.0) * (pi.rate ?? 0.0); needsFix = true; }
+        // Fix parentPurchase links
+        if (pi.parentPurchaseId == null || pi.parentPurchaseId == 0) {
+          if (pi.parentPurchaseUuid != null && purchaseByUuidMap.containsKey(pi.parentPurchaseUuid)) {
+            pi.parentPurchaseId = purchaseByUuidMap[pi.parentPurchaseUuid!]!.id;
+          }
+        }
+        if (pi.parentPurchaseUuid == null || pi.parentPurchaseUuid!.isEmpty) {
+          if (pi.parentPurchaseId != null && purchaseByIdMap.containsKey(pi.parentPurchaseId)) {
+            pi.parentPurchaseUuid = purchaseByIdMap[pi.parentPurchaseId!]!.uuid;
+          }
+        }
+        
         // Resolve itemName from itemId if missing
         if (pi.itemId != null && (pi.itemName == null || pi.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[pi.itemId!];
@@ -394,6 +440,18 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (oi.quantity == null) { oi.quantity = 0.0; needsFix = true; }
         if (oi.rate == null) { oi.rate = 0.0; needsFix = true; }
         if (oi.totalAmount == null) { oi.totalAmount = (oi.quantity ?? 0.0) * (oi.rate ?? 0.0); needsFix = true; }
+        // Fix parentOrder links
+        if (oi.parentOrderId == null || oi.parentOrderId == 0) {
+          if (oi.parentOrderUuid != null && orderByUuidMap.containsKey(oi.parentOrderUuid)) {
+            oi.parentOrderId = orderByUuidMap[oi.parentOrderUuid!]!.id;
+          }
+        }
+        if (oi.parentOrderUuid == null || oi.parentOrderUuid!.isEmpty) {
+          if (oi.parentOrderId != null && orderByIdMap.containsKey(oi.parentOrderId)) {
+            oi.parentOrderUuid = orderByIdMap[oi.parentOrderId!]!.uuid;
+          }
+        }
+        
         // Resolve itemName from itemId if missing
         if (oi.itemId != null && (oi.itemName == null || oi.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[oi.itemId!];
@@ -461,6 +519,18 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (cni.quantity == null) { cni.quantity = 0.0; needsFix = true; }
         if (cni.rate == null) { cni.rate = 0.0; needsFix = true; }
         if (cni.totalAmount == null) { cni.totalAmount = (cni.quantity ?? 0.0) * (cni.rate ?? 0.0); needsFix = true; }
+        // Fix parent links
+        if (cni.parentCreditNoteId == null || cni.parentCreditNoteId == 0) {
+          if (cni.parentCreditNoteUuid != null && cnByUuidMap.containsKey(cni.parentCreditNoteUuid)) {
+            cni.parentCreditNoteId = cnByUuidMap[cni.parentCreditNoteUuid!]!.id;
+          }
+        }
+        if (cni.parentCreditNoteUuid == null || cni.parentCreditNoteUuid!.isEmpty) {
+          if (cni.parentCreditNoteId != null && cnByIdMap.containsKey(cni.parentCreditNoteId)) {
+            cni.parentCreditNoteUuid = cnByIdMap[cni.parentCreditNoteId!]!.uuid;
+          }
+        }
+        
         if (cni.itemId != null && (cni.itemName == null || cni.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[cni.itemId!];
           if (item != null) { cni.itemName = item.itemName; needsFix = true; }
@@ -491,6 +561,18 @@ class _DataRepairScreenState extends ConsumerState<DataRepairScreen> {
         if (dni.quantity == null) { dni.quantity = 0.0; needsFix = true; }
         if (dni.rate == null) { dni.rate = 0.0; needsFix = true; }
         if (dni.totalAmount == null) { dni.totalAmount = (dni.quantity ?? 0.0) * (dni.rate ?? 0.0); needsFix = true; }
+        // Fix parent links
+        if (dni.parentDebitNoteId == null || dni.parentDebitNoteId == 0) {
+          if (dni.parentDebitNoteUuid != null && dnByUuidMap.containsKey(dni.parentDebitNoteUuid)) {
+            dni.parentDebitNoteId = dnByUuidMap[dni.parentDebitNoteUuid!]!.id;
+          }
+        }
+        if (dni.parentDebitNoteUuid == null || dni.parentDebitNoteUuid!.isEmpty) {
+          if (dni.parentDebitNoteId != null && dnByIdMap.containsKey(dni.parentDebitNoteId)) {
+            dni.parentDebitNoteUuid = dnByIdMap[dni.parentDebitNoteId!]!.uuid;
+          }
+        }
+        
         if (dni.itemId != null && (dni.itemName == null || dni.itemName!.trim().isEmpty)) {
           final item = itemByIdMap[dni.itemId!];
           if (item != null) { dni.itemName = item.itemName; needsFix = true; }
