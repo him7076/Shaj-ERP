@@ -88,7 +88,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
         .findAll();
     for (var inv in invoices) {
       if (_isSameDay(inv.invoiceDate, _selectedDate)) {
-        final totalPaid = inv.paidAmount ?? inv.grandTotal ?? 0.0;
+        final totalPaid = inv.paidAmount ?? 0.0;
         final linked = linkedAmountMap[inv.uuid ?? ''] ?? 0.0;
         final initialPaid = (totalPaid - linked) > 0 ? (totalPaid - linked) : 0.0;
         
@@ -116,7 +116,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
         .findAll();
     for (var pur in purchases) {
       if (_isSameDay(pur.purchaseDate, _selectedDate)) {
-        final totalPaid = pur.paidAmount ?? pur.grandTotal ?? 0.0;
+        final totalPaid = pur.paidAmount ?? 0.0;
         final linked = linkedAmountMap[pur.uuid ?? ''] ?? 0.0;
         final initialPaid = (totalPaid - linked) > 0 ? (totalPaid - linked) : 0.0;
 
