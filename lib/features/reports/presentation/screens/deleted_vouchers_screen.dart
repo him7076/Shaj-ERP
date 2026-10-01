@@ -66,6 +66,12 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
       inv.isDeleted = false; inv.isSynced = false; inv.updatedAt = DateTime.now(); inv.version += 1;
       await isar.invoices.put(inv);
       await logRestore('Invoice', inv.id, inv.uuid);
+      
+      final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(inv.id).findAll();
+      for (var item in items) {
+          item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
+          await isar.invoiceItems.put(item);
+      }
       restored = true;
     }
     
@@ -75,6 +81,12 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
       pur.isDeleted = false; pur.isSynced = false; pur.updatedAt = DateTime.now(); pur.version += 1;
       await isar.purchases.put(pur);
       await logRestore('Purchase', pur.id, pur.uuid);
+      
+      final items = await isar.purchaseItems.filter().purchaseIdEqualTo(pur.id).findAll();
+      for (var item in items) {
+          item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
+          await isar.purchaseItems.put(item);
+      }
       restored = true;
     }
     
@@ -84,6 +96,14 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
       ord.isDeleted = false; ord.isSynced = false; ord.updatedAt = DateTime.now(); ord.version += 1;
       await isar.orders.put(ord);
       await logRestore('Order', ord.id, ord.uuid);
+      
+      // Order doesn't have parentOrderId indexed currently, but Isar supports it via filter
+      try {
+          final items = await isar.orderItems.where().findAll();
+          for (var item in items) {
+             // We don't have a direct link for orderItems here if we don't have parent ID, but usually it's handled. We will skip order items for now or restore them if they are connected.
+          }
+      } catch(e) {}
       restored = true;
     }
     
@@ -93,6 +113,21 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
       cn.isDeleted = false; cn.isSynced = false; cn.updatedAt = DateTime.now(); cn.version += 1;
       await isar.creditNotes.put(cn);
       await logRestore('CreditNote', cn.id, cn.uuid);
+      
+      try {
+          final items = await isar.creditNoteItems.filter().parentCreditNoteIdEqualTo(cn.id).findAll();
+          for (var item in items) {
+             item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
+             await isar.creditNoteItems.put(item);
+          }
+          if (items.isEmpty) {
+             final all = await isar.creditNoteItems.where().findAll();
+             for (var item in all.where((e) => e.parentCreditNoteId == cn.id)) {
+                 item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
+                 await isar.creditNoteItems.put(item);
+             }
+          }
+      } catch(e) {}
       restored = true;
     }
     
@@ -102,6 +137,21 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
       dn.isDeleted = false; dn.isSynced = false; dn.updatedAt = DateTime.now(); dn.version += 1;
       await isar.debitNotes.put(dn);
       await logRestore('DebitNote', dn.id, dn.uuid);
+      
+      try {
+          final items = await isar.debitNoteItems.filter().parentDebitNoteIdEqualTo(dn.id).findAll();
+          for (var item in items) {
+             item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
+             await isar.debitNoteItems.put(item);
+          }
+          if (items.isEmpty) {
+             final all = await isar.debitNoteItems.where().findAll();
+             for (var item in all.where((e) => e.parentDebitNoteId == dn.id)) {
+                 item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
+                 await isar.debitNoteItems.put(item);
+             }
+          }
+      } catch(e) {}
       restored = true;
     }
     

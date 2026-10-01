@@ -209,6 +209,12 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
               .filter()
               .parentDebitNoteIdEqualTo(pId)
               .findAll();
+              
+          if (itemsList.isEmpty) {
+             // Fallback for Web Mock Isar just in case parentDebitNoteIdEqualTo fails
+             final allItems = await isar.debitNoteItems.where().findAll();
+             itemsList = allItems.where((e) => e.parentDebitNoteId == pId).toList();
+          }
         }
         if (itemsList.isEmpty) {
           try { await debitNote.debitNoteItems.load(); } catch (_) {}
@@ -1105,21 +1111,7 @@ if (_isPaidAmountAutoFill) {
                         FullScreenItemEntry.show(
       context, isPurchase: true,
       onAdd: (data) async {
-        final tempSelected = SelectedProductData(data.item);
-        tempSelected.item.sellRate = data.rate;
-        tempSelected.item.buyRate = data.rate; // fallback
-        tempSelected.item.gstRate = data.gstRate;
-        // Since cart updates only default to 1 qty, we'll need to manually set it after!
-        
-        _addItemLine(tempSelected);
-        setState(() {
-           if (_draftItems.isNotEmpty) {
-             _draftItems.last.quantity = data.quantity;
-             _draftItems.last.discount = data.discountAmount;
-           }
-        });
-        _recalculateTotals();
-        
+        _addFullScreenItemLine(data);
       },
     );
                       },
@@ -1137,21 +1129,7 @@ if (_isPaidAmountAutoFill) {
                           FullScreenItemEntry.show(
       context, onlyBundles: true, isPurchase: true,
       onAdd: (data) async {
-        final tempSelected = SelectedProductData(data.item);
-        tempSelected.item.sellRate = data.rate;
-        tempSelected.item.buyRate = data.rate; // fallback
-        tempSelected.item.gstRate = data.gstRate;
-        // Since cart updates only default to 1 qty, we'll need to manually set it after!
-        
-        _addItemLine(tempSelected);
-        setState(() {
-           if (_draftItems.isNotEmpty) {
-             _draftItems.last.quantity = data.quantity;
-             _draftItems.last.discount = data.discountAmount;
-           }
-        });
-        _recalculateTotals();
-        
+        _addFullScreenItemLine(data);
       },
     );
                         },
@@ -1238,21 +1216,7 @@ if (_isPaidAmountAutoFill) {
                       FullScreenItemEntry.show(
       context, isPurchase: true,
       onAdd: (data) async {
-        final tempSelected = SelectedProductData(data.item);
-        tempSelected.item.sellRate = data.rate;
-        tempSelected.item.buyRate = data.rate; // fallback
-        tempSelected.item.gstRate = data.gstRate;
-        // Since cart updates only default to 1 qty, we'll need to manually set it after!
-        
-        _addItemLine(tempSelected);
-        setState(() {
-           if (_draftItems.isNotEmpty) {
-             _draftItems.last.quantity = data.quantity;
-             _draftItems.last.discount = data.discountAmount;
-           }
-        });
-        _recalculateTotals();
-        
+        _addFullScreenItemLine(data);
       },
     );
                     },
@@ -1273,21 +1237,7 @@ if (_isPaidAmountAutoFill) {
                         FullScreenItemEntry.show(
       context, onlyBundles: true, isPurchase: true,
       onAdd: (data) async {
-        final tempSelected = SelectedProductData(data.item);
-        tempSelected.item.sellRate = data.rate;
-        tempSelected.item.buyRate = data.rate; // fallback
-        tempSelected.item.gstRate = data.gstRate;
-        // Since cart updates only default to 1 qty, we'll need to manually set it after!
-        
-        _addItemLine(tempSelected);
-        setState(() {
-           if (_draftItems.isNotEmpty) {
-             _draftItems.last.quantity = data.quantity;
-             _draftItems.last.discount = data.discountAmount;
-           }
-        });
-        _recalculateTotals();
-        
+        _addFullScreenItemLine(data);
       },
     );
                       },

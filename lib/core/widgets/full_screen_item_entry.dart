@@ -357,6 +357,8 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final itemsAsync = ref.watch(itemsListProvider);
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final showPurchaseRate = prefs.getBool('enable_sales_buy_price') ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -470,7 +472,8 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                   ),
                                   const SizedBox(height: 12),
 
-                                  // PURCHASE RATE
+                                  if (showPurchaseRate) ...[
+                                    // PURCHASE RATE
                                   Row(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -501,6 +504,7 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
+                                  ],
 
                                   // DISCOUNT & TAX
                                   Row(
