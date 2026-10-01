@@ -204,7 +204,6 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         _remarksController.text = remarksText;
         
         _discountController.text = creditNote.discountAmount?.toString() ?? '0.0';
-        _creditNoteStatus = creditNote.status ?? 'Unused';
 
         Party? party;
         if (creditNote.partyId != null && creditNote.partyId! > 0) {
