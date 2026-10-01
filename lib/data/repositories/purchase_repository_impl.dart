@@ -286,8 +286,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
             final logEntry = '[] STOCK_REVERT (Purchase Deleted): - | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
             final currentNotes = targetItem.notes ?? '';
-            targetItem.notes = currentNotes.isEmpty ? logEntry : '
-';
+            targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
             
             await isar.items.put(targetItem);
           }
