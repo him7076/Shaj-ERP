@@ -8,6 +8,15 @@ import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/auth_providers.dart';
+import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
+import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:business_sahaj_erp/presentation/providers/auth_providers.dart';
+
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
@@ -1088,39 +1097,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                         ),
                                                       );
                                                       if (confirm == true) {
-                                                         final repo = ref.read(transactionRepositoryProvider);
                                                          try {
-                                                           if (txn.type == 'Expense') {
-                                                              final expRepo = ref.read(expenseRepositoryProvider);
-                                                              final exp = await expRepo.getExpenseById(txn.uuid);
-                                                              if (exp != null) {
-                                                                exp.isDeleted = true;
-                                                                exp.updatedAt = DateTime.now();
-                                                                await expRepo.saveExpense(exp);
-                                                              }
-                                                           } else if (txn.type == 'Sales') {
-                                                              final invRepo = ref.read(invoiceRepositoryProvider);
-                                                              final inv = await invRepo.getInvoiceById(txn.uuid);
-                                                              if (inv != null) {
-                                                                inv.isDeleted = true;
-                                                                inv.updatedAt = DateTime.now();
-                                                                await invRepo.saveInvoice(inv);
-                                                              }
-                                                           } else if (txn.type == 'Purchase') {
-                                                              final purRepo = ref.read(purchaseRepositoryProvider);
-                                                              final pur = await purRepo.getPurchaseById(txn.uuid);
-                                                              if (pur != null) {
-                                                                pur.isDeleted = true;
-                                                                pur.updatedAt = DateTime.now();
-                                                                await purRepo.savePurchase(pur);
-                                                              }
+                                                           final user = ref.read(currentUserProvider)?.name ?? 'System';
+                                                           if (txn.transactionType == 'Expense') {
+                                                              await ref.read(expenseRepositoryProvider).softDelete(txn.uuid!);
+                                                           } else if (txn.transactionType == 'Sales') {
+                                                              await ref.read(invoiceRepositoryProvider).cancelInvoice(txn.uuid!, 'User Cancelled', user);
+                                                           } else if (txn.transactionType == 'Purchase') {
+                                                              await ref.read(purchaseRepositoryProvider).softDelete(txn.uuid!);
                                                            } else {
-                                                              final tObj = await repo.getTransactionById(txn.uuid);
-                                                              if (tObj != null) {
-                                                                tObj.isDeleted = true;
-                                                                tObj.updatedAt = DateTime.now();
-                                                                await repo.saveTransaction(tObj);
-                                                              }
+                                                              await ref.read(transactionRepositoryProvider).softDelete(txn.uuid!);
                                                            }
                                                            ref.invalidate(filteredTransactionsProvider);
                                                            if (context.mounted) {
