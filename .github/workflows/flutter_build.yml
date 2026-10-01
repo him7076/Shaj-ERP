@@ -72,7 +72,7 @@ jobs:
       - name: Build Release APK
         run: |
           flutter pub run build_runner build --delete-conflicting-outputs
-          flutter build apk --release --no-tree-shake-icons --build-number=11 --build-name=1.0.8 || true
+          flutter build apk --release --no-tree-shake-icons || true
           echo "=== Searching for APK files ==="
           find . -name "*.apk" -type f 2>/dev/null
           # If flutter couldn't find it, copy from Gradle output to expected path

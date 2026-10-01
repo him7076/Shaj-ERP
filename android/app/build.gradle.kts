@@ -21,8 +21,8 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localPropertiesFile.inputStream().use { localProperties.load(it) }
 }
-val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 11
-val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.8"
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 15
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0.10"
 
 android {
     namespace = "com.example.business_sahaj_erp"
