@@ -562,32 +562,29 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                               ? DateFormat('dd MMM yyyy').format(purchase.purchaseDate!)
                               : 'N/A';
 
-                          Color statusColor = Colors.grey;
-                          IconData statusIcon = Icons.shopping_bag_outlined;
+                          Color badgeColor = Colors.red;
+                          if (purchase.isFixedAsset == true) badgeColor = Colors.purple;
 
                           final pStatus = purchase.paymentStatus ?? 'Unpaid';
-                          switch (pStatus) {
-                            case 'Unpaid':
-                              statusColor = Colors.red;
-                              statusIcon = Icons.hourglass_empty;
-                              break;
-                            case 'Partially Paid':
-                              statusColor = Colors.orange;
-                              statusIcon = Icons.payments_outlined;
-                              break;
-                            case 'Paid':
-                              statusColor = Colors.green;
-                              statusIcon = Icons.check_circle_outline;
-                              break;
-                            case 'Cancelled':
-                              statusColor = Colors.grey;
-                              statusIcon = Icons.cancel_outlined;
-                              break;
+                          String upperStatus = pStatus.toUpperCase();
+
+                          Color statusBg = Colors.red.withOpacity(0.15);
+                          Color statusFg = Colors.red.shade800;
+
+                          if (upperStatus == 'PAID') {
+                            statusBg = Colors.green.withOpacity(0.15);
+                            statusFg = Colors.green.shade800;
+                          } else if (upperStatus == 'PARTIALLY PAID') {
+                            statusBg = Colors.orange.withOpacity(0.15);
+                            statusFg = Colors.orange.shade900;
+                          } else if (upperStatus == 'CANCELLED') {
+                            statusBg = Colors.grey.withOpacity(0.15);
+                            statusFg = Colors.grey.shade800;
                           }
 
                           return NeuCard(
+                            margin: const EdgeInsets.only(bottom: 8),
                             elevation: 0,
-                            margin: const EdgeInsets.only(bottom: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
@@ -599,187 +596,194 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     Container(
-                                      width: 6,
-                                      color: statusColor,
+                                      width: 5,
+                                      color: badgeColor,
                                     ),
                                     Expanded(
-                                      child: ListTile(
-                                        contentPadding: const EdgeInsets.all(16),
+                                      child: InkWell(
                                         onTap: () {
-                                          Navigator.of(context,  rootNavigator: true).push(
+                                          Navigator.of(context, rootNavigator: true).push(
                                             MaterialPageRoute(
                                               builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
                                             ),
                                           ).then((changed) { if (changed == true) ref.invalidate(purchaseListProvider); });
                                         },
-                                        leading: CircleAvatar(
-                                          radius: 20,
-                                          backgroundColor: statusColor.withOpacity(0.12),
-                                          child: Text(
-                                            (purchase.partyName?.isNotEmpty == true) ? purchase.partyName![0].toUpperCase() : 'P',
-                                            style: TextStyle(fontWeight: FontWeight.bold, color: statusColor, fontSize: 16),
-                                          ),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Text(
-                                              purchase.purchaseNumber ?? 'N/A',
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: statusColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                pStatus.toUpperCase(),
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: statusColor,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        subtitle: Padding(
-                                          padding: const EdgeInsets.only(top: 8.0),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12.0),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  const Icon(Icons.person_outline, size: 14, color: Colors.grey),
-                                                  const SizedBox(width: 4),
                                                   Expanded(
                                                     child: Text(
                                                       purchase.partyName ?? 'Unknown Supplier',
-                                                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w600),
+                                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
+                                                  ),
+                                                  Text(
+                                                    currencyFormat.format(purchase.grandTotal ?? 0.0),
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: badgeColor),
                                                   ),
                                                 ],
                                               ),
-                                              const SizedBox(height: 2),
+                                              const SizedBox(height: 4),
                                               Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                crossAxisAlignment: CrossAxisAlignment.center,
                                                 children: [
-                                                  const Icon(Icons.calendar_today_outlined, size: 13, color: Colors.grey),
-                                                  const SizedBox(width: 4),
-                                                  Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                                                  if (purchase.supplierInvoiceNumber != null && purchase.supplierInvoiceNumber!.isNotEmpty) ...[
-                                                    const SizedBox(width: 12),
-                                                    const Icon(Icons.receipt_long_outlined, size: 13, color: Colors.grey),
-                                                    const SizedBox(width: 4),
-                                                    Expanded(
-                                                      child: Text('Supp No: ${purchase.supplierInvoiceNumber!}', style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis),
+                                                  Text(
+                                                    dateStr,
+                                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                                  ),
+                                                  Text(
+                                                    'Balance: ${currencyFormat.format(purchase.pendingAmount ?? purchase.grandTotal ?? 0.0)}',
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: badgeColor.withOpacity(0.8)),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Wrap(
+                                                          spacing: 8,
+                                                          runSpacing: 4,
+                                                          crossAxisAlignment: WrapCrossAlignment.center,
+                                                          children: [
+                                                            Text(
+                                                              purchase.purchaseNumber ?? '',
+                                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                                            ),
+                                                            Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                              decoration: BoxDecoration(color: badgeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                                                              child: Text(
+                                                                purchase.isFixedAsset == true ? 'Fixed Asset' : 'Purchase',
+                                                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor),
+                                                              ),
+                                                            ),
+                                                            Container(
+                                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                              decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(4)),
+                                                              child: Text(
+                                                                upperStatus,
+                                                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusFg),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        if (purchase.supplierInvoiceNumber != null && purchase.supplierInvoiceNumber!.isNotEmpty) ...[
+                                                          const SizedBox(height: 4),
+                                                          Text(
+                                                            'Supp Bill #: ${purchase.supplierInvoiceNumber!}',
+                                                            style: theme.textTheme.bodySmall,
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ],
+                                                      ],
                                                     ),
-                                                  ],
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  PopupMenuButton<String>(
+                                                    icon: Icon(Icons.more_vert_rounded, color: theme.colorScheme.onSurfaceVariant),
+                                                    onSelected: (val) async {
+                                                      final dbService = ref.read(databaseServiceProvider);
+                                                      final isar = dbService.isar;
+
+                                                      if (val == 'edit') {
+                                                        Navigator.of(context, rootNavigator: true).push(
+                                                          MaterialPageRoute(
+                                                            builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
+                                                          ),
+                                                        ).then((changed) { if (changed == true) ref.invalidate(purchaseListProvider); });
+                                                      } else if (val == 'payment') {
+                                                        try { await purchase.party.load(); } catch (_) {}
+                                                        AddEditTransactionDialog.show(
+                                                          context,
+                                                          initialType: 'Payment',
+                                                          initialParty: purchase.party.value,
+                                                          initialBillUuid: purchase.uuid,
+                                                          initialBillNumber: purchase.purchaseNumber,
+                                                          initialAmount: purchase.pendingAmount ?? purchase.grandTotal ?? 0.0,
+                                                        );
+                                                      } else if (val == 'cancel') {
+                                                        final newStatus = purchase.paymentStatus == 'Cancelled' ? 'Unpaid' : 'Cancelled';
+                                                        await isar.writeTxn(() async {
+                                                          purchase.paymentStatus = newStatus;
+                                                          purchase.updatedAt = DateTime.now();
+                                                          await isar.purchases.put(purchase);
+                                                        });
+                                                        ref.invalidate(purchaseListProvider);
+                                                        if (mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(
+                                                              content: Text('Purchase Bill ${purchase.purchaseNumber} status set to $newStatus.'),
+                                                              backgroundColor: newStatus == 'Cancelled' ? Colors.orange : Colors.green,
+                                                            ),
+                                                          );
+                                                        }
+                                                      } else if (val == 'delete') {
+                                                        final confirm = await showDialog<bool>(
+                                                          context: context,
+                                                          builder: (ctx) => AlertDialog(
+                                                            title: const Text('Delete Purchase Bill?'),
+                                                            content: Text('Are you sure you want to delete Purchase Bill ${purchase.purchaseNumber}?'),
+                                                            actions: [
+                                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                                              ElevatedButton(
+                                                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                                                onPressed: () => Navigator.pop(ctx, true),
+                                                                child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+
+                                                        if (confirm == true) {
+                                                          final success = await ref
+                                                              .read(purchaseNotifierProvider.notifier)
+                                                              .deletePurchase(purchase.id);
+                                                          if (success && mounted) {
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              const SnackBar(content: Text('Purchase record deleted.')),
+                                                            );
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    itemBuilder: (ctx) => [
+                                                      const PopupMenuItem(
+                                                        value: 'edit',
+                                                        child: ListTile(leading: Icon(Icons.edit_outlined, size: 20), title: Text('Edit'), contentPadding: EdgeInsets.zero),
+                                                      ),
+                                                      const PopupMenuItem(
+                                                        value: 'payment',
+                                                        child: ListTile(leading: Icon(Icons.upload_rounded, size: 20, color: Colors.red), title: Text('Make Payment', style: TextStyle(color: Colors.red)), contentPadding: EdgeInsets.zero),
+                                                      ),
+                                                      PopupMenuItem(
+                                                        value: 'cancel',
+                                                        child: ListTile(leading: Icon(purchase.paymentStatus == 'Cancelled' ? Icons.check_circle_outline : Icons.block_outlined, size: 20, color: Colors.orange), title: Text(purchase.paymentStatus == 'Cancelled' ? 'Reactivate' : 'Cancel Bill', style: const TextStyle(color: Colors.orange)), contentPadding: EdgeInsets.zero),
+                                                      ),
+                                                      const PopupMenuItem(
+                                                        value: 'delete',
+                                                        child: ListTile(leading: Icon(Icons.delete_outline, size: 20, color: Colors.red), title: Text('Delete', style: TextStyle(color: Colors.red)), contentPadding: EdgeInsets.zero),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ],
                                               ),
                                             ],
                                           ),
-                                        ),
-                                        trailing: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              currencyFormat.format(purchase.grandTotal ?? 0.0),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: statusColor,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            PopupMenuButton<String>(
-                                              icon: Icon(Icons.more_vert_rounded, color: theme.colorScheme.onSurfaceVariant),
-                                              onSelected: (val) async {
-                                                final dbService = ref.read(databaseServiceProvider);
-                                                final isar = dbService.isar;
-
-                                                if (val == 'edit') {
-                                                  Navigator.of(context,  rootNavigator: true).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) => AddEditPurchaseScreen(purchaseUuid: purchase.uuid),
-                                                    ),
-                                                  ).then((changed) { if (changed == true) ref.invalidate(purchaseListProvider); });
-                                                } else if (val == 'payment') {
-                                                  try { await purchase.party.load(); } catch (_) {}
-                                                  AddEditTransactionDialog.show(
-                                                    context,
-                                                    initialType: 'Payment',
-                                                    initialParty: purchase.party.value,
-                                                    initialBillUuid: purchase.uuid,
-                                                    initialBillNumber: purchase.purchaseNumber,
-                                                    initialAmount: purchase.pendingAmount ?? purchase.grandTotal ?? 0.0,
-                                                  );
-                                                } else if (val == 'cancel') {
-                                                  final newStatus = purchase.paymentStatus == 'Cancelled' ? 'Unpaid' : 'Cancelled';
-                                                  await isar.writeTxn(() async {
-                                                    purchase.paymentStatus = newStatus;
-                                                    purchase.updatedAt = DateTime.now();
-                                                    await isar.purchases.put(purchase);
-                                                  });
-                                                  ref.invalidate(purchaseListProvider);
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(context).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text('Purchase Bill ${purchase.purchaseNumber} status set to $newStatus.'),
-                                                        backgroundColor: newStatus == 'Cancelled' ? Colors.orange : Colors.green,
-                                                      ),
-                                                    );
-                                                  }
-                                                } else if (val == 'delete') {
-                                                  final confirm = await showDialog<bool>(
-                                                    context: context,
-                                                    builder: (ctx) => AlertDialog(
-                                                      title: const Text('Delete Purchase Bill?'),
-                                                      content: Text('Are you sure you want to delete Purchase Bill ${purchase.purchaseNumber}?'),
-                                                      actions: [
-                                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                                        ElevatedButton(
-                                                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                                                          onPressed: () => Navigator.pop(ctx, true),
-                                                          child: const Text('Delete', style: TextStyle(color: Colors.white)),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-
-                                                  if (confirm == true) {
-                                                    final success = await ref
-                                                        .read(purchaseNotifierProvider.notifier)
-                                                        .deletePurchase(purchase.id);
-                                                    if (success && mounted) {
-                                                      ScaffoldMessenger.of(context).showSnackBar(
-                                                        const SnackBar(content: Text('Purchase record deleted.')),
-                                                      );
-                                                    }
-                                                  }
-                                                }
-                                              },
-                                              itemBuilder: (ctx) => [
-                                                const PopupMenuItem(
-                                                  value: 'edit',
-                                                  child: ListTile(leading: Icon(Icons.edit_outlined, size: 20), title: Text('Edit'), contentPadding: EdgeInsets.zero),
-                                                ),
-                                                const PopupMenuItem(
-                                                  value: 'payment',
-                                                  child: ListTile(leading: Icon(Icons.upload_rounded, size: 20, color: Colors.red), title: Text('Make Payment', style: TextStyle(color: Colors.red)), contentPadding: EdgeInsets.zero),
-                                                ),
-                                                PopupMenuItem(
-                                                  value: 'cancel',
-                                                  child: ListTile(leading: Icon(purchase.paymentStatus == 'Cancelled' ? Icons.check_circle_outline : Icons.block_outlined, size: 20, color: Colors.orange), title: Text(purchase.paymentStatus == 'Cancelled' ? 'Reactivate' : 'Cancel Bill', style: const TextStyle(color: Colors.orange)), contentPadding: EdgeInsets.zero),
-                                                ),
-                                                const PopupMenuItem(
-                                                  value: 'delete',
-                                                  child: ListTile(leading: Icon(Icons.delete_outline, size: 20, color: Colors.red), title: Text('Delete', style: TextStyle(color: Colors.red)), contentPadding: EdgeInsets.zero),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
                                         ),
                                       ),
                                     ),

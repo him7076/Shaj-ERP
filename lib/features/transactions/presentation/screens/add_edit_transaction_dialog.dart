@@ -565,19 +565,12 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 const SizedBox(height: 16),
 
                 // Fast Type Toggle Selector
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildTypeToggleChip('Receipt', 'Received Payment', Icons.arrow_downward_rounded, Colors.green),
-                      const SizedBox(width: 8),
-                      _buildTypeToggleChip('Payment', 'Made Payment', Icons.arrow_upward_rounded, Colors.red),
-                      const SizedBox(width: 8),
-                      _buildTypeToggleChip('Credit Note', 'Sales Return', Icons.assignment_return_rounded, Colors.orange),
-                      const SizedBox(width: 8),
-                      _buildTypeToggleChip('Debit Note', 'Pur Return', Icons.undo_rounded, Colors.deepOrange),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    Expanded(child: _buildTypeToggleChip('Receipt', 'Received Payment (Payment In)', Icons.arrow_downward_rounded, Colors.green)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildTypeToggleChip('Payment', 'Made Payment (Payment Out)', Icons.arrow_upward_rounded, Colors.red)),
+                  ],
                 ),
                 const SizedBox(height: 16),
 

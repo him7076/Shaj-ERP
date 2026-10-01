@@ -224,14 +224,19 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
 
   void _calculateTotals() {
     if (_selectedItem == null) return;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final showPurchaseRate = prefs.getBool('enable_sales_buy_price') ?? false;
+
     final qty = double.tryParse(_qtyController.text) ?? 0.0;
     final saleRateInput = double.tryParse(_saleRateController.text) ?? 0.0;
     final purchaseRateInput = double.tryParse(_purchaseRateController.text) ?? 0.0;
     final gst = double.tryParse(_gstController.text) ?? 0.0;
     final discountVal = double.tryParse(_discountController.text) ?? 0.0;
     
-    final activeRateInput = widget.isPurchase ? purchaseRateInput : saleRateInput;
-    final isTaxInclusive = widget.isPurchase ? _isPurchaseWithTax : _isSaleWithTax;
+    final activeRateInput = (widget.isPurchase && showPurchaseRate && purchaseRateInput > 0)
+        ? purchaseRateInput
+        : (saleRateInput > 0 ? saleRateInput : purchaseRateInput);
+    final isTaxInclusive = (widget.isPurchase && showPurchaseRate) ? _isPurchaseWithTax : _isSaleWithTax;
     
     final activeBaseRate = isTaxInclusive ? activeRateInput / (1 + (gst / 100)) : activeRateInput;
     
@@ -267,14 +272,19 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
       return;
     }
     
+    final prefs = ref.read(sharedPreferencesProvider);
+    final showPurchaseRate = prefs.getBool('enable_sales_buy_price') ?? false;
+
     final qty = double.tryParse(_qtyController.text) ?? 1.0;
     final saleRateInput = double.tryParse(_saleRateController.text) ?? 0.0;
     final purchaseRateInput = double.tryParse(_purchaseRateController.text) ?? 0.0;
     final gst = double.tryParse(_gstController.text) ?? 0.0;
     final discountVal = double.tryParse(_discountController.text) ?? 0.0;
     
-    final activeRateInput = widget.isPurchase ? purchaseRateInput : saleRateInput;
-    final isTaxInclusive = widget.isPurchase ? _isPurchaseWithTax : _isSaleWithTax;
+    final activeRateInput = (widget.isPurchase && showPurchaseRate && purchaseRateInput > 0)
+        ? purchaseRateInput
+        : (saleRateInput > 0 ? saleRateInput : purchaseRateInput);
+    final isTaxInclusive = (widget.isPurchase && showPurchaseRate) ? _isPurchaseWithTax : _isSaleWithTax;
     final activeBaseRate = isTaxInclusive ? activeRateInput / (1 + (gst / 100)) : activeRateInput;
 
     widget.onAdd(

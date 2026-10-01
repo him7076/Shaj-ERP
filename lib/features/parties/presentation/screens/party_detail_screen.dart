@@ -78,7 +78,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         final invoices = await isar.invoices.filter().isDeletedEqualTo(false).and().group((q) => q.partyIdEqualTo(partyId).or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().party((p) => p.uuidEqualTo(partyUuid ?? ''))).findAll();
         for (var inv in invoices) {
           if (inv.paymentStatus != 'Cancelled') {
-            final pending = (inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0);
+            final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
             bal += pending > 0 ? pending : 0.0;
           }
         }
@@ -86,7 +86,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         final purchases = await isar.purchases.filter().isDeletedEqualTo(false).and().group((q) => q.partyIdEqualTo(partyId).or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().party((p) => p.uuidEqualTo(partyUuid ?? ''))).findAll();
         for (var pur in purchases) {
           if (pur.paymentStatus != 'Cancelled') {
-            final pending = (pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0);
+            final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
             bal -= pending > 0 ? pending : 0.0;
           }
         }
@@ -98,10 +98,15 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
           
           final matchesSource = txn.partyUuid == partyUuid || (txn.partyUuid == null && txn.partyName?.trim().toLowerCase() == partyNameLower);
           final matchesTarget = txn.targetPartyUuid == partyUuid;
+          final isLinkedToBill = txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty;
           
-          if (['Receipt', 'Credit Note', 'Other Income'].contains(type)) {
+          if (type == 'Receipt' || type == 'Other Income') {
+            if (matchesSource && !isLinkedToBill) bal -= amt;
+          } else if (type == 'Payment' || type == 'Expense') {
+            if (matchesSource && !isLinkedToBill) bal += amt;
+          } else if (type == 'Credit Note') {
             if (matchesSource) bal -= amt;
-          } else if (['Payment', 'Debit Note', 'Expense'].contains(type)) {
+          } else if (type == 'Debit Note') {
             if (matchesSource) bal += amt;
           } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
             if (matchesSource) bal -= amt;

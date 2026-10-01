@@ -61,25 +61,32 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
         note.id = noteId;
 
         // 2. Adjust Party Outstanding Balance (reduces what the customer owes us)
-        final oldPartyId = oldNote?.partyId;
-        final oldParty = kIsWeb
-            ? (oldPartyId != null ? await isar.collection<Party>().get(oldPartyId) : null)
-            : oldNote?.party.value;
-            
-        final newParty = kIsWeb
-            ? (note.partyId != null ? await isar.collection<Party>().get(note.partyId!) : null)
-            : note.party.value;
+        Party? oldParty;
+        if (oldNote != null && oldNote.partyId != null && oldNote.partyId! > 0) {
+          try { oldParty = await isar.partys.get(oldNote.partyId!); } catch (_) {}
+        }
+        if (oldParty == null && oldNote != null && oldNote.partyName != null && oldNote.partyName!.isNotEmpty) {
+          try { oldParty = await isar.partys.filter().partyNameEqualTo(oldNote.partyName!).findFirst(); } catch (_) {}
+        }
+
+        Party? newParty;
+        if (note.partyId != null && note.partyId! > 0) {
+          try { newParty = await isar.partys.get(note.partyId!); } catch (_) {}
+        }
+        if (newParty == null && note.partyName != null && note.partyName!.isNotEmpty) {
+          try { newParty = await isar.partys.filter().partyNameEqualTo(note.partyName!).findFirst(); } catch (_) {}
+        }
 
         if (oldParty != null && !isNew) {
           final oldAmt = oldNote?.grandTotal ?? 0.0;
           oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + oldAmt; // revert
-          await isar.collection<Party>().put(oldParty);
+          await isar.partys.put(oldParty);
         }
 
         if (newParty != null) {
           final amt = note.grandTotal ?? 0.0;
           newParty.outstandingBalance = (newParty.outstandingBalance ?? 0.0) - amt;
-          await isar.collection<Party>().put(newParty);
+          await isar.partys.put(newParty);
         }
 
         // 3. Put Items & Restore Inventory Levels (returned items increase stock)
@@ -93,22 +100,27 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
           item.parentCreditNoteId = note.id;
 
           if (!kIsWeb) {
-            item.creditNote.value = note;
+            try { item.creditNote.value = note; } catch (_) {}
           }
-          await isar.creditNoteItems.put(item);
+          final itemId = await isar.creditNoteItems.put(item);
+          item.id = itemId;
 
           // Restore stock (Sales Return = items come back in stock)
-          final dbItem = kIsWeb
-              ? (item.itemId != null ? await isar.items.get(item.itemId!) : null)
-              : item.item.value;
+          Item? dbItem;
+          if (item.itemId != null && item.itemId! > 0) {
+            try { dbItem = await isar.items.get(item.itemId!); } catch (_) {}
+          }
+          if (dbItem == null && item.itemName != null && item.itemName!.isNotEmpty) {
+            try { dbItem = await isar.items.filter().itemNameEqualTo(item.itemName!).findFirst(); } catch (_) {}
+          }
+
           if (dbItem != null) {
             final double available = dbItem.currentStock ?? 0.0;
             final double returned = item.quantity ?? 0.0;
             dbItem.currentStock = available + returned;
 
-            // Log stock movement
-            final log = '[\${DateTime.now().toIso8601String().substring(0, 19)}] RETURNED IN: +\$returned | Bal: \${dbItem.currentStock} | Credit Note #\${note.creditNoteNumber}';
-            dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '\$log\n\${dbItem.notes}';
+            final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] RETURNED IN: +$returned | Bal: ${dbItem.currentStock} | Credit Note #${note.creditNoteNumber}';
+            dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
             await isar.items.put(dbItem);
           }
         }
@@ -136,29 +148,32 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
 
         txn.transactionNumber = note.creditNoteNumber;
         txn.transactionDate = note.creditNoteDate ?? DateTime.now();
-        txn.partyUuid = newParty?.uuid ?? note.party.value?.uuid;
+        txn.partyUuid = newParty?.uuid ?? note.partyName;
         txn.partyName = note.partyName;
         txn.amount = note.grandTotal;
         txn.paymentMode = 'Credit';
-        txn.remarks = 'Sales Return: Credit Note #\${note.creditNoteNumber}. \${note.remarks ?? ""}';
+        txn.remarks = 'Sales Return: Credit Note #${note.creditNoteNumber}. ${note.remarks ?? ""}';
         txn.linkedBillUuid = note.uuid;
         txn.updatedAt = DateTime.now();
         txn.isDeleted = false;
         txn.isSynced = false;
         
         if (newParty != null && !kIsWeb) {
-          txn.party.value = newParty;
+          try { txn.party.value = newParty; } catch (_) {}
         }
         final txnId = await isar.transactions.put(txn);
 
-        // Sync date across any existing transaction logs matching this credit note number
+        // Sync date across any existing transaction logs matching this credit note number or UUID
+        final Set<int> syncedTxnIds = {txnId};
         if (note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
           final matchingTxns = await isar.transactions
               .filter()
               .transactionNumberEqualTo(note.creditNoteNumber!)
+              .or()
+              .linkedBillUuidEqualTo(note.uuid ?? '')
               .findAll();
           for (var mt in matchingTxns) {
-            if (mt.id != txnId) {
+            if (syncedTxnIds.add(mt.id)) {
               mt.transactionDate = note.creditNoteDate ?? DateTime.now();
               mt.partyName = note.partyName;
               mt.amount = note.grandTotal;
@@ -204,9 +219,9 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
         }
       });
 
-      logger.info('Credit Note #\${note.creditNoteNumber} saved successfully.');
+      logger.info('Credit Note #${note.creditNoteNumber} saved successfully.');
     } catch (e) {
-      throw DatabaseException('Failed to save credit note: \$e');
+      throw DatabaseException('Failed to save credit note: $e');
     }
   }
 
