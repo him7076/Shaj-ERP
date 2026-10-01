@@ -28,7 +28,8 @@ import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 
 class ItemsScreen extends ConsumerStatefulWidget {
-  const ItemsScreen({Key? key}) : super(key: key);
+  final String? lockedCategoryName;
+  const ItemsScreen({Key? key, this.lockedCategoryName}) : super(key: key);
 
   @override
   ConsumerState<ItemsScreen> createState() => _ItemsScreenState();
@@ -48,12 +49,20 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     // Stock recalculation REMOVED from initState — it was loading 8 full DB collections
     // and running O(N*M) nested loops on every screen open (3-10s freeze).
     // Stock is now only recalculated after backup restore, Excel import, or cloud sync.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final prefs = ref.read(sharedPreferencesProvider);
       setState(() {
         _enableBundleManagement = prefs.getBool('enable_bundle_management') ?? false;
       });
-      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit, isBundle: false));
+      
+      int? categoryId;
+      if (widget.lockedCategoryName != null) {
+        final db = ref.read(databaseServiceProvider).isar;
+        final cat = await db.categorys.filter().categoryNameEqualTo(widget.lockedCategoryName!).findFirst();
+        categoryId = cat?.id;
+      }
+      
+      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit, isBundle: false, categoryId: categoryId));
     });
   }
 
@@ -359,7 +368,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
                 },
               )
             : Text(
-                'Product Inventory',
+                widget.lockedCategoryName ?? 'Product Inventory',
                 style: TextStyle(
                   fontSize: ResponsiveLayout.isMobile(context) ? 15 : 18,
                   fontWeight: FontWeight.bold,
@@ -649,6 +658,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     ItemSearchFilter filter,
     AsyncValue<List<Category>> categoriesAsync,
   ) {
+    if (widget.lockedCategoryName != null) return const SizedBox.shrink();
     return categoriesAsync.when(
       data: (categories) {
         if (categories.isEmpty) return const SizedBox.shrink();

@@ -115,6 +115,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ItemsScreen(),
           ),
           GoRoute(
+            path: '/fixed-assets',
+            name: 'fixed-assets',
+            builder: (context, state) => const ItemsScreen(lockedCategoryName: 'Fixed Assets'),
+          ),
+          GoRoute(
             path: '/orders',
             name: 'orders',
             builder: (context, state) {

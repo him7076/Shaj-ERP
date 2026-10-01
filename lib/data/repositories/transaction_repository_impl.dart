@@ -97,10 +97,14 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             if (oldParty != null) {
               final oldAmt = oldTransaction.amount ?? 0.0;
               final oldType = oldTransaction.transactionType;
-              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Payment' || oldType == 'Debit Note' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(oldType)) {
+              if (oldType == 'Receipt' || oldType == 'Credit Note' || oldType == 'Other Income' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(oldType)) {
                 oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + oldAmt;
-              } else if (oldType == 'Sales' || oldType == 'Purchase') {
+              } else if (oldType == 'Payment' || oldType == 'Debit Note' || oldType == 'Expense') {
                 oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - oldAmt;
+              } else if (oldType == 'Sales') {
+                oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - oldAmt;
+              } else if (oldType == 'Purchase') {
+                oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) + oldAmt;
               }
               oldParty.updatedAt = DateTime.now();
               await isar.partys.put(oldParty);
@@ -192,10 +196,14 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             final type = transaction.transactionType;
             
-            if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
+            if (type == 'Receipt' || type == 'Credit Note' || type == 'Other Income' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
-            } else if (type == 'Sales' || type == 'Purchase') {
+            } else if (type == 'Payment' || type == 'Debit Note' || type == 'Expense') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
+            } else if (type == 'Sales') {
+              party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
+            } else if (type == 'Purchase') {
+              party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
             }
             party.updatedAt = DateTime.now();
             party.isSynced = false;
@@ -328,10 +336,14 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
             final amt = transaction.amount ?? 0.0;
             final type = transaction.transactionType;
 
-            if (type == 'Receipt' || type == 'Credit Note' || type == 'Payment' || type == 'Debit Note') {
+            if (type == 'Receipt' || type == 'Credit Note' || type == 'Other Income' || ['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
-            } else if (type == 'Sales' || type == 'Purchase') {
+            } else if (type == 'Payment' || type == 'Debit Note' || type == 'Expense') {
               party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
+            } else if (type == 'Sales') {
+              party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
+            } else if (type == 'Purchase') {
+              party.outstandingBalance = (party.outstandingBalance ?? 0.0) + amt;
             }
             party.updatedAt = DateTime.now();
             party.isSynced = false;

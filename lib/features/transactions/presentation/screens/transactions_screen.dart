@@ -5,6 +5,7 @@ import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'dart:convert' as dart_convert;
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
@@ -1012,11 +1013,34 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                 txn.transactionDate != null ? DateFormat('dd MMM yyyy').format(txn.transactionDate!) : "N/A",
                                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                               ),
-                                              Text(
-                                                isUsedType
-                                                    ? 'Unused: ${currencyFormat.format(txn.amount ?? 0.0)}'
-                                                    : 'Balance: ${currencyFormat.format(txn.amount ?? 0.0)}',
-                                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: badgeColor.withOpacity(0.8)),
+                                              Builder(
+                                                builder: (context) {
+                                                  double usedAmount = 0.0;
+                                                  if (txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty) {
+                                                    try {
+                                                      final clean = txn.linkedBillUuid!.trim();
+                                                      if (clean.startsWith('{')) {
+                                                        final map = Map<String, dynamic>.from(dart_convert.jsonDecode(clean));
+                                                        for (final val in map.values) {
+                                                          usedAmount += double.tryParse(val.toString()) ?? 0.0;
+                                                        }
+                                                      } else {
+                                                        usedAmount = txn.amount ?? 0.0;
+                                                      }
+                                                    } catch (_) {
+                                                      usedAmount = txn.amount ?? 0.0;
+                                                    }
+                                                  }
+                                                  double unusedAmount = (txn.amount ?? 0.0) - usedAmount;
+                                                  if (unusedAmount < 0) unusedAmount = 0.0;
+                                                  
+                                                  return Text(
+                                                    isUsedType
+                                                        ? 'Unused: ${currencyFormat.format(unusedAmount)}'
+                                                        : 'Balance: ${currencyFormat.format(txn.amount ?? 0.0)}',
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: badgeColor.withOpacity(0.8)),
+                                                  );
+                                                }
                                               ),
                                             ],
                                           ),

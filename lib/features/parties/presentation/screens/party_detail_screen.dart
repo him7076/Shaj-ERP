@@ -89,13 +89,17 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         for (var txn in txns) {
           final amt = txn.amount ?? 0.0;
           final type = txn.transactionType;
+          
+          final matchesSource = txn.partyUuid == partyUuid || (txn.partyUuid == null && txn.partyName?.trim().toLowerCase() == partyNameLower);
+          final matchesTarget = txn.targetPartyUuid == partyUuid;
+          
           if (['Receipt', 'Credit Note', 'Other Income'].contains(type)) {
-            if (txn.partyUuid == partyUuid || txn.partyName == item.partyName) bal -= amt;
+            if (matchesSource) bal -= amt;
           } else if (['Payment', 'Debit Note', 'Expense'].contains(type)) {
-            if (txn.partyUuid == partyUuid || txn.partyName == item.partyName) bal += amt;
+            if (matchesSource) bal += amt;
           } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
-            if (txn.partyUuid == partyUuid || txn.partyName == item.partyName) bal -= amt;
-            else if (txn.targetPartyUuid == partyUuid) bal += amt;
+            if (matchesSource) bal -= amt;
+            else if (matchesTarget) bal += amt;
           }
         }
         

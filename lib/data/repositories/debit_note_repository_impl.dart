@@ -51,18 +51,35 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
       note.version = isNew ? 1 : note.version + 1;
 
       await isar.writeTxn(() async {
+        DebitNote? oldNote;
+        if (!isNew) {
+          oldNote = await collection.get(note.id);
+        }
+
         // 1. Put Debit Note
         final noteId = await collection.put(note);
         note.id = noteId;
 
-        // 2. Adjust Party Outstanding Balance (reduces what we owe the supplier)
-        final party = kIsWeb
+        // 2. Adjust Party Outstanding Balance (increases what the customer owes us)
+        final oldPartyId = oldNote?.partyId;
+        final oldParty = kIsWeb
+            ? (oldPartyId != null ? await isar.collection<Party>().get(oldPartyId) : null)
+            : oldNote?.party.value;
+            
+        final newParty = kIsWeb
             ? (note.partyId != null ? await isar.collection<Party>().get(note.partyId!) : null)
             : note.party.value;
-        if (party != null && isNew) {
+
+        if (oldParty != null && !isNew) {
+          final oldAmt = oldNote?.grandTotal ?? 0.0;
+          oldParty.outstandingBalance = (oldParty.outstandingBalance ?? 0.0) - oldAmt; // revert
+          await isar.collection<Party>().put(oldParty);
+        }
+
+        if (newParty != null) {
           final amt = note.grandTotal ?? 0.0;
-          party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
-          await isar.collection<Party>().put(party);
+          newParty.outstandingBalance = (newParty.outstandingBalance ?? 0.0) + amt;
+          await isar.collection<Party>().put(newParty);
         }
 
         // 3. Put Items & Adjust Inventory Levels (returned items leave stock)
@@ -90,47 +107,55 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
             dbItem.currentStock = available - returned;
 
             // Log stock movement
-            final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] RETURNED OUT: -$returned | Bal: ${dbItem.currentStock} | Debit Note #${note.debitNoteNumber}';
-            dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '$log\n${dbItem.notes}';
+            final log = '[\${DateTime.now().toIso8601String().substring(0, 19)}] RETURNED OUT: -\$returned | Bal: \${dbItem.currentStock} | Debit Note #\${note.debitNoteNumber}';
+            dbItem.notes = dbItem.notes == null || dbItem.notes!.isEmpty ? log : '\$log\n\${dbItem.notes}';
             await isar.items.put(dbItem);
           }
         }
 
         // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
-        if (isNew) {
-          final txn = Transaction()
-            ..uuid = _generateUuid()
-            ..transactionNumber = note.debitNoteNumber
-            ..transactionDate = note.debitNoteDate ?? DateTime.now()
-            ..partyUuid = party?.uuid
-            ..partyName = note.partyName
-            ..transactionType = 'Debit Note'
-            ..amount = note.grandTotal
-            ..paymentMode = 'Credit'
-            ..remarks = 'Purchase Return: Debit Note #${note.debitNoteNumber}. ${note.remarks ?? ""}'
-            ..linkedBillUuid = note.uuid
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now()
-            ..isDeleted = false
-            ..isSynced = false
-            ..version = 1;
-          
-          if (party != null && !kIsWeb) {
-            txn.party.value = party;
-          }
-          await isar.transactions.put(txn);
-
-          // Sync log for Transaction
-          final txnQueue = SyncQueue()
-            ..uuid = _generateUuid()
-            ..entityType = 'Transaction'
-            ..entityId = txn.id
-            ..entityUuid = txn.uuid
-            ..operation = 'Insert'
-            ..createdAt = DateTime.now()
-            ..updatedAt = DateTime.now();
-          await isar.syncQueues.put(txnQueue);
+        Transaction? txn;
+        if (!isNew) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid).findFirst();
         }
+        
+        if (txn == null) {
+          txn = Transaction()
+            ..uuid = _generateUuid()
+            ..transactionType = 'Debit Note'
+            ..createdAt = DateTime.now()
+            ..version = 1;
+        } else {
+          txn.version = (txn.version ?? 1) + 1;
+        }
+
+        txn.transactionNumber = note.debitNoteNumber;
+        txn.transactionDate = note.debitNoteDate ?? DateTime.now();
+        txn.partyUuid = newParty?.uuid ?? note.partyUuid;
+        txn.partyName = note.partyName;
+        txn.amount = note.grandTotal;
+        txn.paymentMode = 'Credit';
+        txn.remarks = 'Purchase Return: Debit Note #\${note.debitNoteNumber}. \${note.remarks ?? ""}';
+        txn.linkedBillUuid = note.uuid;
+        txn.updatedAt = DateTime.now();
+        txn.isDeleted = false;
+        txn.isSynced = false;
+        
+        if (newParty != null && !kIsWeb) {
+          txn.party.value = newParty;
+        }
+        final txnId = await isar.transactions.put(txn);
+
+        // Sync log for Transaction
+        final txnQueue = SyncQueue()
+          ..uuid = _generateUuid()
+          ..entityType = 'Transaction'
+          ..entityId = txnId
+          ..entityUuid = txn.uuid
+          ..operation = txn.id == Isar.autoIncrement ? 'Insert' : 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(txnQueue);
 
         // 5. Sync queue logs for DebitNote
         final dnQueue = SyncQueue()
@@ -157,15 +182,15 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
         }
       });
 
-      logger.info('Debit Note #${note.debitNoteNumber} saved successfully.');
+      logger.info('Debit Note #\${note.debitNoteNumber} saved successfully.');
     } catch (e) {
-      throw DatabaseException('Failed to save debit note: $e');
+      throw DatabaseException('Failed to save debit note: \$e');
     }
   }
 
   String _generateUuid() {
     final random = Random();
     final parts = List.generate(4, (_) => random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0'));
-    return '${DateTime.now().millisecondsSinceEpoch}-${parts.join("-")}';
+    return '\${DateTime.now().millisecondsSinceEpoch}-\${parts.join("-")}';
   }
 }

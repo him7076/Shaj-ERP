@@ -46,6 +46,9 @@ QueryBuilder<Purchase, Purchase, QAfterSortBy> _buildPurchaseQuery(Isar isar, Pu
     );
   }
   
+  // Exclude Fixed Asset purchases from regular purchase list
+  qb = qb.and().not().purchaseNumberStartsWith('FA-PUR-');
+  
   return qb.sortByPurchaseDateDesc();
 }
 
