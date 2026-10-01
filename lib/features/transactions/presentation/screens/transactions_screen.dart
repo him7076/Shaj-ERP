@@ -20,6 +20,7 @@ import 'package:business_sahaj_erp/features/transactions/presentation/providers/
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
+import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/add_edit_order_screen.dart';

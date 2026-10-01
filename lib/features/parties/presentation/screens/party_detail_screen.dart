@@ -73,45 +73,33 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         final partyNameLower = item.partyName?.trim().toLowerCase();
         final partyId = item.id;
 
-        double totalPending = 0.0;
-        if (item.partyType == 'Supplier') {
-          final purchases = await isar.purchases.filter()
-              .isDeletedEqualTo(false)
-              .and()
-              .group((q) => q
-                  .partyIdEqualTo(partyId)
-                  .or()
-                  .partyNameEqualTo(item!.partyName ?? '', caseSensitive: false)
-                  .or()
-                  .party((p) => p.uuidEqualTo(partyUuid ?? ''))
-              )
-              .findAll();
-          for (var pur in purchases) {
-            if (pur.paymentStatus != 'Cancelled') {
-              totalPending += (pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0)));
-            }
-          }
-        } else {
-          final invoices = await isar.invoices.filter()
-              .isDeletedEqualTo(false)
-              .and()
-              .group((q) => q
-                  .partyIdEqualTo(partyId)
-                  .or()
-                  .partyNameEqualTo(item!.partyName ?? '', caseSensitive: false)
-                  .or()
-                  .party((p) => p.uuidEqualTo(partyUuid ?? ''))
-              )
-              .findAll();
-          for (var inv in invoices) {
-            if (inv.paymentStatus != 'Cancelled') {
-              totalPending += (inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0)));
-            }
+        double bal = item.openingBalance ?? 0.0;
+        
+        final invoices = await isar.invoices.filter().isDeletedEqualTo(false).and().group((q) => q.partyIdEqualTo(partyId).or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().party((p) => p.uuidEqualTo(partyUuid ?? ''))).findAll();
+        for (var inv in invoices) {
+          if (inv.paymentStatus != 'Cancelled') bal += (inv.grandTotal ?? 0.0);
+        }
+        
+        final purchases = await isar.purchases.filter().isDeletedEqualTo(false).and().group((q) => q.partyIdEqualTo(partyId).or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().party((p) => p.uuidEqualTo(partyUuid ?? ''))).findAll();
+        for (var pur in purchases) {
+          if (pur.paymentStatus != 'Cancelled') bal -= (pur.grandTotal ?? 0.0);
+        }
+        
+        final txns = await isar.transactions.filter().isDeletedEqualTo(false).and().group((q) => q.partyUuidEqualTo(partyUuid ?? '').or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '')).findAll();
+        for (var txn in txns) {
+          final amt = txn.amount ?? 0.0;
+          final type = txn.transactionType;
+          if (['Receipt', 'Credit Note', 'Other Income'].contains(type)) {
+            if (txn.partyUuid == partyUuid || txn.partyName == item.partyName) bal -= amt;
+          } else if (['Payment', 'Debit Note', 'Expense'].contains(type)) {
+            if (txn.partyUuid == partyUuid || txn.partyName == item.partyName) bal += amt;
+          } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
+            if (txn.partyUuid == partyUuid || txn.partyName == item.partyName) bal -= amt;
+            else if (txn.targetPartyUuid == partyUuid) bal += amt;
           }
         }
-
-        final opening = item.openingBalance ?? 0.0;
-        item.outstandingBalance = totalPending > 0 ? totalPending : opening;
+        
+        item.outstandingBalance = bal;
       }
 
       setState(() {
