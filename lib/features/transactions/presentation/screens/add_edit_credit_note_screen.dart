@@ -4,6 +4,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_payment_mode_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/round_off_field.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../../../../core/widgets/full_screen_item_entry.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -169,6 +170,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         _existingCreditNote = creditNote;
         _billNumberController.text = creditNote.creditNoteNumber ?? '';
         _originalBillNumberController.text = creditNote.originalInvoiceNumber ?? '';
+        _linkedBillUuid = creditNote.originalInvoiceUuid;
         _creditNoteDate = creditNote.creditNoteDate ?? DateTime.now();
         final remarksText = creditNote.remarks ?? '';
         _remarksController.text = remarksText;
@@ -236,6 +238,53 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       _billNumberController.text = numStr;
       if (widget.initialInvoiceNumber != null) {
         _originalBillNumberController.text = widget.initialInvoiceNumber!;
+        _linkedBillUuid = widget.initialInvoiceUuid;
+        
+        if (widget.initialInvoiceUuid != null) {
+           final inv = await isar.invoices.filter().uuidEqualTo(widget.initialInvoiceUuid!).findFirst();
+           if (inv != null) {
+             try { await inv.party.load(); } catch (_) {}
+             Party? p = inv.party.value;
+             if (p == null && inv.partyId != null && inv.partyId! > 0) p = await isar.partys.get(inv.partyId!);
+             if (p == null && inv.partyName != null) p = await isar.partys.filter().partyNameEqualTo(inv.partyName!).findFirst();
+             if (p != null) _selectedParty = p;
+             
+             List<InvoiceItem> invItems = [];
+             try { await inv.invoiceItems.load(); invItems = inv.invoiceItems.toList(); } catch (_) {}
+             if (invItems.isEmpty) {
+               invItems = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(inv.id).findAll();
+             }
+             
+             String _genU() {
+               final random = Random();
+               final parts = List.generate(4, (_) => random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0'));
+               return '${DateTime.now().millisecondsSinceEpoch}-${parts.join("-")}';
+             }
+
+             _draftItems = invItems.map((e) => CreditNoteItem()
+                ..uuid = _genU()
+                ..itemId = e.itemId
+                ..itemName = e.itemName
+                ..quantity = e.quantity
+                ..price = e.price
+                ..discountAmount = e.discountAmount
+                ..discountPercent = e.discountPercent
+                ..discountType = e.discountType
+                ..taxRate = e.taxRate
+                ..cgstAmount = e.cgstAmount
+                ..sgstAmount = e.sgstAmount
+                ..igstAmount = e.igstAmount
+                ..taxAmount = e.taxAmount
+                ..totalAmount = e.totalAmount
+             ).toList();
+             
+             for (var pi in _draftItems) {
+                var invItem = invItems.firstWhere((element) => element.itemName == pi.itemName);
+                pi.item.value = invItem.item.value;
+             }
+             _recalculateTotals();
+           }
+        }
       }
       if (mounted) {
         setState(() {});
@@ -442,7 +491,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       pendingBills = invoices.where((inv) {
         final grandTotal = inv.grandTotal ?? 0.0;
         final pendingAmount = inv.pendingAmount ?? grandTotal;
-        return pendingAmount > 0 || _originalBillNumberController.text == inv.invoiceNumber;
+        return pendingAmount > 0 || _linkedBillUuid == inv.uuid;
       }).toList();
     } else {
       // Debit Note -> Link to Purchases
@@ -454,7 +503,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       pendingBills = purchases.where((pur) {
         final grandTotal = pur.grandTotal ?? 0.0;
         final pendingAmount = pur.pendingAmount ?? grandTotal;
-        return pendingAmount > 0 || _originalBillNumberController.text == pur.purchaseNumber;
+        return pendingAmount > 0 || _linkedBillUuid == pur.uuid;
       }).toList();
     }
 
@@ -477,7 +526,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: pendingBills.map((bill) {
-                      final isLinked = _originalBillNumberController.text == (true ? bill.invoiceNumber : bill.purchaseNumber);
+                      final isLinked = _linkedBillUuid == bill.uuid;
                       final grandTotal = bill.grandTotal ?? 0.0;
                       final pendingToPay = bill.pendingAmount ?? grandTotal;
                       final billNo = true ? bill.invoiceNumber : bill.purchaseNumber;
