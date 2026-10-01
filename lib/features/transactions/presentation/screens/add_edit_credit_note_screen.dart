@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
@@ -47,6 +48,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
   final _remarksController = TextEditingController();
   final _billNumberController = TextEditingController();
   final _originalBillNumberController = TextEditingController();
+  String? _linkedBillUuid;
   final _paidAmountController = TextEditingController(text: '0.0');
   final _discountController = TextEditingController(text: '0.0');
   final _productSearchController = TextEditingController();
@@ -252,7 +254,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
              List<InvoiceItem> invItems = [];
              try { await inv.invoiceItems.load(); invItems = inv.invoiceItems.toList(); } catch (_) {}
              if (invItems.isEmpty) {
-               invItems = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(inv.id).findAll();
+               invItems = await isar.collection<InvoiceItem>().filter().parentInvoiceIdEqualTo(inv.id).findAll();
              }
              
              String _genU() {
@@ -266,20 +268,15 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                 ..itemId = e.itemId
                 ..itemName = e.itemName
                 ..quantity = e.quantity
-                ..price = e.price
-                ..discountAmount = e.discountAmount
-                ..discountPercent = e.discountPercent
-                ..discountType = e.discountType
-                ..taxRate = e.taxRate
-                ..cgstAmount = e.cgstAmount
-                ..sgstAmount = e.sgstAmount
-                ..igstAmount = e.igstAmount
-                ..taxAmount = e.taxAmount
+                ..rate = e.price
+                ..discount = e.discountAmount
+                ..gstRate = e.taxRate
+                ..gstAmount = e.taxAmount
                 ..totalAmount = e.totalAmount
              ).toList();
              
              for (var pi in _draftItems) {
-                var invItem = invItems.firstWhere((element) => element.itemName == pi.itemName);
+                var invItem = invItems.firstWhere((element) => element.itemName == pi.itemName, orElse: () => invItems.first);
                 pi.item.value = invItem.item.value;
              }
              _recalculateTotals();

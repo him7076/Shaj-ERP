@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/settings_collection.dart';
@@ -47,6 +48,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
   final _remarksController = TextEditingController();
   final _billNumberController = TextEditingController();
   final _originalBillNumberController = TextEditingController();
+  String? _linkedBillUuid;
   final _paidAmountController = TextEditingController(text: '0.0');
   final _discountController = TextEditingController(text: '0.0');
   final _productSearchController = TextEditingController();
@@ -252,7 +254,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
              List<PurchaseItem> purItems = [];
              try { await pur.purchaseItems.load(); purItems = pur.purchaseItems.toList(); } catch (_) {}
              if (purItems.isEmpty) {
-               purItems = await isar.purchaseItems.filter().parentPurchaseIdEqualTo(pur.id).findAll();
+               purItems = await isar.collection<PurchaseItem>().filter().parentPurchaseIdEqualTo(pur.id).findAll();
              }
              
              String _genU() {
@@ -266,20 +268,15 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                 ..itemId = e.itemId
                 ..itemName = e.itemName
                 ..quantity = e.quantity
-                ..price = e.price
-                ..discountAmount = e.discountAmount
-                ..discountPercent = e.discountPercent
-                ..discountType = e.discountType
-                ..taxRate = e.taxRate
-                ..cgstAmount = e.cgstAmount
-                ..sgstAmount = e.sgstAmount
-                ..igstAmount = e.igstAmount
-                ..taxAmount = e.taxAmount
+                ..rate = e.price
+                ..discount = e.discountAmount
+                ..gstRate = e.taxRate
+                ..gstAmount = e.taxAmount
                 ..totalAmount = e.totalAmount
              ).toList();
              
              for (var pi in _draftItems) {
-                var pItem = purItems.firstWhere((element) => element.itemName == pi.itemName);
+                var pItem = purItems.firstWhere((element) => element.itemName == pi.itemName, orElse: () => purItems.first);
                 pi.item.value = pItem.item.value;
              }
              _recalculateTotals();
