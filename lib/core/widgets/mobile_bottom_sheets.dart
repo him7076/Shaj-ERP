@@ -3,10 +3,12 @@ import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
+import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 
 class MobileBottomSheets {
   /// Shows a modern, thumb-friendly Quick Create Bottom Sheet featuring ALL Transaction Types.
-  static Future<void> showQuickCreate(BuildContext context, WidgetRef ref) {
+  static Future<void> showQuickCreate(BuildContext context, WidgetRef ref, {Party? initialParty}) {
     final theme = Theme.of(context);
     final settings = ref.read(sharedPreferencesProvider);
 
@@ -97,6 +99,7 @@ class MobileBottomSheets {
                         icon: Icons.receipt_long_rounded,
                         color: const Color(0xFF0EA5E9),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/sales?create=true');
                         },
@@ -108,6 +111,7 @@ class MobileBottomSheets {
                         icon: Icons.shopping_bag_rounded,
                         color: const Color(0xFF10B981),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/purchases?create=true');
                         },
@@ -119,6 +123,7 @@ class MobileBottomSheets {
                         icon: Icons.arrow_circle_down_rounded,
                         color: const Color(0xFF16A34A),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/receipts?create=true');
                         },
@@ -130,6 +135,7 @@ class MobileBottomSheets {
                         icon: Icons.arrow_circle_up_rounded,
                         color: const Color(0xFFDC2626),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/payments?create=true');
                         },
@@ -141,6 +147,7 @@ class MobileBottomSheets {
                         icon: Icons.shopping_cart_rounded,
                         color: const Color(0xFF7C3AED),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/orders?create=true');
                         },
@@ -152,6 +159,7 @@ class MobileBottomSheets {
                         icon: Icons.account_balance_wallet_rounded,
                         color: const Color(0xFFF43F5E),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/expenses?create=true');
                         },
@@ -163,6 +171,7 @@ class MobileBottomSheets {
                         icon: Icons.assignment_return_rounded,
                         color: const Color(0xFF6366F1),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/credit-notes?create=true');
                         },
@@ -174,6 +183,7 @@ class MobileBottomSheets {
                         icon: Icons.assignment_returned_rounded,
                         color: const Color(0xFFF59E0B),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/debit-notes?create=true');
                         },
@@ -185,6 +195,7 @@ class MobileBottomSheets {
                         icon: Icons.swap_horiz_rounded,
                         color: const Color(0xFF14B8A6),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/party-transfers?create=true');
                         },
@@ -196,6 +207,7 @@ class MobileBottomSheets {
                         icon: Icons.monetization_on_rounded,
                         color: const Color(0xFF3B82F6),
                         onTap: () {
+                          ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                           Navigator.pop(context);
                           context.push('/other-incomes?create=true');
                         },
@@ -208,6 +220,7 @@ class MobileBottomSheets {
                           icon: Icons.precision_manufacturing_rounded,
                           color: const Color(0xFF6B7280),
                           onTap: () {
+                            ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                             Navigator.pop(context);
                             context.push('/purchase-fa?create=true');
                           },
@@ -219,6 +232,7 @@ class MobileBottomSheets {
                           icon: Icons.sell_rounded,
                           color: const Color(0xFF9CA3AF),
                           onTap: () {
+                            ref.read(quickActionPrefillPartyProvider.notifier).state = initialParty;
                             Navigator.pop(context);
                             context.push('/sale-fa?create=true');
                           },

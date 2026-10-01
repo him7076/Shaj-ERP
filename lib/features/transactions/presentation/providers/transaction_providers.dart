@@ -90,7 +90,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   // 1. Fetch Transactions
   List<Transaction> rawTransactions = [];
   if (filter.transactionType == 'All' || 
-      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income'].contains(filter.transactionType)) {
+      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
     try {
       var qb = isar.transactions.filter().isDeletedEqualTo(false);
       
@@ -417,7 +417,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
 
   // 1. Transactions Collection
   if (filter.transactionType == 'All' || 
-      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income'].contains(filter.transactionType)) {
+      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
     var qb = isar.transactions.filter().isDeletedEqualTo(false);
     
     if (filter.partyUuid != null) qb = qb.partyUuidEqualTo(filter.partyUuid);

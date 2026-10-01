@@ -69,7 +69,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                     MaterialPageRoute(builder: (context) => const AddEditPartyTransferScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else {
-          if (widget.lockedType != 'Debit Note' && widget.lockedType != 'Transfer' && widget.lockedType != 'Party Transfer') AddEditTransactionDialog.show(context, initialType: widget.lockedType);
+          final prefillParty = ref.read(quickActionPrefillPartyProvider); if (widget.lockedType != 'Debit Note' && widget.lockedType != 'Transfer' && widget.lockedType != 'Party Transfer') AddEditTransactionDialog.show(context, initialType: widget.lockedType, initialParty: prefillParty);
         }
       }
       

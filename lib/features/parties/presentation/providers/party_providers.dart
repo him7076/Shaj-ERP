@@ -188,3 +188,5 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
 
   return balanceMap;
 });
+
+final quickActionPrefillPartyProvider = StateProvider<Party?>((ref) => null);

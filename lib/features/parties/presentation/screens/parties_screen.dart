@@ -594,7 +594,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     final balance = balanceCache[cacheKey] ?? fallbackBal;
     
     final VoidCallback handleTap = () {
-      Navigator.of(context).push(
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (context) => PartyDetailScreen(partyUuid: party.uuid!),
         ),

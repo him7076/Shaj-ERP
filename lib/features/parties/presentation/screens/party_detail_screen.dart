@@ -20,6 +20,7 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'add_edit_party_screen.dart';
+import 'package:business_sahaj_erp/core/widgets/mobile_bottom_sheets.dart';
 
 class PartyDetailScreen extends ConsumerStatefulWidget {
   final String partyUuid;
@@ -224,26 +225,24 @@ final theme = Theme.of(context);
         ),
         elevation: 0,
         actions: [
-          IconButton(
-            tooltip: 'Share Business Card',
-            icon: Icon(Icons.share_outlined, size: isMobile ? 20 : 24),
-            onPressed: _shareCard,
-          ),
-          IconButton(
-            tooltip: 'Edit Party Profile',
-            icon: Icon(Icons.edit_outlined, size: isMobile ? 20 : 24),
-            onPressed: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (context) => AddEditPartyScreen(party: _party),
-                ),
-              ).then((_) => _loadPartyDetails());
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              if (value == 'share') _shareCard();
+              else if (value == 'edit') {
+                Navigator.of(context, rootNavigator: true).push(
+                  MaterialPageRoute(
+                    builder: (context) => AddEditPartyScreen(party: _party),
+                  ),
+                ).then((_) => _loadPartyDetails());
+              }
+              else if (value == 'delete') _softDeleteParty();
             },
-          ),
-          IconButton(
-            tooltip: 'Delete Party',
-            icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: isMobile ? 20 : 24),
-            onPressed: _softDeleteParty,
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'share', child: Row(children: [Icon(Icons.share_outlined, size: 18), SizedBox(width: 8), Text('Share')])),
+              const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 18), SizedBox(width: 8), Text('Edit')])),
+              const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.redAccent, size: 18), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.redAccent))])),
+            ],
           ),
         ],
       ),
@@ -284,10 +283,11 @@ final theme = Theme.of(context);
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Wrap(
                               spacing: 6,
                               runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -305,20 +305,62 @@ final theme = Theme.of(context);
                                   ),
                                   child: Text(_party!.partyType ?? 'Customer', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
                                 ),
+                                InkWell(
+                                  onTap: () {
+                                    MobileBottomSheets.showQuickCreate(context, ref, initialParty: _party);
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2)),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_circle_rounded, size: 12, color: theme.colorScheme.primary),
+                                        const SizedBox(width: 4),
+                                        Text('Transaction', style: TextStyle(color: theme.colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (isDr ? Colors.red : Colors.green).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: (isDr ? Colors.red : Colors.green).withOpacity(0.5), width: 0.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(isDr ? Icons.arrow_circle_up : Icons.arrow_circle_down, color: Colors.white, size: 14),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Outstanding: ${currencyFormat.format(outstanding)} ${isDr ? "(Dr)" : "(Cr)"}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-
-                  // Quick Direct Shortcuts Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      if (_party!.mobileNumber != null && _party!.mobileNumber!.isNotEmpty)
+                  if (_party!.mobileNumber != null && _party!.mobileNumber!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         _buildHeroActionButton(
                           icon: Icons.phone_outlined,
                           label: 'Call',
@@ -328,65 +370,16 @@ final theme = Theme.of(context);
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied phone: ${_party!.mobileNumber}')));
                           },
                         ),
-                      if (_party!.mobileNumber != null && _party!.mobileNumber!.isNotEmpty)
+                        const SizedBox(width: 12),
                         _buildHeroActionButton(
                           icon: Icons.chat_bubble_outline,
                           label: 'WhatsApp',
                           isMobile: isMobile,
                           onTap: () => _launchWhatsApp(_party!.mobileNumber!),
                         ),
-                      _buildHeroActionButton(
-                        icon: Icons.receipt_long_outlined,
-                        label: 'Invoice',
-                        isMobile: isMobile,
-                        onTap: () {
-                          Navigator.of(context,  rootNavigator: true).push(
-                            MaterialPageRoute(builder: (context) => const AddEditInvoiceScreen()),
-                          );
-                        },
-                      ),
-                      _buildHeroActionButton(
-                        icon: Icons.add_circle_outline,
-                        label: 'Payment',
-                        isMobile: isMobile,
-                        onTap: () {
-                          AddEditTransactionDialog.show(context, initialParty: _party);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // 2. Financial Metrics Summary Cards (1 Single Row on Mobile)
-            Padding(
-              padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricCard(
-                      theme: theme,
-                      title: 'Outstanding',
-                      value: currencyFormat.format(outstanding),
-                      subtitle: isDr ? 'Due (Dr)' : 'Advance (Cr)',
-                      color: isDr ? Colors.red : Colors.green,
-                      icon: isDr ? Icons.arrow_circle_up : Icons.arrow_circle_down,
-                      isMobile: isMobile,
+                      ],
                     ),
-                  ),
-                  SizedBox(width: isMobile ? 8 : 12),
-                  Expanded(
-                    child: _buildMetricCard(
-                      theme: theme,
-                      title: 'Credit Limit',
-                      value: currencyFormat.format(creditLimit),
-                      subtitle: 'Avail: ${currencyFormat.format(availableCredit)}',
-                      color: availableCredit < 0 ? Colors.red : Colors.blue,
-                      icon: Icons.credit_card_rounded,
-                      isMobile: isMobile,
-                    ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -399,10 +392,13 @@ final theme = Theme.of(context);
                 indicatorColor: theme.colorScheme.primary,
                 labelColor: theme.colorScheme.primary,
                 unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                unselectedLabelStyle: const TextStyle(fontSize: 12),
                 tabs: const [
-                  Tab(icon: Icon(Icons.history_rounded), text: 'Transactions Ledger'),
-                  Tab(icon: Icon(Icons.badge_outlined), text: 'Party Credentials'),
-                  Tab(icon: Icon(Icons.gps_fixed_rounded), text: 'GPS & Location'),
+                  Tab(iconMargin: EdgeInsets.only(bottom: 4), icon: Icon(Icons.history_rounded, size: 20), text: 'Ledger'),
+                  Tab(iconMargin: EdgeInsets.only(bottom: 4), icon: Icon(Icons.badge_outlined, size: 20), text: 'Info'),
+                  Tab(iconMargin: EdgeInsets.only(bottom: 4), icon: Icon(Icons.gps_fixed_rounded, size: 20), text: 'GPS'),
                 ],
               ),
             ),
