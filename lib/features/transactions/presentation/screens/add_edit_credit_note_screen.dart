@@ -4,6 +4,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_payment_mode_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/round_off_field.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'dart:math';
 import '../../../../core/widgets/full_screen_item_entry.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
@@ -48,7 +49,10 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
   final _remarksController = TextEditingController();
   final _billNumberController = TextEditingController();
   final _originalBillNumberController = TextEditingController();
-  String? _linkedBillUuid;
+  
+  Map<String, double> _linkedAllocations = {};
+  final Map<String, TextEditingController> _allocControllers = {};
+  final Map<String, FocusNode> _allocFocusNodes = {};
   final _paidAmountController = TextEditingController(text: '0.0');
   final _discountController = TextEditingController(text: '0.0');
   final _productSearchController = TextEditingController();
@@ -172,7 +176,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         _existingCreditNote = creditNote;
         _billNumberController.text = creditNote.creditNoteNumber ?? '';
         _originalBillNumberController.text = creditNote.originalInvoiceNumber ?? '';
-        _linkedBillUuid = creditNote.originalInvoiceUuid;
+        
         _creditNoteDate = creditNote.creditNoteDate ?? DateTime.now();
         final remarksText = creditNote.remarks ?? '';
         _remarksController.text = remarksText;
@@ -240,7 +244,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       _billNumberController.text = numStr;
       if (widget.initialInvoiceNumber != null) {
         _originalBillNumberController.text = widget.initialInvoiceNumber!;
-        _linkedBillUuid = widget.initialInvoiceUuid;
+        
         
         if (widget.initialInvoiceUuid != null) {
            final inv = await isar.invoices.filter().uuidEqualTo(widget.initialInvoiceUuid!).findFirst();
@@ -297,6 +301,13 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     _paidAmountController.dispose();
     _discountController.dispose();
     _productSearchController.dispose();
+    
+    for (var controller in _allocControllers.values) {
+      controller.dispose();
+    }
+    for (var node in _allocFocusNodes.values) {
+      node.dispose();
+    }
     super.dispose();
   }
 
@@ -479,7 +490,6 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
     List<dynamic> pendingBills = [];
     
     if (true) {
-      // Credit Note -> Link to Sales Invoices
       final invoices = await isar.invoices.filter()
           .partyNameEqualTo(_selectedParty!.partyName)
           .and()
@@ -488,10 +498,9 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       pendingBills = invoices.where((inv) {
         final grandTotal = inv.grandTotal ?? 0.0;
         final pendingAmount = inv.pendingAmount ?? grandTotal;
-        return pendingAmount > 0 || _linkedBillUuid == inv.uuid;
+        return pendingAmount > 0 || _linkedAllocations.containsKey(inv.uuid);
       }).toList();
     } else {
-      // Debit Note -> Link to Purchases
       final purchases = await isar.purchases.filter()
           .partyNameEqualTo(_selectedParty!.partyName)
           .and()
@@ -500,7 +509,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       pendingBills = purchases.where((pur) {
         final grandTotal = pur.grandTotal ?? 0.0;
         final pendingAmount = pur.pendingAmount ?? grandTotal;
-        return pendingAmount > 0 || _linkedBillUuid == pur.uuid;
+        return pendingAmount > 0 || _linkedAllocations.containsKey(pur.uuid);
       }).toList();
     }
 
@@ -509,23 +518,70 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       return;
     }
 
+    // Initialize controllers for the modal
+    final currentUuids = pendingBills.map((b) => b.uuid as String).toSet();
+    _allocControllers.removeWhere((uuid, controller) {
+      if (!currentUuids.contains(uuid)) {
+        controller.dispose();
+        _allocFocusNodes[uuid]?.dispose();
+        _allocFocusNodes.remove(uuid);
+        return true;
+      }
+      return false;
+    });
+
+    for (var bill in pendingBills) {
+      final uuid = bill.uuid as String;
+      final alloc = _linkedAllocations[uuid] ?? 0.0;
+      if (!_allocControllers.containsKey(uuid)) {
+        _allocControllers[uuid] = TextEditingController(
+          text: alloc > 0 ? alloc.toStringAsFixed(2) : '',
+        );
+        _allocFocusNodes[uuid] = FocusNode();
+      } else {
+        final textValue = alloc > 0 ? alloc.toStringAsFixed(2) : '';
+        if (_allocControllers[uuid]!.text != textValue && !(_allocFocusNodes[uuid]?.hasFocus ?? false)) {
+          _allocControllers[uuid]!.text = textValue;
+        }
+      }
+    }
+
     showDialog(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final theme = Theme.of(context);
+            
+            // Re-calculate totals dynamically
+            final totalAllocated = _linkedAllocations.values.fold(0.0, (sum, val) => sum + val);
+            
             return AlertDialog(
-              title: const Text('Link Bill'),
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Link Bills'),
+                  Text(
+                    'Allocated: ₹${totalAllocated.toStringAsFixed(2)} / ₹${_grandTotal.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: totalAllocated > _grandTotal ? Colors.red : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
               content: SizedBox(
                 width: 500,
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: pendingBills.map((bill) {
-                      final isLinked = _linkedBillUuid == bill.uuid;
+                      final uuid = bill.uuid as String;
+                      final isLinked = _linkedAllocations.containsKey(uuid);
                       final grandTotal = bill.grandTotal ?? 0.0;
                       final pendingToPay = bill.pendingAmount ?? grandTotal;
+                      final currentAlloc = _linkedAllocations[uuid] ?? 0.0;
                       final billNo = true ? bill.invoiceNumber : bill.purchaseNumber;
                       
                       return Container(
@@ -536,56 +592,92 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                           borderRadius: BorderRadius.circular(8),
                           color: isLinked ? theme.colorScheme.primaryContainer.withOpacity(0.1) : Colors.transparent,
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        child: Column(
                           children: [
-                            Checkbox(
-                              value: isLinked,
-                              onChanged: (val) {
-                                setModalState(() {
-                                  if (val == true) {
-                                    _originalBillNumberController.text = billNo ?? '';
-                                    if (_existingCreditNote != null) {
-                                      _existingCreditNote!.originalInvoiceUuid = bill.uuid;
-                                    }
-                                  } else {
-                                    _originalBillNumberController.clear();
-                                    if (_existingCreditNote != null) {
-                                      _existingCreditNote!.originalInvoiceUuid = null;
-                                    }
-                                  }
-                                });
-                                setState((){});
-                              },
-                            ),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Bill #${billNo ?? bill.uuid.substring(0, 8)}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Checkbox(
+                                  value: isLinked,
+                                  onChanged: (val) {
+                                    setModalState(() {
+                                      if (val == true) {
+                                        double remainingTxn = _grandTotal - totalAllocated;
+                                        if (remainingTxn > 0) {
+                                          double allocVal = remainingTxn > pendingToPay ? pendingToPay : remainingTxn;
+                                          _linkedAllocations[uuid] = double.parse(allocVal.toStringAsFixed(2));
+                                          _allocControllers[uuid]!.text = allocVal.toStringAsFixed(2);
+                                        } else {
+                                          _linkedAllocations[uuid] = 0.0;
+                                          _allocControllers[uuid]!.text = '';
+                                        }
+                                      } else {
+                                        _linkedAllocations.remove(uuid);
+                                        _allocControllers[uuid]!.text = '';
+                                      }
+                                    });
+                                    setState((){});
+                                  },
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Bill #${billNo ?? uuid.substring(0, 8)}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        'Total: ₹${grandTotal.toStringAsFixed(2)} | Pending: ₹${pendingToPay.toStringAsFixed(2)}',
+                                        style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    'Total: ₹${grandTotal.toStringAsFixed(2)} | Pending: ₹${pendingToPay.toStringAsFixed(2)}',
-                                    style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 12),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                             if (isLinked)
-                              IconButton(
-                                tooltip: 'Unlink',
-                                icon: const Icon(Icons.link_off_rounded, color: Colors.red, size: 20),
-                                onPressed: () {
-                                  setModalState(() {
-                                    _originalBillNumberController.clear();
-                                    if (_existingCreditNote != null) {
-                                      _existingCreditNote!.originalInvoiceUuid = null;
-                                    }
-                                  });
-                                  setState((){});
-                                },
+                              Padding(
+                                padding: const EdgeInsets.only(left: 48, right: 8, bottom: 8),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextFormField(
+                                        controller: _allocControllers[uuid],
+                                        focusNode: _allocFocusNodes[uuid],
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          labelText: 'Amount to Link (₹)',
+                                          border: const OutlineInputBorder(),
+                                          errorText: currentAlloc > pendingToPay ? 'Exceeds pending' : null,
+                                        ),
+                                        onChanged: (val) {
+                                          setModalState(() {
+                                            final parsed = double.tryParse(val);
+                                            if (parsed != null && parsed > 0) {
+                                              _linkedAllocations[uuid] = parsed;
+                                            } else {
+                                              _linkedAllocations.remove(uuid);
+                                            }
+                                          });
+                                          setState((){});
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: () {
+                                        setModalState(() {
+                                          _allocControllers[uuid]!.text = pendingToPay.toStringAsFixed(2);
+                                          _linkedAllocations[uuid] = pendingToPay;
+                                        });
+                                        setState((){});
+                                      },
+                                      child: const Text('Max'),
+                                    ),
+                                  ],
+                                ),
                               ),
                           ],
                         ),
@@ -596,14 +688,17 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Close'),
+                  onPressed: () {
+                    setState((){});
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('Done'),
                 ),
               ],
             );
-          }
+          },
         );
-      }
+      },
     );
   }
 
@@ -694,7 +789,7 @@ if (_isPaidAmountAutoFill) {
                 ElevatedButton.icon(
                   onPressed: _showLinkBillsModal,
                   icon: const Icon(Icons.link, size: 18),
-                  label: const Text('Link'),
+                  label: Text(_linkedAllocations.isNotEmpty ? 'Linked (${_linkedAllocations.length})' : 'Link'),
                   style: ElevatedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

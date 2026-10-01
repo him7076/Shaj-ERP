@@ -108,6 +108,7 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
             ..amount = note.grandTotal
             ..paymentMode = 'Credit'
             ..remarks = 'Sales Return: Credit Note #${note.creditNoteNumber}. ${note.remarks ?? ""}'
+            ..linkedBillUuid = note.originalInvoiceUuid
             ..createdAt = DateTime.now()
             ..updatedAt = DateTime.now()
             ..isDeleted = false

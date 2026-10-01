@@ -108,6 +108,7 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
             ..amount = note.grandTotal
             ..paymentMode = 'Credit'
             ..remarks = 'Purchase Return: Debit Note #${note.debitNoteNumber}. ${note.remarks ?? ""}'
+            ..linkedBillUuid = note.originalPurchaseUuid
             ..createdAt = DateTime.now()
             ..updatedAt = DateTime.now()
             ..isDeleted = false
