@@ -116,7 +116,12 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
         // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
         Transaction? txn;
         if (!isNew) {
-          txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid).findFirst();
+          if (note.uuid != null && note.uuid!.isNotEmpty) {
+            txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid!).findFirst();
+          }
+          if (txn == null && note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
+            txn = await isar.transactions.filter().transactionNumberEqualTo(note.creditNoteNumber!).findFirst();
+          }
         }
         
         if (txn == null) {
@@ -145,6 +150,23 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
           txn.party.value = newParty;
         }
         final txnId = await isar.transactions.put(txn);
+
+        // Sync date across any existing transaction logs matching this credit note number
+        if (note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
+          final matchingTxns = await isar.transactions
+              .filter()
+              .transactionNumberEqualTo(note.creditNoteNumber!)
+              .findAll();
+          for (var mt in matchingTxns) {
+            if (mt.id != txnId) {
+              mt.transactionDate = note.creditNoteDate ?? DateTime.now();
+              mt.partyName = note.partyName;
+              mt.amount = note.grandTotal;
+              mt.updatedAt = DateTime.now();
+              await isar.transactions.put(mt);
+            }
+          }
+        }
 
         // Sync log for Transaction
         final txnQueue = SyncQueue()

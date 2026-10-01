@@ -58,11 +58,22 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       int? categoryId;
       if (widget.lockedCategoryName != null) {
         final db = ref.read(databaseServiceProvider).isar;
-        final cat = await db.categorys.filter().categoryNameEqualTo(widget.lockedCategoryName!).findFirst();
+        var cat = await db.categorys.filter().categoryNameEqualTo(widget.lockedCategoryName!).findFirst();
+        if (cat == null && widget.lockedCategoryName == 'Fixed Assets') {
+          cat = CategoryCollection()..categoryName = 'Fixed Assets';
+          await db.writeTxn(() async {
+            await db.categorys.put(cat!);
+          });
+        }
         categoryId = cat?.id;
       }
       
-      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(limit: _displayLimit, isBundle: false, categoryId: categoryId));
+      ref.read(itemSearchProvider.notifier).update((state) => state.copyWith(
+        limit: _displayLimit, 
+        isBundle: false, 
+        categoryId: categoryId,
+        query: '',
+      ));
     });
   }
 

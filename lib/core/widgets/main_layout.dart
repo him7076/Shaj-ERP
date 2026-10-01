@@ -75,7 +75,8 @@ class MainLayout extends ConsumerWidget {
           location.contains('/edit') ||
           location.contains('/item/') ||
           location.contains('/party/') ||
-          location.contains('/task/');
+          location.contains('/task/') ||
+          location.contains('/credit-notes');
       final isDashboard = location == '/' || location == '/dashboard' || location.isEmpty;
       
       final prefs = ref.watch(sharedPreferencesProvider);

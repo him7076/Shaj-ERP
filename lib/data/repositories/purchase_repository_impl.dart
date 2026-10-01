@@ -48,11 +48,18 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       final allPurchases = await collection.where().findAll();
       int maxNum = 0;
       for (var pur in allPurchases) {
-        if (pur.purchaseNumber != null && pur.purchaseNumber!.startsWith(prefix)) {
-          final matches = RegExp(r'\d+').allMatches(pur.purchaseNumber!);
-          if (matches.isNotEmpty) {
-            final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
-            if (parsed > maxNum) maxNum = parsed;
+        if (pur.purchaseNumber != null) {
+          final pNo = pur.purchaseNumber!;
+          final matchesPrefix = isFixedAsset
+              ? pNo.startsWith('FA-PUR-')
+              : (pNo.startsWith('PUR-') && !pNo.startsWith('FA-PUR-'));
+
+          if (matchesPrefix) {
+            final matches = RegExp(r'\d+').allMatches(pNo);
+            if (matches.isNotEmpty) {
+              final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
+              if (parsed > maxNum) maxNum = parsed;
+            }
           }
         }
       }

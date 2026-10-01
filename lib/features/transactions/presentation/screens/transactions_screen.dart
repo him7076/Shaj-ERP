@@ -564,6 +564,48 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           totalsAsync.when(
             data: (totals) {
               if (widget.lockedType != null) {
+                if (widget.lockedType == 'Credit Note') {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetricCard(
+                            theme: theme,
+                            title: 'Total Credit Note',
+                            value: currencyFormat.format(totals.totalAmount),
+                            icon: Icons.assignment_return_rounded,
+                            color: Colors.indigo,
+                            isMobile: isMobile,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _buildMetricCard(
+                            theme: theme,
+                            title: 'Unused Balance',
+                            value: currencyFormat.format(totals.unusedBalance),
+                            icon: Icons.account_balance_wallet_outlined,
+                            color: Colors.green,
+                            isMobile: isMobile,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _buildMetricCard(
+                            theme: theme,
+                            title: 'Total Txns',
+                            value: '${totals.count} Txn${totals.count == 1 ? '' : 's'}',
+                            icon: Icons.receipt_long_rounded,
+                            color: Colors.purple,
+                            isMobile: isMobile,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 Color typeColor = Colors.grey;
                 IconData typeIcon = Icons.info_outline;
                 String metricTitle = '';
@@ -576,10 +618,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   typeColor = Colors.red;
                   typeIcon = Icons.arrow_upward;
                   metricTitle = 'Total Payments Paid';
-                } else if (widget.lockedType == 'Credit Note') {
-                  typeColor = Colors.indigo;
-                  typeIcon = Icons.assignment_return_rounded;
-                  metricTitle = 'Total Credit Note Amount';
                 } else if (widget.lockedType == 'Debit Note') {
                   typeColor = Colors.orange;
                   typeIcon = Icons.assignment_returned_rounded;
@@ -716,7 +754,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 decoration: const InputDecoration(
                                   hintText: 'Search transaction no, party, remarks...',
                                   prefixIcon: Icon(Icons.search, size: 18),
-                                  
                                   isDense: true,
                                 ),
                                 onChanged: (val) {
@@ -740,12 +777,69 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 },
                               ),
 
+                              // Status filter for Credit Note / General
+                              if (widget.lockedType == 'Credit Note' || filter.transactionType == 'Credit Note') ...[
+                                const Divider(height: 1),
+                                DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: filter.statusFilter,
+                                    items: const [
+                                      DropdownMenuItem(value: 'All', child: Text('All Statuses')),
+                                      DropdownMenuItem(value: 'Unused', child: Text('Unused / Active')),
+                                      DropdownMenuItem(value: 'Used', child: Text('Used / Refunded')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        ref.read(transactionSearchFilterProvider.notifier).state =
+                                            filter.copyWith(statusFilter: val);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+
+                              // Date Range filter
+                              const Divider(height: 1),
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                dense: true,
+                                leading: const Icon(Icons.date_range_rounded, size: 18),
+                                title: Text(
+                                  filter.dateRange == null
+                                      ? 'Select Date Range'
+                                      : '${DateFormat('dd/MM/yyyy').format(filter.dateRange!.start)} - ${DateFormat('dd/MM/yyyy').format(filter.dateRange!.end)}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                                trailing: filter.dateRange != null
+                                    ? IconButton(
+                                        icon: const Icon(Icons.close, size: 16),
+                                        onPressed: () {
+                                          ref.read(transactionSearchFilterProvider.notifier).state =
+                                              filter.copyWith(dateRange: null);
+                                        },
+                                      )
+                                    : null,
+                                onTap: () async {
+                                  final picked = await showDateRangePicker(
+                                    context: context,
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2030),
+                                    initialDateRange: filter.dateRange,
+                                  );
+                                  if (picked != null) {
+                                    ref.read(transactionSearchFilterProvider.notifier).state =
+                                        filter.copyWith(dateRange: picked);
+                                  }
+                                },
+                              ),
+
                               if (widget.lockedType == null) ...[
                                 const Divider(height: 1),
                                 DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: filter.transactionType,
+                                  child: DropdownButton<String>(
+                                    isExpanded: true,
+                                    value: filter.transactionType,
                                     items: const [
                                       DropdownMenuItem(value: 'All', child: Text('All Types')),
                                       DropdownMenuItem(value: 'Sales', child: Text('Sales Invoice')),
@@ -759,14 +853,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
                                       DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
                                     ],
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      ref.read(transactionSearchFilterProvider.notifier).state =
-                                          filter.copyWith(transactionType: val);
-                                    }
-                                  },
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        ref.read(transactionSearchFilterProvider.notifier).state =
+                                            filter.copyWith(transactionType: val);
+                                      }
+                                    },
+                                  ),
                                 ),
-                              ),
                               ],
                             ],
                           ],
@@ -780,7 +874,6 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               decoration: const InputDecoration(
                                 hintText: 'Search transaction no, party, remarks...',
                                 prefixIcon: Icon(Icons.search),
-                                
                               ),
                               onChanged: (val) {
                                 ref.read(transactionSearchFilterProvider.notifier).state =
@@ -806,15 +899,73 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                 ),
                               ),
                               
+                            if (widget.lockedType == 'Credit Note' || filter.transactionType == 'Credit Note') ...[
+                              const VerticalDivider(),
+                              Expanded(
+                                flex: 2,
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: filter.statusFilter,
+                                    items: const [
+                                      DropdownMenuItem(value: 'All', child: Text('Status: All')),
+                                      DropdownMenuItem(value: 'Unused', child: Text('Status: Unused / Active')),
+                                      DropdownMenuItem(value: 'Used', child: Text('Status: Used / Refunded')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        ref.read(transactionSearchFilterProvider.notifier).state =
+                                            filter.copyWith(statusFilter: val);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+
+                            const VerticalDivider(),
+                            Expanded(
+                              flex: 2,
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.date_range, size: 16),
+                                label: Text(
+                                  filter.dateRange == null
+                                      ? 'Date Range'
+                                      : '${DateFormat('dd/MM/yy').format(filter.dateRange!.start)} - ${DateFormat('dd/MM/yy').format(filter.dateRange!.end)}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                onPressed: () async {
+                                  final picked = await showDateRangePicker(
+                                    context: context,
+                                    firstDate: DateTime(2020),
+                                    lastDate: DateTime(2030),
+                                    initialDateRange: filter.dateRange,
+                                  );
+                                  if (picked != null) {
+                                    ref.read(transactionSearchFilterProvider.notifier).state =
+                                        filter.copyWith(dateRange: picked);
+                                  }
+                                },
+                              ),
+                            ),
+                            if (filter.dateRange != null)
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 16),
+                                tooltip: 'Clear Date Range',
+                                onPressed: () {
+                                  ref.read(transactionSearchFilterProvider.notifier).state =
+                                      filter.copyWith(dateRange: null);
+                                },
+                              ),
+
                             if (widget.lockedType == null) ...[
                               const VerticalDivider(),
                               
                               // Transaction Type filter
                               Expanded(
-                              flex: 2,
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: filter.transactionType,
+                                flex: 2,
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: filter.transactionType,
                                     items: const [
                                       DropdownMenuItem(value: 'All', child: Text('All Types')),
                                       DropdownMenuItem(value: 'Receipt', child: Text('Received Payment (Receipt)')),
@@ -828,15 +979,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
                                       DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
                                     ],
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      ref.read(transactionSearchFilterProvider.notifier).state =
-                                          filter.copyWith(transactionType: val);
-                                    }
-                                  },
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        ref.read(transactionSearchFilterProvider.notifier).state =
+                                            filter.copyWith(transactionType: val);
+                                      }
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
                             ],
                           ],
                         ],

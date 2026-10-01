@@ -116,7 +116,12 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
         // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
         Transaction? txn;
         if (!isNew) {
-          txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid).findFirst();
+          if (note.uuid != null && note.uuid!.isNotEmpty) {
+            txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid!).findFirst();
+          }
+          if (txn == null && note.debitNoteNumber != null && note.debitNoteNumber!.isNotEmpty) {
+            txn = await isar.transactions.filter().transactionNumberEqualTo(note.debitNoteNumber!).findFirst();
+          }
         }
         
         if (txn == null) {
@@ -145,6 +150,23 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
           txn.party.value = newParty;
         }
         final txnId = await isar.transactions.put(txn);
+
+        // Sync date across any existing transaction logs matching this debit note number
+        if (note.debitNoteNumber != null && note.debitNoteNumber!.isNotEmpty) {
+          final matchingTxns = await isar.transactions
+              .filter()
+              .transactionNumberEqualTo(note.debitNoteNumber!)
+              .findAll();
+          for (var mt in matchingTxns) {
+            if (mt.id != txnId) {
+              mt.transactionDate = note.debitNoteDate ?? DateTime.now();
+              mt.partyName = note.partyName;
+              mt.amount = note.grandTotal;
+              mt.updatedAt = DateTime.now();
+              await isar.transactions.put(mt);
+            }
+          }
+        }
 
         // Sync log for Transaction
         final txnQueue = SyncQueue()

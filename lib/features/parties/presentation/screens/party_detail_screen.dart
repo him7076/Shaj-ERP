@@ -77,12 +77,18 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         
         final invoices = await isar.invoices.filter().isDeletedEqualTo(false).and().group((q) => q.partyIdEqualTo(partyId).or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().party((p) => p.uuidEqualTo(partyUuid ?? ''))).findAll();
         for (var inv in invoices) {
-          if (inv.paymentStatus != 'Cancelled') bal += (inv.grandTotal ?? 0.0);
+          if (inv.paymentStatus != 'Cancelled') {
+            final pending = (inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0);
+            bal += pending > 0 ? pending : 0.0;
+          }
         }
         
         final purchases = await isar.purchases.filter().isDeletedEqualTo(false).and().group((q) => q.partyIdEqualTo(partyId).or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().party((p) => p.uuidEqualTo(partyUuid ?? ''))).findAll();
         for (var pur in purchases) {
-          if (pur.paymentStatus != 'Cancelled') bal -= (pur.grandTotal ?? 0.0);
+          if (pur.paymentStatus != 'Cancelled') {
+            final pending = (pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0);
+            bal -= pending > 0 ? pending : 0.0;
+          }
         }
         
         final txns = await isar.transactions.filter().isDeletedEqualTo(false).and().group((q) => q.partyUuidEqualTo(partyUuid ?? '').or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '')).findAll();
@@ -326,54 +332,47 @@ final theme = Theme.of(context);
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: (isDr ? Colors.red : Colors.green).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: (isDr ? Colors.red : Colors.green).withOpacity(0.5), width: 0.5),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(isDr ? Icons.arrow_circle_up : Icons.arrow_circle_down, color: Colors.white, size: 14),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Outstanding: ${currencyFormat.format(outstanding)} ${isDr ? "(Dr)" : "(Cr)"}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: (isDr ? Colors.red : Colors.green).withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: (isDr ? Colors.red : Colors.green).withOpacity(0.5), width: 0.5),
                                   ),
-                                ],
-                              ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(isDr ? Icons.arrow_circle_up : Icons.arrow_circle_down, color: Colors.white, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        'Outstanding: ${currencyFormat.format(outstanding)} ${isDr ? "(Dr)" : "(Cr)"}',
+                                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (_party!.mobileNumber != null && _party!.mobileNumber!.isNotEmpty)
+                                  _buildHeroActionButton(
+                                    icon: Icons.phone_outlined,
+                                    label: 'Call',
+                                    isMobile: isMobile,
+                                    onTap: () {
+                                      Clipboard.setData(ClipboardData(text: _party!.mobileNumber!));
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied phone: ${_party!.mobileNumber}')));
+                                    },
+                                  ),
+                              ],
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  if (_party!.mobileNumber != null && _party!.mobileNumber!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildHeroActionButton(
-                          icon: Icons.phone_outlined,
-                          label: 'Call',
-                          isMobile: isMobile,
-                          onTap: () {
-                            Clipboard.setData(ClipboardData(text: _party!.mobileNumber!));
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied phone: ${_party!.mobileNumber}')));
-                          },
-                        ),
-                        const SizedBox(width: 12),
-                        _buildHeroActionButton(
-                          icon: Icons.chat_bubble_outline,
-                          label: 'WhatsApp',
-                          isMobile: isMobile,
-                          onTap: () => _launchWhatsApp(_party!.mobileNumber!),
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
               ),
             ),

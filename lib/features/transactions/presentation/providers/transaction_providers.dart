@@ -26,6 +26,7 @@ class TransactionSearchFilter {
   final DateTimeRange? dateRange;
   final String? partyUuid;
   final bool showAllHistory;
+  final String statusFilter; // 'All', 'Unused', 'Used'
   final int limit;
 
   const TransactionSearchFilter({
@@ -34,6 +35,7 @@ class TransactionSearchFilter {
     this.dateRange,
     this.partyUuid,
     this.showAllHistory = true,
+    this.statusFilter = 'All',
     this.limit = 500,
   });
 
@@ -43,6 +45,7 @@ class TransactionSearchFilter {
     DateTimeRange? dateRange,
     String? partyUuid,
     bool? showAllHistory,
+    String? statusFilter,
     int? limit,
   }) {
     return TransactionSearchFilter(
@@ -51,6 +54,7 @@ class TransactionSearchFilter {
       dateRange: dateRange ?? this.dateRange,
       partyUuid: partyUuid ?? this.partyUuid,
       showAllHistory: showAllHistory ?? this.showAllHistory,
+      statusFilter: statusFilter ?? this.statusFilter,
       limit: limit ?? this.limit,
     );
   }
@@ -75,12 +79,18 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
 
   // Date bounds for fetching: use provided filter or default to last 90 days if showAllHistory is false
   final now = DateTime.now();
-  final queryStart = filter.showAllHistory 
-      ? DateTime(2000, 1, 1) 
-      : filter.dateRange?.start.subtract(const Duration(days: 1)) ?? now.subtract(const Duration(days: 90));
-  final queryEnd = filter.showAllHistory 
-      ? DateTime(2100, 1, 1) 
-      : filter.dateRange?.end.add(const Duration(days: 1)) ?? now.add(const Duration(days: 1));
+  final DateTime queryStart;
+  final DateTime queryEnd;
+  if (filter.dateRange != null) {
+    queryStart = DateTime(filter.dateRange!.start.year, filter.dateRange!.start.month, filter.dateRange!.start.day, 0, 0, 0);
+    queryEnd = DateTime(filter.dateRange!.end.year, filter.dateRange!.end.month, filter.dateRange!.end.day, 23, 59, 59);
+  } else if (filter.showAllHistory) {
+    queryStart = DateTime(2000, 1, 1);
+    queryEnd = DateTime(2100, 1, 1);
+  } else {
+    queryStart = now.subtract(const Duration(days: 90));
+    queryEnd = now.add(const Duration(days: 1));
+  }
 
   final cleanQuery = filter.query.trim().toLowerCase();
   final bool hasQuery = cleanQuery.isNotEmpty;
@@ -123,6 +133,27 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       
       var results = await qb.findAll();
       results = results.where((t) => t.isPersonalVault == isPersonal).toList();
+
+      if (filter.transactionType == 'Credit Note' && filter.statusFilter != 'All') {
+        results = results.where((cnTx) {
+          final totalAmt = cnTx.amount ?? 0.0;
+          double usedAmt = 0.0;
+          if (cnTx.linkedBillUuid != null && cnTx.linkedBillUuid!.isNotEmpty) {
+            final clean = cnTx.linkedBillUuid!.trim();
+            if (clean.startsWith('{')) {
+              try {
+                final map = dart_convert.json.decode(clean) as Map<String, dynamic>;
+                usedAmt = map.values.fold(0.0, (s, v) => s + ((v as num).toDouble()));
+              } catch (_) {}
+            }
+          }
+          final rem = totalAmt - usedAmt;
+          if (filter.statusFilter == 'Unused') return rem > 0.01;
+          if (filter.statusFilter == 'Used') return rem <= 0.01;
+          return true;
+        }).toList();
+      }
+
       results.sort((a, b) => (b.transactionDate ?? b.createdAt).compareTo(a.transactionDate ?? a.createdAt));
       rawTransactions = results.take(queryLimit).toList();
     } catch (e, stack) {
@@ -382,8 +413,15 @@ class TransactionTotals {
   final double totalIn;
   final double totalOut;
   final double totalAmount;
+  final double unusedBalance;
   final int count;
-  const TransactionTotals({this.totalIn = 0.0, this.totalOut = 0.0, this.totalAmount = 0.0, this.count = 0});
+  const TransactionTotals({
+    this.totalIn = 0.0,
+    this.totalOut = 0.0,
+    this.totalAmount = 0.0,
+    this.unusedBalance = 0.0,
+    this.count = 0,
+  });
 }
 
 // Provider for accurate totals without loading full DB objects into RAM
@@ -416,6 +454,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
   double totalIn = 0.0;
   double totalOut = 0.0;
   double lockedTotal = 0.0;
+  double unusedBalance = 0.0;
   int totalCount = 0;
 
   // 1. Transactions Collection
@@ -440,8 +479,52 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
 
     if (filter.transactionType != 'All') {
       final allMatching = await qb.transactionTypeEqualTo(filter.transactionType).findAll();
-      final sum = sumList(allMatching.where((t) => t.isPersonalVault == isPersonal).map((t) => t.amount).toList());
+      var filteredMatching = allMatching.where((t) => t.isPersonalVault == isPersonal).toList();
+      
+      if (filter.transactionType == 'Credit Note' && filter.statusFilter != 'All') {
+        filteredMatching = filteredMatching.where((cnTx) {
+          final totalAmt = cnTx.amount ?? 0.0;
+          double usedAmt = 0.0;
+          if (cnTx.linkedBillUuid != null && cnTx.linkedBillUuid!.isNotEmpty) {
+            final clean = cnTx.linkedBillUuid!.trim();
+            if (clean.startsWith('{')) {
+              try {
+                final map = dart_convert.json.decode(clean) as Map<String, dynamic>;
+                usedAmt = map.values.fold(0.0, (s, v) => s + ((v as num).toDouble()));
+              } catch (_) {}
+            }
+          }
+          final rem = totalAmt - usedAmt;
+          if (filter.statusFilter == 'Unused') return rem > 0.01;
+          if (filter.statusFilter == 'Used') return rem <= 0.01;
+          return true;
+        }).toList();
+      }
+
+      final sum = sumList(filteredMatching.map((t) => t.amount).toList());
       lockedTotal += sum;
+      totalCount = filteredMatching.length;
+
+      if (filter.transactionType == 'Credit Note') {
+        double unusedSum = 0.0;
+        for (var cnTx in filteredMatching) {
+          final totalAmt = cnTx.amount ?? 0.0;
+          double usedAmt = 0.0;
+          if (cnTx.linkedBillUuid != null && cnTx.linkedBillUuid!.isNotEmpty) {
+            final clean = cnTx.linkedBillUuid!.trim();
+            if (clean.startsWith('{')) {
+              try {
+                final map = dart_convert.json.decode(clean) as Map<String, dynamic>;
+                usedAmt = map.values.fold(0.0, (s, v) => s + ((v as num).toDouble()));
+              } catch (_) {}
+            }
+          }
+          final rem = totalAmt - usedAmt;
+          unusedSum += rem > 0 ? rem : 0.0;
+        }
+        unusedBalance = unusedSum;
+      }
+
       if (['Receipt', 'Other Income'].contains(filter.transactionType)) totalIn += sum;
       if (['Payment', 'Expense'].contains(filter.transactionType)) totalOut += sum;
     } else {
@@ -519,7 +602,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
     }
   }
 
-  return TransactionTotals(totalIn: totalIn, totalOut: totalOut, totalAmount: lockedTotal, count: totalCount);
+  return TransactionTotals(totalIn: totalIn, totalOut: totalOut, totalAmount: lockedTotal, unusedBalance: unusedBalance, count: totalCount);
 });
 
 // OPTIMIZED: Dashboard was using filteredTransactionsProvider which loads

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -380,7 +380,7 @@ class CustomDrawer extends ConsumerWidget {
                     routePath: '/expenses',
                     currentPath: location,
                   ),
-                  if (prefs.getBool('enable_fixed_assets') ?? false)
+                  if (prefs.getBool('enable_fixed_assets') ?? true)
                     _buildDrawerItem(
                       context: context,
                       ref: ref,
