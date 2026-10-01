@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
@@ -170,6 +171,27 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
         if (idVal != null) {
           creditNote = await isar.creditNotes.get(idVal);
         }
+      }
+      // Fallback: parentCreditNoteUuid might be a Transaction UUID (from transactions_screen).
+      if (creditNote == null) {
+        try {
+          final txn = await isar.transactions.filter().uuidEqualTo(widget.parentCreditNoteUuid).findFirst();
+          if (txn != null && txn.transactionNumber != null) {
+            creditNote = await isar.creditNotes.filter().creditNoteNumberEqualTo(txn.transactionNumber!).findFirst();
+          }
+        } catch (_) {}
+      }
+      // Fallback: try matching creditNoteNumber directly
+      if (creditNote == null) {
+        try {
+          final allCN = await isar.creditNotes.filter().isDeletedEqualTo(false).findAll();
+          for (final cn in allCN) {
+            if (cn.uuid == widget.parentCreditNoteUuid || cn.creditNoteNumber == widget.parentCreditNoteUuid) {
+              creditNote = cn;
+              break;
+            }
+          }
+        } catch (_) {}
       }
 
       if (creditNote != null) {
@@ -362,10 +384,14 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       ..quantity = data.quantity
       ..unit = data.unit
       ..rate = data.rate
-      ..discount = data.discountAmount // some models use discountAmount, some use discount
+      ..discount = data.discountAmount
+      ..gstRate = data.gstRate
       ..batchNumber = data.batchNumber
       ..mfgDate = data.mfgDate?.toIso8601String()
-      ..expiryDate = data.expDate?.toIso8601String();
+      ..expiryDate = data.expDate?.toIso8601String()
+      ..taxableAmount = data.taxableAmount
+      ..gstAmount = data.gstAmount
+      ..totalAmount = data.totalAmount;
       
     newItem.item.value = item;
 
@@ -1434,7 +1460,7 @@ class PurchaseCartItemRow extends ConsumerWidget {
               batchNumber: item.batchNumber,
               mfgDate: parseDate(item.mfgDate),
               expDate: parseDate(item.expiryDate),
-              saleRate: item.item.value!.sellRate ?? rate,
+              saleRate: rate,
               purchaseRate: item.item.value!.buyRate ?? 0.0,
               isSaleRateWithTax: false,
               isPurchaseRateWithTax: false,

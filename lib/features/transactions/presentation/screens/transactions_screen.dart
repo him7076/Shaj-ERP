@@ -108,13 +108,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       });
     } else if (txn.transactionType == 'Credit Note') {
       Navigator.of(context,  rootNavigator: true).push<bool>(
-        MaterialPageRoute(builder: (context) => AddEditCreditNoteScreen(parentCreditNoteUuid: txn.uuid ?? txn.id.toString())),
+        MaterialPageRoute(builder: (context) => AddEditCreditNoteScreen(parentCreditNoteUuid: txn.linkedBillUuid ?? txn.uuid ?? txn.id.toString())),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
     } else if (txn.transactionType == 'Debit Note') {
       Navigator.of(context,  rootNavigator: true).push<bool>(
-        MaterialPageRoute(builder: (context) => AddEditDebitNoteScreen(parentDebitNoteUuid: txn.uuid ?? txn.id.toString())),
+        MaterialPageRoute(builder: (context) => AddEditDebitNoteScreen(parentDebitNoteUuid: txn.linkedBillUuid ?? txn.uuid ?? txn.id.toString())),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
