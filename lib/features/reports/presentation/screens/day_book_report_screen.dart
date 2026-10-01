@@ -89,7 +89,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     for (var inv in invoices) {
       if (_isSameDay(inv.invoiceDate, _selectedDate)) {
         final totalPaid = inv.paidAmount ?? 0.0;
-        final linked = linkedAmountMap[inv.uuid ?? ''] ?? 0.0;
+        final linked = (linkedAmountMap[inv.uuid ?? ''] ?? 0.0) + (linkedAmountMap[inv.invoiceNumber ?? ''] ?? 0.0);
         final initialPaid = (totalPaid - linked) > 0 ? (totalPaid - linked) : 0.0;
         
         vouchers.add(_DayBookVoucher(
@@ -97,7 +97,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           voucherType: 'Sale Invoice',
           voucherNo: inv.invoiceNumber ?? 'N/A',
           partyName: inv.partyName ?? 'Customer',
-          paymentMode: inv.paymentStatus ?? 'Cash',
+          paymentMode: inv.paymentMode ?? 'Cash',
           debit: initialPaid,
           credit: 0.0,
           totalAmount: inv.grandTotal ?? 0.0,
@@ -117,7 +117,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
     for (var pur in purchases) {
       if (_isSameDay(pur.purchaseDate, _selectedDate)) {
         final totalPaid = pur.paidAmount ?? 0.0;
-        final linked = linkedAmountMap[pur.uuid ?? ''] ?? 0.0;
+        final linked = (linkedAmountMap[pur.uuid ?? ''] ?? 0.0) + (linkedAmountMap[pur.purchaseNumber ?? ''] ?? 0.0);
         final initialPaid = (totalPaid - linked) > 0 ? (totalPaid - linked) : 0.0;
 
         vouchers.add(_DayBookVoucher(
@@ -125,7 +125,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
           voucherType: 'Purchase Bill',
           voucherNo: pur.purchaseNumber ?? 'N/A',
           partyName: pur.partyName ?? 'Supplier',
-          paymentMode: pur.paymentStatus ?? 'Cash',
+          paymentMode: pur.paymentMode ?? 'Cash',
           debit: 0.0,
           credit: initialPaid,
           totalAmount: pur.grandTotal ?? 0.0,

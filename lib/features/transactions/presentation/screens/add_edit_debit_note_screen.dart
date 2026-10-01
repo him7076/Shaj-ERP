@@ -132,7 +132,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
 
   bool _isPaidAmountAutoFill = false;
 
-    bool _isDiscountPercent = true;
+    bool _isDiscountPercent = false;
   String? _attachedImage;
 
   @override
@@ -683,10 +683,21 @@ if (_isPaidAmountAutoFill) {
                           child: ToggleButtons(
                             isSelected: [_isDiscountPercent, !_isDiscountPercent],
                             onPressed: (idx) {
-                              setState(() {
-                                _isDiscountPercent = idx == 0;
-                                _recalculateTotals();
-                              });
+                                  setState(() {
+                                    bool newIsPercent = idx == 0;
+                                    if (newIsPercent == _isDiscountPercent) return;
+                                    
+                                    _isDiscountPercent = newIsPercent;
+                                    
+                                    if (_isDiscountPercent) {
+                                       double percent = 0.0;
+                                       if (_subtotal > 0) percent = (_discountAmount / _subtotal) * 100.0;
+                                       _discountController.text = (percent % 1 == 0) ? percent.toInt().toString() : percent.toStringAsFixed(2);
+                                    } else {
+                                       _discountController.text = (_discountAmount % 1 == 0) ? _discountAmount.toInt().toString() : _discountAmount.toStringAsFixed(2);
+                                    }
+                                    _recalculateTotals();
+                                  });
                             },
                             borderRadius: BorderRadius.circular(8),
                             constraints: const BoxConstraints(minHeight: 32, minWidth: 32),

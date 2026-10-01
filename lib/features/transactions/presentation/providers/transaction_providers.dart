@@ -722,8 +722,8 @@ class CreditNoteCartNotifier extends StateNotifier<CreditNoteCart> {
 
   void setDiscounts(double? percent, double? amount) {
     state = state.copyWith(
-      discountPercent: percent ?? state.discountPercent,
-      discountAmount: amount ?? state.discountAmount,
+      discountPercent: percent ?? 0.0,
+      discountAmount: amount ?? 0.0,
     );
   }
 

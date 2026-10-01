@@ -189,7 +189,7 @@ class _AddEditInvoiceScreenState extends ConsumerState<AddEditInvoiceScreen> {
 
   bool _isPaidAmountAutoFill = false;
 
-    bool _isDiscountPercent = true;
+    bool _isDiscountPercent = false;
   String? _attachedImage;
 
   @override
@@ -979,18 +979,26 @@ ref.listen(invoiceCartProvider, (prev, next) {
                           ),
                           child: ToggleButtons(
                             isSelected: [_isDiscountPercent, !_isDiscountPercent],
-                            onPressed: (idx) {
+                                                        onPressed: (idx) {
                                   setState(() {
+                                    bool newIsPercent = idx == 0;
+                                    if (newIsPercent == _isDiscountPercent) return;
                                     
-                                  _isDiscountPercent = idx == 0;
-                                  // trigger re-calc
-                                  final double? amt = double.tryParse(_discountController.text);
-                                  if (_isDiscountPercent) {
-                                    ref.read(invoiceCartProvider.notifier).setDiscounts(amt, null);
-                                  } else {
-                                    ref.read(invoiceCartProvider.notifier).setDiscounts(null, amt);
-                                  }
-                                
+                                    final totals = ref.read(invoiceCartProvider.notifier).calculateTotals(null);
+                                    final double currentCalculatedDiscount = totals['discountAmount'] ?? 0.0;
+                                    final double subtotalAndGst = (totals['taxableAmount'] ?? 0.0) + (totals['totalGstAmount'] ?? 0.0);
+                                    
+                                    _isDiscountPercent = newIsPercent;
+                                    
+                                    if (_isDiscountPercent) {
+                                       double percent = 0.0;
+                                       if (subtotalAndGst > 0) percent = (currentCalculatedDiscount / subtotalAndGst) * 100.0;
+                                       _discountController.text = (percent % 1 == 0) ? percent.toInt().toString() : percent.toStringAsFixed(2);
+                                       ref.read(invoiceCartProvider.notifier).setDiscounts(percent, 0.0);
+                                    } else {
+                                       _discountController.text = (currentCalculatedDiscount % 1 == 0) ? currentCalculatedDiscount.toInt().toString() : currentCalculatedDiscount.toStringAsFixed(2);
+                                       ref.read(invoiceCartProvider.notifier).setDiscounts(0.0, currentCalculatedDiscount);
+                                    }
                                   });
                             },
                             borderRadius: BorderRadius.circular(8),
