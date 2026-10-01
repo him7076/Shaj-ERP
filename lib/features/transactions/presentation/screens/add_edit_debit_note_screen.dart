@@ -254,7 +254,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
              List<PurchaseItem> purItems = [];
              try { await pur.purchaseItems.load(); purItems = pur.purchaseItems.toList(); } catch (_) {}
              if (purItems.isEmpty) {
-               purItems = await isar.collection<PurchaseItem>().filter().parentPurchaseIdEqualTo(pur.id).findAll();
+               purItems = await isar.collection<PurchaseItem>().filter().purchaseIdEqualTo(pur.id).findAll();
              }
              
              String _genU() {
@@ -268,10 +268,10 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
                 ..itemId = e.itemId
                 ..itemName = e.itemName
                 ..quantity = e.quantity
-                ..rate = e.price
-                ..discount = e.discountAmount
-                ..gstRate = e.taxRate
-                ..gstAmount = e.taxAmount
+                ..rate = e.rate
+                ..discount = e.discount
+                ..gstRate = e.gstRate
+                ..gstAmount = e.gstAmount
                 ..totalAmount = e.totalAmount
              ).toList();
              

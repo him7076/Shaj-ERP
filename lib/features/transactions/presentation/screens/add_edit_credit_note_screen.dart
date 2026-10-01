@@ -268,10 +268,10 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
                 ..itemId = e.itemId
                 ..itemName = e.itemName
                 ..quantity = e.quantity
-                ..rate = e.price
-                ..discount = e.discountAmount
-                ..gstRate = e.taxRate
-                ..gstAmount = e.taxAmount
+                ..rate = e.rate
+                ..discount = e.discount
+                ..gstRate = e.gstRate
+                ..gstAmount = e.gstAmount
                 ..totalAmount = e.totalAmount
              ).toList();
              
