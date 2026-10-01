@@ -146,6 +146,53 @@ void main() {
       } catch (e) {
         debugPrint('[BOOT WARNING] Failed to patch null transactions: $e');
       }
+
+      // AUTO FIX STOCK FOR DELETED PURCHASES
+      try {
+        final isar = dbService.isar;
+        final allDeletedPurchases = await isar.purchases.filter().isDeletedEqualTo(true).findAll();
+        
+        await isar.writeTxn(() async {
+          for (var p in allDeletedPurchases) {
+            // Find all items for this deleted purchase that are STILL NOT DELETED
+            final oldItems = await isar.purchaseItems.filter()
+               .purchaseIdEqualTo(p.id)
+               .isDeletedEqualTo(false)
+               .findAll();
+               
+            for (var oi in oldItems) {
+               // Revert stock!
+               final targetItem = await isar.items.get(oi.itemId ?? 0);
+               if (targetItem != null) {
+                  double restoredQty = oi.quantity ?? 0.0;
+                  final convFactor = targetItem.conversionFactor ?? 1.0;
+                  if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
+                    final uName = (oi.unit ?? '').trim().toLowerCase();
+                    final sName = targetItem.secondaryUnit!.trim().toLowerCase();
+                    String pName = '';
+                    if (targetItem.primaryUnitName != null) {
+                      pName = targetItem.primaryUnitName!.trim().toLowerCase();
+                    }
+                    if (uName == sName && uName != pName) restoredQty = restoredQty / convFactor;
+                  }
+                  targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
+                  
+                  final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
+                  final logEntry = '[$timestamp] STOCK_REVERT (Auto-Fix Old Delete): -$restoredQty | Bal: ${targetItem.currentStock} | Ref: ${p.purchaseNumber}';
+                  final currentNotes = targetItem.notes ?? '';
+                  targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
+                  
+                  await isar.items.put(targetItem);
+               }
+               // delete the purchase item to prevent double reverting
+               await isar.purchaseItems.delete(oi.id);
+            }
+          }
+        });
+        debugPrint('[BOOT] Auto-fixed stock for deleted purchases.');
+      } catch (e) {
+        debugPrint('[BOOT WARNING] Failed to auto-fix stock: $e');
+      }
     } catch (e, stack) {
       debugPrint('[BOOT WARNING] DatabaseService init error: $e');
       logger.error('DatabaseService init error on boot', e, stack);

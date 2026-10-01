@@ -859,6 +859,33 @@ class PurchaseExcelImportService {
 
             await isar.writeTxn(() async {
               for (var oi in oldItems) {
+                if (oi.itemId != null) {
+                  final targetItem = await isar.items.get(oi.itemId!);
+                  if (targetItem != null) {
+                    double restoredQty = oi.quantity ?? 0.0;
+                    final convFactor = targetItem.conversionFactor ?? 1.0;
+                    if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
+                      final uName = (oi.unit ?? '').trim().toLowerCase();
+                      final sName = targetItem.secondaryUnit!.trim().toLowerCase();
+                      String pName = '';
+                      if (targetItem.primaryUnitName != null) {
+                        pName = targetItem.primaryUnitName!.trim().toLowerCase();
+                      } else {
+                        try {
+                          if (targetItem.unit.value != null && targetItem.unit.value!.shortName != null) {
+                            pName = targetItem.unit.value!.shortName!.trim().toLowerCase();
+                          }
+                        } catch (_) {}
+                      }
+                      if (uName == sName && uName != pName) {
+                        restoredQty = restoredQty / convFactor;
+                      }
+                    }
+                    targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
+                    await isar.items.put(targetItem);
+                  }
+                }
+                
                 if (oi.uuid != null && oi.uuid!.isNotEmpty) {
                   await isar.syncQueues.put(SyncQueue()
                     ..uuid = _uuidGen.v4()

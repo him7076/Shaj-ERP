@@ -237,6 +237,91 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
     }
   }
 
+  @override
+  Future<void> delete(int id) async {
+    try {
+      await isar.writeTxn(() async {
+        final purchase = await collection.get(id);
+        if (purchase == null) return;
+
+        // 1. Revert Party Outstanding
+        if (purchase.partyId != null) {
+          final party = await isar.partys.get(purchase.partyId!);
+          if (party != null) {
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) + (purchase.pendingAmount ?? 0.0);
+            await isar.partys.put(party);
+          }
+        }
+
+        // 2. Revert Stock Quantities
+        final oldItems = await isar.collection<PurchaseItem>()
+            .filter()
+            .purchaseIdEqualTo(id)
+            .findAll();
+            
+        for (var oldItem in oldItems) {
+          final targetItem = await isar.items.get(oldItem.itemId ?? 0);
+          if (targetItem != null) {
+            double restoredQty = oldItem.quantity ?? 0.0;
+            final convFactor = targetItem.conversionFactor ?? 1.0;
+            if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
+              final uName = (oldItem.unit ?? '').trim().toLowerCase();
+              final sName = targetItem.secondaryUnit!.trim().toLowerCase();
+              String pName = '';
+              if (targetItem.primaryUnitName != null) {
+                pName = targetItem.primaryUnitName!.trim().toLowerCase();
+              } else {
+                try {
+                  if (targetItem.unit.value != null && targetItem.unit.value!.shortName != null) {
+                    pName = targetItem.unit.value!.shortName!.trim().toLowerCase();
+                  }
+                } catch (_) {}
+              }
+              if (uName == sName && uName != pName) {
+                restoredQty = restoredQty / convFactor;
+              }
+            }
+            targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
+            
+            final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
+            final logEntry = '[] STOCK_REVERT (Purchase Deleted): - | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
+            final currentNotes = targetItem.notes ?? '';
+            targetItem.notes = currentNotes.isEmpty ? logEntry : '
+';
+            
+            await isar.items.put(targetItem);
+          }
+        }
+        await isar.collection<PurchaseItem>().deleteAll(oldItems.map((e) => e.id).toList());
+
+        // 3. Mark Purchase as deleted
+        purchase.isDeleted = true;
+        purchase.isSynced = false;
+        purchase.updatedAt = DateTime.now();
+        purchase.version += 1;
+        await collection.put(purchase);
+
+        // 4. Queue Sync
+        final queueItem = SyncQueue()
+          ..uuid = _generateUuid()
+          ..entityType = 'Purchase'
+          ..entityId = purchase.id
+          ..entityUuid = purchase.uuid
+          ..operation = 'Delete'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(queueItem);
+      });
+      
+      logger.info('Purchase bill deleted successfully.');
+      Future.microtask(() {
+        try { SyncManager.triggerUpload(); } catch (_) {}
+      });
+    } catch (e) {
+      throw DatabaseException('Failed to delete purchase bill: $e');
+    }
+  }
+
   // Self-contained UUID generator
   String _generateUuid() {
     final random = Random();
