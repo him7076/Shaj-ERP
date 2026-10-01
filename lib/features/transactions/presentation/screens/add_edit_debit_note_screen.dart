@@ -610,8 +610,8 @@ if (_isPaidAmountAutoFill) {
             Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
 
-                        Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(
                   width: 32,
@@ -632,13 +632,12 @@ if (_isPaidAmountAutoFill) {
                   ),
                 ),
                 Expanded(
-                  flex: 1,
                   child: TextFormField(
                     controller: _paidAmountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      labelText: true ? 'Received (₹)' : 'Paid (₹)',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    decoration: const InputDecoration(
+                      labelText: 'Received Amount (₹)',
                       isDense: true,
                     ),
                     onChanged: (val) {
@@ -646,9 +645,24 @@ if (_isPaidAmountAutoFill) {
                     },
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: _showLinkBillsModal,
+                  icon: const Icon(Icons.link, size: 18),
+                  label: const Text('Link'),
+                  style: ElevatedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Expanded(
-                  flex: 2,
+                  flex: 1,
                   child: ref.watch(bankAccountsListProvider).when(
                     data: (accounts) {
                       final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
@@ -665,7 +679,7 @@ if (_isPaidAmountAutoFill) {
                     error: (_, __) => const Text('Error'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 1,
                   child: TextFormField(
@@ -741,8 +755,8 @@ if (_isPaidAmountAutoFill) {
       appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
         title: Text(
           widget.parentDebitNoteUuid != null
-              ? 'Edit DebitNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
-              : 'New DebitNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
+              ? 'Edit DebitNote ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
+              : 'New DebitNote ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
         ),
       ),
       body: SingleChildScrollView(
