@@ -56,7 +56,7 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
       await isar.syncQueues.put(queueItem);
     }
     
-    if (type.contains('Invoice')) {
+    if ((type.contains('Invoice') || type.contains('Sales'))) {
       final item = await isar.invoices.filter().invoiceNumberEqualTo(vNum).isDeletedEqualTo(true).findFirst();
       if (item != null) {
         item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
@@ -80,7 +80,7 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
         await logRestore('Order', item.id, item.uuid);
         restored = true;
       }
-    } else if (type.contains('Credit Note')) {
+    } else if ((type.contains('Credit Note') || type.contains('CreditNote'))) {
       final item = await isar.creditNotes.filter().creditNoteNumberEqualTo(vNum).isDeletedEqualTo(true).findFirst();
       if (item != null) {
         item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
@@ -88,7 +88,7 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
         await logRestore('CreditNote', item.id, item.uuid);
         restored = true;
       }
-    } else if (type.contains('Debit Note')) {
+    } else if ((type.contains('Debit Note') || type.contains('DebitNote'))) {
       final item = await isar.debitNotes.filter().debitNoteNumberEqualTo(vNum).isDeletedEqualTo(true).findFirst();
       if (item != null) {
         item.isDeleted = false; item.isSynced = false; item.updatedAt = DateTime.now(); item.version += 1;
@@ -315,7 +315,7 @@ class _DeletedVouchersScreenState extends ConsumerState<DeletedVouchersScreen> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      '${v.voucherType ?? "Voucher"}: ${v.voucherNumber ?? "N/A"}',
+                                      '${(v.voucherType ?? "Voucher").replaceAll("CreditNote", "Credit Note").replaceAll("DebitNote", "Debit Note")}: ${v.voucherNumber ?? "N/A"}',
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
