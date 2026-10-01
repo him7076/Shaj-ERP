@@ -885,6 +885,39 @@ if (_isPaidAmountAutoFill) {
                   children: [
                     const Icon(Icons.info, color: Colors.blue, size: 18),
                     const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: ₹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const Divider(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      final selected = await showDatePicker(
+                        context: context,
+                        initialDate: _debitNoteDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now(),
+                      );
+                      if (selected != null) {
+                        setState(() => _debitNoteDate = selected);
+                      }
+                    },
+                    child: InputDecorator(
+                      decoration: InputDecoration(labelText: 'DebitNote Date',  isDense: true),
+                      child: Text(DateFormat('dd-MM-yyyy').format(_debitNoteDate), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextFormField(
                     controller: _originalBillNumberController,
