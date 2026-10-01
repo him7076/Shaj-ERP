@@ -21,7 +21,7 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
   @override
   Future<String> generateNextDebitNoteNumber() async {
     try {
-      final allItems = await collection.where().findAll();
+      final allItems = await collection.filter().isDeletedEqualTo(false).findAll();
       int maxNum = 0;
       for (var item in allItems) {
         if (item.debitNoteNumber != null ) {

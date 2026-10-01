@@ -21,7 +21,7 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
   @override
   Future<String> generateNextCreditNoteNumber() async {
     try {
-      final allItems = await collection.where().findAll();
+      final allItems = await collection.filter().isDeletedEqualTo(false).findAll();
       int maxNum = 0;
       for (var item in allItems) {
         if (item.creditNoteNumber != null ) {
