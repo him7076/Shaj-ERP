@@ -122,7 +122,6 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       
       var results = await qb.findAll();
       results = results.where((t) => t.isPersonalVault == isPersonal).toList();
-      if (['Receipt', 'Payment', 'Credit Note', 'Debit Note', 'Sales Order', 'Transfer'].contains(filter.transactionType)) { totalCount += results.length; }
       results.sort((a, b) => (b.transactionDate ?? b.createdAt).compareTo(a.transactionDate ?? a.createdAt));
       rawTransactions = results.take(queryLimit).toList();
     } catch (e, stack) {
