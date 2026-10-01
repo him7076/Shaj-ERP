@@ -131,7 +131,7 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
 
         txn.transactionNumber = note.creditNoteNumber;
         txn.transactionDate = note.creditNoteDate ?? DateTime.now();
-        txn.partyUuid = newParty?.uuid ?? note.partyUuid;
+        txn.partyUuid = newParty?.uuid ?? note.party.value?.uuid;
         txn.partyName = note.partyName;
         txn.amount = note.grandTotal;
         txn.paymentMode = 'Credit';

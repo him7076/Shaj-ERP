@@ -131,7 +131,7 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
 
         txn.transactionNumber = note.debitNoteNumber;
         txn.transactionDate = note.debitNoteDate ?? DateTime.now();
-        txn.partyUuid = newParty?.uuid ?? note.partyUuid;
+        txn.partyUuid = newParty?.uuid ?? note.party.value?.uuid;
         txn.partyName = note.partyName;
         txn.amount = note.grandTotal;
         txn.paymentMode = 'Credit';
