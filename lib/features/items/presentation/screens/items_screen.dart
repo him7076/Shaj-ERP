@@ -60,7 +60,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
         final db = ref.read(databaseServiceProvider).isar;
         var cat = await db.categorys.filter().categoryNameEqualTo(widget.lockedCategoryName!).findFirst();
         if (cat == null && widget.lockedCategoryName == 'Fixed Assets') {
-          cat = CategoryCollection()..categoryName = 'Fixed Assets';
+          cat = Category()..categoryName = 'Fixed Assets';
           await db.writeTxn(() async {
             await db.categorys.put(cat!);
           });
