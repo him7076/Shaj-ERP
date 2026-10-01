@@ -1,0 +1,878 @@
+563:   Widget build(BuildContext context) {
+564: if (_isPaidAmountAutoFill) {
+565:        final currentPaid = double.tryParse(_paidAmountController.text) ?? 0.0;
+566:        if ((currentPaid - _grandTotal).abs() > 0.01) {
+567:           WidgetsBinding.instance.addPostFrameCallback((_) {
+568:              if (mounted) {
+569:                _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+570:              }
+571:           });
+572:        }
+573:     }
+574: 
+575:     final theme = Theme.of(context);
+576:     final isDesktop = ResponsiveLayout.isDesktop(context);
+577: 
+578:     if (_isSaving) {
+579:       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+580:     }
+581: 
+582:     final mainContent = Column(
+583:       crossAxisAlignment: CrossAxisAlignment.stretch,
+584:       children: [
+585:         _buildPartyAndHeaderCard(theme),
+586:         const SizedBox(height: 12),
+587:         _buildCartItemsTable(theme),
+588:       ],
+589:     );
+590: 
+591:     final summaryContent = NeuCard(
+592:       elevation: 0,
+593:       clipBehavior: Clip.antiAlias,
+594:       shape: RoundedRectangleBorder(
+595:         borderRadius: BorderRadius.circular(12),
+596:         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+597:       ),
+598:       child: Container(
+599:         decoration: BoxDecoration(
+600:           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+601:             left: BorderSide(color: Color(0xFF5E35B1), width: 5),
+602:           ),
+603:         ),
+604:         child: Padding(
+605:           padding: const EdgeInsets.all(20.0),
+606:           child: Column(
+607:             crossAxisAlignment: CrossAxisAlignment.stretch,
+608:             children: [
+609:             Text('Bill settings', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+610:             const SizedBox(height: 12),
+611:                         Row(
+612:               crossAxisAlignment: CrossAxisAlignment.end,
+613:               children: [
+614:                 SizedBox(
+615:                   width: 32,
+616:                   height: 32,
+617:                   child: Checkbox(
+618:                     value: _isPaidAmountAutoFill,
+619:                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+620:                     onChanged: (val) {
+621:                       setState(() {
+622:                         _isPaidAmountAutoFill = val ?? false;
+623:                         if (_isPaidAmountAutoFill) {
+624:                           _paidAmountController.text = _grandTotal.toStringAsFixed(2);
+625:                         } else {
+626:                           _paidAmountController.clear();
+627:                         }
+628:                       });
+629:                     },
+630:                   ),
+631:                 ),
+632:                 Expanded(
+633:                   flex: 1,
+634:                   child: TextFormField(
+635:                     controller: _paidAmountController,
+636:                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+637:                     style: const TextStyle(fontSize: 13),
+638:                     decoration: InputDecoration(
+639:                       labelText: false ? 'Received (₹)' : 'Paid (₹)',
+640:                       isDense: true,
+641:                     ),
+642:                     onChanged: (val) {
+643:                       setState(() => _isPaidAmountAutoFill = false);
+644:                     },
+645:                   ),
+646:                 ),
+647:                 const SizedBox(width: 8),
+648:                 Expanded(
+649:                   flex: 2,
+650:                   child: ref.watch(bankAccountsListProvider).when(
+651:                     data: (accounts) {
+652:                       final activeAccounts = accounts.where((a) => !a.isDeleted).toList();
+653:                       final modes = ['Cash', 'Credit', 'Cheque', 'UPI', 'Bank Transfer', ...activeAccounts.map((a) => a.bankName ?? '')].toSet().toList();
+654:                       return SearchablePaymentModeDropdown(
+655:                         paymentModes: modes,
+656:                         selectedMode: _paymentMode,
+657:                         onChanged: (val) {
+658:                           if (val != null) setState(() => _paymentMode = val);
+659:                         },
+660:                       );
+661:                     },
+662:                     loading: () => const CircularProgressIndicator(),
+663:                     error: (_, __) => const Text('Error'),
+664:                   ),
+665:                 ),
+666:                 const SizedBox(width: 8),
+667:                 Expanded(
+668:                   flex: 1,
+669:                   child: TextFormField(
+670:                     controller: _discountController,
+671:                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+672:                     style: const TextStyle(fontSize: 13),
+673:                     decoration: InputDecoration(
+674:                       labelText: 'Discount',
+675:                       isDense: true,
+676:                       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+677:                       suffixIcon: Padding(
+678:                         padding: const EdgeInsets.all(4.0),
+679:                         child: Container(
+680:                           decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+681:                           child: ToggleButtons(
+682:                             isSelected: [_isDiscountPercent, !_isDiscountPercent],
+683:                             onPressed: (idx) {
+684:                                   setState(() {
+685:                                     bool newIsPercent = idx == 0;
+686:                                     if (newIsPercent == _isDiscountPercent) return;
+687:                                     
+688:                                     _isDiscountPercent = newIsPercent;
+689:                                     
+690:                                     if (_isDiscountPercent) {
+691:                                        double percent = 0.0;
+692:                                        if (_subtotal > 0) percent = (_discountAmount / _subtotal) * 100.0;
+693:                                        _discountController.text = (percent % 1 == 0) ? percent.toInt().toString() : percent.toStringAsFixed(2);
+694:                                     } else {
+695:                                        _discountController.text = (_discountAmount % 1 == 0) ? _discountAmount.toInt().toString() : _discountAmount.toStringAsFixed(2);
+696:                                     }
+697:                                     _recalculateTotals();
+698:                                   });
+699:                             },
+700:                             borderRadius: BorderRadius.circular(8),
+701:                             constraints: const BoxConstraints(minHeight: 32, minWidth: 32),
+702:                             children: const [
+703:                               Text('%', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+704:                               Text('₹', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+705:                             ],
+706:                           ),
+707:                         ),
+708:                       ),
+709:                     ),
+710:                     onChanged: (val) => _recalculateTotals(),
+711:                   ),
+712:                 ),
+713:               ],
+714:             ),
+715:             const SizedBox(height: 12),
+716:             TextFormField(
+717:               controller: _remarksController,
+718:               decoration: InputDecoration(labelText: 'Remarks / Notes', ),
+719:             ),
+720:             const Divider(height: 32),
+721:             _buildTotalsSummaryPanel(theme),
+722:             const SizedBox(height: 20),
+723:             ElevatedButton.icon(
+724:               icon: const Icon(Icons.check_circle_outline),
+725:               label: const Text('Save CreditNote Bill'),
+726:               onPressed: _saveBill,
+727:               style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+728:                 minimumSize: const Size.fromHeight(55),
+729:                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+730:               ),
+731:             ),
+732:           ],
+733:         ),
+734:       ),
+735:       ),
+736:     );
+737: 
+738:     return Scaffold(
+739:       appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+740:         title: Text(
+741:           widget.parentCreditNoteUuid != null
+742:               ? 'Edit CreditNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
+743:               : 'New CreditNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
+744:         ),
+745:       ),
+746:       body: SingleChildScrollView(
+747:         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+748:         child: isDesktop
+749:             ? Row(
+750:                 crossAxisAlignment: CrossAxisAlignment.start,
+751:                 children: [
+752:                   Expanded(flex: 3, child: mainContent),
+753:                   const SizedBox(width: 16),
+754:                   Expanded(flex: 2, child: summaryContent),
+755:                 ],
+756:               )
+757:             : Column(
+758:                 children: [
+759:                   mainContent,
+760:                   const SizedBox(height: 12),
+761:                   summaryContent,
+762:                   const SizedBox(height: 30),
+763:                 ],
+764:               ),
+765:       ),
+766:       bottomNavigationBar: !isDesktop
+767:           ? null
+768:           : Container(
+769:               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+770:         decoration: BoxDecoration(
+771:           color: theme.colorScheme.surface,
+772:           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+773:           boxShadow: [
+774:             BoxShadow(
+775:               color: Colors.black.withOpacity(0.08),
+776:               blurRadius: 12,
+777:               offset: const Offset(0, -4),
+778:             ),
+779:           ],
+780:         ),
+781:         child: Row(
+782:           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+783:           children: [
+784:             Column(
+785:               crossAxisAlignment: CrossAxisAlignment.start,
+786:               mainAxisSize: MainAxisSize.min,
+787:               children: [
+788:                 Text(
+789:                   'Grand Total (${_draftItems.length} items)',
+790:                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+791:                 ),
+792:                 Text(
+793:                   '₹${_grandTotal.toStringAsFixed(2)}',
+794:                   style: theme.textTheme.titleLarge?.copyWith(
+795:                     fontWeight: FontWeight.bold,
+796:                     color: theme.colorScheme.primary,
+797:                   ),
+798:                 ),
+799:               ],
+800:             ),
+801:             ElevatedButton.icon(
+802:               icon: const Icon(Icons.check_circle_outline),
+803:               label: const Text('Save CreditNote Bill', style: TextStyle(fontWeight: FontWeight.bold)),
+804:               onPressed: _saveBill,
+805:               style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+806:                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+807:                 backgroundColor: theme.colorScheme.primary,
+808:                 foregroundColor: theme.colorScheme.onPrimary,
+809:                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+810:               ),
+811:             ),
+812:           ],
+813:         ),
+814:       ),
+815:     );
+816:   }
+817: 
+818:   Widget _buildPartyAndHeaderCard(ThemeData theme) {
+819:     final partiesAsync = ref.watch(partiesListProvider);
+820: 
+821:     return NeuCard(
+822:       elevation: 0,
+823:       clipBehavior: Clip.antiAlias,
+824:       shape: RoundedRectangleBorder(
+825:         borderRadius: BorderRadius.circular(12),
+826:         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+827:       ),
+828:       child: Container(
+829:         decoration: BoxDecoration(
+830:           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+831:             left: BorderSide(color: Color(0xFF1E88E5), width: 5),
+832:           ),
+833:         ),
+834:         child: Padding(
+835:           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+836:           child: Column(
+837:             crossAxisAlignment: CrossAxisAlignment.start,
+838:             children: [
+839:               Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+840:             const SizedBox(height: 12),
+841:             partiesAsync.when(
+842:               data: (parties) {
+843:                 final supplierParties = parties; // All parties
+844:                 return SearchablePartyDropdown(
+845:                   parties: supplierParties,
+846:                   selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+847:                       ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+848:                       : _selectedParty,
+849:                   labelText: 'Select Account',
+850:                   onChanged: (party) {
+851:                     setState(() {
+852:                       _selectedParty = party;
+853:                     });
+854:                   },
+855:                 );
+856:               },
+857:               loading: () => const Center(child: CircularProgressIndicator()),
+858:               error: (e, _) => Text('Error loading suppliers: $e'),
+859:             ),
+860:             if (_selectedParty != null) ...[
+861:               const SizedBox(height: 12),
+862:               Container(
+863:                 padding: const EdgeInsets.all(12),
+864:                 decoration: BoxDecoration(
+865:                   color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+866:                   borderRadius: BorderRadius.circular(8),
+867:                 ),
+868:                 child: Row(
+869:                   children: [
+870:                     const Icon(Icons.info, color: Colors.blue, size: 18),
+871:                     const SizedBox(width: 8),
+872:                     Expanded(
+873:                       child: Text(
+874:                         'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: ₹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+875:                         style: theme.textTheme.bodySmall,
+876:                       ),
+877:                     ),
+878:                   ],
+879:                 ),
+880:               ),
+881:             ],
+882:             const Divider(height: 24),
+883:             Row(
+884:               children: [
+885:                 Expanded(
+886:                   child: InkWell(
+887:                     onTap: () async {
+888:                       final selected = await showDatePicker(
+889:                         context: context,
+890:                         initialDate: _creditNoteDate,
+891:                         firstDate: DateTime(2020),
+892:                         lastDate: DateTime.now(),
+893:                       );
+894:                       if (selected != null) {
+895:                         setState(() => _creditNoteDate = selected);
+896:                       }
+897:                     },
+898:                     child: InputDecorator(
+899:                       decoration: InputDecoration(labelText: 'CreditNote Date',  isDense: true),
+900:                       child: Text(DateFormat('dd-MM-yyyy').format(_creditNoteDate), maxLines: 1, overflow: TextOverflow.ellipsis),
+901:                     ),
+902:                   ),
+903:                 ),
+904:                 const SizedBox(width: 8),
+905:                 Expanded(
+906:                   child: TextFormField(
+907:                     controller: _billNumberController,
+908:                     readOnly: true,
+909:                     decoration: InputDecoration(labelText: 'Internal Bill # (Auto)',  isDense: true),
+910:                   ),
+911:                 ),
+912:                 const SizedBox(width: 8),
+913:                 Expanded(
+914:                   child: TextFormField(
+915:                     controller: _originalBillNumberController,
+916:                     decoration: InputDecoration(
+917:                       labelText: 'Supplier Invoice #',
+918:                       isDense: true,
+919:                       suffixIcon: IconButton(
+920:                         icon: const Icon(Icons.link, color: Colors.blue),
+921:                         onPressed: _showLinkBillsModal,
+922:                       ),
+923:                     ),
+924:                   ),
+925:                 ),
+926:               ],
+927:             ),
+928:           ],
+929:         ),
+930:       ),
+931:       ),
+932:     );
+933:   }
+934: 
+935: 
+936: 
+937:   Widget _buildCartItemsTable(ThemeData theme) {
+938:     if (_draftItems.isEmpty) {
+939:       return NeuCard(
+940:         elevation: 0,
+941:         shape: RoundedRectangleBorder(
+942:           borderRadius: BorderRadius.circular(12),
+943:           side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.3)),
+944:         ),
+945:         child: Padding(
+946:           padding: const EdgeInsets.symmetric(vertical: 40.0),
+947:           child: Center(
+948:             child: Column(
+949:               children: [
+950:                 Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey),
+951:                 SizedBox(height: 12),
+952:                 Text('No product lines added yet.', style: TextStyle(color: Colors.grey)),
+953:                 SizedBox(height: 24),
+954:                 Row(
+955:                   mainAxisAlignment: MainAxisAlignment.center,
+956:                   children: [
+957:                     ElevatedButton.icon(
+958:                       onPressed: () async {
+959:                         FullScreenItemEntry.show(
+960:       context, isPurchase: true,
+961:       onAdd: (data) async {
+962:         final tempSelected = SelectedProductData(data.item);
+963:         tempSelected.item.sellRate = data.rate;
+964:         tempSelected.item.buyRate = data.rate; // fallback
+965:         tempSelected.item.gstRate = data.gstRate;
+966:         // Since cart updates only default to 1 qty, we'll need to manually set it after!
+967:         
+968:         _addItemLine(tempSelected);
+969:         setState(() {
+970:            if (_draftItems.isNotEmpty) {
+971:              _draftItems.last.quantity = data.quantity;
+972:              _draftItems.last.discount = data.discountAmount;
+973:            }
+974:         });
+975:         _recalculateTotals();
+976:         
+977:       },
+978:     );
+979:                       },
+980:                       icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+981:                       label: const Text('Add Item'),
+982:                       style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+983:                         visualDensity: VisualDensity.compact,
+984:                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+985:                       ),
+986:                     ),
+987:                     if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+988:                       const SizedBox(width: 12),
+989:                       ElevatedButton.icon(
+990:                         onPressed: () async {
+991:                           FullScreenItemEntry.show(
+992:       context, onlyBundles: true, isPurchase: true,
+993:       onAdd: (data) async {
+994:         final tempSelected = SelectedProductData(data.item);
+995:         tempSelected.item.sellRate = data.rate;
+996:         tempSelected.item.buyRate = data.rate; // fallback
+997:         tempSelected.item.gstRate = data.gstRate;
+998:         // Since cart updates only default to 1 qty, we'll need to manually set it after!
+999:         
+1000:         _addItemLine(tempSelected);
+1001:         setState(() {
+1002:            if (_draftItems.isNotEmpty) {
+1003:              _draftItems.last.quantity = data.quantity;
+1004:              _draftItems.last.discount = data.discountAmount;
+1005:            }
+1006:         });
+1007:         _recalculateTotals();
+1008:         
+1009:       },
+1010:     );
+1011:                         },
+1012:                         icon: const Icon(Icons.extension_rounded, size: 18),
+1013:                         label: const Text('Add Bundle'),
+1014:                         style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+1015:                           visualDensity: VisualDensity.compact,
+1016:                           backgroundColor: Colors.orange.shade100,
+1017:                           foregroundColor: Colors.orange.shade900,
+1018:                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+1019:                         ),
+1020:                       ),
+1021:                     ],
+1022:                   ],
+1023:                 ),
+1024:               ],
+1025:             ),
+1026:           ),
+1027:         ),
+1028:       );
+1029:     }
+1030: 
+1031:     return NeuCard(
+1032:       elevation: 0,
+1033:       clipBehavior: Clip.antiAlias,
+1034:       shape: RoundedRectangleBorder(
+1035:         borderRadius: BorderRadius.circular(12),
+1036:         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+1037:       ),
+1038:       child: Container(
+1039:         decoration: BoxDecoration(
+1040:           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+1041:             left: BorderSide(color: Color(0xFFFB8C00), width: 5),
+1042:           ),
+1043:         ),
+1044:         child: Padding(
+1045:           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+1046:           child: Column(
+1047:             crossAxisAlignment: CrossAxisAlignment.start,
+1048:             children: [
+1049:               Text('Billing Cart lines', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+1050:             const SizedBox(height: 12),
+1051:              ConstrainedBox(
+1052:                constraints: const BoxConstraints(maxHeight: 450),
+1053:                child: Scrollbar(
+1054:                  thumbVisibility: true,
+1055:                  controller: _itemsScrollController,
+1056:                  child: ListView.separated(
+1057:                    controller: _itemsScrollController,
+1058:                    shrinkWrap: true,
+1059:                    itemCount: _draftItems.length,
+1060:                    separatorBuilder: (context, index) => const Divider(height: 24),
+1061:                    itemBuilder: (context, index) {
+1062:                      final item = _draftItems[index];
+1063:                      return PurchaseCartItemRow(
+1064:                        index: index,
+1065:                        item: item,
+1066:                        onDelete: () {
+1067:                          setState(() {
+1068:                            _draftItems.removeAt(index);
+1069:                          });
+1070:                          _recalculateTotals();
+1071:                        },
+1072:                        onChanged: (qty, rate, discount, gstRate) {
+1073:                          setState(() {
+1074:                            item.quantity = qty;
+1075:                            item.rate = rate;
+1076:                            item.discount = discount;
+1077:                            item.gstRate = gstRate;
+1078:                          });
+1079:                          _recalculateTotals();
+1080:                        },
+1081:                      );
+1082:                    },
+1083:                  ),
+1084:                ),
+1085:              ),
+1086:             const SizedBox(height: 12),
+1087:             Row(
+1088:               children: [
+1089:                 Expanded(
+1090:                   child: OutlinedButton.icon(
+1091:                     onPressed: () async {
+1092:                       FullScreenItemEntry.show(
+1093:       context, isPurchase: true,
+1094:       onAdd: (data) async {
+1095:         final tempSelected = SelectedProductData(data.item);
+1096:         tempSelected.item.sellRate = data.rate;
+1097:         tempSelected.item.buyRate = data.rate; // fallback
+1098:         tempSelected.item.gstRate = data.gstRate;
+1099:         // Since cart updates only default to 1 qty, we'll need to manually set it after!
+1100:         
+1101:         _addItemLine(tempSelected);
+1102:         setState(() {
+1103:            if (_draftItems.isNotEmpty) {
+1104:              _draftItems.last.quantity = data.quantity;
+1105:              _draftItems.last.discount = data.discountAmount;
+1106:            }
+1107:         });
+1108:         _recalculateTotals();
+1109:         
+1110:       },
+1111:     );
+1112:                     },
+1113:                     style: OutlinedButton.styleFrom(
+1114:                       visualDensity: VisualDensity.compact,
+1115:                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+1116:                       side: BorderSide(color: theme.colorScheme.primary),
+1117:                     ),
+1118:                     icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+1119:                     label: const Text('Add Item', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+1120:                   ),
+1121:                 ),
+1122:                 if (ref.read(sharedPreferencesProvider).getBool('enable_bundle_management') ?? false) ...[
+1123:                   const SizedBox(width: 8),
+1124:                   Expanded(
+1125:                     child: OutlinedButton.icon(
+1126:                       onPressed: () async {
+1127:                         FullScreenItemEntry.show(
+1128:       context, onlyBundles: true, isPurchase: true,
+1129:       onAdd: (data) async {
+1130:         final tempSelected = SelectedProductData(data.item);
+1131:         tempSelected.item.sellRate = data.rate;
+1132:         tempSelected.item.buyRate = data.rate; // fallback
+1133:         tempSelected.item.gstRate = data.gstRate;
+1134:         // Since cart updates only default to 1 qty, we'll need to manually set it after!
+1135:         
+1136:         _addItemLine(tempSelected);
+1137:         setState(() {
+1138:            if (_draftItems.isNotEmpty) {
+1139:              _draftItems.last.quantity = data.quantity;
+1140:              _draftItems.last.discount = data.discountAmount;
+1141:            }
+1142:         });
+1143:         _recalculateTotals();
+1144:         
+1145:       },
+1146:     );
+1147:                       },
+1148:                       style: OutlinedButton.styleFrom(
+1149:                         visualDensity: VisualDensity.compact,
+1150:                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+1151:                         side: BorderSide(color: Colors.orange.shade700),
+1152:                         foregroundColor: Colors.orange.shade900,
+1153:                       ),
+1154:                       icon: const Icon(Icons.extension_rounded, size: 18),
+1155:                       label: const Text('Add Bundle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+1156:                     ),
+1157:                   ),
+1158:                 ],
+1159:               ],
+1160:             ),
+1161:           ],
+1162:         ),
+1163:       ),
+1164:       ),
+1165:     );
+1166:   }
+1167: 
+1168:   Widget _buildTotalsSummaryPanel(ThemeData theme) {
+1169:     final double paidAmt = double.tryParse(_paidAmountController.text) ?? 0.0;
+1170:     final double pendingAmt = _grandTotal - paidAmt;
+1171: 
+1172:     final isLocal = GstService().isIntrastate(_companyGst, _selectedParty?.gstNumber, partyState: _selectedParty?.state);
+1173: 
+1174:     final totalGst = _totalGST;
+1175:     final cgst = isLocal ? totalGst / 2.0 : 0.0;
+1176:     final sgst = isLocal ? totalGst / 2.0 : 0.0;
+1177:     final igst = isLocal ? 0.0 : totalGst;
+1178: 
+1179:     // Dynamic Tax Slab Calculation
+1180:     final gstRates = _draftItems.map((i) => i.gstRate ?? 18.0).toSet().toList();
+1181:     String cgstLabel = 'CGST';
+1182:     String sgstLabel = 'SGST';
+1183:     String igstLabel = 'IGST';
+1184: 
+1185:     if (gstRates.length == 1) {
+1186:       final singleRate = gstRates.first;
+1187:       final halfRate = singleRate / 2.0;
+1188:       final halfStr = halfRate % 1 == 0 ? halfRate.toInt().toString() : halfRate.toStringAsFixed(1);
+1189:       final rateStr = singleRate % 1 == 0 ? singleRate.toInt().toString() : singleRate.toStringAsFixed(1);
+1190:       cgstLabel = 'CGST ($halfStr%)';
+1191:       sgstLabel = 'SGST ($halfStr%)';
+1192:       igstLabel = 'IGST ($rateStr%)';
+1193:     } else if (gstRates.length > 1) {
+1194:       cgstLabel = 'CGST (Multiple Tax Rates)';
+1195:       sgstLabel = 'SGST (Multiple Tax Rates)';
+1196:       igstLabel = 'IGST (Multiple Tax Rates)';
+1197:     }
+1198: 
+1199:     return Column(
+1200:       children: [
+1201:         _buildSummaryRow('Subtotal (Before Discount)', _subtotal, theme),
+1202:         _buildSummaryRow('Discounts Total', -_discountAmount, theme),
+1203:         _buildSummaryRow('Taxable Value', _taxableAmount, theme),
+1204:         if (isLocal) ...[
+1205:           _buildSummaryRow(cgstLabel, cgst, theme),
+1206:           _buildSummaryRow(sgstLabel, sgst, theme),
+1207:         ] else ...[
+1208:           _buildSummaryRow(igstLabel, igst, theme),
+1209:         ],
+1210:         Padding(
+1211:           padding: const EdgeInsets.symmetric(vertical: 4),
+1212:           child: Row(
+1213:             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1214:             children: [
+1215:               Row(
+1216:                 children: [
+1217:                   Text('Round Off', style: theme.textTheme.bodyMedium?.copyWith(fontSize: 13)),
+1218:                   if (_customRoundOff != null)
+1219:                     IconButton(
+1220:                       icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.blue),
+1221:                       tooltip: 'Reset to Auto Round Off',
+1222:                       onPressed: () {
+1223:                         _customRoundOff = null;
+1224:                         _recalculateTotals();
+1225:                       },
+1226:                     ),
+1227:                 ],
+1228:               ),
+1229:               SizedBox(
+1230:                 width: 90,
+1231:                 child: RoundOffField(value: _roundOff, onChanged: (val) { setState(() { _customRoundOff = double.tryParse(val); }); _recalculateTotals(); }),
+1232:               ),
+1233:             ],
+1234:           ),
+1235:         ),
+1236:         const Divider(),
+1237: 
+1238:         _buildSummaryRow('GRAND TOTAL', _grandTotal, theme, isBold: true),
+1239:         _buildSummaryRow('Pending Outstanding', pendingAmt < 0 ? 0.0 : pendingAmt, theme, isPending: true),
+1240:       ],
+1241:     );
+1242:   }
+1243: 
+1244:   Widget _buildSummaryRow(String label, double val, ThemeData theme, {bool isBold = false, bool isPending = false}) {
+1245:     return Padding(
+1246:       padding: const EdgeInsets.symmetric(vertical: 4),
+1247:       child: Row(
+1248:         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1249:         children: [
+1250:           Text(
+1251:             label,
+1252:             style: theme.textTheme.bodyMedium?.copyWith(
+1253:               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
+1254:               fontSize: (isBold || isPending) ? 15 : 13,
+1255:             ),
+1256:           ),
+1257:           Text(
+1258:             '₹${val.toStringAsFixed(2)}',
+1259:             style: theme.textTheme.bodyMedium?.copyWith(
+1260:               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
+1261:               fontSize: (isBold || isPending) ? 15 : 13,
+1262:               color: isPending
+1263:                   ? Colors.red
+1264:                   : isBold
+1265:                       ? theme.colorScheme.primary
+1266:                       : theme.colorScheme.onSurface,
+1267:             ),
+1268:           ),
+1269:         ],
+1270:       ),
+1271:     );
+1272:   }
+1273: }
+1274: 
+1275: class PurchaseCartItemRow extends ConsumerWidget {
+1276:   final int index;
+1277:   final CreditNoteItem item;
+1278:   final VoidCallback onDelete;
+1279:   final Function(double qty, double rate, double discount, double gstRate) onChanged;
+1280: 
+1281:   const PurchaseCartItemRow({
+1282:     Key? key,
+1283:     required this.index,
+1284:     required this.item,
+1285:     required this.onDelete,
+1286:     required this.onChanged,
+1287:   }) : super(key: key);
+1288: 
+1289:   @override
+1290:   Widget build(BuildContext context, WidgetRef ref) {
+1291:     final theme = Theme.of(context);
+1292:     final enableItemDesc = ref.watch(sharedPreferencesProvider).getBool('enable_item_wise_description') ?? false;
+1293: 
+1294:     DateTime? parseDate(String? d) {
+1295:       if (d == null || d.isEmpty) return null;
+1296:       try {
+1297:         final parts = d.split('/');
+1298:         if (parts.length == 2) {
+1299:           return DateTime(int.parse(parts[1]), int.parse(parts[0]));
+1300:         }
+1301:         return DateTime.parse(d);
+1302:       } catch (e) {
+1303:         return null;
+1304:       }
+1305:     }
+1306: 
+1307:     final double qty = item.quantity ?? 1.0;
+1308:     final double rate = item.rate ?? 0.0;
+1309:     final double discountAmount = item.discount ?? 0.0;
+1310:     final double gstPct = item.gstRate ?? 0.0;
+1311:     final double total = item.totalAmount ?? 0.0;
+1312:     final double taxAmount = item.gstAmount ?? 0.0;
+1313: 
+1314:     return NeuCard(
+1315:       margin: const EdgeInsets.symmetric(vertical: 4),
+1316:       elevation: 0,
+1317:       shape: RoundedRectangleBorder(
+1318:         borderRadius: BorderRadius.circular(12),
+1319:         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+1320:       ),
+1321:       child: InkWell(
+1322:         borderRadius: BorderRadius.circular(12),
+1323:         onTap: () {
+1324:           if (item.item.value == null) return;
+1325:           FullScreenItemEntry.show(
+1326:             context,
+1327:             isPurchase: false,
+1328:             isFixedAsset: false,
+1329:             excludeBundles: false,
+1330:             onlyBundles: false,
+1331:             initialData: FullScreenItemEntryData(
+1332:               item: item.item.value!,
+1333:               quantity: qty,
+1334:               rate: rate,
+1335:               discountAmount: discountAmount,
+1336:               discountPercent: 0.0,
+1337:               gstRate: gstPct,
+1338:               unit: item.unit ?? 'PCS',
+1339:               batchNumber: item.batchNumber,
+1340:               mfgDate: parseDate(item.mfgDate),
+1341:               expDate: parseDate(item.expiryDate),
+1342:               saleRate: item.item.value!.sellRate ?? rate,
+1343:               purchaseRate: item.item.value!.buyRate ?? 0.0,
+1344:               isSaleRateWithTax: false,
+1345:               isPurchaseRateWithTax: false,
+1346:               description: item.description,
+1347:             ),
+1348:             onAdd: (data) {
+1349:               item.unit = data.unit;
+1350:               item.batchNumber = data.batchNumber;
+1351:               item.mfgDate = data.mfgDate != null ? DateFormat('MM/yyyy').format(data.mfgDate!) : null;
+1352:               item.expiryDate = data.expDate != null ? DateFormat('MM/yyyy').format(data.expDate!) : null;
+1353:               item.description = data.item.description;
+1354:               
+1355:               onChanged(data.quantity, data.rate, data.discountAmount, data.gstRate);
+1356:             },
+1357:           );
+1358:         },
+1359:         child: Padding(
+1360:           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+1361:           child: Column(
+1362:             crossAxisAlignment: CrossAxisAlignment.start,
+1363:             children: [
+1364:               Row(
+1365:                 crossAxisAlignment: CrossAxisAlignment.start,
+1366:                 children: [
+1367:                   Text('#${index + 1}  ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+1368:                   Expanded(
+1369:                     child: Text(
+1370:                       item.itemName ?? 'Unknown Item',
+1371:                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+1372:                     ),
+1373:                   ),
+1374:                   Text(
+1375:                     '₹ ${total.toStringAsFixed(2)}',
+1376:                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+1377:                   ),
+1378:                 ],
+1379:               ),
+1380:               if (item.description != null && item.description!.isNotEmpty &&
+1381:                   (item.item.value?.isBundle == true
+1382:                       ? (ref.watch(sharedPreferencesProvider).getBool('enable_bundle_description') ?? false)
+1383:                       : (ref.watch(sharedPreferencesProvider).getBool('enable_item_description') ?? false)))
+1384:                 Padding(
+1385:                   padding: const EdgeInsets.only(top: 2.0),
+1386:                   child: Text(item.description!, style: const TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+1387:                 ),
+1388:               const SizedBox(height: 4),
+1389:               Row(
+1390:                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+1391:                 children: [
+1392:                   Text(
+1393:                     'Qty: ${qty} ${item.unit ?? 'PCS'} x Rate: ${rate.toStringAsFixed(2)}',
+1394:                     style: const TextStyle(fontSize: 12),
+1395:                   ),
+1396:                   Text(
+1397:                     'Subtotal: ${(qty * rate).toStringAsFixed(2)}',
+1398:                     style: const TextStyle(fontSize: 12),
+1399:                   ),
+1400:                 ],
+1401:               ),
+1402:               if (discountAmount > 0)
+1403:                 Padding(
+1404:                   padding: const EdgeInsets.only(top: 4.0),
+1405:                   child: Text(
+1406:                     'Discount: -₹ ${discountAmount.toStringAsFixed(2)}',
+1407:                     style: const TextStyle(fontSize: 12, color: Colors.red),
+1408:                   ),
+1409:                 ),
+1410:               if (taxAmount > 0)
+1411:                 Padding(
+1412:                   padding: const EdgeInsets.only(top: 4.0),
+1413:                   child: Text(
+1414:                     'Tax @ ${gstPct}%: +₹ ${taxAmount.toStringAsFixed(2)}',
+1415:                     style: const TextStyle(fontSize: 12, color: Colors.green),
+1416:                   ),
+1417:                 ),
+1418:               if (enableItemDesc && item.description != null && item.description!.isNotEmpty)
+1419:                 Padding(
+1420:                   padding: const EdgeInsets.only(top: 6.0),
+1421:                   child: Text(
+1422:                     'Desc: ${item.description}',
+1423:                     style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
+1424:                   ),
+1425:                 ),
+1426:               Align(
+1427:              alignment: Alignment.bottomRight,
+1428:              child: InkWell(
+1429:                onTap: onDelete,
+1430:                child: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+1431:              ),
+1432:            ),
+1433:         ],
+1434:           ),
+1435:         ),
+1436:       ),
+1437:     );
+1438:   }
+1439: }
+1440: 

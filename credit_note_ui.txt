@@ -1,0 +1,200 @@
+735:       ),
+736:     );
+737: 
+738:     return Scaffold(
+739:       appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+740:         title: Text(
+741:           widget.parentCreditNoteUuid != null
+742:               ? 'Edit CreditNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
+743:               : 'New CreditNote Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
+744:         ),
+745:       ),
+746:       body: SingleChildScrollView(
+747:         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+748:         child: isDesktop
+749:             ? Row(
+750:                 crossAxisAlignment: CrossAxisAlignment.start,
+751:                 children: [
+752:                   Expanded(flex: 3, child: mainContent),
+753:                   const SizedBox(width: 16),
+754:                   Expanded(flex: 2, child: summaryContent),
+755:                 ],
+756:               )
+757:             : Column(
+758:                 children: [
+759:                   mainContent,
+760:                   const SizedBox(height: 12),
+761:                   summaryContent,
+762:                   const SizedBox(height: 30),
+763:                 ],
+764:               ),
+765:       ),
+766:       bottomNavigationBar: !isDesktop
+767:           ? null
+768:           : Container(
+769:               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+770:         decoration: BoxDecoration(
+771:           color: theme.colorScheme.surface,
+772:           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+773:           boxShadow: [
+774:             BoxShadow(
+775:               color: Colors.black.withOpacity(0.08),
+776:               blurRadius: 12,
+777:               offset: const Offset(0, -4),
+778:             ),
+779:           ],
+780:         ),
+781:         child: Row(
+782:           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+783:           children: [
+784:             Column(
+785:               crossAxisAlignment: CrossAxisAlignment.start,
+786:               mainAxisSize: MainAxisSize.min,
+787:               children: [
+788:                 Text(
+789:                   'Grand Total (${_draftItems.length} items)',
+790:                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+791:                 ),
+792:                 Text(
+793:                   '₹${_grandTotal.toStringAsFixed(2)}',
+794:                   style: theme.textTheme.titleLarge?.copyWith(
+795:                     fontWeight: FontWeight.bold,
+796:                     color: theme.colorScheme.primary,
+797:                   ),
+798:                 ),
+799:               ],
+800:             ),
+801:             ElevatedButton.icon(
+802:               icon: const Icon(Icons.check_circle_outline),
+803:               label: const Text('Save CreditNote Bill', style: TextStyle(fontWeight: FontWeight.bold)),
+804:               onPressed: _saveBill,
+805:               style: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? ElevatedButton.styleFrom(elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))) : ElevatedButton.styleFrom(
+806:                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+807:                 backgroundColor: theme.colorScheme.primary,
+808:                 foregroundColor: theme.colorScheme.onPrimary,
+809:                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+810:               ),
+811:             ),
+812:           ],
+813:         ),
+814:       ),
+815:     );
+816:   }
+817: 
+818:   Widget _buildPartyAndHeaderCard(ThemeData theme) {
+819:     final partiesAsync = ref.watch(partiesListProvider);
+820: 
+821:     return NeuCard(
+822:       elevation: 0,
+823:       clipBehavior: Clip.antiAlias,
+824:       shape: RoundedRectangleBorder(
+825:         borderRadius: BorderRadius.circular(12),
+826:         side: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+827:       ),
+828:       child: Container(
+829:         decoration: BoxDecoration(
+830:           border: ref.watch(themeProvider).themeType == ThemeType.neumorphism ? null : const Border(
+831:             left: BorderSide(color: Color(0xFF1E88E5), width: 5),
+832:           ),
+833:         ),
+834:         child: Padding(
+835:           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+836:           child: Column(
+837:             crossAxisAlignment: CrossAxisAlignment.start,
+838:             children: [
+839:               Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+840:             const SizedBox(height: 12),
+841:             partiesAsync.when(
+842:               data: (parties) {
+843:                 final supplierParties = parties; // All parties
+844:                 return SearchablePartyDropdown(
+845:                   parties: supplierParties,
+846:                   selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+847:                       ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+848:                       : _selectedParty,
+849:                   labelText: 'Select Account',
+850:                   onChanged: (party) {
+851:                     setState(() {
+852:                       _selectedParty = party;
+853:                     });
+854:                   },
+855:                 );
+856:               },
+857:               loading: () => const Center(child: CircularProgressIndicator()),
+858:               error: (e, _) => Text('Error loading suppliers: $e'),
+859:             ),
+860:             if (_selectedParty != null) ...[
+861:               const SizedBox(height: 12),
+862:               Container(
+863:                 padding: const EdgeInsets.all(12),
+864:                 decoration: BoxDecoration(
+865:                   color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+866:                   borderRadius: BorderRadius.circular(8),
+867:                 ),
+868:                 child: Row(
+869:                   children: [
+870:                     const Icon(Icons.info, color: Colors.blue, size: 18),
+871:                     const SizedBox(width: 8),
+872:                     Expanded(
+873:                       child: Text(
+874:                         'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: ₹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+875:                         style: theme.textTheme.bodySmall,
+876:                       ),
+877:                     ),
+878:                   ],
+879:                 ),
+880:               ),
+881:             ],
+882:             const Divider(height: 24),
+883:             Row(
+884:               children: [
+885:                 Expanded(
+886:                   child: InkWell(
+887:                     onTap: () async {
+888:                       final selected = await showDatePicker(
+889:                         context: context,
+890:                         initialDate: _creditNoteDate,
+891:                         firstDate: DateTime(2020),
+892:                         lastDate: DateTime.now(),
+893:                       );
+894:                       if (selected != null) {
+895:                         setState(() => _creditNoteDate = selected);
+896:                       }
+897:                     },
+898:                     child: InputDecorator(
+899:                       decoration: InputDecoration(labelText: 'CreditNote Date',  isDense: true),
+900:                       child: Text(DateFormat('dd-MM-yyyy').format(_creditNoteDate), maxLines: 1, overflow: TextOverflow.ellipsis),
+901:                     ),
+902:                   ),
+903:                 ),
+904:                 const SizedBox(width: 8),
+905:                 Expanded(
+906:                   child: TextFormField(
+907:                     controller: _billNumberController,
+908:                     readOnly: true,
+909:                     decoration: InputDecoration(labelText: 'Internal Bill # (Auto)',  isDense: true),
+910:                   ),
+911:                 ),
+912:                 const SizedBox(width: 8),
+913:                 Expanded(
+914:                   child: TextFormField(
+915:                     controller: _originalBillNumberController,
+916:                     decoration: InputDecoration(
+917:                       labelText: 'Supplier Invoice #',
+918:                       isDense: true,
+919:                       suffixIcon: IconButton(
+920:                         icon: const Icon(Icons.link, color: Colors.blue),
+921:                         onPressed: _showLinkBillsModal,
+922:                       ),
+923:                     ),
+924:                   ),
+925:                 ),
+926:               ],
+927:             ),
+928:           ],
+929:         ),
+930:       ),
+931:       ),
+932:     );
+933:   }
+934: 

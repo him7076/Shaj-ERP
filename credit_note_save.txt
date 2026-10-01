@@ -1,0 +1,85 @@
+340:   void _saveBill() async {
+341:     if (_selectedParty == null) {
+342:       ScaffoldMessenger.of(context).showSnackBar(
+343:         const SnackBar(content: Text('Please select a supplier party.')),
+344:       );
+345:       return;
+346:     }
+347: 
+348:     if (_draftItems.isEmpty) {
+349:       ScaffoldMessenger.of(context).showSnackBar(
+350:         const SnackBar(content: Text('Please add at least one item to creditNote.')),
+351:       );
+352:       return;
+353:     }
+354: 
+355:     setState(() => _isSaving = true);
+356:     try {
+357:       String currentRemarks = _remarksController.text.trim();
+358: 
+359:       final creditNote = _existingCreditNote ?? CreditNote();
+360:       if (_existingCreditNote == null) {
+361:         creditNote.uuid ??= Uuid().v4();
+362:         creditNote.creditNoteNumber = _billNumberController.text.trim();
+363:         creditNote.createdAt = DateTime.now();
+364:         creditNote.version = 1;
+365:       } else {
+366:         creditNote.uuid ??= Uuid().v4();
+367:         creditNote.version = _existingCreditNote!.version + 1;
+368:       }
+369: 
+370:       creditNote
+371:         ..creditNoteDate = _creditNoteDate
+372:         ..creditNoteNumber = _billNumberController.text.trim()
+373:         ..originalInvoiceNumber = _originalBillNumberController.text.trim()
+374:         ..partyId = _selectedParty!.id
+375:         ..partyName = _selectedParty!.partyName
+376:         ..gstNumber = _selectedParty!.gstNumber
+377:         ..address = _selectedParty!.addressLine1
+378:         ..subtotal = _subtotal
+379:         ..discountAmount = _discountAmount
+380:         ..taxableAmount = _taxableAmount
+381:         ..totalGST = _totalGST
+382:         ..roundOff = _roundOff
+383:         ..grandTotal = _grandTotal
+384:         ..remarks = currentRemarks
+385:         ..updatedAt = DateTime.now()
+386:       ..paymentMode = _paymentMode
+387:       ..discountType = _isDiscountPercent ? 'percentage' : 'flat'
+388:       ..discountPercent = _isDiscountPercent ? (double.tryParse(_discountController.text) ?? 0.0) : 0.0
+389:       ..attachedImage = _attachedImage
+390:       ..isSynced = false;
+391: 
+392:       if (!kIsWeb) {
+393:         creditNote.party.value = _selectedParty;
+394:       }
+395: 
+396:       await Future.delayed(Duration.zero);
+397:       final repo = ref.read(creditNoteRepositoryProvider);
+398:       await repo.saveCreditNote(creditNote, _draftItems);
+399:       final success = true;
+400: 
+401:       ref.invalidate(dashboardAnalyticsProvider);
+402: 
+403:       // Lightweight non-blocking quiet background sync
+404:       try {
+405:         ref.read(syncServiceProvider).syncPendingChangesQuietly();
+406:       } catch (_) {}
+407: 
+408:       if (success && mounted) {
+409:         ScaffoldMessenger.of(context).showSnackBar(
+410:           const SnackBar(content: Text('CreditNote invoice saved successfully!')),
+411:         );
+412:         Navigator.pop(context);
+413:       }
+414:     } catch (e) {
+415:       ScaffoldMessenger.of(context).showSnackBar(
+416:         SnackBar(content: Text('Failed to save creditNote: $e')),
+417:       );
+418:     } finally {
+419:       setState(() => _isSaving = false);
+420:     }
+421:   }
+422: 
+423:   @override
+424:   

@@ -1,0 +1,51 @@
+42:   Future<void> saveCreditNote(CreditNote note, List<CreditNoteItem> items) async {
+43:     try {
+44:       final isNew = note.id == Isar.autoIncrement;
+45:       note.uuid ??= _generateUuid();
+46:       note.createdAt = isNew ? DateTime.now() : note.createdAt;
+47:       note.updatedAt = DateTime.now();
+48:       note.isDeleted = false;
+49:       note.isSynced = false;
+50:       note.version = isNew ? 1 : note.version + 1;
+51: 
+52:       await isar.writeTxn(() async {
+53:         // 1. Put Credit Note
+54:         final noteId = await collection.put(note);
+55:         note.id = noteId;
+56: 
+57:         // 2. Adjust Party Outstanding Balance (reduces what the customer owes us)
+58:         final party = kIsWeb
+59:             ? (note.partyId != null ? await isar.collection<Party>().get(note.partyId!) : null)
+60:             : note.party.value;
+61:         if (party != null && isNew) {
+62:           final amt = note.grandTotal ?? 0.0;
+63:           party.outstandingBalance = (party.outstandingBalance ?? 0.0) - amt;
+64:           await isar.collection<Party>().put(party);
+65:         }
+66: 
+67:         // 3. Put Items & Restore Inventory Levels (returned items increase stock)
+68:         for (var item in items) {
+69:           item.uuid ??= _generateUuid();
+70:           item.createdAt = isNew ? DateTime.now() : item.createdAt;
+71:           item.updatedAt = DateTime.now();
+72:           item.isDeleted = false;
+73:           item.isSynced = false;
+74:           item.version = isNew ? 1 : item.version + 1;
+75:           item.parentCreditNoteId = note.id;
+76: 
+77:           if (!kIsWeb) {
+78:             item.creditNote.value = note;
+79:           }
+80:           await isar.creditNoteItems.put(item);
+81: 
+82:           // Restore stock (Sales Return = items come back in stock)
+83:           final dbItem = kIsWeb
+84:               ? (item.itemId != null ? await isar.items.get(item.itemId!) : null)
+85:               : item.item.value;
+86:           if (dbItem != null) {
+87:             final double available = dbItem.currentStock ?? 0.0;
+88:             final double returned = item.quantity ?? 0.0;
+89:             dbItem.currentStock = available + returned;
+90: 
+91:             // Log stock movement
+92:             final log = '[${DateTime.now().toIso8601String().substring(0, 19)}] RETURNED IN: +$returned | Bal: ${dbItem.currentStock} | Credit Note #${note.creditNoteNumber}';

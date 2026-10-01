@@ -966,9 +966,14 @@ if (_isPaidAmountAutoFill) {
                 Expanded(
                   child: TextFormField(
                     controller: _originalBillNumberController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'INV NO',
                       isDense: true,
+                      suffixIcon: IconButton(
+                        icon: Icon(Icons.link, color: _linkedBillUuid != null ? Colors.green : null),
+                        tooltip: 'Link to Pending Bill',
+                        onPressed: _showLinkBillsModal,
+                      ),
                     ),
                   ),
                 ),

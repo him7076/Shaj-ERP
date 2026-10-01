@@ -1,0 +1,200 @@
+100:               validator: (v) => v == null || v.trim().isEmpty ? 'Mode name is required' : null,
+101:             ),
+102:           ),
+103:           actions: [
+104:             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+105:             ElevatedButton(
+106:               onPressed: () {
+107:                 if (formKey.currentState!.validate()) {
+108:                   Navigator.pop(context, modeController.text.trim());
+109:                 }
+110:               },
+111:               child: const Text('Add Payment Type'),
+112:             ),
+113:           ],
+114:         );
+115:       },
+116:     );
+117: 
+118:     if (newMode != null && newMode.isNotEmpty) {
+119:       final prefs = ref.read(sharedPreferencesProvider);
+120:       final list = prefs.getStringList('custom_payment_modes_list') ?? [];
+121:       if (!list.contains(newMode)) {
+122:         list.add(newMode);
+123:         await prefs.setStringList('custom_payment_modes_list', list);
+124:       }
+125:       setState(() {
+126:         _paymentModesList = ['Cash', 'UPI', 'Bank Transfer', 'Card', 'Cheque', 'Credit', ...list].toSet().toList();
+127:         _paymentMode = newMode;
+128:       });
+129:     }
+130:   }
+131: 
+132:   bool _isPaidAmountAutoFill = false;
+133: 
+134:     bool _isDiscountPercent = false;
+135:   String? _attachedImage;
+136: 
+137:   @override
+138:   void initState() {
+139:     super.initState();
+140:     WidgetsBinding.instance.addPostFrameCallback((_) async {
+141:       final prefs = ref.read(sharedPreferencesProvider);
+142:       if (mounted) {
+143:         setState(() {
+144:           _isPaidAmountAutoFill = prefs.getBool('auto_fill_paid_amount') ?? false;
+145:         });
+146:       }
+147:     });
+148:     _loadPaymentModes();
+149:     _initValues();
+150:   }
+151: 
+152:   void _initValues() async {
+153:     final repo = ref.read(creditNoteRepositoryProvider);
+154:     final isar = ref.read(databaseServiceProvider).isar;
+155:     final settings = await isar.settings.filter().idGreaterThan(-1).findFirst();
+156:     _companyGst = settings?.companyGST;
+157: 
+158:     if (widget.parentCreditNoteUuid != null && widget.parentCreditNoteUuid!.isNotEmpty) {
+159:       CreditNote? creditNote = await isar.creditNotes.filter().uuidEqualTo(widget.parentCreditNoteUuid).findFirst();
+160:       if (creditNote == null) {
+161:         final idVal = int.tryParse(widget.parentCreditNoteUuid!);
+162:         if (idVal != null) {
+163:           creditNote = await isar.creditNotes.get(idVal);
+164:         }
+165:       }
+166: 
+167:       if (creditNote != null) {
+168:         _existingCreditNote = creditNote;
+169:         _billNumberController.text = creditNote.creditNoteNumber ?? '';
+170:         _originalBillNumberController.text = creditNote.originalInvoiceNumber ?? '';
+171:         _creditNoteDate = creditNote.creditNoteDate ?? DateTime.now();
+172:         final remarksText = creditNote.remarks ?? '';
+173:         _remarksController.text = remarksText;
+174:         
+175:         _discountController.text = creditNote.discountAmount?.toString() ?? '0.0';
+176: 
+177:         Party? party;
+178:         if (creditNote.partyId != null && creditNote.partyId! > 0) {
+179:           party = await isar.partys.get(creditNote.partyId!);
+180:         }
+181:         if (party == null && creditNote.partyName != null && creditNote.partyName!.isNotEmpty) {
+182:           party = await isar.partys.filter().partyNameEqualTo(creditNote.partyName!).findFirst();
+183:         }
+184:         if (party == null) {
+185:           try { await creditNote.party.load(); } catch (_) {}
+186:           try { party = creditNote.party.value; } catch (_) {}
+187:         }
+188:         _selectedParty = party ?? (Party()
+189:           ..partyName = creditNote.partyName
+190:           ..gstNumber = creditNote.gstNumber
+191:           ..addressLine1 = creditNote.address);
+192: 
+193:         List<CreditNoteItem> itemsList = [];
+194:         final pId = creditNote.id;
+195:         final pUuid = creditNote.uuid;
+196: 
+197: 
+198:         if (itemsList.isEmpty && pId != 0 && pId != Isar.autoIncrement) {
+199:           itemsList = await isar.creditNoteItems
+200:               .filter()
+201:               .parentCreditNoteIdEqualTo(pId)
+202:               .findAll();
+203:         }
+204:         if (itemsList.isEmpty) {
+205:           try { await creditNote.creditNoteItems.load(); } catch (_) {}
+206:           try { itemsList = creditNote.creditNoteItems.toList(); } catch (_) {}
+207:         }
+208: 
+209:         for (var pi in itemsList) {
+210:           Item? dbItem;
+211:           if (pi.itemId != null && pi.itemId! > 0) {
+212:             try { dbItem = await isar.items.get(pi.itemId!); } catch (_) {}
+213:           }
+214:           if (dbItem == null && pi.itemName != null && pi.itemName!.isNotEmpty) {
+215:             try { dbItem = await isar.items.filter().itemNameEqualTo(pi.itemName!).findFirst(); } catch (_) {}
+216:           }
+217:           if (dbItem == null) {
+218:             try { await pi.item.load(); } catch (_) {}
+219:             try { dbItem = pi.item.value; } catch (_) {}
+220:           }
+221:           if (dbItem != null) {
+222:             try { pi.item.value = dbItem; } catch (_) {}
+223:             try { await dbItem.unit.load(); } catch (_) {}
+224:           }
+225:         }
+226: 
+227:         _draftItems = List<CreditNoteItem>.from(itemsList);
+228:         _recalculateTotals();
+229:         if (mounted) {
+230:           setState(() {});
+231:         }
+232:       }
+233:     } else {
+234:       final numStr = await repo.generateNextCreditNoteNumber();
+235:       _billNumberController.text = numStr;
+236:       if (widget.initialInvoiceNumber != null) {
+237:         _originalBillNumberController.text = widget.initialInvoiceNumber!;
+238:       }
+239:       if (mounted) {
+240:         setState(() {});
+241:       }
+242:     }
+243:   }
+244: 
+245:   @override
+246:   void dispose() {
+247:     _remarksController.dispose();
+248:     _billNumberController.dispose();
+249:     _originalBillNumberController.dispose();
+250:     _paidAmountController.dispose();
+251:     _discountController.dispose();
+252:     _productSearchController.dispose();
+253:     super.dispose();
+254:   }
+255: 
+256:   void _recalculateTotals() {
+257:     double sub = 0.0;
+258:     double tax = 0.0;
+259: 
+260:     for (var item in _draftItems) {
+261:       final double qty = item.quantity ?? 0.0;
+262:       final double rate = item.rate ?? 0.0;
+263:       final double itemDisc = item.discount ?? 0.0;
+264:       
+265:       final lineSub = qty * rate;
+266:       final lineTaxable = lineSub - itemDisc;
+267:       final lineTax = lineTaxable * ((item.gstRate ?? 0.0) / 100.0);
+268:       
+269:       item.taxableAmount = lineTaxable;
+270:       item.gstAmount = lineTax;
+271:       item.totalAmount = lineTaxable + lineTax;
+272: 
+273:       sub += lineSub;
+274:       tax += lineTax;
+275:     }
+276: 
+277:     final discInput = double.tryParse(_discountController.text) ?? 0.0;
+278:     _discountAmount = _isDiscountPercent ? (sub * (discInput / 100.0)) : discInput;
+279:     final double rawTotal = (sub - _discountAmount) + tax;
+280:     _roundOff = _customRoundOff ?? (rawTotal.roundToDouble() - rawTotal);
+281: 
+282:     setState(() {
+283:       _subtotal = sub;
+284:       _taxableAmount = sub - _discountAmount;
+285:       _totalGST = tax;
+286:       _grandTotal = rawTotal + _roundOff;
+287:     });
+288:   }
+289: 
+290: 
+291:   void _addFullScreenItemLine(FullScreenItemEntryData data) {
+292:     final item = data.item;
+293: 
+294:     final newItem = CreditNoteItem()
+295:       ..itemId = item.id
+296:       ..itemName = item.itemName
+297:       ..hsnCode = item.hsnCode
+298:       ..quantity = data.quantity
+299:       ..unit = data.unit
