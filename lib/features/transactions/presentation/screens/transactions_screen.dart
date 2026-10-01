@@ -11,11 +11,10 @@ import 'package:business_sahaj_erp/data/local/collections/transaction_collection
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
-import 'package:business_sahaj_erp/presentation/providers/auth_providers.dart';
 import 'package:business_sahaj_erp/features/expenses/presentation/providers/expense_providers.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice_providers.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
-import 'package:business_sahaj_erp/presentation/providers/auth_providers.dart';
+
 
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
@@ -1098,7 +1097,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                       );
                                                       if (confirm == true) {
                                                          try {
-                                                           final user = ref.read(currentUserProvider)?.name ?? 'System';
+                                                           final user = 'System';
                                                            if (txn.transactionType == 'Expense') {
                                                               await ref.read(expenseRepositoryProvider).softDelete(txn.uuid!);
                                                            } else if (txn.transactionType == 'Sales') {
