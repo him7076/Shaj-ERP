@@ -122,6 +122,7 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       
       var results = await qb.findAll();
       results = results.where((t) => t.isPersonalVault == isPersonal).toList();
+      if (['Receipt', 'Payment', 'Credit Note', 'Debit Note', 'Sales Order', 'Transfer'].contains(filter.transactionType)) { totalCount += results.length; }
       results.sort((a, b) => (b.transactionDate ?? b.createdAt).compareTo(a.transactionDate ?? a.createdAt));
       rawTransactions = results.take(queryLimit).toList();
     } catch (e, stack) {
@@ -495,8 +496,8 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
     if (filter.transactionType == 'Purchase') lockedTotal += sum;
   }
   
-  // 4. Orders, Credit Note, Debit Note (for lockedTotal only)
-  if (!isPersonal && ['Sales Order', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
+  // 4. Orders (for lockedTotal only)
+  if (!isPersonal && filter.transactionType == 'Sales Order') {
     if (filter.transactionType == 'Sales Order') {
       var qb = isar.orders.filter().isDeletedEqualTo(false);
       if (targetPartyId != null) qb = qb.partyIdEqualTo(targetPartyId);
@@ -516,7 +517,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
     }
   }
 
-  return TransactionTotals(totalIn: totalIn, totalOut: totalOut, totalAmount: lockedTotal);
+  return TransactionTotals(totalIn: totalIn, totalOut: totalOut, totalAmount: lockedTotal, count: totalCount);
 });
 
 // OPTIMIZED: Dashboard was using filteredTransactionsProvider which loads
