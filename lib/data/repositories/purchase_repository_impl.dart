@@ -11,6 +11,7 @@ import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_manager.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 
 class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements PurchaseRepository {
   PurchaseRepositoryImpl(Isar isar) : super(isar, 'Purchase');
@@ -111,7 +112,6 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
         // 3. Clear old items if editing
         if (!isNew) {
-          // Avoid IsarLink filters inside write txn - use direct field filters only
           final oldByPurchaseId = await isar.collection<PurchaseItem>()
               .filter()
               .purchaseIdEqualTo(purchaseId)
@@ -128,26 +128,12 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             if (allOldIds.add(oi.id)) oldItems.add(oi);
           }
 
-          // Restore stock levels before deletion (converting secondary unit if applicable)
           for (var oldItem in oldItems) {
-            final targetItem = await isar.items.get(oldItem.itemId ?? 0);
-            if (targetItem != null) {
-              double restoredQty = oldItem.quantity ?? 0.0;
-              final convFactor = targetItem.conversionFactor ?? 1.0;
-              if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
-                final uName = (oldItem.unit ?? '').trim().toLowerCase();
-                final sName = targetItem.secondaryUnit!.trim().toLowerCase();
-                final pName = (targetItem.primaryUnitName ?? '').trim().toLowerCase();
-                if (uName == sName && uName != pName) {
-                  restoredQty = restoredQty / convFactor;
-                }
-              }
-              targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
-              await isar.items.put(targetItem);
-            }
+            oldItem.isDeleted = true;
+            oldItem.isSynced = false;
+            oldItem.updatedAt = DateTime.now();
+            await isar.purchaseItems.put(oldItem);
           }
-          
-          await isar.collection<PurchaseItem>().deleteAll(oldItems.map((e) => e.id).toList());
         }
 
         // 4. Save new purchase items & adjust stocks in batch
@@ -190,7 +176,6 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
           final targetItem = targetItemMap[item.itemId ?? 0];
           if (targetItem != null) {
-            final double current = targetItem.currentStock ?? 0.0;
             double qtyInPrimary = item.quantity ?? 0.0;
             final convFactor = targetItem.conversionFactor ?? 1.0;
             if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
@@ -202,10 +187,8 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
               }
             }
 
-            targetItem.currentStock = current + qtyInPrimary;
-
             final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
-            final logEntry = '[$timestamp] STOCK_IN (Purchase): +$qtyInPrimary | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
+            final logEntry = '[$timestamp] STOCK_IN (Purchase): +$qtyInPrimary | Ref: ${purchase.purchaseNumber}';
             final currentNotes = targetItem.notes ?? '';
             targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
           }
@@ -228,6 +211,8 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         await isar.syncQueues.put(queueItem);
       });
       
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
+
       logger.info('Purchase bill ${purchase.purchaseNumber} saved successfully.');
       Future.microtask(() {
         try { SyncManager.triggerUpload(); } catch (_) {}
@@ -253,45 +238,29 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           }
         }
 
-        // 2. Revert Stock Quantities
+        // 2. Soft delete PurchaseItems
         final oldItems = await isar.collection<PurchaseItem>()
             .filter()
             .purchaseIdEqualTo(id)
             .findAll();
             
         for (var oldItem in oldItems) {
-          final targetItem = await isar.items.get(oldItem.itemId ?? 0);
-          if (targetItem != null) {
-            double restoredQty = oldItem.quantity ?? 0.0;
-            final convFactor = targetItem.conversionFactor ?? 1.0;
-            if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
-              final uName = (oldItem.unit ?? '').trim().toLowerCase();
-              final sName = targetItem.secondaryUnit!.trim().toLowerCase();
-              String pName = '';
-              if (targetItem.primaryUnitName != null) {
-                pName = targetItem.primaryUnitName!.trim().toLowerCase();
-              } else {
-                try {
-                  if (targetItem.unit.value != null && targetItem.unit.value!.shortName != null) {
-                    pName = targetItem.unit.value!.shortName!.trim().toLowerCase();
-                  }
-                } catch (_) {}
-              }
-              if (uName == sName && uName != pName) {
-                restoredQty = restoredQty / convFactor;
-              }
-            }
-            targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
-            
-            final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
-            final logEntry = '[] STOCK_REVERT (Purchase Deleted): - | Bal: ${targetItem.currentStock} | Ref: ${purchase.purchaseNumber}';
-            final currentNotes = targetItem.notes ?? '';
-            targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
-            
-            await isar.items.put(targetItem);
+          oldItem.isDeleted = true;
+          oldItem.isSynced = false;
+          oldItem.updatedAt = DateTime.now();
+          await isar.purchaseItems.put(oldItem);
+
+          if (oldItem.uuid != null && oldItem.uuid!.isNotEmpty) {
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _generateUuid()
+              ..entityType = 'PurchaseItem'
+              ..entityId = oldItem.id
+              ..entityUuid = oldItem.uuid
+              ..operation = 'Delete'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
           }
         }
-        await isar.collection<PurchaseItem>().deleteAll(oldItems.map((e) => e.id).toList());
 
         // 3. Mark Purchase as deleted
         purchase.isDeleted = true;
@@ -311,6 +280,9 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(queueItem);
       });
+
+      // 5. Recalculate item stock baseline cleanly
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
       
       logger.info('Purchase bill deleted successfully.');
       Future.microtask(() {

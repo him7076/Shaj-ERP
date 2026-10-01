@@ -20,6 +20,7 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_item_collecti
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 import 'dart:math';
 
 final deletedVouchersProvider = FutureProvider.autoDispose<List<DeletedVoucher>>((ref) async {
@@ -190,6 +191,7 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
 
     if (restored) {
        await isar.collection<DeletedVoucher>().delete(v.id);
+       await StockRecalculatorService.recalculateAllItemStocks(isar);
     }
   });
 });

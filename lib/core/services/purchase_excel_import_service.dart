@@ -11,10 +11,12 @@ import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 
 enum DuplicateBillAction {
   overwrite,
   skip,
+  wipeAllAndReplace,
 }
 
 class ImportPurchaseResult {
@@ -218,6 +220,7 @@ class PurchaseExcelImportService {
     dynamic bytesOrExcel,
     DatabaseService dbService, {
     DuplicateBillAction duplicateAction = DuplicateBillAction.overwrite,
+    bool wipeAllPurchasesFirst = false,
     ImportProgressCallback? onProgress,
   }) async {
     final List<String> errors = [];
@@ -356,7 +359,10 @@ class PurchaseExcelImportService {
       final allItems = await isar.items.filter().isDeletedEqualTo(false).findAll();
 
       // Purge any existing duplicate purchase bills locally and enqueue Firestore Delete signals
-      if (duplicateAction == DuplicateBillAction.overwrite) {
+      if (wipeAllPurchasesFirst || duplicateAction == DuplicateBillAction.wipeAllAndReplace) {
+        onProgress?.call(0, totalHeaderRows > 0 ? totalHeaderRows : 1, 'Wiping all old purchase transactions for clean rewrite...');
+        await wipeAllPurchases(isar);
+      } else if (duplicateAction == DuplicateBillAction.overwrite) {
         await purgeDuplicatePurchases(isar);
       }
 
@@ -723,6 +729,10 @@ class PurchaseExcelImportService {
           errors.add('Row $r ($partyName): ${rowErr.toString()}');
         }
       }
+
+      // Always perform full baseline stock recalculation to ensure 100% item stock accuracy
+      onProgress?.call(totalHeaderRows, totalHeaderRows, 'Recalculating item stock levels cleanly...');
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
     } catch (e, stackTrace) {
       logger.error('Failed to parse purchase bills excel file', e, stackTrace);
       errors.add('Failed to parse Excel file: $e');
@@ -915,6 +925,47 @@ class PurchaseExcelImportService {
       }
     } catch (e) {
       logger.error('Error purging duplicate purchases', e);
+    }
+  }
+
+  /// Permanently purges all purchase records and purchase items for clean database rewrite
+  static Future<void> wipeAllPurchases(Isar isar) async {
+    try {
+      final allPurchases = await isar.purchases.where().findAll();
+      final allItems = await isar.purchaseItems.where().findAll();
+
+      await isar.writeTxn(() async {
+        for (var oi in allItems) {
+          if (oi.uuid != null && oi.uuid!.isNotEmpty) {
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _uuidGen.v4()
+              ..entityType = 'PurchaseItem'
+              ..entityId = oi.id
+              ..entityUuid = oi.uuid
+              ..operation = 'Delete'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
+          }
+          await isar.purchaseItems.delete(oi.id);
+        }
+
+        for (var oldP in allPurchases) {
+          if (oldP.uuid != null && oldP.uuid!.isNotEmpty) {
+            await isar.syncQueues.put(SyncQueue()
+              ..uuid = _uuidGen.v4()
+              ..entityType = 'Purchase'
+              ..entityId = oldP.id
+              ..entityUuid = oldP.uuid
+              ..operation = 'Delete'
+              ..createdAt = DateTime.now()
+              ..updatedAt = DateTime.now());
+          }
+          await isar.purchases.delete(oldP.id);
+        }
+      });
+      logger.info('Wiped ${allPurchases.length} purchase bills and ${allItems.length} purchase items.');
+    } catch (e) {
+      logger.error('Failed to wipe all purchases', e);
     }
   }
 }

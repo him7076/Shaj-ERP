@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:business_sahaj_erp/core/services/database_service.dart';
 import 'package:business_sahaj_erp/core/services/snapshot_backup_service.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final deepRepairServiceProvider = Provider((ref) => DeepRepairService());
@@ -49,6 +50,10 @@ class DeepRepairService {
       // Step 5: Import Data
       onProgress('Importing proper data into new firm...', 0.85);
       await dbService.importCollectionsFromJson(newFirmId, repairedData);
+
+      // Step 6: Baseline Stock Recalculation
+      onProgress('Recalculating item stock levels...', 0.95);
+      await StockRecalculatorService.recalculateAllItemStocks(dbService.isar);
 
       onProgress('Deep Repair Successful!', 1.0);
     } catch (e) {

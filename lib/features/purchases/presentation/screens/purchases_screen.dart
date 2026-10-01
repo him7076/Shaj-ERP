@@ -17,6 +17,7 @@ import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.d
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 
 class PurchasesScreen extends ConsumerStatefulWidget {
@@ -143,23 +144,25 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
                 SizedBox(width: 10),
-                Text('Existing Invoice Found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                Text('Import Mode & Duplicate Resolution', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
               ],
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'The following purchase bill(s) already exist in your database:\n${duplicateBills.map((b) => '• $b').join('\n')}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'What would you like to do with these existing bills?',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-              ],
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'The following purchase bill(s) already exist in your database:\n${duplicateBills.map((b) => '• $b').join('\n')}',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Choose how to handle your purchase data:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -169,13 +172,18 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
               OutlinedButton.icon(
                 onPressed: () => Navigator.pop(ctx, DuplicateBillAction.skip),
                 icon: const Icon(Icons.skip_next_rounded, size: 18),
-                label: const Text('Skip Existing'),
+                label: const Text('Skip Duplicate'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.overwrite),
+                icon: const Icon(Icons.sync, size: 18),
+                label: const Text('Overwrite Matching'),
               ),
               ElevatedButton.icon(
-                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.overwrite),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                icon: const Icon(Icons.sync, size: 18),
-                label: const Text('Rewrite / Overwrite'),
+                onPressed: () => Navigator.pop(ctx, DuplicateBillAction.wipeAllAndReplace),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                icon: const Icon(Icons.cleaning_services_rounded, size: 18),
+                label: const Text('Clean Wipe Old & Import Fresh'),
               ),
             ],
           ),
@@ -325,11 +333,25 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, size: 20),
             tooltip: 'Purchase Tools',
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'sample') {
                 _downloadSampleExcel();
               } else if (value == 'import') {
                 _importPurchaseExcel();
+              } else if (value == 'recalculate_stock') {
+                final dbService = ref.read(databaseServiceProvider);
+                final res = await StockRecalculatorService.recalculateAllItemStocks(dbService.isar);
+                ref.invalidate(purchaseListProvider);
+                ref.invalidate(filteredItemsProvider);
+                ref.invalidate(itemsListProvider);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('⚡ Stock Recalculated! ${res.totalItemsFixed} item stock levels fixed cleanly.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } else if (value == 'refresh') {
                 ref.invalidate(purchaseListProvider);
               }
@@ -352,6 +374,16 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                     Icon(Icons.upload_file_rounded, size: 18, color: Colors.green),
                     SizedBox(width: 8),
                     Text('Import Excel Bills'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'recalculate_stock',
+                child: Row(
+                  children: [
+                    Icon(Icons.published_with_changes_rounded, size: 18, color: Colors.deepOrange),
+                    SizedBox(width: 8),
+                    Text('⚡ Recalculate Item Stock'),
                   ],
                 ),
               ),

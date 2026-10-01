@@ -24,6 +24,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/router.dart';
 import 'package:business_sahaj_erp/core/services/firebase_migration_service.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -150,51 +151,12 @@ void main() {
         debugPrint('[BOOT WARNING] Failed to patch null transactions: $e');
       }
 
-      // AUTO FIX STOCK FOR DELETED PURCHASES
+      // AUTOMATICALLY RECALCULATE & FIX ITEM STOCK ON BOOT
       try {
-        final isar = dbService.isar;
-        final allDeletedPurchases = await isar.purchases.filter().isDeletedEqualTo(true).findAll();
-        
-        await isar.writeTxn(() async {
-          for (var p in allDeletedPurchases) {
-            // Find all items for this deleted purchase that are STILL NOT DELETED
-            final oldItems = await isar.purchaseItems.filter()
-               .purchaseIdEqualTo(p.id)
-               .isDeletedEqualTo(false)
-               .findAll();
-               
-            for (var oi in oldItems) {
-               // Revert stock!
-               final targetItem = await isar.items.get(oi.itemId ?? 0);
-               if (targetItem != null) {
-                  double restoredQty = oi.quantity ?? 0.0;
-                  final convFactor = targetItem.conversionFactor ?? 1.0;
-                  if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
-                    final uName = (oi.unit ?? '').trim().toLowerCase();
-                    final sName = targetItem.secondaryUnit!.trim().toLowerCase();
-                    String pName = '';
-                    if (targetItem.primaryUnitName != null) {
-                      pName = targetItem.primaryUnitName!.trim().toLowerCase();
-                    }
-                    if (uName == sName && uName != pName) restoredQty = restoredQty / convFactor;
-                  }
-                  targetItem.currentStock = (targetItem.currentStock ?? 0.0) - restoredQty;
-                  
-                  final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
-                  final logEntry = '[$timestamp] STOCK_REVERT (Auto-Fix Old Delete): -$restoredQty | Bal: ${targetItem.currentStock} | Ref: ${p.purchaseNumber}';
-                  final currentNotes = targetItem.notes ?? '';
-                  targetItem.notes = currentNotes.isEmpty ? logEntry : '$logEntry\n$currentNotes';
-                  
-                  await isar.items.put(targetItem);
-               }
-               // delete the purchase item to prevent double reverting
-               await isar.purchaseItems.delete(oi.id);
-            }
-          }
-        });
-        debugPrint('[BOOT] Auto-fixed stock for deleted purchases.');
+        final res = await StockRecalculatorService.recalculateAllItemStocks(dbService.isar);
+        debugPrint('[BOOT] StockRecalculator: processed ${res.totalItemsProcessed} items, fixed ${res.totalItemsFixed} items.');
       } catch (e) {
-        debugPrint('[BOOT WARNING] Failed to auto-fix stock: $e');
+        debugPrint('[BOOT WARNING] Failed to recalculate stock on boot: $e');
       }
     } catch (e, stack) {
       debugPrint('[BOOT WARNING] DatabaseService init error: $e');
