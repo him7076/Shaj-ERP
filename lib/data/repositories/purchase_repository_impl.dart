@@ -50,7 +50,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       for (var pur in allPurchases) {
         if (pur.purchaseNumber != null) {
           final pNo = pur.purchaseNumber!;
-          final bool isFaNo = pNo.startsWith('FA-PUR-') || (pur.isFixedAsset == true);
+          final bool isFaNo = pNo.startsWith('FA-PUR-');
           final matchesPrefix = isFixedAsset ? isFaNo : !isFaNo;
 
           if (matchesPrefix) {

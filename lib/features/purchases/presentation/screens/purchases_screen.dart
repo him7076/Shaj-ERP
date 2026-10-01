@@ -562,8 +562,8 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                               ? DateFormat('dd MMM yyyy').format(purchase.purchaseDate!)
                               : 'N/A';
 
-                          Color badgeColor = Colors.red;
-                          if (purchase.isFixedAsset == true) badgeColor = Colors.purple;
+                          final bool isFixedAsset = purchase.purchaseNumber?.startsWith('FA-PUR-') ?? false;
+                          Color badgeColor = isFixedAsset ? Colors.purple : Colors.red;
 
                           final pStatus = purchase.paymentStatus ?? 'Unpaid';
                           String upperStatus = pStatus.toUpperCase();
@@ -667,7 +667,7 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
                                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                               decoration: BoxDecoration(color: badgeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
                                                               child: Text(
-                                                                purchase.isFixedAsset == true ? 'Fixed Asset' : 'Purchase',
+                                                                isFixedAsset ? 'Fixed Asset' : 'Purchase',
                                                                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor),
                                                               ),
                                                             ),
