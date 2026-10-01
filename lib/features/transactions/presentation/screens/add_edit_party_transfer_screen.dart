@@ -80,7 +80,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
 
   Future<void> _fetchVoucherNumber() async {
     try {
-      final num = await ref.read(transactionRepositoryProvider).generateNextTransactionNumber('Transfer');
+      final num = await ref.read(transactionRepositoryProvider).generateNextTransactionNumber('Party Transfer');
       if (mounted) setState(() => _nextVoucher = num);
     } catch (_) {}
   }
@@ -96,6 +96,42 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+    }
+  }
+
+  Future<void> _cancelTransaction() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Transaction?'),
+        content: const Text('Are you sure you want to cancel/void this transaction? It will be marked as deleted.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('NO')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('YES, CANCEL'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final txn = widget.existingTransaction!;
+      txn.isDeleted = true;
+      txn.updatedAt = DateTime.now();
+      await ref.read(transactionRepositoryProvider).saveTransaction(txn);
+      if (mounted) {
+        Navigator.pop(context, true);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaction cancelled successfully')));
+      }
+    } catch (e) {
+      if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+         setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -128,7 +164,7 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
         txn.uuid = const Uuid().v4();
       }
 
-      txn.transactionType = 'Transfer';
+      txn.transactionType = 'Party Transfer';
       txn.transactionDate = _date;
       txn.amount = amount;
       txn.remarks = _remarksController.text;
@@ -234,6 +270,14 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
         elevation: 0,
         backgroundColor: theme.colorScheme.surface,
         centerTitle: true,
+        actions: [
+          if (widget.existingTransaction != null && !(widget.existingTransaction!.isDeleted ?? false))
+            IconButton(
+              icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+              tooltip: 'Cancel Transaction',
+              onPressed: () => _cancelTransaction(),
+            ),
+        ],
       ),
       body: partiesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

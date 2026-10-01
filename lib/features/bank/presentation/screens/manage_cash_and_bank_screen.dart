@@ -102,6 +102,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
 
       for (var t in txns) {
         final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
+        if (['Party Transfer', 'Party to Party Transfer'].contains(t.transactionType)) continue;
         final target = (t.partyName ?? '').trim().toLowerCase();
         final amt = t.amount ?? 0.0;
         
@@ -170,6 +171,7 @@ class _ManageCashAndBankScreenState extends ConsumerState<ManageCashAndBankScree
 
         for (var t in txns) {
           final mode = (t.paymentMode ?? '').trim().toLowerCase();
+          if (['Party Transfer', 'Party to Party Transfer'].contains(t.transactionType)) continue;
           final target = (t.partyName ?? '').trim().toLowerCase();
           final amt = t.amount ?? 0.0;
 
@@ -648,6 +650,7 @@ class _AccountTransactionsDetailScreenState extends ConsumerState<AccountTransac
       }
 
       for (var t in rawTxns) {
+        if (['Party Transfer', 'Party to Party Transfer'].contains(t.transactionType)) continue;
         final mode = (t.paymentMode ?? 'cash').trim().toLowerCase();
         final target = (t.partyName ?? '').trim().toLowerCase();
         bool matches = false;
