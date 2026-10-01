@@ -382,7 +382,8 @@ class TransactionTotals {
   final double totalIn;
   final double totalOut;
   final double totalAmount;
-  const TransactionTotals({this.totalIn = 0.0, this.totalOut = 0.0, this.totalAmount = 0.0});
+  final int count;
+  const TransactionTotals({this.totalIn = 0.0, this.totalOut = 0.0, this.totalAmount = 0.0, this.count = 0});
 }
 
 // Provider for accurate totals without loading full DB objects into RAM
@@ -415,6 +416,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
   double totalIn = 0.0;
   double totalOut = 0.0;
   double lockedTotal = 0.0;
+  int totalCount = 0;
 
   // 1. Transactions Collection
   if (filter.transactionType == 'All' || 

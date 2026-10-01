@@ -15,8 +15,8 @@ import 'package:business_sahaj_erp/features/transactions/presentation/screens/ad
 import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_invoice_screen.dart';
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
-import 'package:business_sahaj_erp/features/sales/presentation/screens/add_edit_credit_note_screen.dart';
-import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_debit_note_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
