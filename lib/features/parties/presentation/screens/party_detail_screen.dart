@@ -567,7 +567,6 @@ final theme = Theme.of(context);
             .partyUuidEqualTo(partyUuid ?? '')
             .or()
             .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
-            .or()
         )
         .findAll();
     for (var t in txns) {
