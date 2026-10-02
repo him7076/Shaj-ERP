@@ -196,7 +196,7 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
 
     for (var txn in txns) {
       if (txn.paymentStatus == 'Cancelled' || txn.isDeleted == true) continue;
-      final amt = txn.amount ?? 0.0;
+      final amt = (txn.amount ?? 0.0) + (txn.discountAmount ?? 0.0);
       final type = txn.transactionType;
       final matchesSource = (partyUuid != null && partyUuid.isNotEmpty && txn.partyUuid == partyUuid) ||
                             (txn.partyUuid == null && partyNameLower.isNotEmpty && txn.partyName?.trim().toLowerCase() == partyNameLower);

@@ -1,4 +1,4 @@
-﻿// GENERATED CODE - DO NOT MODIFY BY HAND
+// GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'transaction_collection.dart';
 
@@ -21,6 +21,21 @@ const TransactionSchema = CollectionSchema(
       id: 0,
       name: r'amount',
       type: IsarType.double,
+    ),
+    r'discountAmount': PropertySchema(
+      id: 20,
+      name: r'discountAmount',
+      type: IsarType.double,
+    ),
+    r'discountPercent': PropertySchema(
+      id: 21,
+      name: r'discountPercent',
+      type: IsarType.double,
+    ),
+    r'discountType': PropertySchema(
+      id: 22,
+      name: r'discountType',
+      type: IsarType.string,
     ),
     r'createdAt': PropertySchema(
       id: 1,
@@ -273,6 +288,9 @@ void _transactionSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDouble(offsets[0], object.amount);
+  writer.writeDouble(offsets[20], object.discountAmount);
+  writer.writeDouble(offsets[21], object.discountPercent);
+  writer.writeString(offsets[22], object.discountType);
   writer.writeDateTime(offsets[1], object.createdAt);
   writer.writeBool(offsets[2], object.isDeleted);
   writer.writeBool(offsets[3], object.isSynced);
@@ -302,6 +320,9 @@ Transaction _transactionDeserialize(
 ) {
   final object = Transaction();
   object.amount = reader.readDoubleOrNull(offsets[0]);
+  object.discountAmount = reader.readDoubleOrNull(offsets[20]);
+  object.discountPercent = reader.readDoubleOrNull(offsets[21]);
+  object.discountType = reader.readStringOrNull(offsets[22]);
   object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
   object.isDeleted = reader.readBool(offsets[2]);
@@ -372,6 +393,12 @@ P _transactionDeserializeProp<P>(
       return (reader.readStringOrNull(offset)) as P;
     case 19:
       return (reader.readLong(offset)) as P;
+    case 20:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 21:
+      return (reader.readDoubleOrNull(offset)) as P;
+    case 22:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

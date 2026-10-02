@@ -27,6 +27,11 @@ class Transaction implements IsarModel {
 
   double? amount;
 
+  // Discount Fields (Payment In Discount / Payment Out Discount)
+  double? discountAmount;
+  double? discountPercent;
+  String? discountType; // 'rupee' (fixed) or 'percentage' (%)
+
   String? paymentMode; // 'Cash', 'Bank', 'UPI', 'Cheque', 'Credit'
   String? paymentStatus; // 'Paid', 'Partially Paid', 'Unpaid', 'Cancelled'
   String? referenceNumber;

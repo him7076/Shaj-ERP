@@ -94,7 +94,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         final txns = await isar.transactions.filter().isDeletedEqualTo(false).and().group((q) => q.partyUuidEqualTo(partyUuid ?? '').or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '')).findAll();
         for (var txn in txns) {
           if (txn.paymentStatus == 'Cancelled' || txn.isDeleted == true) continue;
-          final amt = txn.amount ?? 0.0;
+          final amt = (txn.amount ?? 0.0) + (txn.discountAmount ?? 0.0);
           final type = txn.transactionType;
           
           final matchesSource = txn.partyUuid == partyUuid || (txn.partyUuid == null && txn.partyName?.trim().toLowerCase() == partyNameLower);
@@ -568,7 +568,6 @@ final theme = Theme.of(context);
             .or()
             .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
             .or()
-            .party((p) => p.uuidEqualTo(partyUuid ?? ''))
         )
         .findAll();
     for (var t in txns) {
@@ -577,7 +576,7 @@ final theme = Theme.of(context);
         uuid: t.uuid,
         number: t.transactionNumber ?? 'TXN-${t.id}',
         type: t.transactionType ?? 'Transaction',
-        amount: t.amount ?? 0.0,
+        amount: (t.amount ?? 0.0) + (t.discountAmount ?? 0.0),
         pendingAmount: 0.0,
         status: t.paymentStatus ?? (t.linkedBillUuid != null && t.linkedBillUuid!.isNotEmpty ? 'LINKED' : 'CLEARED'),
         mode: t.paymentMode ?? 'Cash',

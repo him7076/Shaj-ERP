@@ -150,13 +150,20 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
         }
       }
 
-      // Also check sales transactions
+      // Also check sales and payment transactions for discounts and sales
       for (var txn in transactions) {
         if (_isInDateRange(txn.transactionDate)) {
           final type = txn.transactionType?.toLowerCase() ?? '';
-          if (type.contains('sale') || type.contains('receipt')) {
+          if (type.contains('receipt') || type.contains('sale')) {
             if (invoices.isEmpty) {
               totalSales += (txn.amount ?? 0.0);
+            }
+            if (txn.discountAmount != null && txn.discountAmount! > 0) {
+              paymentInDisc += txn.discountAmount!;
+            }
+          } else if (type.contains('payment') || type.contains('purchase')) {
+            if (txn.discountAmount != null && txn.discountAmount! > 0) {
+              paymentOutDisc += txn.discountAmount!;
             }
           } else if (type.contains('income')) {
             _otherIncome += (txn.amount ?? 0.0);

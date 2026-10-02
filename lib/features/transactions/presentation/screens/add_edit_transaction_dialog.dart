@@ -82,6 +82,8 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
   Party? _selectedTargetParty;
 
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _discountController = TextEditingController();
+  String _discountType = 'rupee'; // 'rupee' or 'percentage'
   final TextEditingController _referenceController = TextEditingController();
   final TextEditingController _remarksController = TextEditingController();
 
@@ -101,6 +103,13 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     }
     
     _amountController.text = widget.transaction?.amount?.toString() ?? widget.initialAmount?.toString() ?? '';
+    if (widget.transaction?.discountType == 'percentage') {
+      _discountType = 'percentage';
+      _discountController.text = widget.transaction?.discountPercent?.toString() ?? '';
+    } else {
+      _discountType = 'rupee';
+      _discountController.text = widget.transaction?.discountAmount?.toString() ?? '';
+    }
     _referenceController.text = widget.transaction?.referenceNumber ?? '';
     _remarksController.text = widget.transaction?.remarks ?? '';
 
@@ -338,6 +347,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
   @override
   void dispose() {
     _amountController.dispose();
+    _discountController.dispose();
     _referenceController.dispose();
     _remarksController.dispose();
     for (var controller in _allocControllers.values) {
@@ -348,6 +358,27 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
     }
     super.dispose();
   }
+
+  double get _parsedBaseAmount => double.tryParse(_amountController.text) ?? 0.0;
+  double get _parsedDiscountInput => double.tryParse(_discountController.text) ?? 0.0;
+
+  double get _calculatedDiscountAmount {
+    if (_parsedDiscountInput <= 0) return 0.0;
+    if (_discountType == 'percentage') {
+      return (_parsedBaseAmount * _parsedDiscountInput) / 100.0;
+    }
+    return _parsedDiscountInput;
+  }
+
+  double get _calculatedDiscountPercent {
+    if (_parsedDiscountInput <= 0) return 0.0;
+    if (_discountType == 'percentage') {
+      return _parsedDiscountInput;
+    }
+    return _parsedBaseAmount > 0 ? (_parsedDiscountInput / _parsedBaseAmount) * 100.0 : 0.0;
+  }
+
+  double get _totalSettlementAmount => _parsedBaseAmount + _calculatedDiscountAmount;
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -368,16 +399,18 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       return;
     }
 
-    final totalTxn = double.tryParse(_amountController.text) ?? 0.0;
+    final baseTxn = _parsedBaseAmount;
+    final calcDisc = _calculatedDiscountAmount;
+    final totalSettlement = _totalSettlementAmount;
     
     // Filter out zero allocations
     final validAllocations = Map<String, double>.from(_linkedAllocations)
       ..removeWhere((k, v) => v <= 0.0);
 
     final totalAllocated = validAllocations.values.fold(0.0, (sum, val) => sum + val);
-    if (totalAllocated > totalTxn) {
+    if (totalAllocated > totalSettlement) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Total allocated amount (₹${totalAllocated.toStringAsFixed(2)}) exceeds transaction amount (₹${totalTxn.toStringAsFixed(2)})')),
+        SnackBar(content: Text('Total allocated amount (₹${totalAllocated.toStringAsFixed(2)}) exceeds settlement amount (₹${totalSettlement.toStringAsFixed(2)})')),
       );
       return;
     }
@@ -391,7 +424,10 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
       txn.isPersonalVault = isPersonal;
       txn.transactionType = _transactionType;
       txn.transactionDate = _transactionDate;
-      txn.amount = totalTxn;
+      txn.amount = baseTxn;
+      txn.discountAmount = calcDisc > 0 ? calcDisc : null;
+      txn.discountPercent = calcDisc > 0 ? _calculatedDiscountPercent : null;
+      txn.discountType = calcDisc > 0 ? _discountType : null;
       txn.paymentMode = _paymentMode;
       txn.referenceNumber = _referenceController.text;
       txn.remarks = _remarksController.text;
@@ -738,6 +774,126 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   ],
                 ),
                 const SizedBox(height: 16),
+
+                // Discount Input Section (For Receipt & Payment)
+                if (_transactionType == 'Receipt' || _transactionType == 'Payment') ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _discountController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            labelText: _transactionType == 'Receipt'
+                                ? 'Discount Given (${_discountType == 'percentage' ? '%' : '₹'})'
+                                : 'Discount Received (${_discountType == 'percentage' ? '%' : '₹'})',
+                            prefixIcon: Icon(
+                              _discountType == 'percentage' ? Icons.percent_rounded : Icons.discount_rounded,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                          onChanged: (val) {
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                if (_discountType != 'rupee') {
+                                  setState(() {
+                                    _discountType = 'rupee';
+                                  });
+                                }
+                              },
+                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(9), bottomLeft: Radius.circular(9)),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _discountType == 'rupee' ? theme.colorScheme.primary : Colors.transparent,
+                                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(9), bottomLeft: Radius.circular(9)),
+                                ),
+                                child: Text(
+                                  '₹',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: _discountType == 'rupee' ? theme.colorScheme.onPrimary : theme.textTheme.bodyMedium?.color,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () {
+                                if (_discountType != 'percentage') {
+                                  setState(() {
+                                    _discountType = 'percentage';
+                                  });
+                                }
+                              },
+                              borderRadius: const BorderRadius.only(topRight: Radius.circular(9), bottomRight: Radius.circular(9)),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _discountType == 'percentage' ? theme.colorScheme.primary : Colors.transparent,
+                                  borderRadius: const BorderRadius.only(topRight: Radius.circular(9), bottomRight: Radius.circular(9)),
+                                ),
+                                child: Text(
+                                  '%',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: _discountType == 'percentage' ? theme.colorScheme.onPrimary : theme.textTheme.bodyMedium?.color,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_calculatedDiscountAmount > 0) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: (_transactionType == 'Receipt' ? Colors.green : Colors.blue).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: (_transactionType == 'Receipt' ? Colors.green : Colors.blue).withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, size: 18, color: _transactionType == 'Receipt' ? Colors.green.shade800 : Colors.blue.shade800),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _transactionType == 'Receipt'
+                                  ? 'Cash/Bank: ₹${_parsedBaseAmount.toStringAsFixed(2)} | Disc Given: ₹${_calculatedDiscountAmount.toStringAsFixed(2)} | Party Settled: ₹${_totalSettlementAmount.toStringAsFixed(2)}'
+                                  : 'Cash/Bank: ₹${_parsedBaseAmount.toStringAsFixed(2)} | Disc Received: ₹${_calculatedDiscountAmount.toStringAsFixed(2)} | Party Settled: ₹${_totalSettlementAmount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: _transactionType == 'Receipt' ? Colors.green.shade900 : Colors.blue.shade900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                ],
 
 
 
