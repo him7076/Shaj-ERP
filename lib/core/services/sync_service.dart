@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/core/services/sync_queue_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/constants/app_constants.dart';
 import 'package:business_sahaj_erp/core/utils/demo_data_seeder.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 
 // Collections
 import 'package:business_sahaj_erp/data/local/collections/isar_model.dart';
@@ -1827,14 +1828,7 @@ class SyncService {
 
         double _toPrimaryQty(String? lineUnit, double rawQty) {
           if (rawQty <= 0) return 0.0;
-          final secUnit = item.secondaryUnit?.trim().toLowerCase();
-          final conv = item.conversionFactor;
-          final lineUnitLower = lineUnit?.trim().toLowerCase();
-
-          if (secUnit != null && secUnit.isNotEmpty && lineUnitLower != null && lineUnitLower == secUnit && conv != null && conv > 0) {
-            return conv >= 1.0 ? rawQty / conv : rawQty * conv;
-          }
-          return rawQty;
+          return UnitConversionHelper.toPrimaryQuantity(item, rawQty, lineUnit);
         }
 
         // 1. Total Sales (InvoiceItems)

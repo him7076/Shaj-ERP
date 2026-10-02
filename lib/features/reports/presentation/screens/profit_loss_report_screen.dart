@@ -278,9 +278,8 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
                     ? item.wholesaleRate!
                     : (item.sellRate ?? 0.0));
 
-        final double rawCurrent = item.currentStock ?? 0.0;
         final double rawOpening = item.openingStock ?? 0.0;
-        final double currentStock = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
+        final double currentStock = item.currentStock ?? item.openingStock ?? 0.0;
 
         if (currentStock > 0) {
           closingVal += (currentStock * actualUnitCost);

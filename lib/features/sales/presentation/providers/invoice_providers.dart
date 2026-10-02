@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -13,6 +13,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/providers/order_providers.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 import 'package:isar/isar.dart';
 
 final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
@@ -187,17 +188,18 @@ class InvoiceCartNotifier extends StateNotifier<InvoiceCart> {
     // Automatically apply unit conversion if unit changes and user didn't explicitly pass a new rate
     if (unit != null && unit != current.unit && rate == null) {
       final item = current.item;
-      final isPrimary = unit == (item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS');
-      final isSecondary = unit == item.secondaryUnit;
+      final isPrimary = UnitConversionHelper.areUnitsMatching(unit, item.primaryUnitName ?? item.unit.value?.shortName ?? item.unit.value?.unitName ?? 'PCS');
+      final isSecondary = UnitConversionHelper.areUnitsMatching(unit, item.secondaryUnit);
+      final isCurrentSecondary = UnitConversionHelper.areUnitsMatching(current.unit, item.secondaryUnit);
       final conv = item.conversionFactor ?? 1.0;
       
       if (conv > 0) {
-        if (isSecondary && current.unit != item.secondaryUnit) {
-           finalRate = current.rate * conv;
-           finalBuyRate = finalBuyRate * conv;
-        } else if (isPrimary && current.unit == item.secondaryUnit) {
+        if (isSecondary && !isCurrentSecondary) {
            finalRate = current.rate / conv;
            finalBuyRate = finalBuyRate / conv;
+        } else if (isPrimary && isCurrentSecondary) {
+           finalRate = current.rate * conv;
+           finalBuyRate = finalBuyRate * conv;
         }
       }
     }

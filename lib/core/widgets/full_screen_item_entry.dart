@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
-import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 
 class FullScreenItemEntryData {
   final Item item;
@@ -187,21 +187,23 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
     if (newUnit == null || _selectedItem == null || newUnit == _selectedUnit) return;
 
     final item = _selectedItem!;
-    double primaryToNew = 1.0;
-    if (newUnit == item.secondaryUnit) {
-      primaryToNew = item.conversionFactor ?? 1.0;
-    } else if (newUnit == item.tertiaryUnit) {
-      primaryToNew = (item.conversionFactor ?? 1.0) * (item.secondaryToTertiaryConversion ?? 1.0);
+    double multNew = 1.0;
+    if (UnitConversionHelper.areUnitsMatching(newUnit, item.secondaryUnit)) {
+      multNew = item.conversionFactor ?? 1.0;
+    } else if (UnitConversionHelper.areUnitsMatching(newUnit, item.tertiaryUnit)) {
+      multNew = (item.conversionFactor ?? 1.0) * (item.secondaryToTertiaryConversion ?? 1.0);
     }
     
-    double primaryToOld = 1.0;
-    if (_selectedUnit == item.secondaryUnit) {
-      primaryToOld = item.conversionFactor ?? 1.0;
-    } else if (_selectedUnit == item.tertiaryUnit) {
-      primaryToOld = (item.conversionFactor ?? 1.0) * (item.secondaryToTertiaryConversion ?? 1.0);
+    double multOld = 1.0;
+    if (UnitConversionHelper.areUnitsMatching(_selectedUnit, item.secondaryUnit)) {
+      multOld = item.conversionFactor ?? 1.0;
+    } else if (UnitConversionHelper.areUnitsMatching(_selectedUnit, item.tertiaryUnit)) {
+      multOld = (item.conversionFactor ?? 1.0) * (item.secondaryToTertiaryConversion ?? 1.0);
     }
     
-    final double relativeFactor = primaryToNew / primaryToOld;
+    // Switching from Old Unit to New Unit: rate multiplier is multOld / multNew
+    // E.g. Box (mult 1) to Pcs (mult 10) -> multOld/multNew = 1/10 = 0.1 (Rate per Pcs = Rate per Box / 10)
+    final double relativeFactor = multNew > 0 ? (multOld / multNew) : 1.0;
     
     final currentSale = double.tryParse(_saleRateController.text) ?? 0.0;
     final currentPurchase = double.tryParse(_purchaseRateController.text) ?? 0.0;

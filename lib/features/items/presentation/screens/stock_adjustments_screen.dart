@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 import 'package:business_sahaj_erp/features/items/presentation/widgets/stock_adjustment_dialog.dart';
 
 class StockAdjustmentsScreen extends ConsumerStatefulWidget {
@@ -121,12 +122,7 @@ class _StockAdjustmentsScreenState extends ConsumerState<StockAdjustmentsScreen>
             final isAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
             
             // To convert quantity to primary unit if needed
-            double primaryQty = adj.quantity ?? 0.0;
-            if (adj.unit != null && adj.unit!.isNotEmpty && dbItem.secondaryUnit != null && dbItem.conversionFactor != null && dbItem.conversionFactor! > 0) {
-              if (adj.unit!.toLowerCase() == dbItem.secondaryUnit!.toLowerCase()) {
-                primaryQty = primaryQty / dbItem.conversionFactor!;
-              }
-            }
+            double primaryQty = UnitConversionHelper.toPrimaryQuantity(dbItem, adj.quantity ?? 0.0, adj.unit);
             
             // Reverse the adjustment
             dbItem.currentStock = (dbItem.currentStock ?? 0.0) - (isAdd ? primaryQty : -primaryQty);
@@ -899,22 +895,12 @@ class _AddEditStockAdjustmentDialogState extends ConsumerState<AddEditStockAdjus
             if (isEditing) {
                 final oldAdj = widget.existingAdjustment!;
                 final oldIsAdd = oldAdj.adjustmentType == 'Add' || oldAdj.adjustmentType == 'Stock In';
-                double oldQty = oldAdj.quantity ?? 0.0;
-                if (oldAdj.unit != null && oldAdj.unit!.isNotEmpty && dbItem.secondaryUnit != null && dbItem.conversionFactor != null && dbItem.conversionFactor! > 0) {
-                    if (oldAdj.unit!.toLowerCase() == dbItem.secondaryUnit!.toLowerCase()) {
-                        oldQty = oldQty / dbItem.conversionFactor!;
-                    }
-                }
+                double oldQty = UnitConversionHelper.toPrimaryQuantity(dbItem, oldAdj.quantity ?? 0.0, oldAdj.unit);
                 oldPrimaryQty = oldIsAdd ? oldQty : -oldQty;
             }
 
             final newIsAdd = adj.adjustmentType == 'Add' || adj.adjustmentType == 'Stock In';
-            double newQty = adj.quantity ?? 0.0;
-            if (adj.unit != null && adj.unit!.isNotEmpty && dbItem.secondaryUnit != null && dbItem.conversionFactor != null && dbItem.conversionFactor! > 0) {
-                if (adj.unit!.toLowerCase() == dbItem.secondaryUnit!.toLowerCase()) {
-                    newQty = newQty / dbItem.conversionFactor!;
-                }
-            }
+            double newQty = UnitConversionHelper.toPrimaryQuantity(dbItem, adj.quantity ?? 0.0, adj.unit);
             final newPrimaryQty = newIsAdd ? newQty : -newQty;
 
             dbItem.currentStock = (dbItem.currentStock ?? 0.0) - oldPrimaryQty + newPrimaryQty;

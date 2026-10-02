@@ -18,6 +18,7 @@ import 'package:business_sahaj_erp/core/services/invoice_number_service.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_manager.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 
 class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements InvoiceRepository {
   final InvoiceNumberService _numberService;
@@ -183,16 +184,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
             // Restore stock back before applying new ones (converting secondary unit if applicable)
             final dbItem = oldItem.itemId != null ? targetItemMap[oldItem.itemId] : null;
             if (dbItem != null) {
-              double restoredQty = oldItem.quantity ?? 0.0;
-              final convFactor = dbItem.conversionFactor ?? 1.0;
-              if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
-                final uName = (oldItem.unit ?? '').trim().toLowerCase();
-                final sName = dbItem.secondaryUnit!.trim().toLowerCase();
-                final pName = (dbItem.primaryUnitName ?? '').trim().toLowerCase();
-                if (uName == sName && uName != pName) {
-                  restoredQty = restoredQty / convFactor;
-                }
-              }
+              double restoredQty = UnitConversionHelper.toPrimaryQuantity(dbItem, oldItem.quantity ?? 0.0, oldItem.unit);
               final hasChildComponents = oldItems.any((oi) => oi.uuid != null && oi.uuid!.endsWith("_BNDLCOMP"));
               if ((oldItem.isBundle || dbItem.isBundle) && !hasChildComponents) {
                  final uuids = oldItem.bundleComponentUuids ?? dbItem.bundleComponentUuids ?? [];
@@ -252,17 +244,7 @@ class InvoiceRepositoryImpl extends BaseIsarRepository<Invoice> implements Invoi
           final dbItem = targetItemMap[item.itemId ?? 0] ?? (kIsWeb ? null : item.item.value);
           if (dbItem != null) {
             final double available = dbItem.currentStock ?? 0.0;
-            double requestedInPrimaryUnit = item.quantity ?? 0.0;
-
-            final convFactor = dbItem.conversionFactor ?? 1.0;
-            if (convFactor > 1.0 && dbItem.secondaryUnit != null && dbItem.secondaryUnit!.isNotEmpty) {
-              final itemUnit = (item.unit ?? '').trim().toLowerCase();
-              final secUnit = dbItem.secondaryUnit!.trim().toLowerCase();
-              final pName = (dbItem.primaryUnitName ?? (!kIsWeb ? dbItem.unit.value?.shortName : '') ?? '').trim().toLowerCase();
-              if (itemUnit == secUnit && itemUnit != pName) {
-                requestedInPrimaryUnit = requestedInPrimaryUnit / convFactor;
-              }
-            }
+            double requestedInPrimaryUnit = UnitConversionHelper.toPrimaryQuantity(dbItem, item.quantity ?? 0.0, item.unit);
 
             final allowNegativeStock = _prefs.getBool('allow_negative_stock') ?? true;
             

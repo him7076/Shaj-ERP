@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/core/errors/exceptions.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/core/services/sync_manager.dart';
 import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 
 class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements PurchaseRepository {
   PurchaseRepositoryImpl(Isar isar) : super(isar, 'Purchase');
@@ -205,16 +206,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
           final targetItem = targetItemMap[item.itemId ?? 0];
           if (targetItem != null) {
-            double qtyInPrimary = item.quantity ?? 0.0;
-            final convFactor = targetItem.conversionFactor ?? 1.0;
-            if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
-              final uName = (item.unit ?? '').trim().toLowerCase();
-              final sName = targetItem.secondaryUnit!.trim().toLowerCase();
-              final pName = (targetItem.primaryUnitName ?? targetItem.unit.value?.shortName ?? '').trim().toLowerCase();
-              if (uName == sName && uName != pName) {
-                qtyInPrimary = qtyInPrimary / convFactor;
-              }
-            }
+            double qtyInPrimary = UnitConversionHelper.toPrimaryQuantity(targetItem, item.quantity ?? 0.0, item.unit);
 
             final timestamp = DateTime.now().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
             final logEntry = '[$timestamp] STOCK_IN (Purchase): +$qtyInPrimary | Ref: ${purchase.purchaseNumber}';

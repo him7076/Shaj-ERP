@@ -9,7 +9,7 @@ import 'package:business_sahaj_erp/data/local/collections/credit_note_collection
 import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
-import 'package:business_sahaj_erp/core/services/logger_service.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 
 class StockRecalculatorResult {
   final int totalItemsProcessed;
@@ -67,17 +67,8 @@ class StockRecalculatorService {
 
         double stock = item.openingStock ?? 0.0;
 
-        final convFactor = item.conversionFactor ?? 1.0;
-        final secUnitNorm = (item.secondaryUnit ?? '').trim().toLowerCase();
-        final primUnitNorm = (item.primaryUnitName ?? item.unit.value?.shortName ?? '').trim().toLowerCase();
-
         double toPrimary(double qty, String? unit) {
-          if (unit == null || unit.trim().isEmpty) return qty;
-          final uNorm = unit.trim().toLowerCase();
-          if (convFactor > 1.0 && secUnitNorm.isNotEmpty && uNorm == secUnitNorm && uNorm != primUnitNorm) {
-            return qty / convFactor;
-          }
-          return qty;
+          return UnitConversionHelper.toPrimaryQuantity(item, qty, unit);
         }
 
         // 1. Add active Purchases

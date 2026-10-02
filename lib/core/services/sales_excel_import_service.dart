@@ -12,6 +12,7 @@ import 'package:business_sahaj_erp/data/local/collections/unit_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/core/services/purchase_excel_import_service.dart'; // Reuse DuplicateBillAction enum
 import 'package:business_sahaj_erp/core/widgets/import_progress_modal.dart';
+import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 
 class ImportSalesResult {
   final int totalInvoicesImported;
@@ -398,16 +399,7 @@ class SalesExcelImportService {
                   if (oi.itemId != null) {
                     final targetItem = await isar.items.get(oi.itemId!);
                     if (targetItem != null) {
-                      double restoredQty = oi.quantity ?? 0.0;
-                      final convFactor = targetItem.conversionFactor ?? 1.0;
-                      if (convFactor > 1.0 && targetItem.secondaryUnit != null && targetItem.secondaryUnit!.isNotEmpty) {
-                        final uName = (oi.unit ?? '').trim().toLowerCase();
-                        final sName = targetItem.secondaryUnit!.trim().toLowerCase();
-                        final pName = (targetItem.primaryUnitName ?? targetItem.unit.value?.shortName ?? '').trim().toLowerCase();
-                        if (uName == sName && uName != pName) {
-                          restoredQty = restoredQty / convFactor;
-                        }
-                      }
+                      double restoredQty = UnitConversionHelper.toPrimaryQuantity(targetItem, oi.quantity ?? 0.0, oi.unit);
                       targetItem.currentStock = (targetItem.currentStock ?? 0.0) + restoredQty;
                       await isar.items.put(targetItem);
                     }
@@ -617,15 +609,7 @@ class SalesExcelImportService {
               }
 
               // Deduct sales quantity from item current stock (converting secondary unit if applicable)
-              double qtyInPrimaryUnit = qty;
-              final convFactor = catalogItem.conversionFactor ?? 1.0;
-              if (convFactor > 1.0 && catalogItem.secondaryUnit != null && catalogItem.secondaryUnit!.isNotEmpty) {
-                final uName = unit.trim().toLowerCase();
-                final sName = catalogItem.secondaryUnit!.trim().toLowerCase();
-                if (uName == sName) {
-                  qtyInPrimaryUnit = qty / convFactor;
-                }
-              }
+              double qtyInPrimaryUnit = UnitConversionHelper.toPrimaryQuantity(catalogItem, qty, unit);
 
               catalogItem.currentStock = (catalogItem.currentStock ?? 0.0) - qtyInPrimaryUnit;
               catalogItem.updatedAt = DateTime.now();

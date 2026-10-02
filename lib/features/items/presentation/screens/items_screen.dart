@@ -816,9 +816,7 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
   }
 
   Widget _buildProductCard(Item item, ThemeData theme, {Map<String, double> buyRateCache = const {}}) {
-    final rawCurrent = item.currentStock ?? 0.0;
-    final rawOpening = item.openingStock ?? 0.0;
-    final stockVal = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
+    final stockVal = item.currentStock ?? item.openingStock ?? 0.0;
     final reorderVal = item.reorderLevel ?? 0.0;
     final isOut = stockVal <= 0;
     final isLow = stockVal <= reorderVal && !isOut;
@@ -827,11 +825,11 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
     final String? secUnit = item.secondaryUnit;
     final double? conv = item.conversionFactor;
 
-    final String formattedStock = stockVal == stockVal.roundToDouble() ? stockVal.toInt().toString() : stockVal.toStringAsFixed(2);
+    final String formattedStock = stockVal.toStringAsFixed(2);
     String stockLabel = '$formattedStock $primaryUnit';
     if (secUnit != null && secUnit.isNotEmpty && conv != null && conv > 1.0) {
       final double secVal = stockVal * conv;
-      final String formattedSec = secVal == secVal.roundToDouble() ? secVal.toInt().toString() : secVal.toStringAsFixed(1);
+      final String formattedSec = secVal.toStringAsFixed(2);
       stockLabel = '$formattedStock $primaryUnit ($formattedSec $secUnit)';
     }
 
