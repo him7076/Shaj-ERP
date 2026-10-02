@@ -17,6 +17,7 @@ import 'package:business_sahaj_erp/features/sales/presentation/providers/invoice
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
 
 
+import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/providers/transaction_providers.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_transaction_dialog.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';

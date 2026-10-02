@@ -137,7 +137,11 @@ final bankAccountsListProvider = FutureProvider<List<BankAccount>>((ref) async {
   return allAccounts.where((a) => a.isPersonalVault == isPersonal).toList();
 });
 
+// Navigation Index Provider (used for bottom navigation control)
+final navigationIndexProvider = StateProvider<int>((ref) => 0);
+
 // GST Lookup Service Provider
 final gstServiceProvider = Provider<GstService>((ref) {
   return GstService();
 });
+
