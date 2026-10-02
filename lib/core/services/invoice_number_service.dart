@@ -28,12 +28,8 @@ class InvoiceNumberService {
       final allInvoices = await isar.invoices.where().findAll();
       int maxNum = 0;
       final reg = isFixedAsset 
-          ? RegExp(r'^FA-(?:INV-)?(\d+)
-}
-, caseSensitive: false)
-          : RegExp(r'^INV-(\d+)
-}
-, caseSensitive: false);
+          ? RegExp(r'^FA-(?:INV-)?(\d+)$', caseSensitive: false)
+          : RegExp(r'^INV-(\d+)$', caseSensitive: false);
 
       for (var inv in allInvoices) {
         if (inv.isDeleted == true) continue;
