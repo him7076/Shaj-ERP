@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:business_sahaj_erp/core/widgets/linked_transactions_history_modal.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -774,6 +775,61 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                   ],
                 ),
                 const SizedBox(height: 16),
+                if (widget.transaction?.uuid != null && widget.transaction!.uuid!.isNotEmpty) ...[
+                  FutureBuilder<List<LinkedTransactionItem>>(
+                    future: LinkedTransactionsHistoryModal.fetchLinkedTransactions(
+                      ref.read(databaseServiceProvider).isar,
+                      widget.transaction!.uuid!,
+                      widget.transaction?.transactionNumber,
+                    ),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
+                      final linkedItems = snapshot.data!;
+                      final linkedTotal = linkedItems.fold(0.0, (sum, i) => sum + i.allocatedAmount);
+                      if (linkedTotal <= 0) return const SizedBox.shrink();
+
+                      final currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Linked Transactions Total: ${currencyFormat.format(linkedTotal)}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.blue),
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                LinkedTransactionsHistoryModal.show(
+                                  context,
+                                  ref.read(databaseServiceProvider).isar,
+                                  widget.transaction!.uuid!,
+                                  billNumber: widget.transaction?.transactionNumber,
+                                );
+                              },
+                              icon: const Icon(Icons.history, size: 16),
+                              label: const Text('History', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
 
                 // Discount Input Section (For Receipt & Payment)
                 if (_transactionType == 'Receipt' || _transactionType == 'Payment') ...[

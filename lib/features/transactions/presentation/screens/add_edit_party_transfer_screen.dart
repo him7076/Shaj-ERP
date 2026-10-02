@@ -14,6 +14,8 @@ import '../../../../data/local/collections/party_collection.dart';
 import '../../../../data/local/collections/transaction_collection.dart';
 import '../../../../data/local/collections/invoice_collection.dart';
 import '../../../../data/local/collections/purchase_collection.dart';
+import '../../../../data/local/collections/credit_note_collection.dart';
+import '../../../../data/local/collections/debit_note_collection.dart';
 import '../../../parties/presentation/providers/party_providers.dart';
 import '../../presentation/providers/transaction_providers.dart';
 import '../../../../presentation/providers/core_providers.dart';
@@ -228,8 +230,8 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     }
     
     allBills.sort((a, b) {
-      final aDate = a is Invoice ? a.invoiceDate : (a as Purchase).purchaseDate;
-      final bDate = b is Invoice ? b.invoiceDate : (b as Purchase).purchaseDate;
+      final aDate = _getBillDate(a);
+      final bDate = _getBillDate(b);
       if (aDate == null) return 1;
       if (bDate == null) return -1;
       return bDate.compareTo(aDate); // newest first
@@ -601,8 +603,53 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
     });
   }
 
+  String _getBillUuid(dynamic bill) {
+    if (bill is Invoice) return bill.uuid ?? '';
+    if (bill is Purchase) return bill.uuid ?? '';
+    if (bill is CreditNote) return bill.uuid ?? '';
+    if (bill is DebitNote) return bill.uuid ?? '';
+    if (bill is Transaction) return bill.uuid ?? '';
+    return '';
+  }
+
+  String _getBillTitle(dynamic bill) {
+    if (bill is Invoice) return 'INV - ${bill.invoiceNumber ?? ''}';
+    if (bill is Purchase) return '${bill.purchaseNumber?.startsWith('FA-') == true ? '' : 'PUR - '}${bill.purchaseNumber ?? ''}';
+    if (bill is CreditNote) return 'CN - ${bill.creditNoteNumber ?? ''}';
+    if (bill is DebitNote) return 'DN - ${bill.debitNoteNumber ?? ''}';
+    if (bill is Transaction) return '${bill.transactionType ?? 'TXN'} - ${bill.transactionNumber ?? ''}';
+    return '';
+  }
+
+  DateTime? _getBillDate(dynamic bill) {
+    if (bill is Invoice) return bill.invoiceDate;
+    if (bill is Purchase) return bill.purchaseDate;
+    if (bill is CreditNote) return bill.creditNoteDate;
+    if (bill is DebitNote) return bill.debitNoteDate;
+    if (bill is Transaction) return bill.transactionDate;
+    return null;
+  }
+
+  double _getBillGrandTotal(dynamic bill) {
+    if (bill is Invoice) return bill.grandTotal ?? 0.0;
+    if (bill is Purchase) return bill.grandTotal ?? 0.0;
+    if (bill is CreditNote) return bill.grandTotal ?? 0.0;
+    if (bill is DebitNote) return bill.grandTotal ?? 0.0;
+    if (bill is Transaction) return bill.amount ?? 0.0;
+    return 0.0;
+  }
+
+  double _getBillPaidAmount(dynamic bill) {
+    if (bill is Invoice) return bill.paidAmount ?? 0.0;
+    if (bill is Purchase) return bill.paidAmount ?? 0.0;
+    if (bill is CreditNote) return 0.0;
+    if (bill is DebitNote) return 0.0;
+    if (bill is Transaction) return 0.0;
+    return 0.0;
+  }
+
   double get _totalAllocated {
-    final billUuids = _bills.map((b) => b is Invoice ? b.uuid : (b as Purchase).uuid).toSet();
+    final billUuids = _bills.map((b) => _getBillUuid(b)).toSet();
     return _allocations.entries
         .where((e) => billUuids.contains(e.key))
         .fold(0.0, (sum, e) => sum + e.value);
@@ -642,12 +689,12 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final bill = _bills[index];
-                    final isInvoice = bill is Invoice;
-                    final uuid = isInvoice ? bill.uuid! : (bill as Purchase).uuid!;
-                    final number = isInvoice ? bill.invoiceNumber : (bill as Purchase).purchaseNumber;
-                    final date = isInvoice ? bill.invoiceDate : (bill as Purchase).purchaseDate;
-                    final grandTotal = isInvoice ? bill.grandTotal ?? 0.0 : (bill as Purchase).grandTotal ?? 0.0;
-                    final paid = isInvoice ? bill.paidAmount ?? 0.0 : (bill as Purchase).paidAmount ?? 0.0;
+                    final uuid = _getBillUuid(bill);
+                    final billTitle = _getBillTitle(bill);
+                    final date = _getBillDate(bill);
+                    final grandTotal = _getBillGrandTotal(bill);
+                    final paid = _getBillPaidAmount(bill);
+
                     
                     final currentAlloc = _allocations[uuid] ?? 0.0;
                     final pending = grandTotal - paid + currentAlloc; // Add back current alloc to show full available
@@ -669,7 +716,7 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('${isInvoice ? 'INV' : 'PUR'} - $number', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text(billTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
                               Text(date != null ? DateFormat('dd MMM').format(date) : '', style: TextStyle(color: theme.hintColor, fontSize: 12)),
                             ],
                           ),

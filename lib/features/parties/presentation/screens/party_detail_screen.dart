@@ -17,6 +17,7 @@ import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_d
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_party_transfer_screen.dart';
 import 'package:business_sahaj_erp/core/widgets/error_dialog.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
@@ -691,6 +692,10 @@ final theme = Theme.of(context);
                   } else if (txn.type == 'Debit Note') {
                     Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(builder: (context) => AddEditDebitNoteScreen(parentDebitNoteUuid: txn.rawTxn?.linkedBillUuid ?? targetUuid)),
+                    ).then((_) => _loadPartyDetails());
+                  } else if (txn.type == 'Party Transfer' || txn.type == 'Party to Party Transfer' || (txn.rawTxn != null && (txn.rawTxn!.transactionType == 'Party Transfer' || txn.rawTxn!.transactionType == 'Party to Party Transfer'))) {
+                    Navigator.of(context, rootNavigator: true).push(
+                      MaterialPageRoute(builder: (context) => AddEditPartyTransferScreen(existingTransaction: txn.rawTxn)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.rawTxn != null) {
                     AddEditTransactionDialog.show(context, transaction: txn.rawTxn);
