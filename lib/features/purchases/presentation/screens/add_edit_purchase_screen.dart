@@ -16,6 +16,7 @@ import 'package:business_sahaj_erp/features/parties/presentation/screens/add_edi
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
+import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
@@ -763,26 +764,43 @@ if (_isPaidAmountAutoFill) {
         ? 'Edit $docType ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
         : 'New $docType ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}';
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              ref.read(navigationIndexProvider.notifier).state = 0;
-            }
-          },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          if (Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          } else if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            ref.read(navigationIndexProvider.notifier).state = 0;
+            context.go('/dashboard');
+          }
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.of(context, rootNavigator: true).canPop()) {
+                Navigator.of(context, rootNavigator: true).pop();
+              } else if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                ref.read(navigationIndexProvider.notifier).state = 0;
+                context.go('/dashboard');
+              }
+            },
+          ),
+          title: Text(
+            titleText,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
-        title: Text(
-          titleText,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: isDesktop

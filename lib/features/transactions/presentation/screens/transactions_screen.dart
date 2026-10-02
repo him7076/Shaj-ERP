@@ -450,10 +450,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          if (Navigator.of(context).canPop()) {
+          if (Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          } else if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           } else {
             ref.read(navigationIndexProvider.notifier).state = 0;
+            context.go('/dashboard');
           }
         }
       },
@@ -464,10 +467,13 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              if (Navigator.of(context).canPop()) {
+              if (Navigator.of(context, rootNavigator: true).canPop()) {
+                Navigator.of(context, rootNavigator: true).pop();
+              } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               } else {
                 ref.read(navigationIndexProvider.notifier).state = 0;
+                context.go('/dashboard');
               }
             },
           ),

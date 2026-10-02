@@ -47,22 +47,31 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       final prefix = isFixedAsset ? 'FA-PUR-' : 'PUR-';
       final allPurchases = await collection.where().findAll();
       int maxNum = 0;
-      for (var pur in allPurchases) {
-        if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
-          final pNo = pur.purchaseNumber!.trim();
-          if (isFixedAsset) {
-            if (pNo.startsWith('FA-PUR-')) {
-              final numPart = pNo.replaceFirst('FA-PUR-', '');
-              final matches = RegExp(r'\d+').allMatches(numPart);
-              if (matches.isNotEmpty) {
-                final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
-                if (parsed > maxNum) maxNum = parsed;
-              }
+
+      if (isFixedAsset) {
+        final faPurchases = allPurchases.where((p) =>
+            p.isFixedAsset == true ||
+            (p.purchaseNumber != null && (p.purchaseNumber!.startsWith('FA-PUR-') || p.purchaseNumber!.startsWith('FA-')))).toList();
+
+        for (var pur in faPurchases) {
+          if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
+            final matches = RegExp(r'\d+').allMatches(pur.purchaseNumber!);
+            if (matches.isNotEmpty) {
+              final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
+              if (parsed > maxNum) maxNum = parsed;
             }
-          } else {
-            if (pNo.startsWith('PUR-') && !pNo.startsWith('FA-PUR-')) {
-              final numPart = pNo.replaceFirst('PUR-', '');
-              final matches = RegExp(r'\d+').allMatches(numPart);
+          }
+        }
+      } else {
+        final regularPurchases = allPurchases.where((p) =>
+            (p.isFixedAsset != true) &&
+            (p.purchaseNumber == null || !p.purchaseNumber!.startsWith('FA-'))).toList();
+
+        for (var pur in regularPurchases) {
+          if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
+            final pNo = pur.purchaseNumber!.trim();
+            if (pNo.startsWith('PUR-')) {
+              final matches = RegExp(r'\d+').allMatches(pNo);
               if (matches.isNotEmpty) {
                 final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
                 if (parsed > maxNum) maxNum = parsed;
@@ -71,9 +80,16 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           }
         }
       }
-      final nextNum = maxNum + 1;
-      final suffix = nextNum.toString().padLeft(2, '0');
-      return '$prefix$suffix';
+
+      var nextNum = maxNum + 1;
+      var candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';
+
+      final existingNumbers = allPurchases.map((e) => e.purchaseNumber).toSet();
+      while (existingNumbers.contains(candidate)) {
+        nextNum++;
+        candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';
+      }
+      return candidate;
     } catch (e) {
       throw DatabaseException('Failed to generate purchase number: $e');
     }

@@ -455,7 +455,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
 
   Widget _buildTypeToggleChip(String type, String label, IconData icon, Color color) {
     final selected = _transactionType == type;
-    final isDisabled = widget.transaction != null || widget.initialType != null;
+    final isDisabled = widget.transaction != null;
     return ChoiceChip(
       showCheckmark: false,
       avatar: Icon(icon, size: 14, color: selected ? Colors.white : color),
@@ -570,6 +570,50 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                     Expanded(child: _buildTypeToggleChip('Receipt', 'Received Payment (Payment In)', Icons.arrow_downward_rounded, Colors.green)),
                     const SizedBox(width: 8),
                     Expanded(child: _buildTypeToggleChip('Payment', 'Made Payment (Payment Out)', Icons.arrow_upward_rounded, Colors.red)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Date Picker and Voucher Number at VERY TOP
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _transactionDate,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              _transactionDate = picked;
+                            });
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Date',
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          child: Text(DateFormat('dd MMM yy').format(_transactionDate)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Voucher No.',
+                          prefixIcon: Icon(Icons.numbers),
+                        ),
+                        child: Text(
+                          widget.transaction?.transactionNumber ?? _nextVoucher,
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -695,46 +739,7 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                 ),
                 const SizedBox(height: 16),
 
-                // Date Picker and Voucher
-                Row(
-                  children: [
-                    Expanded(
-                      child: InkWell(
-                        onTap: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate: _transactionDate,
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2030),
-                          );
-                          if (picked != null) {
-                            setState(() {
-                              _transactionDate = picked;
-                            });
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Date',
-                            prefixIcon: Icon(Icons.calendar_today),
-                          ),
-                          child: Text(DateFormat('dd MMM yy').format(_transactionDate)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Voucher No.',
-                          prefixIcon: Icon(Icons.numbers),
-                        ),
-                        child: Text(widget.transaction?.transactionNumber ?? _nextVoucher, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+
 
                 // Payment Mode Selector
                 ref.watch(bankAccountsListProvider).when(

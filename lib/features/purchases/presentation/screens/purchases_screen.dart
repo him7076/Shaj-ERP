@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:printing/printing.dart';
+import 'package:go_router/go_router.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/providers/purchase_providers.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
@@ -292,10 +293,13 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          if (Navigator.of(context).canPop()) {
+          if (Navigator.of(context, rootNavigator: true).canPop()) {
+            Navigator.of(context, rootNavigator: true).pop();
+          } else if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           } else {
             ref.read(navigationIndexProvider.notifier).state = 0;
+            context.go('/dashboard');
           }
         }
       },
@@ -306,10 +310,13 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
-              if (Navigator.of(context).canPop()) {
+              if (Navigator.of(context, rootNavigator: true).canPop()) {
+                Navigator.of(context, rootNavigator: true).pop();
+              } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               } else {
                 ref.read(navigationIndexProvider.notifier).state = 0;
+                context.go('/dashboard');
               }
             },
           ),

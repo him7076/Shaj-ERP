@@ -13,6 +13,10 @@ import 'package:business_sahaj_erp/data/local/collections/purchase_item_collecti
 import 'package:business_sahaj_erp/data/local/collections/order_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/order_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/stock_adjustment_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:uuid/uuid.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
@@ -20,33 +24,39 @@ import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_
 import 'package:business_sahaj_erp/features/sales/presentation/screens/invoice_detail_screen.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_credit_note_screen.dart';
+import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_debit_note_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/stock_adjustments_screen.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:business_sahaj_erp/features/items/presentation/widgets/stock_adjustment_dialog.dart';
 
 class _ItemTransaction {
-  final String type; // 'Sale', 'Purchase', 'Order', 'Adjustment'
+  final String type; // 'Sale', 'Purchase', 'Order', 'Adjustment', 'Credit Note', 'Debit Note'
   final DateTime date;
   final String title;
+  final String voucherNumber;
   final String partyName;
   final double quantity;
   final String unit;
   final double rate;
   final double totalAmount;
   final String targetUuid;
+  final String? paymentStatus;
   final StockAdjustment? rawAdjustment;
 
   _ItemTransaction({
     required this.type,
     required this.date,
     required this.title,
+    required this.voucherNumber,
     required this.partyName,
     required this.quantity,
     required this.unit,
     required this.rate,
     required this.totalAmount,
     required this.targetUuid,
+    this.paymentStatus,
     this.rawAdjustment,
   });
 }
@@ -123,6 +133,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               type: 'Sale',
               date: inv.invoiceDate ?? inv.createdAt,
               title: 'Sales Invoice #${inv.invoiceNumber}',
+              voucherNumber: inv.invoiceNumber ?? 'INV',
               partyName: inv.partyName ?? 'Customer',
               quantity: ii.quantity ?? 1.0,
               unit: (ii.unit != null && ii.unit!.isNotEmpty && ii.unit != 'PCS')
@@ -131,6 +142,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               rate: ii.rate ?? 0.0,
               totalAmount: ii.taxableAmount ?? (ii.quantity ?? 1.0) * (ii.rate ?? 0.0) - (ii.discount ?? 0.0),
               targetUuid: inv.uuid ?? inv.id.toString(),
+              paymentStatus: inv.paymentStatus,
             ));
           }
         }
@@ -168,6 +180,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               type: 'Purchase',
               date: pur.purchaseDate ?? pur.createdAt,
               title: 'Purchase Bill #${pur.purchaseNumber}${pur.supplierInvoiceNumber != null && pur.supplierInvoiceNumber!.isNotEmpty ? " (Supp: ${pur.supplierInvoiceNumber})" : ""}',
+              voucherNumber: pur.purchaseNumber ?? 'PUR',
               partyName: pur.partyName ?? 'Supplier',
               quantity: pi.quantity ?? 1.0,
               unit: (pi.unit != null && pi.unit!.isNotEmpty && pi.unit != 'PCS')
@@ -176,6 +189,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               rate: pi.rate ?? 0.0,
               totalAmount: pi.taxableAmount ?? (pi.quantity ?? 1.0) * (pi.rate ?? 0.0) - (pi.discount ?? 0.0),
               targetUuid: pur.uuid ?? pur.id.toString(),
+              paymentStatus: pur.paymentStatus,
             ));
           }
         }
@@ -201,6 +215,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               type: 'Order',
               date: ord.orderDate ?? ord.createdAt,
               title: 'Sales Order #${ord.orderNumber}',
+              voucherNumber: ord.orderNumber ?? 'ORD',
               partyName: ord.partyName ?? 'Customer',
               quantity: oi.quantity ?? 1.0,
               unit: (oi.unit != null && oi.unit!.isNotEmpty && oi.unit != 'PCS')
@@ -209,11 +224,82 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               rate: oi.rate ?? 0.0,
               totalAmount: oi.taxableAmount ?? (oi.quantity ?? 1.0) * (oi.rate ?? 0.0) - (oi.discountAmount ?? 0.0),
               targetUuid: ord.uuid ?? ord.id.toString(),
+              paymentStatus: ord.status,
             ));
           }
         }
 
-        // 4. Stock Adjustments
+        // 4. Credit Notes (Sales Returns: +Stock)
+        final allCNItems = await isar.creditNoteItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedCNItems = allCNItems.where((cni) {
+          if (cni.itemId == fetchedItem.id) return true;
+          if (itemName.isNotEmpty && cni.itemId == null && (cni.itemName?.trim().toLowerCase() ?? '') == itemName) return true;
+          return false;
+        }).toList();
+
+        final cnIds = matchedCNItems.map((cni) => cni.parentCreditNoteId).where((id) => id != null).cast<int>().toSet().toList();
+        final creditNotesBatch = await isar.creditNotes.getAll(cnIds);
+        final creditNotesMap = { for (var cn in creditNotesBatch) if (cn != null) cn.id: cn };
+
+        for (var cni in matchedCNItems) {
+          CreditNote? cn = cni.parentCreditNoteId != null ? creditNotesMap[cni.parentCreditNoteId] : null;
+          if (cn == null && cni.creditNote.value != null) cn = cni.creditNote.value;
+
+          if (cn != null && !cn.isDeleted) {
+            txs.add(_ItemTransaction(
+              type: 'Credit Note',
+              date: cn.creditNoteDate ?? cn.createdAt,
+              title: 'Credit Note #${cn.creditNoteNumber}',
+              voucherNumber: cn.creditNoteNumber ?? 'CN',
+              partyName: cn.partyName ?? 'Customer',
+              quantity: cni.quantity ?? 1.0,
+              unit: (cni.unit != null && cni.unit!.isNotEmpty && cni.unit != 'PCS')
+                  ? cni.unit!
+                  : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? cni.unit ?? 'PCS'),
+              rate: cni.rate ?? 0.0,
+              totalAmount: cni.taxableAmount ?? (cni.quantity ?? 1.0) * (cni.rate ?? 0.0) - (cni.discount ?? 0.0),
+              targetUuid: cn.uuid ?? cn.id.toString(),
+              paymentStatus: 'Return In (+)',
+            ));
+          }
+        }
+
+        // 5. Debit Notes (Purchase Returns: -Stock)
+        final allDNItems = await isar.debitNoteItems.filter().isDeletedEqualTo(false).findAll();
+        final matchedDNItems = allDNItems.where((dni) {
+          if (dni.itemId == fetchedItem.id) return true;
+          if (itemName.isNotEmpty && dni.itemId == null && (dni.itemName?.trim().toLowerCase() ?? '') == itemName) return true;
+          return false;
+        }).toList();
+
+        final dnIds = matchedDNItems.map((dni) => dni.parentDebitNoteId).where((id) => id != null).cast<int>().toSet().toList();
+        final debitNotesBatch = await isar.debitNotes.getAll(dnIds);
+        final debitNotesMap = { for (var dn in debitNotesBatch) if (dn != null) dn.id: dn };
+
+        for (var dni in matchedDNItems) {
+          DebitNote? dn = dni.parentDebitNoteId != null ? debitNotesMap[dni.parentDebitNoteId] : null;
+          if (dn == null && dni.debitNote.value != null) dn = dni.debitNote.value;
+
+          if (dn != null && !dn.isDeleted) {
+            txs.add(_ItemTransaction(
+              type: 'Debit Note',
+              date: dn.debitNoteDate ?? dn.createdAt,
+              title: 'Debit Note #${dn.debitNoteNumber}',
+              voucherNumber: dn.debitNoteNumber ?? 'DN',
+              partyName: dn.partyName ?? 'Supplier',
+              quantity: dni.quantity ?? 1.0,
+              unit: (dni.unit != null && dni.unit!.isNotEmpty && dni.unit != 'PCS')
+                  ? dni.unit!
+                  : (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? dni.unit ?? 'PCS'),
+              rate: dni.rate ?? 0.0,
+              totalAmount: dni.taxableAmount ?? (dni.quantity ?? 1.0) * (dni.rate ?? 0.0) - (dni.discount ?? 0.0),
+              targetUuid: dn.uuid ?? dn.id.toString(),
+              paymentStatus: 'Return Out (-)',
+            ));
+          }
+        }
+
+        // 6. Stock Adjustments
         final allAdjustments = await isar.collection<StockAdjustment>().filter().isDeletedEqualTo(false).findAll();
         final adjustments = allAdjustments.where((adj) {
           if (adj.itemId == fetchedItem.id) return true;
@@ -231,12 +317,14 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
             type: 'Adjustment',
             date: adj.adjustmentDate ?? adj.createdAt,
             title: 'Stock Adjustment (${isAdd ? "Stock In +" : "Stock Out -"})',
+            voucherNumber: isAdd ? 'Stock In' : 'Stock Out',
             partyName: adj.reason ?? (isAdd ? 'Stock Added' : 'Stock Reduced'),
             quantity: adjQty,
             unit: adj.unit ?? (fetchedItem.primaryUnitName ?? fetchedItem.unit.value?.shortName ?? 'PCS'),
             rate: adjRate,
             totalAmount: adjTotalVal,
             targetUuid: adj.uuid ?? adj.id.toString(),
+            paymentStatus: isAdd ? 'Stock In (+)' : 'Stock Out (-)',
             rawAdjustment: adj,
           ));
         }
@@ -497,7 +585,7 @@ final theme = Theme.of(context);
     final isLow = stockService.isLowStock(item);
     final isOut = stockService.isOutOfStock(item);
 
-    // Calculate Primary vs Secondary stock breakdown
+    // Calculate Primary vs Secondary stock breakdown with 2 decimal places
     final double rawCurrent = item.currentStock ?? 0.0;
     final double rawOpening = item.openingStock ?? 0.0;
     final double primaryStock = (rawCurrent <= 0.0 && rawOpening > 0.0) ? rawOpening : rawCurrent;
@@ -505,268 +593,323 @@ final theme = Theme.of(context);
     final String? secUnitName = item.secondaryUnit;
     final double? convFactor = item.conversionFactor;
 
-    String stockBreakdownText = '$primaryStock $primaryUnitName';
+    final String formattedStock = primaryStock.toStringAsFixed(2);
+    String stockBreakdownText = '$formattedStock $primaryUnitName';
     if (secUnitName != null && secUnitName.isNotEmpty && convFactor != null && convFactor > 1.0) {
       final double secStock = primaryStock * convFactor;
-      stockBreakdownText = '$primaryStock $primaryUnitName  (${secStock.toStringAsFixed(1)} $secUnitName)';
+      stockBreakdownText = '$formattedStock $primaryUnitName  (${secStock.toStringAsFixed(2)} $secUnitName)';
     }
 
-    return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
-        title: Text(item.itemName ?? 'Product Details'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddEditItemScreen(itemUuid: item.uuid),
-                ),
-              );
-              _loadItem();
-            },
-            tooltip: 'Edit Product',
+    double costRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : 0.0;
+    if (costRate <= 0 && item.sellRate != null && item.sellRate! > 0) {
+      final double gstPct = item.gstApplicable ? (item.gstRate ?? 0.0) : 0.0;
+      costRate = item.sellRate! / (1.0 + (gstPct / 100.0));
+    }
+    final double stockValAmt = primaryStock <= 0 ? 0.0 : primaryStock * costRate;
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false,
+          leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+          title: Text(item.itemName ?? 'Product Details'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AddEditItemScreen(itemUuid: item.uuid),
+                  ),
+                );
+                _loadItem();
+              },
+              tooltip: 'Edit Product',
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+              onPressed: _deleteItem,
+              tooltip: 'Delete Product',
+            ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Transactions', icon: Icon(Icons.receipt_long_outlined, size: 18)),
+              Tab(text: 'Product Info', icon: Icon(Icons.info_outline, size: 18)),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: _deleteItem,
-            tooltip: 'Delete Product',
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        ),
+        body: Column(
           children: [
             _buildImageHeader(item, theme),
 
+            // COMPACT TOP CARD
             Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+              child: NeuCard(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.25),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism)
+                      ? BorderSide.none
+                      : BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.itemName ?? '',
-                              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Code: ${item.itemCode ?? "N/A"} | HSN: ${item.hsnCode ?? "N/A"}',
-                              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                            ),
-                          ],
-                        ),
-                      ),
-                      _buildStockBadge(isOut, isLow, theme, item),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Stock Level Card with Dual Unit Conversion
-                  NeuCard(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.primary.withOpacity(0.2)),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.inventory_2, color: theme.colorScheme.primary, size: 36),
-                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Current Stock Level:',
-                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                                  item.itemName ?? '',
+                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                  softWrap: true,
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  stockBreakdownText,
-                                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                                  'Code: ${item.itemCode ?? "N/A"} | HSN: ${item.hsnCode ?? "N/A"}',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Reorder Level: ${item.reorderLevel ?? 0.0} | Min: ${item.minimumStock ?? 0.0}',
-                                  style: theme.textTheme.bodySmall,
-                                ),
-                                const SizedBox(height: 4),
-                                () {
-                                  double costRate = (item.buyRate != null && item.buyRate! > 0) ? item.buyRate! : 0.0;
-                                  if (costRate <= 0 && item.sellRate != null && item.sellRate! > 0) {
-                                    final double gstPct = item.gstApplicable ? (item.gstRate ?? 0.0) : 0.0;
-                                    costRate = item.sellRate! / (1.0 + (gstPct / 100.0));
-                                  }
-                                  final double stockValAmt = primaryStock <= 0 ? 0.0 : primaryStock * costRate;
-                                  return Text(
-                                    'Total Stock Value: ${_currencyFormat.format(stockValAmt)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Color(0xFF10B981),
-                                    ),
-                                  );
-                                }(),
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          _buildStockBadge(isOut, isLow, theme, item),
+                        ],
+                      ),
+                      const Divider(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Current Stock Level:',
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
+                              ),
+                              Text(
+                                stockBreakdownText,
+                                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Total Value: ${_currencyFormat.format(stockValAmt)}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                              ),
+                            ],
+                          ),
                           ElevatedButton.icon(
-                            icon: const Icon(Icons.swap_vert, size: 18),
-                            label: const Text('Adjust'),
+                            icon: const Icon(Icons.swap_vert, size: 16),
+                            label: const Text('Adjust', style: TextStyle(fontSize: 12)),
                             onPressed: _adjustStockDialog,
                             style: ElevatedButton.styleFrom(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Pricing Info Table
-                  _buildSectionTitle('Pricing & Taxation', theme),
-                  const SizedBox(height: 12),
-                  _buildDetailTable([
-                    _DetailRow('Selling Price (Retail)', _currencyFormat.format(item.sellRate ?? 0.0), isBold: true),
-                    _DetailRow('Wholesale Price', _currencyFormat.format(item.wholesaleRate ?? 0.0)),
-                    _DetailRow('Min Selling Price', _currencyFormat.format(item.minimumSellingPrice ?? 0.0)),
-                    _DetailRow('MRP', _currencyFormat.format(item.mrp ?? 0.0)),
-                    _DetailRow('Buy/Purchase Price', _currencyFormat.format(item.buyRate ?? 0.0)),
-                    _DetailRow('GST Status', item.gstApplicable ? 'Applicable (${item.gstRate ?? 0.0}%)' : 'Exempt / Non-GST'),
-                    _DetailRow('HSN Code', item.hsnCode ?? 'N/A'),
-                  ], theme),
-                  const SizedBox(height: 24),
-
-                  // Units & Conversion Specs
-                  _buildSectionTitle('Units & Unit Conversion', theme),
-                  const SizedBox(height: 12),
-                  _buildDetailTable([
-                    _DetailRow('Category', item.category.value?.categoryName ?? 'N/A'),
-                    _DetailRow('Brand', item.brand.value?.brandName ?? 'N/A'),
-                    _DetailRow('Primary Unit', item.primaryUnitName ?? item.unit.value?.unitName ?? item.unit.value?.shortName ?? 'N/A'),
-                    _DetailRow('Secondary Unit', item.secondaryUnit != null && item.secondaryUnit!.isNotEmpty ? item.secondaryUnit! : 'None'),
-                    _DetailRow('Conversion Factor', (item.conversionFactor != null && item.conversionFactor! > 1.0) ? '1 ${item.primaryUnitName ?? item.unit.value?.shortName ?? "Box"} = ${item.conversionFactor} ${item.secondaryUnit}' : '1 : 1'),
-                  ], theme),
-                  const SizedBox(height: 24),
-
-                  // CLICKABLE ITEM TRANSACTIONS SECTION
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildSectionTitle('Item Transactions (${_itemTransactions.length})', theme),
-                      Text('Click to View Detail', style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey)),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _itemTransactions.isEmpty
-                      ? Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Center(
-                            child: Text('No sales, purchases, or orders recorded for this item yet.'),
-                          ),
-                        )
-                      : ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _itemTransactions.length,
-                          itemBuilder: (context, index) {
-                            final tx = _itemTransactions[index];
-                            final dateStr = DateFormat('dd MMM yyyy').format(tx.date);
+                ),
+              ),
+            ),
 
-                            Color badgeColor = Colors.green;
-                            IconData badgeIcon = Icons.call_made_rounded;
+            // TAB BAR VIEW
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // TAB 1: TRANSACTIONS TAB
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    child: _itemTransactions.isEmpty
+                        ? Container(
+                            padding: const EdgeInsets.all(20),
+                            alignment: Alignment.center,
+                            child: const Text('No transactions recorded for this item yet.'),
+                          )
+                        : ListView.builder(
+                            itemCount: _itemTransactions.length,
+                            itemBuilder: (context, index) {
+                              final tx = _itemTransactions[index];
+                              final dateStr = DateFormat('dd MMM yyyy').format(tx.date);
 
-                            if (tx.type == 'Purchase') {
-                              badgeColor = Colors.blue;
-                              badgeIcon = Icons.call_received_rounded;
-                            } else if (tx.type == 'Order') {
-                              badgeColor = Colors.orange;
-                              badgeIcon = Icons.shopping_bag_outlined;
-                            } else if (tx.type == 'Adjustment') {
-                              final isAdd = tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In';
-                              badgeColor = isAdd ? Colors.green : Colors.red;
-                              badgeIcon = isAdd ? Icons.add_circle_outline_rounded : Icons.remove_circle_outline_rounded;
-                            }
+                              // Movement direction logic for Stock
+                              bool isStockIn = false;
+                              String signStr = '';
+                              Color qtyColor = Colors.grey;
 
-                            final isAdj = tx.type == 'Adjustment';
-                            final isAddAdj = isAdj && (tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In');
+                              if (tx.type == 'Sale') {
+                                isStockIn = false;
+                                signStr = '-';
+                                qtyColor = const Color(0xFFDC2626); // Red
+                              } else if (tx.type == 'Purchase') {
+                                isStockIn = true;
+                                signStr = '+';
+                                qtyColor = const Color(0xFF059669); // Green
+                              } else if (tx.type == 'Credit Note') {
+                                isStockIn = true; // Sales Return = +Stock
+                                signStr = '+';
+                                qtyColor = const Color(0xFF059669); // Green
+                              } else if (tx.type == 'Debit Note') {
+                                isStockIn = false; // Purchase Return = -Stock
+                                signStr = '-';
+                                qtyColor = const Color(0xFFDC2626); // Red
+                              } else if (tx.type == 'Adjustment') {
+                                final isAdd = tx.rawAdjustment?.adjustmentType == 'Add' || tx.rawAdjustment?.adjustmentType == 'Stock In';
+                                isStockIn = isAdd;
+                                signStr = isAdd ? '+' : '-';
+                                qtyColor = isAdd ? const Color(0xFF059669) : const Color(0xFFDC2626);
+                              } else if (tx.type == 'Order') {
+                                signStr = '';
+                                qtyColor = Colors.orange;
+                              }
 
-                            return NeuCard(
-                              elevation: 0,
-                              margin: const EdgeInsets.only(bottom: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
-                              ),
-                              child: ListTile(
-                                onTap: () => _openTransactionDetail(tx),
-                                leading: CircleAvatar(
-                                  backgroundColor: badgeColor.withOpacity(0.12),
-                                  child: Icon(badgeIcon, color: badgeColor, size: 20),
+                              final String qtyFormatted = tx.quantity.toStringAsFixed(2);
+
+                              // Status Badge Color
+                              Color statusColor = Colors.grey;
+                              final statusText = tx.paymentStatus ?? tx.type;
+                              if (statusText.toLowerCase().contains('paid') && !statusText.toLowerCase().contains('unpaid') && !statusText.toLowerCase().contains('partially')) {
+                                statusColor = Colors.green;
+                              } else if (statusText.toLowerCase().contains('unpaid') || statusText.toLowerCase().contains('out')) {
+                                statusColor = Colors.red;
+                              } else if (statusText.toLowerCase().contains('partial') || statusText.toLowerCase().contains('return')) {
+                                statusColor = Colors.orange;
+                              } else {
+                                statusColor = Colors.blue;
+                              }
+
+                              return NeuCard(
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism)
+                                      ? BorderSide.none
+                                      : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
                                 ),
-                                title: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        tx.title,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    Text(
-                                      isAdj
-                                          ? '${isAddAdj ? "+" : "-"}${tx.quantity} ${tx.unit} (${_currencyFormat.format(tx.totalAmount)})'
-                                          : _currencyFormat.format(tx.totalAmount),
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: badgeColor, fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          isAdj
-                                              ? 'Reason: ${tx.partyName}  •  Rate: ${_currencyFormat.format(tx.rate)}  •  $dateStr'
-                                              : 'Party: ${tx.partyName}  •  $dateStr',
-                                          style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => _openTransactionDetail(tx),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // TOP ROW: Party Name & Actual Qty with +/-
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                tx.partyName,
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: qtyColor.withOpacity(0.12),
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                '$signStr$qtyFormatted ${tx.unit}',
+                                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: qtyColor),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        '${tx.quantity} ${tx.unit}',
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: isAdj ? badgeColor : null),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 6),
+                                        // MIDDLE ROW: Voucher Number, Date, Item Line Total
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  '#${tx.voucherNumber}',
+                                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: theme.colorScheme.primary),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  dateStr,
+                                                  style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                                                ),
+                                              ],
+                                            ),
+                                            Text(
+                                              'Total: ${_currencyFormat.format(tx.totalAmount)}',
+                                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: theme.textTheme.bodyMedium?.color),
+                                            ),
+                                          ],
+                                        ),
+                                        if (tx.paymentStatus != null && tx.paymentStatus!.isNotEmpty) ...[
+                                          const SizedBox(height: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: statusColor.withOpacity(0.12),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Text(
+                                              tx.paymentStatus!,
+                                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
-                              ),
-                            );
-                          },
-                        ),
+                              );
+                            },
+                          ),
+                  ),
+
+                  // TAB 2: PRODUCT INFO TAB
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildSectionTitle('Pricing & Taxation', theme),
+                        const SizedBox(height: 8),
+                        _buildDetailTable([
+                          _DetailRow('Selling Price (Retail)', _currencyFormat.format(item.sellRate ?? 0.0), isBold: true),
+                          _DetailRow('Wholesale Price', _currencyFormat.format(item.wholesaleRate ?? 0.0)),
+                          _DetailRow('Min Selling Price', _currencyFormat.format(item.minimumSellingPrice ?? 0.0)),
+                          _DetailRow('MRP', _currencyFormat.format(item.mrp ?? 0.0)),
+                          _DetailRow('Buy/Purchase Price', _currencyFormat.format(item.buyRate ?? 0.0)),
+                          _DetailRow('GST Status', item.gstApplicable ? 'Applicable (${item.gstRate ?? 0.0}%)' : 'Exempt / Non-GST'),
+                          _DetailRow('HSN Code', item.hsnCode ?? 'N/A'),
+                        ], theme),
+                        const SizedBox(height: 20),
+
+                        _buildSectionTitle('Units & Unit Conversion', theme),
+                        const SizedBox(height: 8),
+                        _buildDetailTable([
+                          _DetailRow('Category', item.category.value?.categoryName ?? 'N/A'),
+                          _DetailRow('Brand', item.brand.value?.brandName ?? 'N/A'),
+                          _DetailRow('Primary Unit', item.primaryUnitName ?? item.unit.value?.unitName ?? item.unit.value?.shortName ?? 'N/A'),
+                          _DetailRow('Secondary Unit', item.secondaryUnit != null && item.secondaryUnit!.isNotEmpty ? item.secondaryUnit! : 'None'),
+                          _DetailRow('Conversion Factor', (item.conversionFactor != null && item.conversionFactor! > 1.0) ? '1 ${item.primaryUnitName ?? item.unit.value?.shortName ?? "Box"} = ${item.conversionFactor} ${item.secondaryUnit}' : '1 : 1'),
+                        ], theme),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
