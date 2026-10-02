@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
+import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
 
 class FullScreenItemEntryData {
   final Item item;
