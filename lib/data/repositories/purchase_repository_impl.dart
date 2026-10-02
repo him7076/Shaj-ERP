@@ -50,8 +50,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
       if (isFixedAsset) {
         final faPurchases = allPurchases.where((p) =>
-            p.isFixedAsset == true ||
-            (p.purchaseNumber != null && (p.purchaseNumber!.startsWith('FA-PUR-') || p.purchaseNumber!.startsWith('FA-')))).toList();
+            p.purchaseNumber != null && (p.purchaseNumber!.startsWith('FA-PUR-') || p.purchaseNumber!.startsWith('FA-'))).toList();
 
         for (var pur in faPurchases) {
           if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
@@ -64,8 +63,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         }
       } else {
         final regularPurchases = allPurchases.where((p) =>
-            (p.isFixedAsset != true) &&
-            (p.purchaseNumber == null || !p.purchaseNumber!.startsWith('FA-'))).toList();
+            p.purchaseNumber == null || !p.purchaseNumber!.startsWith('FA-')).toList();
 
         for (var pur in regularPurchases) {
           if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
