@@ -48,12 +48,16 @@ class StockRecalculatorService {
 
       final activeStockAdjustments = await isar.stockAdjustments.filter().isDeletedEqualTo(false).findAll();
 
-      final activeCreditNotes = await isar.creditNotes.filter().isDeletedEqualTo(false).findAll();
+      final activeCreditNotes = (await isar.creditNotes.filter().isDeletedEqualTo(false).findAll())
+          .where((c) => c.paymentMode != 'Cancelled' && !(c.remarks?.contains('[CANCELLED]') ?? false))
+          .toList();
       final activeCNIds = activeCreditNotes.map((c) => c.id).toSet();
       final activeCNUuids = activeCreditNotes.map((c) => c.uuid).whereType<String>().toSet();
       final allCreditNoteItems = await isar.creditNoteItems.filter().isDeletedEqualTo(false).findAll();
 
-      final activeDebitNotes = await isar.debitNotes.filter().isDeletedEqualTo(false).findAll();
+      final activeDebitNotes = (await isar.debitNotes.filter().isDeletedEqualTo(false).findAll())
+          .where((d) => d.paymentMode != 'Cancelled' && !(d.remarks?.contains('[CANCELLED]') ?? false))
+          .toList();
       final activeDNIds = activeDebitNotes.map((d) => d.id).toSet();
       final activeDNUuids = activeDebitNotes.map((d) => d.uuid).whereType<String>().toSet();
       final allDebitNoteItems = await isar.debitNoteItems.filter().isDeletedEqualTo(false).findAll();

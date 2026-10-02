@@ -245,7 +245,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           CreditNote? cn = cni.parentCreditNoteId != null ? creditNotesMap[cni.parentCreditNoteId] : null;
           if (cn == null && cni.creditNote.value != null) cn = cni.creditNote.value;
 
-          if (cn != null && !cn.isDeleted) {
+          if (cn != null && !cn.isDeleted && cn.paymentMode != 'Cancelled' && !(cn.remarks?.contains('[CANCELLED]') ?? false)) {
             txs.add(_ItemTransaction(
               type: 'Credit Note',
               date: cn.creditNoteDate ?? cn.createdAt,
@@ -280,7 +280,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
           DebitNote? dn = dni.parentDebitNoteId != null ? debitNotesMap[dni.parentDebitNoteId] : null;
           if (dn == null && dni.debitNote.value != null) dn = dni.debitNote.value;
 
-          if (dn != null && !dn.isDeleted) {
+          if (dn != null && !dn.isDeleted && dn.paymentMode != 'Cancelled' && !(dn.remarks?.contains('[CANCELLED]') ?? false)) {
             txs.add(_ItemTransaction(
               type: 'Debit Note',
               date: dn.debitNoteDate ?? dn.createdAt,

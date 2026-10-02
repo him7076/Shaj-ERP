@@ -31,6 +31,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/providers/repor
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/uuid.dart';
@@ -512,6 +513,192 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
 
   @override
   
+  Future<void> _cancelCreditNote() async {
+    if (_existingCreditNote == null) return;
+    final cnNum = _existingCreditNote!.creditNoteNumber ?? '';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Credit Note'),
+        content: Text('Are you sure you want to cancel Credit Note #${cnNum}? Cancelled credit notes do not count in item stock or party balances.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      await isar.writeTxn(() async {
+        final cn = await isar.creditNotes.get(_existingCreditNote!.id) ?? _existingCreditNote!;
+        cn.paymentMode = 'Cancelled';
+        cn.remarks = (cn.remarks == null || cn.remarks!.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ${cn.remarks}';
+        cn.updatedAt = DateTime.now();
+        cn.isSynced = false;
+        await isar.creditNotes.put(cn);
+
+        Transaction? txn;
+        if (cn.uuid != null && cn.uuid!.isNotEmpty) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(cn.uuid!).findFirst();
+        }
+        if (txn == null && cn.creditNoteNumber != null && cn.creditNoteNumber!.isNotEmpty) {
+          txn = await isar.transactions.filter().transactionNumberEqualTo(cn.creditNoteNumber!).findFirst();
+        }
+        if (txn != null) {
+          txn.paymentStatus = 'Cancelled';
+          txn.updatedAt = DateTime.now();
+          txn.isSynced = false;
+          await isar.transactions.put(txn);
+        }
+
+        if (cn.partyName != null && cn.partyName!.isNotEmpty) {
+          Party? party;
+          if (cn.partyId != null && cn.partyId! > 0) {
+            party = await isar.partys.get(cn.partyId!);
+          }
+          party ??= await isar.partys.filter().partyNameEqualTo(cn.partyName!).findFirst();
+          if (party != null) {
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) + (cn.grandTotal ?? 0.0);
+            party.updatedAt = DateTime.now();
+            party.isSynced = false;
+            await isar.partys.put(party);
+          }
+        }
+      });
+
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
+
+      ref.invalidate(dashboardAnalyticsProvider);
+      ref.invalidate(partiesListProvider);
+      ref.invalidate(itemsListProvider);
+      ref.invalidate(transactionsProvider);
+
+      try {
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Credit Note cancelled successfully.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to cancel Credit Note: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _deleteCreditNote() async {
+    if (_existingCreditNote == null) return;
+    final cnNum = _existingCreditNote!.creditNoteNumber ?? '';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Credit Note'),
+        content: Text('Are you sure you want to delete Credit Note #${cnNum}? Deleted credit notes will be moved to deleted vouchers and will not count in item stock or party balances.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Yes, Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      await isar.writeTxn(() async {
+        final cn = await isar.creditNotes.get(_existingCreditNote!.id) ?? _existingCreditNote!;
+        cn.isDeleted = true;
+        cn.updatedAt = DateTime.now();
+        cn.isSynced = false;
+        await isar.creditNotes.put(cn);
+
+        final cnItems = await isar.creditNoteItems.filter().parentCreditNoteIdEqualTo(cn.id).findAll();
+        for (var item in cnItems) {
+          item.isDeleted = true;
+          item.updatedAt = DateTime.now();
+          item.isSynced = false;
+          await isar.creditNoteItems.put(item);
+        }
+
+        Transaction? txn;
+        if (cn.uuid != null && cn.uuid!.isNotEmpty) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(cn.uuid!).findFirst();
+        }
+        if (txn == null && cn.creditNoteNumber != null && cn.creditNoteNumber!.isNotEmpty) {
+          txn = await isar.transactions.filter().transactionNumberEqualTo(cn.creditNoteNumber!).findFirst();
+        }
+        if (txn != null) {
+          txn.isDeleted = true;
+          txn.paymentStatus = 'Cancelled';
+          txn.updatedAt = DateTime.now();
+          txn.isSynced = false;
+          await isar.transactions.put(txn);
+        }
+
+        if (cn.partyName != null && cn.partyName!.isNotEmpty) {
+          Party? party;
+          if (cn.partyId != null && cn.partyId! > 0) {
+            party = await isar.partys.get(cn.partyId!);
+          }
+          party ??= await isar.partys.filter().partyNameEqualTo(cn.partyName!).findFirst();
+          if (party != null) {
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) + (cn.grandTotal ?? 0.0);
+            party.updatedAt = DateTime.now();
+            party.isSynced = false;
+            await isar.partys.put(party);
+          }
+        }
+      });
+
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
+
+      ref.invalidate(dashboardAnalyticsProvider);
+      ref.invalidate(partiesListProvider);
+      ref.invalidate(itemsListProvider);
+      ref.invalidate(transactionsProvider);
+
+      try {
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Credit Note deleted successfully.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete Credit Note: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   void _showLinkBillsModal() async {
     if (_selectedParty == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select an account first.')));
@@ -930,6 +1117,41 @@ if (_isPaidAmountAutoFill) {
               ? 'Edit CreditNote ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
               : 'New CreditNote ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
         ),
+        actions: [
+          if (_existingCreditNote != null || (widget.parentCreditNoteUuid != null && widget.parentCreditNoteUuid!.isNotEmpty))
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (action) async {
+                if (action == 'cancel') {
+                  await _cancelCreditNote();
+                } else if (action == 'delete') {
+                  await _deleteCreditNote();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem<String>(
+                  value: 'cancel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.block, color: Colors.orange, size: 20),
+                      SizedBox(width: 8),
+                      Text('Cancel Credit Note', style: TextStyle(color: Colors.orange)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Text('Delete Credit Note', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

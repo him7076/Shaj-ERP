@@ -31,6 +31,7 @@ import 'package:business_sahaj_erp/features/reports/presentation/providers/repor
 import 'package:business_sahaj_erp/core/widgets/searchable_party_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/item_search_picker_modal.dart';
 import 'package:business_sahaj_erp/core/services/gst_service.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 import 'package:business_sahaj_erp/core/widgets/variant_dropdown_widget.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/uuid.dart';
@@ -510,6 +511,192 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
     }
   }
 
+  Future<void> _cancelDebitNote() async {
+    if (_existingDebitNote == null) return;
+    final dnNum = _existingDebitNote!.debitNoteNumber ?? '';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel Debit Note'),
+        content: Text('Are you sure you want to cancel Debit Note #${dnNum}? Cancelled debit notes do not count in item stock or party balances.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      await isar.writeTxn(() async {
+        final dn = await isar.debitNotes.get(_existingDebitNote!.id) ?? _existingDebitNote!;
+        dn.paymentMode = 'Cancelled';
+        dn.remarks = (dn.remarks == null || dn.remarks!.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ${dn.remarks}';
+        dn.updatedAt = DateTime.now();
+        dn.isSynced = false;
+        await isar.debitNotes.put(dn);
+
+        Transaction? txn;
+        if (dn.uuid != null && dn.uuid!.isNotEmpty) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(dn.uuid!).findFirst();
+        }
+        if (txn == null && dn.debitNoteNumber != null && dn.debitNoteNumber!.isNotEmpty) {
+          txn = await isar.transactions.filter().transactionNumberEqualTo(dn.debitNoteNumber!).findFirst();
+        }
+        if (txn != null) {
+          txn.paymentStatus = 'Cancelled';
+          txn.updatedAt = DateTime.now();
+          txn.isSynced = false;
+          await isar.transactions.put(txn);
+        }
+
+        if (dn.partyName != null && dn.partyName!.isNotEmpty) {
+          Party? party;
+          if (dn.partyId != null && dn.partyId! > 0) {
+            party = await isar.partys.get(dn.partyId!);
+          }
+          party ??= await isar.partys.filter().partyNameEqualTo(dn.partyName!).findFirst();
+          if (party != null) {
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) - (dn.grandTotal ?? 0.0);
+            party.updatedAt = DateTime.now();
+            party.isSynced = false;
+            await isar.partys.put(party);
+          }
+        }
+      });
+
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
+
+      ref.invalidate(dashboardAnalyticsProvider);
+      ref.invalidate(partiesListProvider);
+      ref.invalidate(itemsListProvider);
+      ref.invalidate(transactionsProvider);
+
+      try {
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debit Note cancelled successfully.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to cancel Debit Note: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _deleteDebitNote() async {
+    if (_existingDebitNote == null) return;
+    final dnNum = _existingDebitNote!.debitNoteNumber ?? '';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Debit Note'),
+        content: Text('Are you sure you want to delete Debit Note #${dnNum}? Deleted debit notes will be moved to deleted vouchers and will not count in item stock or party balances.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Yes, Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final isar = ref.read(databaseServiceProvider).isar;
+      await isar.writeTxn(() async {
+        final dn = await isar.debitNotes.get(_existingDebitNote!.id) ?? _existingDebitNote!;
+        dn.isDeleted = true;
+        dn.updatedAt = DateTime.now();
+        dn.isSynced = false;
+        await isar.debitNotes.put(dn);
+
+        final dnItems = await isar.debitNoteItems.filter().parentDebitNoteIdEqualTo(dn.id).findAll();
+        for (var item in dnItems) {
+          item.isDeleted = true;
+          item.updatedAt = DateTime.now();
+          item.isSynced = false;
+          await isar.debitNoteItems.put(item);
+        }
+
+        Transaction? txn;
+        if (dn.uuid != null && dn.uuid!.isNotEmpty) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(dn.uuid!).findFirst();
+        }
+        if (txn == null && dn.debitNoteNumber != null && dn.debitNoteNumber!.isNotEmpty) {
+          txn = await isar.transactions.filter().transactionNumberEqualTo(dn.debitNoteNumber!).findFirst();
+        }
+        if (txn != null) {
+          txn.isDeleted = true;
+          txn.paymentStatus = 'Cancelled';
+          txn.updatedAt = DateTime.now();
+          txn.isSynced = false;
+          await isar.transactions.put(txn);
+        }
+
+        if (dn.partyName != null && dn.partyName!.isNotEmpty) {
+          Party? party;
+          if (dn.partyId != null && dn.partyId! > 0) {
+            party = await isar.partys.get(dn.partyId!);
+          }
+          party ??= await isar.partys.filter().partyNameEqualTo(dn.partyName!).findFirst();
+          if (party != null) {
+            party.outstandingBalance = (party.outstandingBalance ?? 0.0) - (dn.grandTotal ?? 0.0);
+            party.updatedAt = DateTime.now();
+            party.isSynced = false;
+            await isar.partys.put(party);
+          }
+        }
+      });
+
+      await StockRecalculatorService.recalculateAllItemStocks(isar);
+
+      ref.invalidate(dashboardAnalyticsProvider);
+      ref.invalidate(partiesListProvider);
+      ref.invalidate(itemsListProvider);
+      ref.invalidate(transactionsProvider);
+
+      try {
+        ref.read(syncServiceProvider).syncPendingChangesQuietly();
+      } catch (_) {}
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Debit Note deleted successfully.')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete Debit Note: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   @override
   
   void _showLinkBillsModal() async {
@@ -931,6 +1118,41 @@ if (_isPaidAmountAutoFill) {
               ? 'Edit DebitNote ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
               : 'New DebitNote ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
         ),
+        actions: [
+          if (_existingDebitNote != null || (widget.parentDebitNoteUuid != null && widget.parentDebitNoteUuid!.isNotEmpty))
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (action) async {
+                if (action == 'cancel') {
+                  await _cancelDebitNote();
+                } else if (action == 'delete') {
+                  await _deleteDebitNote();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem<String>(
+                  value: 'cancel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.block, color: Colors.orange, size: 20),
+                      SizedBox(width: 8),
+                      Text('Cancel Debit Note', style: TextStyle(color: Colors.orange)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Text('Delete Debit Note', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

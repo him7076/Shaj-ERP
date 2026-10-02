@@ -29,6 +29,11 @@ import 'package:business_sahaj_erp/features/orders/presentation/screens/add_edit
 import 'package:business_sahaj_erp/features/orders/presentation/screens/order_detail_screen.dart';
 import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_provider.dart';
 import 'package:business_sahaj_erp/features/purchases/presentation/screens/add_edit_purchase_screen.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
 import 'package:business_sahaj_erp/core/utils/responsive_layout.dart';
 import 'package:business_sahaj_erp/features/reports/presentation/providers/report_providers.dart';
 import 'package:business_sahaj_erp/features/parties/presentation/providers/party_providers.dart';
@@ -1309,6 +1314,68 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                               await ref.read(invoiceRepositoryProvider).cancelInvoice(txn.uuid!, 'User Cancelled', user);
                                                            } else if (txn.transactionType == 'Purchase') {
                                                               await ref.read(purchaseRepositoryProvider).softDelete(txn.uuid!);
+                                                           } else if (txn.transactionType == 'Credit Note' || txn.transactionType == 'CreditNote') {
+                                                              final isar = ref.read(databaseServiceProvider).isar;
+                                                              await isar.writeTxn(() async {
+                                                                CreditNote? cn;
+                                                                if (txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty) {
+                                                                  cn = await isar.creditNotes.filter().uuidEqualTo(txn.linkedBillUuid!).findFirst();
+                                                                }
+                                                                cn ??= await isar.creditNotes.filter().creditNoteNumberEqualTo(txn.transactionNumber!).findFirst();
+                                                                if (cn != null) {
+                                                                  cn.paymentMode = 'Cancelled';
+                                                                  cn.remarks = (cn.remarks == null || cn.remarks!.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ' + cn.remarks;
+                                                                  cn.updatedAt = DateTime.now();
+                                                                  cn.isSynced = false;
+                                                                  await isar.creditNotes.put(cn);
+                                                                }
+                                                                txn.paymentStatus = 'Cancelled';
+                                                                txn.updatedAt = DateTime.now();
+                                                                txn.isSynced = false;
+                                                                await isar.transactions.put(txn);
+
+                                                                if (txn.partyUuid != null) {
+                                                                  final party = await isar.partys.filter().uuidEqualTo(txn.partyUuid).findFirst();
+                                                                  if (party != null) {
+                                                                    party.outstandingBalance = (party.outstandingBalance ?? 0.0) + (txn.amount ?? 0.0);
+                                                                    party.updatedAt = DateTime.now();
+                                                                    party.isSynced = false;
+                                                                    await isar.partys.put(party);
+                                                                  }
+                                                                }
+                                                              });
+                                                              await StockRecalculatorService.recalculateAllItemStocks(isar);
+                                                           } else if (txn.transactionType == 'Debit Note' || txn.transactionType == 'DebitNote') {
+                                                              final isar = ref.read(databaseServiceProvider).isar;
+                                                              await isar.writeTxn(() async {
+                                                                DebitNote? dn;
+                                                                if (txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty) {
+                                                                  dn = await isar.debitNotes.filter().uuidEqualTo(txn.linkedBillUuid!).findFirst();
+                                                                }
+                                                                dn ??= await isar.debitNotes.filter().debitNoteNumberEqualTo(txn.transactionNumber!).findFirst();
+                                                                if (dn != null) {
+                                                                  dn.paymentMode = 'Cancelled';
+                                                                  dn.remarks = (dn.remarks == null || dn.remarks!.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ' + dn.remarks;
+                                                                  dn.updatedAt = DateTime.now();
+                                                                  dn.isSynced = false;
+                                                                  await isar.debitNotes.put(dn);
+                                                                }
+                                                                txn.paymentStatus = 'Cancelled';
+                                                                txn.updatedAt = DateTime.now();
+                                                                txn.isSynced = false;
+                                                                await isar.transactions.put(txn);
+
+                                                                if (txn.partyUuid != null) {
+                                                                  final party = await isar.partys.filter().uuidEqualTo(txn.partyUuid).findFirst();
+                                                                  if (party != null) {
+                                                                    party.outstandingBalance = (party.outstandingBalance ?? 0.0) - (txn.amount ?? 0.0);
+                                                                    party.updatedAt = DateTime.now();
+                                                                    party.isSynced = false;
+                                                                    await isar.partys.put(party);
+                                                                  }
+                                                                }
+                                                              });
+                                                              await StockRecalculatorService.recalculateAllItemStocks(isar);
                                                            } else {
                                                               await ref.read(transactionRepositoryProvider).softDelete(txn.uuid!);
                                                            }

@@ -203,6 +203,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
           .findAll();
       double totalCrNote = 0.0;
       for (var cn in creditNotes) {
+        if (cn.paymentMode == 'Cancelled' || (cn.remarks?.contains('[CANCELLED]') ?? false)) continue;
         if (_isInDateRange(cn.creditNoteDate)) {
           totalCrNote += (cn.grandTotal ?? 0.0);
         }
@@ -215,6 +216,7 @@ class _ProfitLossReportScreenState extends ConsumerState<ProfitLossReportScreen>
           .findAll();
       double totalDrNote = 0.0;
       for (var dn in debitNotes) {
+        if (dn.paymentMode == 'Cancelled' || (dn.remarks?.contains('[CANCELLED]') ?? false)) continue;
         if (_isInDateRange(dn.debitNoteDate)) {
           totalDrNote += (dn.grandTotal ?? 0.0);
         }

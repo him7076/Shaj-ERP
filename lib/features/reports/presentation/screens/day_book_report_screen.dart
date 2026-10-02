@@ -201,6 +201,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
         .group((q) => q.creditNoteDateBetween(startOfDay, endOfDay).or().creditNoteDateIsNull())
         .findAll();
     for (var cn in creditNotes) {
+      if (cn.paymentMode == 'Cancelled' || (cn.remarks?.contains('[CANCELLED]') ?? false)) continue;
       if (_isSameDay(cn.creditNoteDate, _selectedDate)) {
         vouchers.add(_DayBookVoucher(
           date: cn.creditNoteDate ?? DateTime.now(),
@@ -225,6 +226,7 @@ class _DayBookReportScreenState extends ConsumerState<DayBookReportScreen> {
         .group((q) => q.debitNoteDateBetween(startOfDay, endOfDay).or().debitNoteDateIsNull())
         .findAll();
     for (var dn in debitNotes) {
+      if (dn.paymentMode == 'Cancelled' || (dn.remarks?.contains('[CANCELLED]') ?? false)) continue;
       if (_isSameDay(dn.debitNoteDate, _selectedDate)) {
         vouchers.add(_DayBookVoucher(
           date: dn.debitNoteDate ?? DateTime.now(),

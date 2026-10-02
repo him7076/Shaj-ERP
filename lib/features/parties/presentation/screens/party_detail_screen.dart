@@ -93,6 +93,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
         
         final txns = await isar.transactions.filter().isDeletedEqualTo(false).and().group((q) => q.partyUuidEqualTo(partyUuid ?? '').or().partyNameEqualTo(item!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '')).findAll();
         for (var txn in txns) {
+          if (txn.paymentStatus == 'Cancelled' || txn.isDeleted == true) continue;
           final amt = txn.amount ?? 0.0;
           final type = txn.transactionType;
           

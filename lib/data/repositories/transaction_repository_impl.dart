@@ -8,6 +8,11 @@ import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dar
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/deleted_voucher_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/credit_note_item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/debit_note_item_collection.dart';
+import 'package:business_sahaj_erp/core/services/stock_recalculator_service.dart';
 import 'package:business_sahaj_erp/domain/repositories/transaction_repository.dart';
 import 'package:business_sahaj_erp/data/repositories/base_isar_repository.dart';
 import 'package:business_sahaj_erp/core/errors/exceptions.dart';
@@ -454,6 +459,58 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
         await isar.collection<DeletedVoucher>().put(deletedVoucher);
 
 
+        // Soft delete matching CreditNote or DebitNote if applicable
+        final type = transaction.transactionType;
+        if (type == 'Credit Note' || type == 'CreditNote') {
+          CreditNote? cn;
+          if (transaction.linkedBillUuid != null && transaction.linkedBillUuid!.isNotEmpty) {
+            cn = await isar.creditNotes.filter().uuidEqualTo(transaction.linkedBillUuid!).findFirst();
+          }
+          if (cn == null && transaction.transactionNumber != null) {
+            cn = await isar.creditNotes.filter().creditNoteNumberEqualTo(transaction.transactionNumber!).findFirst();
+          }
+          if (cn == null && transaction.uuid != null) {
+            cn = await isar.creditNotes.filter().uuidEqualTo(transaction.uuid!).findFirst();
+          }
+          if (cn != null) {
+            cn.isDeleted = true;
+            cn.updatedAt = DateTime.now();
+            cn.isSynced = false;
+            await isar.creditNotes.put(cn);
+            final items = await isar.creditNoteItems.filter().parentCreditNoteIdEqualTo(cn.id).findAll();
+            for (var item in items) {
+              item.isDeleted = true;
+              item.updatedAt = DateTime.now();
+              item.isSynced = false;
+              await isar.creditNoteItems.put(item);
+            }
+          }
+        } else if (type == 'Debit Note' || type == 'DebitNote') {
+          DebitNote? dn;
+          if (transaction.linkedBillUuid != null && transaction.linkedBillUuid!.isNotEmpty) {
+            dn = await isar.debitNotes.filter().uuidEqualTo(transaction.linkedBillUuid!).findFirst();
+          }
+          if (dn == null && transaction.transactionNumber != null) {
+            dn = await isar.debitNotes.filter().debitNoteNumberEqualTo(transaction.transactionNumber!).findFirst();
+          }
+          if (dn == null && transaction.uuid != null) {
+            dn = await isar.debitNotes.filter().uuidEqualTo(transaction.uuid!).findFirst();
+          }
+          if (dn != null) {
+            dn.isDeleted = true;
+            dn.updatedAt = DateTime.now();
+            dn.isSynced = false;
+            await isar.debitNotes.put(dn);
+            final items = await isar.debitNoteItems.filter().parentDebitNoteIdEqualTo(dn.id).findAll();
+            for (var item in items) {
+              item.isDeleted = true;
+              item.updatedAt = DateTime.now();
+              item.isSynced = false;
+              await isar.debitNoteItems.put(item);
+            }
+          }
+        }
+
         // Add to Sync Queue
         final queueItem = SyncQueue()
           ..uuid = _generateUuid()
@@ -465,6 +522,11 @@ class TransactionRepositoryImpl extends BaseIsarRepository<Transaction> implemen
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(queueItem);
       });
+
+      final type = transaction.transactionType;
+      if (type == 'Credit Note' || type == 'CreditNote' || type == 'Debit Note' || type == 'DebitNote') {
+        await StockRecalculatorService.recalculateAllItemStocks(isar);
+      }
 
       logger.info('Transaction ${transaction.transactionNumber} deleted.');
       SyncManager.triggerUpload(); // Instant Firebase upload
