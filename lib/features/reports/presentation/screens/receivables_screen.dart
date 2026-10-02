@@ -22,6 +22,8 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
   String _searchQuery = '';
   DuesSortOption _sortOption = DuesSortOption.highestDues;
   String _selectedCity = 'All';
+  bool _isSearchVisible = false;
+  bool _isFilterVisible = false;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,21 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
         toolbarHeight: 44,
         title: const Text('Accounts Receivable (Customer Dues)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: _isSearchVisible ? 'Close Search' : 'Search Customers',
+            icon: Icon(_isSearchVisible ? Icons.search_off_rounded : Icons.search_rounded),
+            onPressed: () => setState(() => _isSearchVisible = !_isSearchVisible),
+          ),
+          IconButton(
+            tooltip: _isFilterVisible ? 'Hide Filters' : 'Show Filters',
+            icon: Icon(
+              _isFilterVisible ? Icons.filter_alt_off_rounded : Icons.filter_alt_rounded,
+              color: (_selectedCity != 'All' || _sortOption != DuesSortOption.highestDues) ? theme.colorScheme.primary : null,
+            ),
+            onPressed: () => setState(() => _isFilterVisible = !_isFilterVisible),
+          ),
+        ],
       ),
       body: partiesAsync.when(
         data: (allParties) {
@@ -107,82 +124,87 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
                 ),
               ),
 
-              // Search & Filter Toolbar
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 40,
-                      child: TextField(
-                        style: const TextStyle(fontSize: 13),
-                        decoration: InputDecoration(
-                          hintText: 'Search customer name, phone, city...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () => setState(() => _searchQuery = ''),
-                                )
-                              : null,
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        onChanged: (val) => setState(() => _searchQuery = val),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ResponsiveFormRow(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 38,
-                            child: DropdownButtonFormField<String>(
-                              value: cities.contains(_selectedCity) ? _selectedCity : 'All',
-                              style: const TextStyle(fontSize: 12, color: Colors.black87),
-                              decoration: const InputDecoration(
-                                labelText: 'Filter City',
-                                
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              ),
-                              items: cities.map((l) => DropdownMenuItem<String>(value: l, child: Text(l, style: const TextStyle(fontSize: 12)))).toList(),
-                              onChanged: (val) {
-                                if (val != null) setState(() => _selectedCity = val);
-                              },
+              // Search & Filter Toolbar (Toggleable from AppBar)
+              if (_isSearchVisible || _searchQuery.isNotEmpty || _isFilterVisible || _selectedCity != 'All' || _sortOption != DuesSortOption.highestDues)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  child: Column(
+                    children: [
+                      if (_isSearchVisible || _searchQuery.isNotEmpty) ...[
+                        SizedBox(
+                          height: 40,
+                          child: TextField(
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'Search customer name, phone, city...',
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () => setState(() => _searchQuery = ''),
+                                    )
+                                  : null,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                             ),
+                            onChanged: (val) => setState(() => _searchQuery = val),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SizedBox(
-                            height: 38,
-                            child: DropdownButtonFormField<DuesSortOption>(
-                              value: _sortOption,
-                              style: const TextStyle(fontSize: 12, color: Colors.black87),
-                              decoration: const InputDecoration(
-                                labelText: 'Sort By',
-                                
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              ),
-                              items: const [
-                                DropdownMenuItem(value: DuesSortOption.highestDues, child: Text('Highest Due Amount', style: TextStyle(fontSize: 12))),
-                                DropdownMenuItem(value: DuesSortOption.lowestDues, child: Text('Lowest Due Amount', style: TextStyle(fontSize: 12))),
-                                DropdownMenuItem(value: DuesSortOption.partyName, child: Text('Party Name (A-Z)', style: TextStyle(fontSize: 12))),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) setState(() => _sortOption = val);
-                              },
-                            ),
-                          ),
-                        ),
+                        if (_isFilterVisible || _selectedCity != 'All' || _sortOption != DuesSortOption.highestDues)
+                          const SizedBox(height: 8),
                       ],
-                    ),
-                  ],
+                      if (_isFilterVisible || _selectedCity != 'All' || _sortOption != DuesSortOption.highestDues)
+                        ResponsiveFormRow(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: DropdownButtonFormField<String>(
+                                  value: cities.contains(_selectedCity) ? _selectedCity : 'All',
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Filter City',
+                                    
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  ),
+                                  items: cities.map((l) => DropdownMenuItem<String>(value: l, child: Text(l, style: const TextStyle(fontSize: 12)))).toList(),
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _selectedCity = val);
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: SizedBox(
+                                height: 38,
+                                child: DropdownButtonFormField<DuesSortOption>(
+                                  value: _sortOption,
+                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Sort By',
+                                    
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  ),
+                                  items: const [
+                                    DropdownMenuItem(value: DuesSortOption.highestDues, child: Text('Highest Due Amount', style: TextStyle(fontSize: 12))),
+                                    DropdownMenuItem(value: DuesSortOption.lowestDues, child: Text('Lowest Due Amount', style: TextStyle(fontSize: 12))),
+                                    DropdownMenuItem(value: DuesSortOption.partyName, child: Text('Party Name (A-Z)', style: TextStyle(fontSize: 12))),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _sortOption = val);
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
 
               // Party Dues List
               Expanded(

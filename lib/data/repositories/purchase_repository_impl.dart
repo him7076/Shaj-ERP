@@ -50,11 +50,12 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       int maxNum = 0;
 
       if (isFixedAsset) {
-        final faRegex = RegExp(r'^FA-(?:PUR-)?(\d+)$', caseSensitive: false);
+        final faRegex = RegExp(r'^FA-PUR-(\d+)$', caseSensitive: false);
         for (var pur in allPurchases) {
           if (pur.isDeleted == true) continue;
-          if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
-            final match = faRegex.firstMatch(pur.purchaseNumber!.trim());
+          final numStr = pur.purchaseNumber?.trim() ?? '';
+          if (numStr.isNotEmpty) {
+            final match = faRegex.firstMatch(numStr);
             if (match != null) {
               final parsed = int.tryParse(match.group(1)!) ?? 0;
               if (parsed > maxNum) maxNum = parsed;
@@ -65,8 +66,10 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         final regRegex = RegExp(r'^PUR-(\d+)$', caseSensitive: false);
         for (var pur in allPurchases) {
           if (pur.isDeleted == true) continue;
-          if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
-            final match = regRegex.firstMatch(pur.purchaseNumber!.trim());
+          final numStr = pur.purchaseNumber?.trim() ?? '';
+          if (numStr.isNotEmpty) {
+            if (numStr.toUpperCase().startsWith('FA-')) continue;
+            final match = regRegex.firstMatch(numStr);
             if (match != null) {
               final parsed = int.tryParse(match.group(1)!) ?? 0;
               if (parsed > maxNum) maxNum = parsed;

@@ -106,9 +106,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
           } else if (type == 'Payment' || type == 'Expense') {
             if (matchesSource && !isLinkedToBill) bal += amt;
           } else if (type == 'Credit Note') {
-            if (matchesSource && !isLinkedToBill) bal -= amt;
+            if (matchesSource) bal -= amt;
           } else if (type == 'Debit Note') {
-            if (matchesSource && !isLinkedToBill) bal += amt;
+            if (matchesSource) bal += amt;
           } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
             if (matchesSource) bal -= amt;
             else if (matchesTarget) bal += amt;
