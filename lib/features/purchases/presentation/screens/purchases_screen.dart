@@ -831,5 +831,5 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
     ),
   );
 }
-
+}
 
