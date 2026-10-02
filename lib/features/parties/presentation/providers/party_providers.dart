@@ -175,8 +175,7 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
     for (var inv in invoices) {
       if (inv.paymentStatus == 'Cancelled') continue;
       final invNameLower = inv.partyName?.trim().toLowerCase() ?? '';
-      final matches = (partyUuid != null && partyUuid.isNotEmpty && inv.partyUuid == partyUuid) ||
-                      (partyId > 0 && inv.partyId == partyId) ||
+      final matches = (partyId > 0 && inv.partyId == partyId) ||
                       (partyNameLower.isNotEmpty && invNameLower == partyNameLower);
       if (matches) {
         final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
@@ -187,8 +186,7 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
     for (var pur in purchases) {
       if (pur.paymentStatus == 'Cancelled') continue;
       final purNameLower = pur.partyName?.trim().toLowerCase() ?? '';
-      final matches = (partyUuid != null && partyUuid.isNotEmpty && pur.partyUuid == partyUuid) ||
-                      (partyId > 0 && pur.partyId == partyId) ||
+      final matches = (partyId > 0 && pur.partyId == partyId) ||
                       (partyNameLower.isNotEmpty && purNameLower == partyNameLower);
       if (matches) {
         final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));

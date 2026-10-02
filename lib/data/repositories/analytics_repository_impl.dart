@@ -154,8 +154,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       for (var inv in allInvoices) {
         if (inv.paymentStatus == 'Cancelled') continue;
         final invNameLower = inv.partyName?.trim().toLowerCase() ?? '';
-        final matches = (partyUuid != null && partyUuid.isNotEmpty && inv.partyUuid == partyUuid) ||
-                        (partyId > 0 && inv.partyId == partyId) ||
+        final matches = (partyId > 0 && inv.partyId == partyId) ||
                         (partyNameLower.isNotEmpty && invNameLower == partyNameLower);
         if (matches) {
           final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
@@ -166,8 +165,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepository {
       for (var pur in allPurchases) {
         if (pur.paymentStatus == 'Cancelled') continue;
         final purNameLower = pur.partyName?.trim().toLowerCase() ?? '';
-        final matches = (partyUuid != null && partyUuid.isNotEmpty && pur.partyUuid == partyUuid) ||
-                        (partyId > 0 && pur.partyId == partyId) ||
+        final matches = (partyId > 0 && pur.partyId == partyId) ||
                         (partyNameLower.isNotEmpty && purNameLower == partyNameLower);
         if (matches) {
           final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
