@@ -870,6 +870,7 @@ if (_isPaidAmountAutoFill) {
           ],
         ),
       ),
+    ),
     );
   }
 
