@@ -36,9 +36,10 @@ class _ReceivablesScreenState extends ConsumerState<ReceivablesScreen> {
       ),
       body: partiesAsync.when(
         data: (allParties) {
-          final isar = ref.read(databaseServiceProvider).isar;
+          final balanceCache = ref.watch(partyBalanceCacheProvider).valueOrNull ?? {};
           double getPartyDue(Party p) {
-            final bal = p.outstandingBalance ?? p.openingBalance ?? 0.0;
+            final keyName = p.partyName?.trim().toLowerCase() ?? '';
+            final bal = balanceCache[p.uuid] ?? balanceCache[p.id.toString()] ?? balanceCache[keyName] ?? p.outstandingBalance ?? p.openingBalance ?? 0.0;
             if (bal > 0) return bal; // Receivable amount is positive here
             return 0.0;
           }

@@ -93,12 +93,12 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
   @override
   void initState() {
     super.initState();
-    if (widget.transaction == null) {
-      _fetchVoucherNumber();
-    }
     _transactionType = widget.transaction?.transactionType ?? widget.initialType ?? 'Receipt';
     _transactionDate = widget.transaction?.transactionDate ?? DateTime.now();
     _paymentMode = widget.transaction?.paymentMode ?? 'Cash';
+    if (widget.transaction == null) {
+      _fetchVoucherNumber();
+    }
     
     _amountController.text = widget.transaction?.amount?.toString() ?? widget.initialAmount?.toString() ?? '';
     _referenceController.text = widget.transaction?.referenceNumber ?? '';

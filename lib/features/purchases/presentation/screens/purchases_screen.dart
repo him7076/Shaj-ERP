@@ -298,8 +298,12 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
           } else if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           } else {
-            ref.read(navigationIndexProvider.notifier).state = 0;
-            context.go('/dashboard');
+            Future.microtask(() {
+              if (context.mounted) {
+                ref.read(navigationIndexProvider.notifier).state = 0;
+                context.go('/dashboard');
+              }
+            });
           }
         }
       },
@@ -315,8 +319,12 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
               } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               } else {
-                ref.read(navigationIndexProvider.notifier).state = 0;
-                context.go('/dashboard');
+                Future.microtask(() {
+                  if (context.mounted) {
+                    ref.read(navigationIndexProvider.notifier).state = 0;
+                    context.go('/dashboard');
+                  }
+                });
               }
             },
           ),

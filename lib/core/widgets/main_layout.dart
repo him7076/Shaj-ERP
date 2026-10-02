@@ -91,8 +91,28 @@ class MainLayout extends ConsumerWidget {
       final themeState = ref.watch(themeProvider);
       final isNeumorphic = themeState.themeType == ThemeType.neumorphism;
 
-      return Scaffold(
-        key: scaffoldKey,
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            if (location != '/' && location != '/dashboard') {
+              if (Navigator.of(context, rootNavigator: true).canPop()) {
+                Navigator.of(context, rootNavigator: true).pop();
+              } else if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                Future.microtask(() {
+                  if (context.mounted) {
+                    ref.read(navigationIndexProvider.notifier).state = 0;
+                    context.go('/dashboard');
+                  }
+                });
+              }
+            }
+          }
+        },
+        child: Scaffold(
+          key: scaffoldKey,
         appBar: null, // CustomAppBar is now handled by DashboardScreen on mobile
         drawer: const CustomDrawer(isPermanent: false),
         backgroundColor: theme.colorScheme.background,
@@ -298,6 +318,7 @@ class MainLayout extends ConsumerWidget {
               ),
             ),
           ),
+        ),
       );
     }
   }

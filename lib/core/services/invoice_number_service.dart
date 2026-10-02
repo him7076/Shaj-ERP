@@ -27,20 +27,33 @@ class InvoiceNumberService {
       final prefix = isFixedAsset ? 'FA-INV-' : 'INV-';
       final allInvoices = await isar.invoices.where().findAll();
       int maxNum = 0;
+      final reg = isFixedAsset 
+          ? RegExp(r'^FA-(?:INV-)?(\d+)
+}
+, caseSensitive: false)
+          : RegExp(r'^INV-(\d+)
+}
+, caseSensitive: false);
+
       for (var inv in allInvoices) {
-        if (inv.invoiceNumber != null ) {
-          final matches = RegExp(r'\d+').allMatches(inv.invoiceNumber!);
-          if (matches.isNotEmpty) {
-            final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
+        if (inv.isDeleted == true) continue;
+        if (inv.invoiceNumber != null && inv.invoiceNumber!.isNotEmpty) {
+          final match = reg.firstMatch(inv.invoiceNumber!.trim());
+          if (match != null) {
+            final parsed = int.tryParse(match.group(1)!) ?? 0;
             if (parsed > maxNum) maxNum = parsed;
           }
         }
       }
-      final nextNum = maxNum + 1;
-      final numStr = nextNum.toString().padLeft(2, '0');
-      final nextCode = '$prefix$numStr';
-      logger.debug('Generated next invoice number: $nextCode');
-      return nextCode;
+      var nextNum = maxNum + 1;
+      var candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';
+      final existingNumbers = allInvoices.where((e) => e.isDeleted != true).map((e) => e.invoiceNumber).toSet();
+      while (existingNumbers.contains(candidate)) {
+        nextNum++;
+        candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';
+      }
+      logger.debug('Generated next invoice number: $candidate');
+      return candidate;
     } catch (e) {
       throw InvoiceException('Failed to generate next invoice number: $e');
     }

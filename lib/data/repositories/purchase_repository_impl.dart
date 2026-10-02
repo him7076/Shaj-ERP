@@ -50,31 +50,26 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       int maxNum = 0;
 
       if (isFixedAsset) {
-        final faPurchases = allPurchases.where((p) =>
-            p.purchaseNumber != null && (p.purchaseNumber!.startsWith('FA-PUR-') || p.purchaseNumber!.startsWith('FA-'))).toList();
-
-        for (var pur in faPurchases) {
+        final faRegex = RegExp(r'^FA-(?:PUR-)?(\d+)$', caseSensitive: false);
+        for (var pur in allPurchases) {
+          if (pur.isDeleted == true) continue;
           if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
-            final matches = RegExp(r'\d+').allMatches(pur.purchaseNumber!);
-            if (matches.isNotEmpty) {
-              final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
+            final match = faRegex.firstMatch(pur.purchaseNumber!.trim());
+            if (match != null) {
+              final parsed = int.tryParse(match.group(1)!) ?? 0;
               if (parsed > maxNum) maxNum = parsed;
             }
           }
         }
       } else {
-        final regularPurchases = allPurchases.where((p) =>
-            p.purchaseNumber == null || !p.purchaseNumber!.startsWith('FA-')).toList();
-
-        for (var pur in regularPurchases) {
+        final regRegex = RegExp(r'^PUR-(\d+)$', caseSensitive: false);
+        for (var pur in allPurchases) {
+          if (pur.isDeleted == true) continue;
           if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
-            final pNo = pur.purchaseNumber!.trim();
-            if (pNo.startsWith('PUR-')) {
-              final matches = RegExp(r'\d+').allMatches(pNo);
-              if (matches.isNotEmpty) {
-                final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
-                if (parsed > maxNum) maxNum = parsed;
-              }
+            final match = regRegex.firstMatch(pur.purchaseNumber!.trim());
+            if (match != null) {
+              final parsed = int.tryParse(match.group(1)!) ?? 0;
+              if (parsed > maxNum) maxNum = parsed;
             }
           }
         }
@@ -83,7 +78,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       var nextNum = maxNum + 1;
       var candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';
 
-      final existingNumbers = allPurchases.map((e) => e.purchaseNumber).toSet();
+      final existingNumbers = allPurchases.where((e) => e.isDeleted != true).map((e) => e.purchaseNumber).toSet();
       while (existingNumbers.contains(candidate)) {
         nextNum++;
         candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';

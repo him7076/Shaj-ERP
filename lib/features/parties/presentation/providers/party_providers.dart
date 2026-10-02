@@ -173,22 +173,24 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
     }
 
     for (var inv in invoices) {
+      if (inv.paymentStatus == 'Cancelled') continue;
       final invNameLower = inv.partyName?.trim().toLowerCase() ?? '';
-      final matches = (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
+      final matches = (partyUuid != null && partyUuid.isNotEmpty && inv.partyUuid == partyUuid) ||
                       (partyId > 0 && inv.partyId == partyId) ||
                       (partyNameLower.isNotEmpty && invNameLower == partyNameLower);
-      if (matches && inv.paymentStatus != 'Cancelled') {
+      if (matches) {
         final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
         bal += pending > 0 ? pending : 0.0;
       }
     }
 
     for (var pur in purchases) {
+      if (pur.paymentStatus == 'Cancelled') continue;
       final purNameLower = pur.partyName?.trim().toLowerCase() ?? '';
-      final matches = (partyUuid != null && partyUuid.isNotEmpty && pur.party.value?.uuid == partyUuid) ||
+      final matches = (partyUuid != null && partyUuid.isNotEmpty && pur.partyUuid == partyUuid) ||
                       (partyId > 0 && pur.partyId == partyId) ||
                       (partyNameLower.isNotEmpty && purNameLower == partyNameLower);
-      if (matches && pur.paymentStatus != 'Cancelled') {
+      if (matches) {
         final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
         bal -= pending > 0 ? pending : 0.0;
       }
@@ -208,9 +210,9 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
       } else if (type == 'Payment' || type == 'Expense') {
         if (matchesSource && !isLinkedToBill) bal += amt;
       } else if (type == 'Credit Note') {
-        if (matchesSource) bal -= amt;
+        if (matchesSource && !isLinkedToBill) bal -= amt;
       } else if (type == 'Debit Note') {
-        if (matchesSource) bal += amt;
+        if (matchesSource && !isLinkedToBill) bal += amt;
       } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
         if (matchesSource) bal -= amt;
         else if (matchesTarget) bal += amt;
@@ -220,9 +222,11 @@ final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) asyn
     if (party.uuid != null && party.uuid!.isNotEmpty) {
       balanceMap[party.uuid!] = bal;
     }
+    if (party.id > 0) {
+      balanceMap[party.id.toString()] = bal;
+    }
     if (partyNameLower.isNotEmpty) {
       balanceMap[partyNameLower] = bal;
-      balanceMap['supp_$partyNameLower'] = bal;
     }
   }
 

@@ -106,9 +106,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> with Sing
           } else if (type == 'Payment' || type == 'Expense') {
             if (matchesSource && !isLinkedToBill) bal += amt;
           } else if (type == 'Credit Note') {
-            if (matchesSource) bal -= amt;
+            if (matchesSource && !isLinkedToBill) bal -= amt;
           } else if (type == 'Debit Note') {
-            if (matchesSource) bal += amt;
+            if (matchesSource && !isLinkedToBill) bal += amt;
           } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
             if (matchesSource) bal -= amt;
             else if (matchesTarget) bal += amt;
@@ -655,21 +655,35 @@ final theme = Theme.of(context);
             final color = isIncoming ? Colors.green : Colors.red;
             final statusStr = txn.status;
 
+            Color statusBgColor = Colors.orange.withOpacity(0.15);
+            Color statusTextColor = Colors.orange.shade900;
+            if (statusStr.toUpperCase() == 'PAID' || statusStr.toUpperCase() == 'CLEARED') {
+              statusBgColor = Colors.green.withOpacity(0.15);
+              statusTextColor = Colors.green.shade800;
+            } else if (statusStr.toUpperCase() == 'PARTIALLY PAID' || statusStr.toUpperCase() == 'PARTIAL') {
+              statusBgColor = Colors.blue.withOpacity(0.15);
+              statusTextColor = Colors.blue.shade900;
+            } else if (statusStr.toUpperCase() == 'CANCELLED') {
+              statusBgColor = Colors.red.withOpacity(0.15);
+              statusTextColor = Colors.red.shade900;
+            }
+
             return NeuCard(
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
                 side: (ref.watch(themeProvider).themeType == ThemeType.neumorphism) ? BorderSide.none : BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.4)),
               ),
-              child: ListTile(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
                 onTap: () {
                   final targetUuid = (txn.uuid != null && txn.uuid!.isNotEmpty) ? txn.uuid! : txn.id.toString();
                   if (txn.type == 'Sales Invoice') {
-                    Navigator.of(context,  rootNavigator: true).push(
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(builder: (context) => InvoiceDetailScreen(invoiceUuid: targetUuid)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.type == 'Purchase Bill') {
-                    Navigator.of(context,  rootNavigator: true).push(
+                    Navigator.of(context, rootNavigator: true).push(
                       MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: targetUuid)),
                     ).then((_) => _loadPartyDetails());
                   } else if (txn.type == 'Credit Note') {
@@ -684,40 +698,74 @@ final theme = Theme.of(context);
                     AddEditTransactionDialog.show(context, transaction: txn.rawTxn);
                   }
                 },
-                leading: CircleAvatar(
-                  backgroundColor: color.withOpacity(0.1),
-                  child: Icon(isIncoming ? Icons.arrow_downward : Icons.arrow_upward, color: color, size: 18),
-                ),
-                title: Row(
-                  children: [
-                    Text(txn.number, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              txn.number,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                Text(
+                                  DateFormat('dd MMM yyyy').format(txn.date),
+                                  style: TextStyle(fontSize: 11, color: theme.textTheme.bodySmall?.color),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    txn.type,
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: statusBgColor,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    statusStr.toUpperCase(),
+                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusTextColor),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Text(txn.type, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: statusStr == 'PAID' || statusStr == 'CLEARED' ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            currencyFormat.format(txn.amount),
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: color),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Bal: ₹${txn.pendingAmount.toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: theme.textTheme.bodySmall?.color),
+                          ),
+                        ],
                       ),
-                      child: Text(statusStr.toUpperCase(), style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: statusStr == 'PAID' || statusStr == 'CLEARED' ? Colors.green.shade800 : Colors.orange.shade900)),
-                    ),
-                  ],
-                ),
-                subtitle: Text(
-                  'Date: ${DateFormat('dd MMM yyyy').format(txn.date)} | Mode: ${txn.mode}',
-                  style: const TextStyle(fontSize: 11),
-                ),
-                trailing: Text(
-                  currencyFormat.format(txn.amount),
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: color),
+                    ],
+                  ),
                 ),
               ),
             );

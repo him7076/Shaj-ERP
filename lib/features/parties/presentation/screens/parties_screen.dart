@@ -33,6 +33,7 @@ class _PartiesScreenState extends ConsumerState<PartiesScreen> {
   final _searchController = TextEditingController();
   bool _isNearbyMode = false;
   bool _showSearch = false;
+  bool _showFilter = false;
 
   @override
   void initState() {
@@ -307,6 +308,17 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
             },
           ),
 
+          // ⚡ Filter Toggle Button
+          IconButton(
+            tooltip: 'Filter Chips Bar',
+            icon: Icon(_showFilter ? Icons.filter_alt_rounded : Icons.filter_alt_outlined, size: 20, color: _showFilter ? theme.colorScheme.primary : null),
+            onPressed: () {
+              setState(() {
+                _showFilter = !_showFilter;
+              });
+            },
+          ),
+
           // ⚡ Filter & Sort Menu
           PopupMenuButton<String>(
             icon: const Icon(Icons.tune_rounded, size: 20),
@@ -440,34 +452,36 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
           const SizedBox(height: 2),
 
           // Filtering Chips bar
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                _buildFilterChip(label: 'All Types', value: 'All', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
-                  ref.read(partySearchProvider.notifier).setFilterType(val);
-                }),
-                const SizedBox(width: 8),
-                _buildFilterChip(label: 'Customers', value: 'Customer', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
-                  ref.read(partySearchProvider.notifier).setFilterType(val);
-                }),
-                const SizedBox(width: 8),
-                _buildFilterChip(label: 'Suppliers', value: 'Supplier', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
-                  ref.read(partySearchProvider.notifier).setFilterType(val);
-                }),
-                const SizedBox(width: 8),
-                _buildFilterChip(label: 'Retailers', value: 'Retailer', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
-                  ref.read(partySearchProvider.notifier).setFilterType(val);
-                }),
-                const SizedBox(width: 8),
-                _buildFilterChip(label: 'Wholesalers', value: 'Wholesaler', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
-                  ref.read(partySearchProvider.notifier).setFilterType(val);
-                }),
-              ],
+          if (_showFilter) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  _buildFilterChip(label: 'All Types', value: 'All', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
+                    ref.read(partySearchProvider.notifier).setFilterType(val);
+                  }),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(label: 'Customers', value: 'Customer', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
+                    ref.read(partySearchProvider.notifier).setFilterType(val);
+                  }),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(label: 'Suppliers', value: 'Supplier', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
+                    ref.read(partySearchProvider.notifier).setFilterType(val);
+                  }),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(label: 'Retailers', value: 'Retailer', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
+                    ref.read(partySearchProvider.notifier).setFilterType(val);
+                  }),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(label: 'Wholesalers', value: 'Wholesaler', activeValue: searchState.filterType ?? 'All', onSelected: (val) {
+                    ref.read(partySearchProvider.notifier).setFilterType(val);
+                  }),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 8),
+          ],
 
           // List Body
           Expanded(
@@ -584,13 +598,10 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     final rawOut = party.outstandingBalance ?? 0.0;
     final rawOpen = party.openingBalance ?? 0.0;
     final fallbackBal = (rawOut != 0.0) ? rawOut : rawOpen;
-    final isReceivable = party.partyType != 'Supplier' && (party.balanceType == 'Dr' || fallbackBal >= 0);
+    final cacheKey = party.partyName?.trim().toLowerCase() ?? '';
+    final balance = balanceCache[party.uuid] ?? balanceCache[party.id.toString()] ?? balanceCache[cacheKey] ?? fallbackBal;
+    final isReceivable = balance >= 0;
     final glowColor = isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981);
-    
-    final cacheKey = party.partyType == 'Supplier'
-        ? 'supp_${party.partyName?.trim().toLowerCase() ?? ""}'
-        : party.partyName?.trim().toLowerCase() ?? '';
-    final balance = balanceCache[party.uuid] ?? balanceCache[cacheKey] ?? fallbackBal;
     
     final VoidCallback handleTap = () {
       Navigator.of(context, rootNavigator: true).push(
@@ -695,7 +706,7 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '₹${balance.toStringAsFixed(2)}',
+                '₹${balance.abs().toStringAsFixed(2)}',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: isMobile ? 13.5 : 15,

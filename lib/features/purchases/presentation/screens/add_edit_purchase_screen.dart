@@ -759,7 +759,7 @@ if (_isPaidAmountAutoFill) {
       ),
     );
 
-    final String docType = widget.isFixedAsset ? 'Purchase FA' : 'Purchase Bill';
+    final String docType = widget.isFixedAsset ? 'Purchase Fixed Asset' : 'Purchase Bill';
     final String titleText = widget.purchaseUuid != null
         ? 'Edit $docType ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
         : 'New $docType ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}';
@@ -773,8 +773,12 @@ if (_isPaidAmountAutoFill) {
           } else if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           } else {
-            ref.read(navigationIndexProvider.notifier).state = 0;
-            context.go('/dashboard');
+            Future.microtask(() {
+              if (context.mounted) {
+                ref.read(navigationIndexProvider.notifier).state = 0;
+                context.go('/dashboard');
+              }
+            });
           }
         }
       },
@@ -789,8 +793,12 @@ if (_isPaidAmountAutoFill) {
               } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               } else {
-                ref.read(navigationIndexProvider.notifier).state = 0;
-                context.go('/dashboard');
+                Future.microtask(() {
+                  if (context.mounted) {
+                    ref.read(navigationIndexProvider.notifier).state = 0;
+                    context.go('/dashboard');
+                  }
+                });
               }
             },
           ),
