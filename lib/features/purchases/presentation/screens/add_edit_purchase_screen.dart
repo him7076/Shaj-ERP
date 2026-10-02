@@ -758,12 +758,29 @@ if (_isPaidAmountAutoFill) {
       ),
     );
 
+    final String docType = widget.isFixedAsset ? 'Purchase FA' : 'Purchase Bill';
+    final String titleText = widget.purchaseUuid != null
+        ? 'Edit $docType ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
+        : 'New $docType ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}';
+
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              ref.read(navigationIndexProvider.notifier).state = 0;
+            }
+          },
+        ),
         title: Text(
-          widget.purchaseUuid != null
-              ? 'Edit Purchase Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}'
-              : 'New Purchase Bill ${_billNumberController.text.isNotEmpty ? "(#${_billNumberController.text})" : ""}',
+          titleText,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       body: SingleChildScrollView(

@@ -539,11 +539,11 @@ class _AddEditTransactionDialogState extends ConsumerState<AddEditTransactionDia
                             children: [
                               Text(
                                 widget.transaction != null
-                                    ? 'Edit ${_transactionType}'
-                                    : 'New ${_transactionType} Entry',
+                                    ? 'Edit ${_transactionType} (#${widget.transaction?.transactionNumber ?? _nextVoucher})'
+                                    : 'New ${_transactionType} (#${_nextVoucher})',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 18,
+                                  fontSize: 17,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),

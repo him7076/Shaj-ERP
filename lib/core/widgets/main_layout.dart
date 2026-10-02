@@ -79,6 +79,7 @@ class MainLayout extends ConsumerWidget {
           location.contains('/credit-notes') ||
           location.contains('/debit-notes') ||
           location.contains('/purchases') ||
+          location.contains('/purchase-fa') ||
           location.contains('/receipts') ||
           location.contains('/payments') ||
           location.contains('/fixed-assets');

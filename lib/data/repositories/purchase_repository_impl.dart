@@ -48,16 +48,25 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       final allPurchases = await collection.where().findAll();
       int maxNum = 0;
       for (var pur in allPurchases) {
-        if (pur.purchaseNumber != null) {
-          final pNo = pur.purchaseNumber!;
-          final bool isFaNo = pNo.startsWith('FA-PUR-');
-          final matchesPrefix = isFixedAsset ? isFaNo : !isFaNo;
-
-          if (matchesPrefix) {
-            final matches = RegExp(r'\d+').allMatches(pNo);
-            if (matches.isNotEmpty) {
-              final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
-              if (parsed > maxNum) maxNum = parsed;
+        if (pur.purchaseNumber != null && pur.purchaseNumber!.isNotEmpty) {
+          final pNo = pur.purchaseNumber!.trim();
+          if (isFixedAsset) {
+            if (pNo.startsWith('FA-PUR-')) {
+              final numPart = pNo.replaceFirst('FA-PUR-', '');
+              final matches = RegExp(r'\d+').allMatches(numPart);
+              if (matches.isNotEmpty) {
+                final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
+                if (parsed > maxNum) maxNum = parsed;
+              }
+            }
+          } else {
+            if (pNo.startsWith('PUR-') && !pNo.startsWith('FA-PUR-')) {
+              final numPart = pNo.replaceFirst('PUR-', '');
+              final matches = RegExp(r'\d+').allMatches(numPart);
+              if (matches.isNotEmpty) {
+                final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
+                if (parsed > maxNum) maxNum = parsed;
+              }
             }
           }
         }

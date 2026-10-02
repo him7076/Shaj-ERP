@@ -21,10 +21,10 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
   @override
   Future<String> generateNextCreditNoteNumber() async {
     try {
-      final allItems = await collection.filter().isDeletedEqualTo(false).findAll();
+      final allItems = await collection.where().findAll();
       int maxNum = 0;
       for (var item in allItems) {
-        if (item.creditNoteNumber != null ) {
+        if (item.creditNoteNumber != null && item.creditNoteNumber!.isNotEmpty) {
           final matches = RegExp(r'\d+').allMatches(item.creditNoteNumber!);
           if (matches.isNotEmpty) {
             final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
@@ -32,8 +32,15 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
           }
         }
       }
-      final suffix = (maxNum + 1).toString().padLeft(2, '0');
-      return 'CN-$suffix';
+      var nextNum = maxNum + 1;
+      var candidate = 'CN-${nextNum.toString().padLeft(2, '0')}';
+
+      final existingNumbers = allItems.map((e) => e.creditNoteNumber).toSet();
+      while (existingNumbers.contains(candidate)) {
+        nextNum++;
+        candidate = 'CN-${nextNum.toString().padLeft(2, '0')}';
+      }
+      return candidate;
     } catch (e) {
       throw DatabaseException('Failed to generate credit note number: $e');
     }
@@ -54,6 +61,21 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
         CreditNote? oldNote;
         if (!isNew) {
           oldNote = await collection.get(note.id);
+        } else {
+          // Check for unique index collisions on creditNoteNumber and uuid during insert
+          if (note.creditNoteNumber == null || note.creditNoteNumber!.isEmpty) {
+            note.creditNoteNumber = await generateNextCreditNoteNumber();
+          } else {
+            final existingWithNo = await collection.filter().creditNoteNumberEqualTo(note.creditNoteNumber!).findFirst();
+            if (existingWithNo != null) {
+              note.creditNoteNumber = await generateNextCreditNoteNumber();
+            }
+          }
+
+          final existingWithUuid = await collection.filter().uuidEqualTo(note.uuid!).findFirst();
+          if (existingWithUuid != null) {
+            note.uuid = _generateUuid();
+          }
         }
 
         // 1. Put Credit Note
@@ -125,23 +147,30 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
           }
         }
 
-        // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
+        bool isTxnNew = false;
         Transaction? txn;
-        if (!isNew) {
-          if (note.uuid != null && note.uuid!.isNotEmpty) {
-            txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid!).findFirst();
-          }
-          if (txn == null && note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
-            txn = await isar.transactions.filter().transactionNumberEqualTo(note.creditNoteNumber!).findFirst();
-          }
+        if (note.uuid != null && note.uuid!.isNotEmpty) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid!).findFirst();
+        }
+        if (txn == null && note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
+          txn = await isar.transactions.filter().transactionNumberEqualTo(note.creditNoteNumber!).findFirst();
         }
         
         if (txn == null) {
+          isTxnNew = true;
           txn = Transaction()
             ..uuid = _generateUuid()
             ..transactionType = 'Credit Note'
             ..createdAt = DateTime.now()
             ..version = 1;
+
+          if (note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
+            final existingTxnNo = await isar.transactions.filter().transactionNumberEqualTo(note.creditNoteNumber!).findFirst();
+            if (existingTxnNo != null) {
+              txn = existingTxnNo;
+              isTxnNew = false;
+            }
+          }
         } else {
           txn.version = (txn.version ?? 1) + 1;
         }
@@ -168,9 +197,7 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
         if (note.creditNoteNumber != null && note.creditNoteNumber!.isNotEmpty) {
           final matchingTxns = await isar.transactions
               .filter()
-              .transactionNumberEqualTo(note.creditNoteNumber!)
-              .or()
-              .linkedBillUuidEqualTo(note.uuid ?? '')
+              .group((q) => q.transactionNumberEqualTo(note.creditNoteNumber!).or().linkedBillUuidEqualTo(note.uuid ?? ''))
               .findAll();
           for (var mt in matchingTxns) {
             if (syncedTxnIds.add(mt.id)) {
@@ -189,7 +216,7 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
           ..entityType = 'Transaction'
           ..entityId = txnId
           ..entityUuid = txn.uuid
-          ..operation = txn.id == Isar.autoIncrement ? 'Insert' : 'Update'
+          ..operation = isTxnNew ? 'Insert' : 'Update'
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(txnQueue);
@@ -228,6 +255,6 @@ class CreditNoteRepositoryImpl extends BaseIsarRepository<CreditNote> implements
   String _generateUuid() {
     final random = Random();
     final parts = List.generate(4, (_) => random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0'));
-    return '\${DateTime.now().millisecondsSinceEpoch}-\${parts.join("-")}';
+    return '${DateTime.now().millisecondsSinceEpoch}-${parts.join("-")}';
   }
 }

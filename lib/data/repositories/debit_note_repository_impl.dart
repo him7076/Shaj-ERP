@@ -21,10 +21,10 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
   @override
   Future<String> generateNextDebitNoteNumber() async {
     try {
-      final allItems = await collection.filter().isDeletedEqualTo(false).findAll();
+      final allItems = await collection.where().findAll();
       int maxNum = 0;
       for (var item in allItems) {
-        if (item.debitNoteNumber != null ) {
+        if (item.debitNoteNumber != null && item.debitNoteNumber!.isNotEmpty) {
           final matches = RegExp(r'\d+').allMatches(item.debitNoteNumber!);
           if (matches.isNotEmpty) {
             final parsed = int.tryParse(matches.last.group(0)!) ?? 0;
@@ -32,8 +32,15 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
           }
         }
       }
-      final suffix = (maxNum + 1).toString().padLeft(2, '0');
-      return 'DN-$suffix';
+      var nextNum = maxNum + 1;
+      var candidate = 'DN-${nextNum.toString().padLeft(2, '0')}';
+
+      final existingNumbers = allItems.map((e) => e.debitNoteNumber).toSet();
+      while (existingNumbers.contains(candidate)) {
+        nextNum++;
+        candidate = 'DN-${nextNum.toString().padLeft(2, '0')}';
+      }
+      return candidate;
     } catch (e) {
       throw DatabaseException('Failed to generate debit note number: $e');
     }
@@ -54,6 +61,21 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
         DebitNote? oldNote;
         if (!isNew) {
           oldNote = await collection.get(note.id);
+        } else {
+          // Check for unique index collisions on debitNoteNumber and uuid during insert
+          if (note.debitNoteNumber == null || note.debitNoteNumber!.isEmpty) {
+            note.debitNoteNumber = await generateNextDebitNoteNumber();
+          } else {
+            final existingWithNo = await collection.filter().debitNoteNumberEqualTo(note.debitNoteNumber!).findFirst();
+            if (existingWithNo != null) {
+              note.debitNoteNumber = await generateNextDebitNoteNumber();
+            }
+          }
+
+          final existingWithUuid = await collection.filter().uuidEqualTo(note.uuid!).findFirst();
+          if (existingWithUuid != null) {
+            note.uuid = _generateUuid();
+          }
         }
 
         // 1. Put Debit Note
@@ -125,23 +147,30 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
           }
         }
 
-        // 4. Save a summary transaction log so it shows up in global transaction registries and ledger reports
+        bool isTxnNew = false;
         Transaction? txn;
-        if (!isNew) {
-          if (note.uuid != null && note.uuid!.isNotEmpty) {
-            txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid!).findFirst();
-          }
-          if (txn == null && note.debitNoteNumber != null && note.debitNoteNumber!.isNotEmpty) {
-            txn = await isar.transactions.filter().transactionNumberEqualTo(note.debitNoteNumber!).findFirst();
-          }
+        if (note.uuid != null && note.uuid!.isNotEmpty) {
+          txn = await isar.transactions.filter().linkedBillUuidEqualTo(note.uuid!).findFirst();
+        }
+        if (txn == null && note.debitNoteNumber != null && note.debitNoteNumber!.isNotEmpty) {
+          txn = await isar.transactions.filter().transactionNumberEqualTo(note.debitNoteNumber!).findFirst();
         }
         
         if (txn == null) {
+          isTxnNew = true;
           txn = Transaction()
             ..uuid = _generateUuid()
             ..transactionType = 'Debit Note'
             ..createdAt = DateTime.now()
             ..version = 1;
+
+          if (note.debitNoteNumber != null && note.debitNoteNumber!.isNotEmpty) {
+            final existingTxnNo = await isar.transactions.filter().transactionNumberEqualTo(note.debitNoteNumber!).findFirst();
+            if (existingTxnNo != null) {
+              txn = existingTxnNo;
+              isTxnNew = false;
+            }
+          }
         } else {
           txn.version = (txn.version ?? 1) + 1;
         }
@@ -168,9 +197,7 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
         if (note.debitNoteNumber != null && note.debitNoteNumber!.isNotEmpty) {
           final matchingTxns = await isar.transactions
               .filter()
-              .transactionNumberEqualTo(note.debitNoteNumber!)
-              .or()
-              .linkedBillUuidEqualTo(note.uuid ?? '')
+              .group((q) => q.transactionNumberEqualTo(note.debitNoteNumber!).or().linkedBillUuidEqualTo(note.uuid ?? ''))
               .findAll();
           for (var mt in matchingTxns) {
             if (syncedTxnIds.add(mt.id)) {
@@ -189,7 +216,7 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
           ..entityType = 'Transaction'
           ..entityId = txnId
           ..entityUuid = txn.uuid
-          ..operation = txn.id == Isar.autoIncrement ? 'Insert' : 'Update'
+          ..operation = isTxnNew ? 'Insert' : 'Update'
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(txnQueue);
@@ -228,6 +255,6 @@ class DebitNoteRepositoryImpl extends BaseIsarRepository<DebitNote> implements D
   String _generateUuid() {
     final random = Random();
     final parts = List.generate(4, (_) => random.nextInt(0xFFFFFFFF).toRadixString(16).padLeft(8, '0'));
-    return '\${DateTime.now().millisecondsSinceEpoch}-\${parts.join("-")}';
+    return '${DateTime.now().millisecondsSinceEpoch}-${parts.join("-")}';
   }
 }

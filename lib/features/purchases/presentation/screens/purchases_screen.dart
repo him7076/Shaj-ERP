@@ -288,9 +288,31 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
     final notifierState = ref.watch(purchaseNotifierProvider);
     final isMobile = ResponsiveLayout.isMobile(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(automaticallyImplyLeading: ModalRoute.of(context)?.canPop ?? false, leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          } else {
+            ref.read(navigationIndexProvider.notifier).state = 0;
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: theme.colorScheme.background,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              } else {
+                ref.read(navigationIndexProvider.notifier).state = 0;
+              }
+            },
+          ),
         toolbarHeight: isMobile ? 44 : 52,
         title: _showSearch
             ? TextField(
@@ -806,8 +828,8 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 

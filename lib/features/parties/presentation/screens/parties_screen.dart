@@ -587,11 +587,10 @@ Custom Contractor,,8888877777,Sector 9,Surat,Gujarat,Customer
     final isReceivable = party.partyType != 'Supplier' && (party.balanceType == 'Dr' || fallbackBal >= 0);
     final glowColor = isReceivable ? const Color(0xFFF43F5E) : const Color(0xFF10B981);
     
-    // Use pre-computed balance cache (instant O(1) lookup instead of per-card DB scan)
     final cacheKey = party.partyType == 'Supplier'
         ? 'supp_${party.partyName?.trim().toLowerCase() ?? ""}'
         : party.partyName?.trim().toLowerCase() ?? '';
-    final balance = balanceCache[cacheKey] ?? fallbackBal;
+    final balance = balanceCache[party.uuid] ?? balanceCache[cacheKey] ?? fallbackBal;
     
     final VoidCallback handleTap = () {
       Navigator.of(context, rootNavigator: true).push(

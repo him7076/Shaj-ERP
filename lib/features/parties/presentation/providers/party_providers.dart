@@ -150,39 +150,77 @@ final partiesListProvider = FutureProvider<List<Party>>((ref) async {
 });
 
 // Pre-computed party balance cache — built ONCE, used by all party cards instantly
-// Eliminates per-card FutureBuilder N+1 full-table-scan queries
 final partyBalanceCacheProvider = FutureProvider<Map<String, double>>((ref) async {
   final isar = ref.watch(isarProvider);
-
   final Map<String, double> balanceMap = {};
 
-  // Customer receivables from invoices (fetch ONLY unpaid/partially paid to avoid full scan)
-  final invoices = await isar.invoices.filter()
-      .isDeletedEqualTo(false)
-      .and()
-      .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
-      .findAll();
-      
-  for (var inv in invoices) {
-    final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
-    if (pending > 0 && inv.partyName != null && inv.partyName!.trim().isNotEmpty) {
-      final key = inv.partyName!.trim().toLowerCase();
-      balanceMap[key] = (balanceMap[key] ?? 0.0) + pending;
-    }
-  }
+  final parties = await isar.partys.filter().isDeletedEqualTo(false).findAll();
+  final invoices = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+  final purchases = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+  final txns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
 
-  // Supplier payables from purchases (fetch ONLY unpaid/partially paid)
-  final purchases = await isar.collection<Purchase>().filter()
-      .isDeletedEqualTo(false)
-      .and()
-      .group((q) => q.paymentStatusEqualTo('Unpaid').or().paymentStatusEqualTo('Partially Paid'))
-      .findAll();
-      
-  for (var pur in purchases) {
-    final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
-    if (pending > 0 && pur.partyName != null && pur.partyName!.trim().isNotEmpty) {
-      final key = 'supp_${pur.partyName!.trim().toLowerCase()}';
-      balanceMap[key] = (balanceMap[key] ?? 0.0) + pending;
+  for (var party in parties) {
+    final partyUuid = party.uuid;
+    final partyId = party.id;
+    final partyNameLower = party.partyName?.trim().toLowerCase() ?? '';
+
+    double bal = party.openingBalance ?? 0.0;
+    if (party.balanceType == 'Cr') {
+      bal = -bal.abs();
+    } else {
+      bal = bal.abs();
+    }
+
+    for (var inv in invoices) {
+      final invNameLower = inv.partyName?.trim().toLowerCase() ?? '';
+      final matches = (partyUuid != null && partyUuid.isNotEmpty && inv.party.value?.uuid == partyUuid) ||
+                      (partyId > 0 && inv.partyId == partyId) ||
+                      (partyNameLower.isNotEmpty && invNameLower == partyNameLower);
+      if (matches && inv.paymentStatus != 'Cancelled') {
+        final pending = inv.pendingAmount ?? ((inv.grandTotal ?? 0.0) - (inv.paidAmount ?? 0.0));
+        bal += pending > 0 ? pending : 0.0;
+      }
+    }
+
+    for (var pur in purchases) {
+      final purNameLower = pur.partyName?.trim().toLowerCase() ?? '';
+      final matches = (partyUuid != null && partyUuid.isNotEmpty && pur.party.value?.uuid == partyUuid) ||
+                      (partyId > 0 && pur.partyId == partyId) ||
+                      (partyNameLower.isNotEmpty && purNameLower == partyNameLower);
+      if (matches && pur.paymentStatus != 'Cancelled') {
+        final pending = pur.pendingAmount ?? ((pur.grandTotal ?? 0.0) - (pur.paidAmount ?? 0.0));
+        bal -= pending > 0 ? pending : 0.0;
+      }
+    }
+
+    for (var txn in txns) {
+      final amt = txn.amount ?? 0.0;
+      final type = txn.transactionType;
+      final matchesSource = (partyUuid != null && partyUuid.isNotEmpty && txn.partyUuid == partyUuid) ||
+                            (txn.partyUuid == null && partyNameLower.isNotEmpty && txn.partyName?.trim().toLowerCase() == partyNameLower);
+      final matchesTarget = (partyUuid != null && partyUuid.isNotEmpty && txn.targetPartyUuid == partyUuid);
+      final isLinkedToBill = txn.linkedBillUuid != null && txn.linkedBillUuid!.isNotEmpty;
+
+      if (type == 'Receipt' || type == 'Other Income') {
+        if (matchesSource && !isLinkedToBill) bal -= amt;
+      } else if (type == 'Payment' || type == 'Expense') {
+        if (matchesSource && !isLinkedToBill) bal += amt;
+      } else if (type == 'Credit Note') {
+        if (matchesSource) bal -= amt;
+      } else if (type == 'Debit Note') {
+        if (matchesSource) bal += amt;
+      } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(type)) {
+        if (matchesSource) bal -= amt;
+        else if (matchesTarget) bal += amt;
+      }
+    }
+
+    if (party.uuid != null && party.uuid!.isNotEmpty) {
+      balanceMap[party.uuid!] = bal;
+    }
+    if (partyNameLower.isNotEmpty) {
+      balanceMap[partyNameLower] = bal;
+      balanceMap['supp_$partyNameLower'] = bal;
     }
   }
 
