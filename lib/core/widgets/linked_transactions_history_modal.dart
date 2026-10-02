@@ -31,8 +31,6 @@ class LinkedTransactionsHistoryModal extends StatefulWidget {
     final txns = await isar.transactions
         .filter()
         .isDeletedEqualTo(false)
-        .and()
-        .linkedBillUuidNotNull()
         .findAll();
 
     final List<LinkedTransactionItem> results = [];

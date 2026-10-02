@@ -612,7 +612,7 @@ if (_isPaidAmountAutoFill) {
                 future: LinkedTransactionsHistoryModal.fetchLinkedTransactions(
                   ref.read(databaseServiceProvider).isar,
                   widget.purchaseUuid!,
-                  _voucherNumberDisplay,
+                  _existingPurchase?.purchaseNumber,
                 ),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox.shrink();
@@ -644,7 +644,7 @@ if (_isPaidAmountAutoFill) {
                               context,
                               ref.read(databaseServiceProvider).isar,
                               widget.purchaseUuid!,
-                              billNumber: _voucherNumberDisplay,
+                              billNumber: _existingPurchase?.purchaseNumber,
                             );
                           },
                           icon: const Icon(Icons.history, size: 16),

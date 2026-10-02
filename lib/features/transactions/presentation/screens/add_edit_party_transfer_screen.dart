@@ -22,6 +22,51 @@ import '../../../../presentation/providers/core_providers.dart';
 import '../../../../core/widgets/searchable_party_dropdown.dart';
 import 'package:isar/isar.dart';
 
+String _getBillUuid(dynamic bill) {
+  if (bill is Invoice) return bill.uuid ?? '';
+  if (bill is Purchase) return bill.uuid ?? '';
+  if (bill is CreditNote) return bill.uuid ?? '';
+  if (bill is DebitNote) return bill.uuid ?? '';
+  if (bill is Transaction) return bill.uuid ?? '';
+  return '';
+}
+
+String _getBillTitle(dynamic bill) {
+  if (bill is Invoice) return 'INV - ${bill.invoiceNumber ?? ''}';
+  if (bill is Purchase) return '${bill.purchaseNumber?.startsWith('FA-') == true ? '' : 'PUR - '}${bill.purchaseNumber ?? ''}';
+  if (bill is CreditNote) return 'CN - ${bill.creditNoteNumber ?? ''}';
+  if (bill is DebitNote) return 'DN - ${bill.debitNoteNumber ?? ''}';
+  if (bill is Transaction) return '${bill.transactionType ?? 'TXN'} - ${bill.transactionNumber ?? ''}';
+  return '';
+}
+
+DateTime? _getBillDate(dynamic bill) {
+  if (bill is Invoice) return bill.invoiceDate;
+  if (bill is Purchase) return bill.purchaseDate;
+  if (bill is CreditNote) return bill.creditNoteDate;
+  if (bill is DebitNote) return bill.debitNoteDate;
+  if (bill is Transaction) return bill.transactionDate;
+  return null;
+}
+
+double _getBillGrandTotal(dynamic bill) {
+  if (bill is Invoice) return bill.grandTotal ?? 0.0;
+  if (bill is Purchase) return bill.grandTotal ?? 0.0;
+  if (bill is CreditNote) return bill.grandTotal ?? 0.0;
+  if (bill is DebitNote) return bill.grandTotal ?? 0.0;
+  if (bill is Transaction) return bill.amount ?? 0.0;
+  return 0.0;
+}
+
+double _getBillPaidAmount(dynamic bill) {
+  if (bill is Invoice) return bill.paidAmount ?? 0.0;
+  if (bill is Purchase) return bill.paidAmount ?? 0.0;
+  if (bill is CreditNote) return 0.0;
+  if (bill is DebitNote) return 0.0;
+  if (bill is Transaction) return 0.0;
+  return 0.0;
+}
+
 class AddEditPartyTransferScreen extends ConsumerStatefulWidget {
   final Transaction? existingTransaction;
   const AddEditPartyTransferScreen({Key? key, this.existingTransaction}) : super(key: key);
@@ -603,50 +648,7 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
     });
   }
 
-  String _getBillUuid(dynamic bill) {
-    if (bill is Invoice) return bill.uuid ?? '';
-    if (bill is Purchase) return bill.uuid ?? '';
-    if (bill is CreditNote) return bill.uuid ?? '';
-    if (bill is DebitNote) return bill.uuid ?? '';
-    if (bill is Transaction) return bill.uuid ?? '';
-    return '';
-  }
 
-  String _getBillTitle(dynamic bill) {
-    if (bill is Invoice) return 'INV - ${bill.invoiceNumber ?? ''}';
-    if (bill is Purchase) return '${bill.purchaseNumber?.startsWith('FA-') == true ? '' : 'PUR - '}${bill.purchaseNumber ?? ''}';
-    if (bill is CreditNote) return 'CN - ${bill.creditNoteNumber ?? ''}';
-    if (bill is DebitNote) return 'DN - ${bill.debitNoteNumber ?? ''}';
-    if (bill is Transaction) return '${bill.transactionType ?? 'TXN'} - ${bill.transactionNumber ?? ''}';
-    return '';
-  }
-
-  DateTime? _getBillDate(dynamic bill) {
-    if (bill is Invoice) return bill.invoiceDate;
-    if (bill is Purchase) return bill.purchaseDate;
-    if (bill is CreditNote) return bill.creditNoteDate;
-    if (bill is DebitNote) return bill.debitNoteDate;
-    if (bill is Transaction) return bill.transactionDate;
-    return null;
-  }
-
-  double _getBillGrandTotal(dynamic bill) {
-    if (bill is Invoice) return bill.grandTotal ?? 0.0;
-    if (bill is Purchase) return bill.grandTotal ?? 0.0;
-    if (bill is CreditNote) return bill.grandTotal ?? 0.0;
-    if (bill is DebitNote) return bill.grandTotal ?? 0.0;
-    if (bill is Transaction) return bill.amount ?? 0.0;
-    return 0.0;
-  }
-
-  double _getBillPaidAmount(dynamic bill) {
-    if (bill is Invoice) return bill.paidAmount ?? 0.0;
-    if (bill is Purchase) return bill.paidAmount ?? 0.0;
-    if (bill is CreditNote) return 0.0;
-    if (bill is DebitNote) return 0.0;
-    if (bill is Transaction) return 0.0;
-    return 0.0;
-  }
 
   double get _totalAllocated {
     final billUuids = _bills.map((b) => _getBillUuid(b)).toSet();
