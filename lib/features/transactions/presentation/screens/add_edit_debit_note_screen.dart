@@ -577,7 +577,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       ref.invalidate(dashboardAnalyticsProvider);
       ref.invalidate(partiesListProvider);
       ref.invalidate(itemsListProvider);
-      ref.invalidate(transactionsProvider);
+      ref.invalidate(filteredTransactionsProvider);
 
       try {
         ref.read(syncServiceProvider).syncPendingChangesQuietly();
@@ -674,7 +674,7 @@ class _AddEditDebitNoteScreenState extends ConsumerState<AddEditDebitNoteScreen>
       ref.invalidate(dashboardAnalyticsProvider);
       ref.invalidate(partiesListProvider);
       ref.invalidate(itemsListProvider);
-      ref.invalidate(transactionsProvider);
+      ref.invalidate(filteredTransactionsProvider);
 
       try {
         ref.read(syncServiceProvider).syncPendingChangesQuietly();

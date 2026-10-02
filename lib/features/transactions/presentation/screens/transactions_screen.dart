@@ -1,3 +1,5 @@
+import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
+import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/features/transactions/presentation/screens/add_edit_party_transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/core/widgets/responsive_form_row.dart';
@@ -1324,7 +1326,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                                 cn ??= await isar.creditNotes.filter().creditNoteNumberEqualTo(txn.transactionNumber!).findFirst();
                                                                 if (cn != null) {
                                                                   cn.paymentMode = 'Cancelled';
-                                                                  cn.remarks = (cn.remarks == null || cn.remarks!.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ' + cn.remarks;
+                                                                  final cRem = cn.remarks; cn.remarks = (cRem == null || cRem.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ' + cRem;
                                                                   cn.updatedAt = DateTime.now();
                                                                   cn.isSynced = false;
                                                                   await isar.creditNotes.put(cn);
@@ -1355,7 +1357,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                                                 dn ??= await isar.debitNotes.filter().debitNoteNumberEqualTo(txn.transactionNumber!).findFirst();
                                                                 if (dn != null) {
                                                                   dn.paymentMode = 'Cancelled';
-                                                                  dn.remarks = (dn.remarks == null || dn.remarks!.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ' + dn.remarks;
+                                                                  final dRem = dn.remarks; dn.remarks = (dRem == null || dRem.isEmpty) ? '[CANCELLED]' : '[CANCELLED] ' + dRem;
                                                                   dn.updatedAt = DateTime.now();
                                                                   dn.isSynced = false;
                                                                   await isar.debitNotes.put(dn);

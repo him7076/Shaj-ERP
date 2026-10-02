@@ -579,7 +579,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       ref.invalidate(dashboardAnalyticsProvider);
       ref.invalidate(partiesListProvider);
       ref.invalidate(itemsListProvider);
-      ref.invalidate(transactionsProvider);
+      ref.invalidate(filteredTransactionsProvider);
 
       try {
         ref.read(syncServiceProvider).syncPendingChangesQuietly();
@@ -676,7 +676,7 @@ class _AddEditCreditNoteScreenState extends ConsumerState<AddEditCreditNoteScree
       ref.invalidate(dashboardAnalyticsProvider);
       ref.invalidate(partiesListProvider);
       ref.invalidate(itemsListProvider);
-      ref.invalidate(transactionsProvider);
+      ref.invalidate(filteredTransactionsProvider);
 
       try {
         ref.read(syncServiceProvider).syncPendingChangesQuietly();
