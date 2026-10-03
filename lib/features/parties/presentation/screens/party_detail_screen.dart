@@ -511,7 +511,7 @@ final theme = Theme.of(context);
         .group((q) => q
             .partyIdEqualTo(partyId)
             .or()
-            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
+            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '').or().targetPartyNameEqualTo(_party!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '').or().targetPartyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
             .or()
             .party((p) => p.uuidEqualTo(partyUuid ?? ''))
         )
@@ -567,7 +567,7 @@ final theme = Theme.of(context);
         .group((q) => q
             .partyUuidEqualTo(partyUuid ?? '')
             .or()
-            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
+            .partyNameEqualTo(_party!.partyName ?? '', caseSensitive: false).or().targetPartyUuidEqualTo(partyUuid ?? '').or().targetPartyNameEqualTo(_party!.partyName ?? '', caseSensitive: false)
         )
         .findAll();
     for (var t in txns) {

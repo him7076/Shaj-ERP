@@ -81,7 +81,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
       var nextNum = maxNum + 1;
       var candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';
 
-      final existingNumbers = allPurchases.where((e) => e.isDeleted != true).map((e) => e.purchaseNumber).toSet();
+      final existingNumbers = allPurchases.where((e) => e.isDeleted != true).map((e) => e.purchaseNumber ?? '').where((n) => isFixedAsset ? n.toUpperCase().startsWith('FA-') : !n.toUpperCase().startsWith('FA-')).toSet();
       while (existingNumbers.contains(candidate)) {
         nextNum++;
         candidate = '$prefix${nextNum.toString().padLeft(2, '0')}';

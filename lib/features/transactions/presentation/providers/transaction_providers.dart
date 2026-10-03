@@ -101,12 +101,16 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
   // 1. Fetch Transactions
   List<Transaction> rawTransactions = [];
   if (filter.transactionType == 'All' || 
-      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
+      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income', 'Credit Note', 'Debit Note', 'Party Transfer', 'Party to Party Transfer'].contains(filter.transactionType)) {
     try {
       var qb = isar.transactions.filter().isDeletedEqualTo(false);
       
       if (filter.transactionType != 'All') {
-        qb = qb.transactionTypeEqualTo(filter.transactionType);
+        if (['Transfer', 'Party Transfer', 'Party to Party Transfer'].contains(filter.transactionType)) {
+          qb = qb.and().group((q) => q.transactionTypeEqualTo('Transfer').or().transactionTypeEqualTo('Party Transfer').or().transactionTypeEqualTo('Party to Party Transfer').or().transactionTypeEqualTo('Bank Transfer').or().transactionTypeEqualTo('Cash Adjustment'));
+        } else {
+          qb = qb.transactionTypeEqualTo(filter.transactionType);
+        }
       }
       
       if (filter.partyUuid != null) {
@@ -459,7 +463,7 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
 
   // 1. Transactions Collection
   if (filter.transactionType == 'All' || 
-      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income', 'Credit Note', 'Debit Note'].contains(filter.transactionType)) {
+      ['Receipt', 'Payment', 'Expense', 'Transfer', 'Bank Transfer', 'Cash Adjustment', 'Other Income', 'Credit Note', 'Debit Note', 'Party Transfer', 'Party to Party Transfer'].contains(filter.transactionType)) {
     var qb = isar.transactions.filter().isDeletedEqualTo(false);
     
     if (filter.partyUuid != null) qb = qb.partyUuidEqualTo(filter.partyUuid);
@@ -478,7 +482,9 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
     }
 
     if (filter.transactionType != 'All') {
-      final allMatching = await qb.transactionTypeEqualTo(filter.transactionType).findAll();
+      final List<Transaction> allMatching = ['Transfer', 'Party Transfer', 'Party to Party Transfer'].contains(filter.transactionType)
+          ? await qb.and().group((q) => q.transactionTypeEqualTo('Transfer').or().transactionTypeEqualTo('Party Transfer').or().transactionTypeEqualTo('Party to Party Transfer').or().transactionTypeEqualTo('Bank Transfer').or().transactionTypeEqualTo('Cash Adjustment')).findAll()
+          : await qb.transactionTypeEqualTo(filter.transactionType).findAll();
       var filteredMatching = allMatching.where((t) => t.isPersonalVault == isPersonal).toList();
       
       if (filter.transactionType == 'Credit Note' && filter.statusFilter != 'All') {

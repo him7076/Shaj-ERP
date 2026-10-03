@@ -26,7 +26,7 @@ class LinkedTransactionsHistoryModal extends StatefulWidget {
   }) : super(key: key);
 
   static Future<List<LinkedTransactionItem>> fetchLinkedTransactions(Isar isar, String billUuid, [String? billNumber]) async {
-    if (billUuid.isEmpty) return [];
+    if (billUuid.isEmpty && (billNumber == null || billNumber.isEmpty)) return [];
 
     final txns = await isar.transactions
         .filter()
@@ -46,7 +46,8 @@ class LinkedTransactionsHistoryModal extends StatefulWidget {
       if (rawLink.startsWith('{')) {
         try {
           final Map<String, dynamic> map = json.decode(rawLink);
-          if (map.containsKey(billUuid)) {
+          for (var entry in map.entries) { if ((billUuid.isNotEmpty && entry.key == billUuid) || (billNumber != null && billNumber.isNotEmpty && entry.key == billNumber) || (billUuid.isNotEmpty && entry.key.contains(billUuid)) || (billNumber != null && billNumber.isNotEmpty && entry.key.contains(billNumber))) { matches = true; allocAmt = (entry.value as num).toDouble(); break; } }
+if (false) {
             matches = true;
             allocAmt = (map[billUuid] as num).toDouble();
           } else if (billNumber != null && billNumber.isNotEmpty && map.containsKey(billNumber)) {
@@ -55,14 +56,14 @@ class LinkedTransactionsHistoryModal extends StatefulWidget {
           }
         } catch (_) {}
       } else {
-        if (rawLink == billUuid || (billNumber != null && billNumber.isNotEmpty && rawLink == billNumber)) {
+        if ((billUuid.isNotEmpty && rawLink == billUuid) || (billNumber != null && billNumber.isNotEmpty && rawLink == billNumber) || (billUuid.isNotEmpty && rawLink.contains(billUuid)) || (billNumber != null && billNumber.isNotEmpty && rawLink.contains(billNumber)) || (t.linkedBillNumber != null && billNumber != null && billNumber.isNotEmpty && t.linkedBillNumber!.contains(billNumber))) {
           matches = true;
           allocAmt = t.amount ?? 0.0;
         }
       }
 
       if (matches) {
-        results.add(LinkedTransactionItem(transaction: t, allocatedAmount: allocAmt));
+        results.add(LinkedTransactionItem(transaction: t, allocatedAmount: allocAmt <= 0 ? (t.amount ?? 0.0) : allocAmt));
       }
     }
 

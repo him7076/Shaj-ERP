@@ -264,14 +264,34 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
     
     List<dynamic> allBills = [];
 
+    final allInvs = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
+    final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
+
+    final allPurs = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
+    final purs = allPurs.where((pur) => (pur.party.value?.uuid == partyUuid) || (pur.partyId == party.id) || (pNameLower != null && pur.partyName?.trim().toLowerCase() == pNameLower)).toList();
+
+    final allCNs = await isar.creditNotes.filter().isDeletedEqualTo(false).findAll();
+    final cns = allCNs.where((cn) => (cn.party.value?.uuid == partyUuid) || (cn.partyId == party.id) || (pNameLower != null && cn.partyName?.trim().toLowerCase() == pNameLower)).toList();
+
+    final allDNs = await isar.debitNotes.filter().isDeletedEqualTo(false).findAll();
+    final dns = allDNs.where((dn) => (dn.party.value?.uuid == partyUuid) || (dn.partyId == party.id) || (pNameLower != null && dn.partyName?.trim().toLowerCase() == pNameLower)).toList();
+
+    final allTxns = await isar.transactions.filter().isDeletedEqualTo(false).findAll();
+    final creditDebitTxns = allTxns.where((t) => 
+      (t.transactionType == 'Credit Note' || t.transactionType == 'Debit Note') &&
+      ((t.partyUuid == partyUuid) || (pNameLower != null && t.partyName?.trim().toLowerCase() == pNameLower))
+    ).toList();
+
     if (!isFromParty) {
-      final allInvs = await isar.invoices.filter().isDeletedEqualTo(false).findAll();
-      final invs = allInvs.where((inv) => (inv.party.value?.uuid == partyUuid) || (inv.partyId == party.id) || (pNameLower != null && inv.partyName?.trim().toLowerCase() == pNameLower)).toList();
       allBills.addAll(invs);
+      allBills.addAll(cns);
+      allBills.addAll(dns);
+      allBills.addAll(creditDebitTxns);
     } else {
-      final allPurs = await isar.purchases.filter().isDeletedEqualTo(false).findAll();
-      final purs = allPurs.where((pur) => (pur.party.value?.uuid == partyUuid) || (pur.partyId == party.id) || (pNameLower != null && pur.partyName?.trim().toLowerCase() == pNameLower)).toList();
       allBills.addAll(purs);
+      allBills.addAll(cns);
+      allBills.addAll(dns);
+      allBills.addAll(creditDebitTxns);
     }
     
     allBills.sort((a, b) {
@@ -732,7 +752,7 @@ class _LinkBillsDialogState extends State<_LinkBillsDialog> {
                                 onChanged: (val) {
                                   setState(() {
                                     if (val == true) {
-                                      final maxCanAllocate = widget.maxAmount - _totalAllocated;
+                                      final maxCanAllocate = widget.maxAmount > 0 ? (widget.maxAmount - _totalAllocated) : pending;
                                       final toAllocate = pending < maxCanAllocate ? pending : maxCanAllocate;
                                       if (toAllocate > 0) _allocations[uuid] = toAllocate;
                                     } else {

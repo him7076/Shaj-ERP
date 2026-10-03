@@ -196,6 +196,67 @@ final restoreVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
   });
 });
 
+
+final permanentDeleteVoucherProvider = Provider((ref) => (DeletedVoucher v) async {
+  final dbService = ref.read(databaseServiceProvider);
+  final isar = dbService.isar;
+  
+  await isar.writeTxn(() async {
+    String? vNum = v.voucherNumber;
+    
+    if (vNum != null && vNum.isNotEmpty) {
+      final invs = await isar.invoices.filter().invoiceNumberEqualTo(vNum).findAll();
+      for (var inv in invs) {
+        final items = await isar.invoiceItems.filter().parentInvoiceIdEqualTo(inv.id).findAll();
+        for (var item in items) { await isar.invoiceItems.delete(item.id); }
+        await isar.invoices.delete(inv.id);
+      }
+
+      final purs = await isar.purchases.filter().purchaseNumberEqualTo(vNum).findAll();
+      for (var pur in purs) {
+        final items = await isar.purchaseItems.filter().purchaseIdEqualTo(pur.id).findAll();
+        for (var item in items) { await isar.purchaseItems.delete(item.id); }
+        await isar.purchases.delete(pur.id);
+      }
+
+      final ords = await isar.orders.filter().orderNumberEqualTo(vNum).findAll();
+      for (var ord in ords) {
+        try {
+          final items = await isar.orderItems.filter().parentOrderIdEqualTo(ord.id).findAll();
+          for (var item in items) { await isar.orderItems.delete(item.id); }
+        } catch (_) {}
+        await isar.orders.delete(ord.id);
+      }
+
+      final cns = await isar.creditNotes.filter().creditNoteNumberEqualTo(vNum).findAll();
+      for (var cn in cns) {
+        try {
+          final items = await isar.creditNoteItems.filter().parentCreditNoteIdEqualTo(cn.id).findAll();
+          for (var item in items) { await isar.creditNoteItems.delete(item.id); }
+        } catch (_) {}
+        await isar.creditNotes.delete(cn.id);
+      }
+
+      final dns = await isar.debitNotes.filter().debitNoteNumberEqualTo(vNum).findAll();
+      for (var dn in dns) {
+        try {
+          final items = await isar.debitNoteItems.filter().parentDebitNoteIdEqualTo(dn.id).findAll();
+          for (var item in items) { await isar.debitNoteItems.delete(item.id); }
+        } catch (_) {}
+        await isar.debitNotes.delete(dn.id);
+      }
+
+      final txns = await isar.transactions.filter().transactionNumberEqualTo(vNum).findAll();
+      for (var txn in txns) {
+        await isar.transactions.delete(txn.id);
+      }
+    }
+
+    await isar.collection<DeletedVoucher>().delete(v.id);
+    await StockRecalculatorService.recalculateAllItemStocks(isar);
+  });
+});
+
 class DeletedVouchersScreen extends ConsumerStatefulWidget {
   const DeletedVouchersScreen({Key? key}) : super(key: key);
 
@@ -431,27 +492,58 @@ class _DeletedVouchersScreenState extends ConsumerState<DeletedVouchersScreen> {
                                   ],
                                 ),
                               ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.restore_page_rounded, color: Colors.green),
-                                tooltip: 'Restore Voucher',
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('Restore Voucher?'),
-                                      content: Text('Are you sure you want to restore ${v.voucherNumber}?'),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                        ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restore')),
-                                      ],
-                                    ),
-                                  );
-                                  if (confirm == true) {
-                                    await ref.read(restoreVoucherProvider)(v);
-                                    ref.invalidate(deletedVouchersProvider);
-                                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Voucher restored successfully!')));
-                                  }
-                                },
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.restore_page_rounded, color: Colors.green),
+                                    tooltip: 'Restore Voucher',
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Restore Voucher?'),
+                                          content: Text('Are you sure you want to restore ${v.voucherNumber}?'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restore')),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await ref.read(restoreVoucherProvider)(v);
+                                        ref.invalidate(deletedVouchersProvider);
+                                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Voucher restored successfully!')));
+                                      }
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+                                    tooltip: 'Delete Permanently',
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Delete Permanently?'),
+                                          content: Text('Are you sure you want to PERMANENTLY delete ${v.voucherNumber}? This cannot be undone and will erase it from database.'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                              onPressed: () => Navigator.pop(ctx, true), 
+                                              child: const Text('DELETE PERMANENTLY'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await ref.read(permanentDeleteVoucherProvider)(v);
+                                        ref.invalidate(deletedVouchersProvider);
+                                        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Voucher permanently deleted!')));
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
                           );
