@@ -222,7 +222,7 @@ final permanentDeleteVoucherProvider = Provider((ref) => (DeletedVoucher v) asyn
       final ords = await isar.orders.filter().orderNumberEqualTo(vNum).findAll();
       for (var ord in ords) {
         try {
-          final items = await isar.orderItems.filter().parentOrderIdEqualTo(ord.id).findAll();
+          final items = await isar.orderItems.filter().orderIdEqualTo(ord.id).findAll();
           for (var item in items) { await isar.orderItems.delete(item.id); }
         } catch (_) {}
         await isar.orders.delete(ord.id);
