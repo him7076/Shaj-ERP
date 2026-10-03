@@ -243,7 +243,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'party-transfers',
             builder: (context, state) {
               final create = state.uri.queryParameters['create'] == 'true';
-              return TransactionsScreen(lockedType: 'Transfer', createImmediately: create);
+              return TransactionsScreen(lockedType: 'Party Transfer', createImmediately: create);
             },
           ),
           GoRoute(

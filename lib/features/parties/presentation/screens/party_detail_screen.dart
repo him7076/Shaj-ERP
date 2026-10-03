@@ -571,6 +571,11 @@ final theme = Theme.of(context);
         )
         .findAll();
     for (var t in txns) {
+      final tType = t.transactionType;
+      if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(tType)) {
+        final matchesSource = t.partyUuid == partyUuid || (t.partyUuid == null && t.partyName?.trim().toLowerCase() == partyNameLower);
+        if (!matchesSource) continue;
+      }
       list.add(_PartyActivityItem(
         id: t.id,
         uuid: t.uuid,

@@ -106,8 +106,10 @@ final filteredTransactionsProvider = FutureProvider<List<Transaction>>((ref) asy
       var qb = isar.transactions.filter().isDeletedEqualTo(false);
       
       if (filter.transactionType != 'All') {
-        if (['Transfer', 'Party Transfer', 'Party to Party Transfer'].contains(filter.transactionType)) {
-          qb = qb.and().group((q) => q.transactionTypeEqualTo('Transfer').or().transactionTypeEqualTo('Party Transfer').or().transactionTypeEqualTo('Party to Party Transfer').or().transactionTypeEqualTo('Bank Transfer').or().transactionTypeEqualTo('Cash Adjustment'));
+        if (filter.transactionType == 'Party Transfer' || filter.transactionType == 'Party to Party Transfer') {
+          qb = qb.and().group((q) => q.transactionTypeEqualTo('Party Transfer').or().transactionTypeEqualTo('Party to Party Transfer'));
+        } else if (filter.transactionType == 'Transfer' || filter.transactionType == 'Bank Transfer' || filter.transactionType == 'Cash Adjustment') {
+          qb = qb.and().group((q) => q.transactionTypeEqualTo('Transfer').or().transactionTypeEqualTo('Bank Transfer').or().transactionTypeEqualTo('Cash Adjustment'));
         } else {
           qb = qb.transactionTypeEqualTo(filter.transactionType);
         }
@@ -482,9 +484,11 @@ final transactionTotalsProvider = FutureProvider<TransactionTotals>((ref) async 
     }
 
     if (filter.transactionType != 'All') {
-      final List<Transaction> allMatching = ['Transfer', 'Party Transfer', 'Party to Party Transfer'].contains(filter.transactionType)
-          ? await qb.and().group((q) => q.transactionTypeEqualTo('Transfer').or().transactionTypeEqualTo('Party Transfer').or().transactionTypeEqualTo('Party to Party Transfer').or().transactionTypeEqualTo('Bank Transfer').or().transactionTypeEqualTo('Cash Adjustment')).findAll()
-          : await qb.transactionTypeEqualTo(filter.transactionType).findAll();
+      final List<Transaction> allMatching = (filter.transactionType == 'Party Transfer' || filter.transactionType == 'Party to Party Transfer')
+          ? await qb.and().group((q) => q.transactionTypeEqualTo('Party Transfer').or().transactionTypeEqualTo('Party to Party Transfer')).findAll()
+          : (filter.transactionType == 'Transfer' || filter.transactionType == 'Bank Transfer' || filter.transactionType == 'Cash Adjustment')
+              ? await qb.and().group((q) => q.transactionTypeEqualTo('Transfer').or().transactionTypeEqualTo('Bank Transfer').or().transactionTypeEqualTo('Cash Adjustment')).findAll()
+              : await qb.transactionTypeEqualTo(filter.transactionType).findAll();
       var filteredMatching = allMatching.where((t) => t.isPersonalVault == isPersonal).toList();
       
       if (filter.transactionType == 'Credit Note' && filter.statusFilter != 'All') {

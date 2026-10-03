@@ -74,12 +74,15 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(builder: (context) => const AddEditDebitNoteScreen()),
                   ).then((_) => ref.invalidate(filteredTransactionsProvider));
-                } else if (widget.lockedType == 'Transfer' || widget.lockedType == 'Party Transfer') {
+                } else if (widget.lockedType == 'Party Transfer' || widget.lockedType == 'Party to Party Transfer') {
                   Navigator.of(context, rootNavigator: true).push(
                     MaterialPageRoute(builder: (context) => const AddEditPartyTransferScreen()),
           ).then((_) => ref.invalidate(filteredTransactionsProvider));
         } else {
-          final prefillParty = ref.read(quickActionPrefillPartyProvider); if (widget.lockedType != 'Debit Note' && widget.lockedType != 'Transfer' && widget.lockedType != 'Party Transfer') AddEditTransactionDialog.show(context, initialType: widget.lockedType, initialParty: prefillParty);
+          final prefillParty = ref.read(quickActionPrefillPartyProvider); 
+          if (widget.lockedType != 'Debit Note' && widget.lockedType != 'Party Transfer' && widget.lockedType != 'Party to Party Transfer') {
+            AddEditTransactionDialog.show(context, initialType: widget.lockedType, initialParty: prefillParty);
+          }
         }
       }
       
@@ -128,12 +131,14 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
-    } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment', 'Party Transfer', 'Party to Party Transfer'].contains(txn.transactionType)) {
+    } else if (txn.transactionType == 'Party Transfer' || txn.transactionType == 'Party to Party Transfer') {
       Navigator.of(context, rootNavigator: true).push<bool>(
         MaterialPageRoute(builder: (context) => AddEditPartyTransferScreen(existingTransaction: txn)),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
+    } else if (['Transfer', 'Bank Transfer', 'Cash Adjustment'].contains(txn.transactionType)) {
+      AddEditTransactionDialog.show(context, transaction: txn);
     } else if (txn.transactionType == 'Receipt' || txn.transactionType == 'Payment' || txn.transactionType == 'Other Income') {
       _showReceiptDetailModal(context, txn);
     } else {
@@ -502,8 +507,10 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                       ? 'Credit Notes'
                       : widget.lockedType == 'Debit Note'
                           ? 'Debit Notes'
-                          : widget.lockedType == 'Transfer'
+                          : (widget.lockedType == 'Party Transfer' || widget.lockedType == 'Party to Party Transfer')
                               ? 'Party Transfers'
+                              : (widget.lockedType == 'Transfer' || widget.lockedType == 'Bank Transfer')
+                                  ? 'Fund Transfers'
                               : widget.lockedType == 'Other Income'
                                   ? 'Other Income'
                                   : 'Transactions',
@@ -894,7 +901,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       DropdownMenuItem(value: 'Payment', child: Text('Made Payment (Payment)')),
                                       DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
                                       DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
-                                      DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                      DropdownMenuItem(value: 'Party Transfer', child: Text('Party Transfer')),
+                                      DropdownMenuItem(value: 'Transfer', child: Text('Fund Transfer (Bank/Cash)')),
                                       DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
                                     ],
                                     onChanged: (val) {
@@ -1020,7 +1028,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                                       DropdownMenuItem(value: 'Credit Note', child: Text('Credit Note')),
                                       DropdownMenuItem(value: 'Debit Note', child: Text('Debit Note')),
                                       DropdownMenuItem(value: 'Expense', child: Text('Expense')),
-                                      DropdownMenuItem(value: 'Transfer', child: Text('Transfer')),
+                                      DropdownMenuItem(value: 'Party Transfer', child: Text('Party Transfer')),
+                                      DropdownMenuItem(value: 'Transfer', child: Text('Fund Transfer (Bank/Cash)')),
                                       DropdownMenuItem(value: 'Other Income', child: Text('Other Income')),
                                     ],
                                     onChanged: (val) {
