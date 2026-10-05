@@ -858,11 +858,24 @@ if (_isPaidAmountAutoFill) {
               }
             },
           ),
-          title: Text(
-            titleText,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.purchaseUuid != null ? 'Edit $docType' : 'New $docType',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              if (_billNumberController.text.isNotEmpty)
+                Text(
+                  '#${_billNumberController.text}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                  ),
+                ),
+            ],
           ),
         ),
       body: SingleChildScrollView(
@@ -955,113 +968,101 @@ if (_isPaidAmountAutoFill) {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            partiesAsync.when(
-              data: (parties) {
-                final supplierParties = widget.isFixedAsset ? parties.toList() : parties.where((p) => p.partyType == 'Supplier').toList();
-                return SearchablePartyDropdown(
-                  parties: supplierParties,
-                  selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
-                      ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
-                      : _selectedParty,
-                  labelText: 'Select Supplier Account',
-                  onChanged: (party) {
-                    setState(() {
-                      _selectedParty = party;
-                    });
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Error loading suppliers: $e'),
-            ),
-            if (_selectedParty != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info, color: Colors.blue, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Current Balance: â‚¹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
-                        style: theme.textTheme.bodySmall,
+              // Date & Supplier Invoice # fields at the TOP (before Party)
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: InkWell(
+                      onTap: () async {
+                        final selected = await showDatePicker(
+                          context: context,
+                          initialDate: _purchaseDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now(),
+                        );
+                        if (selected != null) {
+                          setState(() => _purchaseDate = selected);
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Purchase Date',
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                          prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
+                        ),
+                        child: Text(DateFormat('dd MMM yyyy').format(_purchaseDate), style: const TextStyle(fontSize: 13)),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ],
-            const Divider(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: InkWell(
-                    onTap: () async {
-                      final selected = await showDatePicker(
-                        context: context,
-                        initialDate: _purchaseDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime.now(),
-                      );
-                      if (selected != null) {
-                        setState(() => _purchaseDate = selected);
-                      }
-                    },
-                    child: InputDecorator(
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 1,
+                    child: TextFormField(
+                      controller: _supplierInvoiceNumberController,
+                      style: const TextStyle(fontSize: 13),
                       decoration: const InputDecoration(
-                        labelText: 'Purchase Date',
+                        labelText: 'Supplier Invoice #',
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                        prefixIcon: Icon(Icons.calendar_today_rounded, size: 18),
+                        prefixIcon: Icon(Icons.receipt_long_rounded, size: 18),
                       ),
-                      child: Text(DateFormat('dd MMM yyyy').format(_purchaseDate), style: const TextStyle(fontSize: 13)),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _billNumberController,
-                    readOnly: true,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Internal Bill # (Auto)',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text('Supplier Party Details', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              partiesAsync.when(
+                data: (parties) {
+                  final supplierParties = widget.isFixedAsset ? parties.toList() : parties.where((p) => p.partyType == 'Supplier').toList();
+                  return SearchablePartyDropdown(
+                    parties: supplierParties,
+                    selectedParty: _selectedParty != null && supplierParties.any((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                        ? supplierParties.firstWhere((p) => (p.uuid != null && p.uuid == _selectedParty!.uuid) || p.id == _selectedParty!.id || (p.partyName != null && p.partyName?.trim().toLowerCase() == _selectedParty!.partyName?.trim().toLowerCase()))
+                        : _selectedParty,
+                    labelText: 'Select Supplier Account',
+                    onChanged: (party) {
+                      setState(() {
+                        _selectedParty = party;
+                      });
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Text('Error loading suppliers: $e'),
+              ),
+              if (_selectedParty != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 1,
-                  child: TextFormField(
-                    controller: _supplierInvoiceNumberController,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(
-                      labelText: 'Supplier Invoice #',
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info, color: Colors.blue, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'GST: ${_selectedParty!.gstNumber ?? "Unregistered"} | Address: ${_selectedParty!.city ?? "N/A"} | Balance: ₹${_selectedParty!.outstandingBalance?.toStringAsFixed(2) ?? "0.00"}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

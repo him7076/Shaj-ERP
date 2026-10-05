@@ -162,11 +162,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
           GoRoute(
+            parentNavigatorKey: rootNavigatorKey,
             path: '/purchase-fa',
             name: 'purchase-fa',
             builder: (context, state) => const AddEditPurchaseScreen(isFixedAsset: true),
           ),
           GoRoute(
+            parentNavigatorKey: rootNavigatorKey,
             path: '/sale-fa',
             name: 'sale-fa',
             builder: (context, state) => const AddEditInvoiceScreen(isFixedAsset: true),
@@ -243,7 +245,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'party-transfers',
             builder: (context, state) {
               final create = state.uri.queryParameters['create'] == 'true';
-              return TransactionsScreen(lockedType: 'Party Transfer', createImmediately: create);
+              return TransactionsScreen(lockedType: 'Transfer', createImmediately: create);
             },
           ),
           GoRoute(

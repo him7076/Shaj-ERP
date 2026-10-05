@@ -32,11 +32,34 @@ String _getBillUuid(dynamic bill) {
 }
 
 String _getBillTitle(dynamic bill) {
-  if (bill is Invoice) return 'INV - ${bill.invoiceNumber ?? ''}';
-  if (bill is Purchase) return '${bill.purchaseNumber?.startsWith('FA-') == true ? '' : 'PUR - '}${bill.purchaseNumber ?? ''}';
-  if (bill is CreditNote) return 'CN - ${bill.creditNoteNumber ?? ''}';
-  if (bill is DebitNote) return 'DN - ${bill.debitNoteNumber ?? ''}';
-  if (bill is Transaction) return '${bill.transactionType ?? 'TXN'} - ${bill.transactionNumber ?? ''}';
+  if (bill is Invoice) {
+    final num = bill.invoiceNumber ?? '';
+    return num.toUpperCase().startsWith('INV-') ? num : 'INV - $num';
+  }
+  if (bill is Purchase) {
+    final num = bill.purchaseNumber ?? '';
+    if (num.toUpperCase().startsWith('FA-') || num.toUpperCase().startsWith('PUR-')) return num;
+    return 'PUR - $num';
+  }
+  if (bill is CreditNote) {
+    final num = bill.creditNoteNumber ?? '';
+    return num.toUpperCase().startsWith('CN-') ? num : 'CN - $num';
+  }
+  if (bill is DebitNote) {
+    final num = bill.debitNoteNumber ?? '';
+    return num.toUpperCase().startsWith('DN-') ? num : 'DN - $num';
+  }
+  if (bill is Transaction) {
+    final type = bill.transactionType ?? 'TXN';
+    final num = bill.transactionNumber ?? '';
+    if (type == 'Credit Note' || num.toUpperCase().startsWith('CN-')) {
+      return num.toUpperCase().startsWith('CN-') ? num : 'CN - $num';
+    }
+    if (type == 'Debit Note' || num.toUpperCase().startsWith('DN-')) {
+      return num.toUpperCase().startsWith('DN-') ? num : 'DN - $num';
+    }
+    return '$type - $num';
+  }
   return '';
 }
 
@@ -282,16 +305,41 @@ class _AddEditPartyTransferScreenState extends ConsumerState<AddEditPartyTransfe
       ((t.partyUuid == partyUuid) || (pNameLower != null && t.partyName?.trim().toLowerCase() == pNameLower))
     ).toList();
 
+    final Set<String> addedKeys = {};
+
+    void addBill(dynamic bill) {
+      final uuid = _getBillUuid(bill);
+      String numberKey = '';
+      if (bill is Invoice) numberKey = 'INV:${bill.invoiceNumber?.trim().toLowerCase()}';
+      else if (bill is Purchase) numberKey = 'PUR:${bill.purchaseNumber?.trim().toLowerCase()}';
+      else if (bill is CreditNote) numberKey = 'CN:${bill.creditNoteNumber?.trim().toLowerCase()}';
+      else if (bill is DebitNote) numberKey = 'DN:${bill.debitNoteNumber?.trim().toLowerCase()}';
+      else if (bill is Transaction) {
+        final numStr = bill.transactionNumber?.trim().toLowerCase() ?? '';
+        if (bill.transactionType == 'Credit Note' || numStr.startsWith('cn-')) numberKey = 'CN:$numStr';
+        else if (bill.transactionType == 'Debit Note' || numStr.startsWith('dn-')) numberKey = 'DN:$numStr';
+        else numberKey = 'TXN:${bill.transactionType?.trim().toLowerCase()}:$numStr';
+      }
+
+      if (uuid.isNotEmpty && addedKeys.contains('UUID:$uuid')) return;
+      if (numberKey.isNotEmpty && addedKeys.contains(numberKey)) return;
+
+      if (uuid.isNotEmpty) addedKeys.add('UUID:$uuid');
+      if (numberKey.isNotEmpty) addedKeys.add(numberKey);
+
+      allBills.add(bill);
+    }
+
     if (!isFromParty) {
-      allBills.addAll(invs);
-      allBills.addAll(cns);
-      allBills.addAll(dns);
-      allBills.addAll(creditDebitTxns);
+      for (var b in invs) addBill(b);
+      for (var b in cns) addBill(b);
+      for (var b in dns) addBill(b);
+      for (var b in creditDebitTxns) addBill(b);
     } else {
-      allBills.addAll(purs);
-      allBills.addAll(cns);
-      allBills.addAll(dns);
-      allBills.addAll(creditDebitTxns);
+      for (var b in purs) addBill(b);
+      for (var b in cns) addBill(b);
+      for (var b in dns) addBill(b);
+      for (var b in creditDebitTxns) addBill(b);
     }
     
     allBills.sort((a, b) {

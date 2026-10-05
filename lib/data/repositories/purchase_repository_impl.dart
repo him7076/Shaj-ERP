@@ -97,6 +97,10 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
     try {
       final isNew = purchase.id == Isar.autoIncrement;
       purchase.uuid ??= _generateUuid();
+      if (purchase.purchaseNumber == null || purchase.purchaseNumber!.trim().isEmpty) {
+        final isFA = purchase.purchaseNumber?.toUpperCase().startsWith('FA-') == true;
+        purchase.purchaseNumber = await generateNextPurchaseNumber(isFixedAsset: isFA);
+      }
       purchase.createdAt = isNew ? DateTime.now() : purchase.createdAt;
       purchase.updatedAt = DateTime.now();
       purchase.isDeleted = false;
@@ -228,6 +232,58 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           ..createdAt = DateTime.now()
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(queueItem);
+
+        // 6. Auto-create/update Payment Transaction if paidAmount > 0
+        if (purchase.paidAmount != null && purchase.paidAmount! > 0) {
+          String extPaymentMode = 'Cash';
+          if (purchase.remarks != null) {
+            final match = RegExp(r'\[Paid via ([^\]]+)\]').firstMatch(purchase.remarks!);
+            if (match != null) {
+              extPaymentMode = match.group(1) ?? 'Cash';
+            }
+          }
+          
+          final isFA = purchase.purchaseNumber?.toUpperCase().startsWith('FA-') == true;
+          
+          Transaction? existingTxn;
+          if (!isNew && purchase.uuid != null) {
+            existingTxn = await isar.transactions.filter().linkedBillUuidEqualTo(purchase.uuid!).findFirst();
+          }
+
+          final txn = existingTxn ?? Transaction();
+          txn.uuid ??= _generateUuid();
+          txn.transactionNumber ??= isFA ? 'FA-PAY-${DateTime.now().millisecondsSinceEpoch}' : 'PAY-${DateTime.now().millisecondsSinceEpoch}';
+          txn.transactionType = 'Payment';
+          txn.amount = purchase.paidAmount;
+          txn.transactionDate = purchase.purchaseDate ?? DateTime.now();
+          txn.partyUuid = party?.uuid ?? (purchase.partyId != null ? purchase.partyId.toString() : null);
+          txn.partyName = purchase.partyName;
+          txn.remarks = 'Payment for ${isFA ? "Fixed Asset Purchase" : "Purchase"} #${purchase.purchaseNumber}';
+          txn.paymentMode = extPaymentMode;
+          txn.paymentStatus = 'Paid';
+          txn.linkedBillUuid = purchase.uuid;
+          txn.linkedBillNumber = purchase.purchaseNumber;
+          txn.createdAt = txn.createdAt ?? DateTime.now();
+          txn.updatedAt = DateTime.now();
+          txn.isDeleted = false;
+          txn.isSynced = false;
+          txn.version = existingTxn == null ? 1 : existingTxn.version + 1;
+
+          if (!kIsWeb && party != null) {
+            try { txn.party.value = party; } catch (_) {}
+          }
+          
+          final tId = await isar.transactions.put(txn);
+          final tQueue = SyncQueue()
+            ..uuid = _generateUuid()
+            ..entityType = 'Transaction'
+            ..entityId = tId
+            ..entityUuid = txn.uuid
+            ..operation = existingTxn == null ? 'Insert' : 'Update'
+            ..createdAt = DateTime.now()
+            ..updatedAt = DateTime.now();
+          await isar.syncQueues.put(tQueue);
+        }
       });
       
       await StockRecalculatorService.recalculateAllItemStocks(isar);
