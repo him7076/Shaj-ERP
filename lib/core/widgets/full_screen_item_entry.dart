@@ -4,6 +4,8 @@ import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_fixed_asset_sheet.dart';
 import 'package:business_sahaj_erp/features/items/presentation/providers/item_providers.dart';
 import 'package:business_sahaj_erp/core/utils/unit_conversion_helper.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
@@ -382,18 +384,48 @@ class _FullScreenItemEntryState extends ConsumerState<FullScreenItemEntry> {
         elevation: 0,
         actions: const [],
       ),
-      body: itemsAsync.when(
-        data: (allItems) {
-          final items = allItems.where((i) {
-            if (widget.isFixedAsset) {
-              return i.category.value?.categoryName == 'Fixed Assets';
-            }
-            if (widget.onlyBundles && !i.isBundle) return false;
-            if (widget.excludeBundles && i.isBundle) return false;
-            return i.category.value?.categoryName != 'Fixed Assets';
-          }).toList();
+      body: widget.isFixedAsset
+          ? ref.watch(fixedAssetListProvider).when(
+              data: (assets) {
+                final faItems = assets.map((fa) {
+                  return Item()
+                    ..id = fa.id
+                    ..uuid = fa.uuid
+                    ..itemName = fa.assetName
+                    ..itemCode = fa.assetCode
+                    ..hsnCode = fa.hsnCode
+                    ..gstRate = fa.gstRate ?? 18.0
+                    ..sellRate = fa.purchasePrice ?? 0.0
+                    ..buyRate = fa.purchasePrice ?? 0.0
+                    ..currentStock = fa.quantity ?? 1.0
+                    ..primaryUnitName = fa.unit ?? 'PCS';
+                }).toList();
 
-          return SafeArea(
+                final stdItems = itemsAsync.valueOrNull?.where((i) => i.category.value?.categoryName == 'Fixed Assets').toList() ?? [];
+                final combined = [...faItems, ...stdItems];
+                return _buildMainContent(context, theme, combined, showPurchaseRate);
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text('Error loading fixed assets: $err')),
+            )
+          : itemsAsync.when(
+              data: (allItems) {
+                final items = allItems.where((i) {
+                  if (widget.onlyBundles && !i.isBundle) return false;
+                  if (widget.excludeBundles && i.isBundle) return false;
+                  return i.category.value?.categoryName != 'Fixed Assets';
+                }).toList();
+
+                return _buildMainContent(context, theme, items, showPurchaseRate);
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, _) => Center(child: Text('Error: $err')),
+            ),
+    );
+  }
+
+  Widget _buildMainContent(BuildContext context, ThemeData theme, List<Item> items, bool showPurchaseRate) {
+    return SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
               child: CustomScrollView(

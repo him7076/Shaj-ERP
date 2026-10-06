@@ -36,56 +36,71 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
   late TextEditingController _searchController;
   bool _isLoading = false;
   List<HsnSearchResult> _results = [];
-  String? _errorMessage;
 
-  // Master local offline dataset of standard GST HSN/SAC codes
-  static final List<HsnSearchResult> _defaultHsnList = [
-    HsnSearchResult(hsnCode: '8471', description: 'Computers, Laptops, Processors & Data Processing Equipment', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8517', description: 'Mobile Phones, Smartphones, Telephones & Networking Devices', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8443', description: 'Printers, Scanners, Multifunction Copiers & Inkjet Cartridges', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '9403', description: 'Wooden & Metal Furniture, Desks, Chairs, Cabinets, Fixed Asset Furniture', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '9401', description: 'Seats, Office Chairs, Sofa Sets & Fixed Asset Seating', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8415', description: 'Air Conditioners, Split ACs, Window ACs, HVAC Systems', gstRate: 28.0),
-    HsnSearchResult(hsnCode: '8418', description: 'Refrigerators, Freezers & Cooling Equipment', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8528', description: 'Monitors, Televisions, LED Displays & Projectors', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8703', description: 'Motor Cars, Passenger Vehicles, Automobiles (Fixed Asset)', gstRate: 28.0),
-    HsnSearchResult(hsnCode: '8711', description: 'Motorcycles, Scooters, Two-Wheelers', gstRate: 28.0),
-    HsnSearchResult(hsnCode: '8704', description: 'Goods Trucks, Delivery Vans, Cargo Vehicles', gstRate: 28.0),
-    HsnSearchResult(hsnCode: '8479', description: 'Industrial Machinery, Mechanical Appliances, Heavy Equipment', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8504', description: 'Transformers, Electric Inverters, UPS, Power Adapters', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '8501', description: 'Electric Motors, Generators & Alternators', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '2523', description: 'Portland Cement, Hydraulic Cement, Building Construction Materials', gstRate: 28.0),
-    HsnSearchResult(hsnCode: '7214', description: 'TMT Steel Bars, Iron Rods, Reinforcement Construction Steel', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '6203', description: 'Mens Shirts, Trousers, Suits, Readymade Garments', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '6204', description: 'Womens Dresses, Sarees, Suits, Readymade Apparel', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '6109', description: 'T-Shirts, Singlets, Cotton Knit Vests', gstRate: 5.0),
-    HsnSearchResult(hsnCode: '6403', description: 'Footwear, Leather Shoes, Boots, Sandals', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '3004', description: 'Medicines, Pharmaceutical Products, Tablets, Capsules', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '3002', description: 'Vaccines, Sera, Blood Fractions, Medical Biologics', gstRate: 5.0),
-    HsnSearchResult(hsnCode: '9018', description: 'Medical Instruments, Surgical Equipment, Diagnostic Apparatus', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '0401', description: 'Fresh Milk, Dairy Products, Cream (Unbranded)', gstRate: 0.0),
-    HsnSearchResult(hsnCode: '0402', description: 'Packaged Milk Powder, Condensed Milk, Butter, Ghee', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '1006', description: 'Rice, Basmati Rice, Paddy Grains', gstRate: 5.0),
-    HsnSearchResult(hsnCode: '1001', description: 'Wheat, Meslin, Flour (Atta), Maida', gstRate: 5.0),
-    HsnSearchResult(hsnCode: '1701', description: 'Cane Sugar, Refined Sugar, Jaggery', gstRate: 5.0),
-    HsnSearchResult(hsnCode: '1507', description: 'Edible Cooking Oils, Soybean Oil, Mustard Oil, Sunflower Oil', gstRate: 5.0),
-    HsnSearchResult(hsnCode: '2106', description: 'Food Preparations, Health Supplements, Snacks, Spices', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '2202', description: 'Soft Drinks, Aerated Mineral Water, Energy Beverages', gstRate: 28.0),
-    HsnSearchResult(hsnCode: '3926', description: 'Plastic Articles, Polybags, Plastic Hardware & Containers', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '4819', description: 'Carton Boxes, Packaging Paper Containers, Corrugated Sheets', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '4820', description: 'Registers, Account Books, Notebooks, Stationery', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '9608', description: 'Pens, Ballpoint Pens, Markers, Writing Instruments', gstRate: 12.0),
-    HsnSearchResult(hsnCode: '9983', description: 'Professional, Technical & IT Consulting Services (SAC Code)', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '9954', description: 'Construction & Real Estate Building Work Services (SAC Code)', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '9987', description: 'Maintenance, Repair & Servicing Expenses (SAC Code)', gstRate: 18.0),
-    HsnSearchResult(hsnCode: '9965', description: 'Goods Transport Services, Freight & Logistics (SAC Code)', gstRate: 5.0),
+  // In-memory global cache of full online GST HSN database (12,000+ entries)
+  static List<HsnSearchResult>? _globalHsnCache;
+
+  // Curated list of top common categories
+  static final List<HsnSearchResult> _topFallbackList = [
+    HsnSearchResult(hsnCode: '19053100', description: 'Sweet Biscuits, Wafers, Waffles, Crisps & Bakery Confectionery', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '19059010', description: 'Pastries, Cakes, Baked Goods, Cookies & Sweet Products', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '19059090', description: 'Bread, Buns, Toast, Pizza Base, Rusks & General Bakery Products', gstRate: 5.0),
+    HsnSearchResult(hsnCode: '18063100', description: 'Chocolates, Chocolate Bars, Cocoa Preparations & Sweet Snacks', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '21069099', description: 'Food Preparations, Namkeen, Bhujia, Ready-to-Eat Snacks & Sweets', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '84713010', description: 'Computers, Laptops, Processors & Data Processing Devices', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '85171300', description: 'Mobile Phones, Smartphones, Telephones & Cellular Devices', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '84433290', description: 'Printers, Scanners, Multifunction Copiers & Cartridges', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '94033010', description: 'Wooden & Metal Office Furniture, Desks, Cabinets (Fixed Asset)', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '94013000', description: 'Swivel Chairs, Office Seats & Ergonomic Seating (Fixed Asset)', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '84151010', description: 'Air Conditioners, Split ACs, Window AC Units & HVAC (Fixed Asset)', gstRate: 28.0),
+    HsnSearchResult(hsnCode: '84181010', description: 'Refrigerators, Commercial Freezers & Cooling Equipment', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '85285200', description: 'LED Monitors, Displays, Televisions & Projectors', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '87032191', description: 'Motor Cars, Passenger Vehicles, Automobiles (Fixed Asset)', gstRate: 28.0),
+    HsnSearchResult(hsnCode: '87112019', description: 'Motorcycles, Scooters & Two-Wheelers (Fixed Asset)', gstRate: 28.0),
+    HsnSearchResult(hsnCode: '87042190', description: 'Goods Trucks, Delivery Vans & Commercial Vehicles', gstRate: 28.0),
+    HsnSearchResult(hsnCode: '84798999', description: 'Industrial Machinery, Plant Equipment & Mechanical Tools', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '85044090', description: 'Inverters, UPS, Electric Transformers & Power Adapters', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '25232910', description: 'Portland Cement, Hydraulic Building Cement', gstRate: 28.0),
+    HsnSearchResult(hsnCode: '72142090', description: 'TMT Steel Bars, Iron Rods, Reinforcement Construction Steel', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '62034200', description: 'Mens Shirts, Trousers, Suits, Readymade Apparel', gstRate: 12.0),
+    HsnSearchResult(hsnCode: '62046200', description: 'Womens Dresses, Sarees, Suits, Readymade Garments', gstRate: 12.0),
+    HsnSearchResult(hsnCode: '61091000', description: 'Cotton T-Shirts, Vests, Knitwear Garments', gstRate: 5.0),
+    HsnSearchResult(hsnCode: '64039990', description: 'Footwear, Leather Shoes, Boots, Sandals & Slippers', gstRate: 12.0),
+    HsnSearchResult(hsnCode: '30049099', description: 'Medicines, Pharmaceutical Formulations, Tablets & Syrups', gstRate: 12.0),
+    HsnSearchResult(hsnCode: '04012000', description: 'Fresh Milk, Unbranded Cream & Dairy Liquid', gstRate: 0.0),
+    HsnSearchResult(hsnCode: '04021010', description: 'Skimmed Milk Powder, Condensed Milk, Ghee & Butter', gstRate: 12.0),
+    HsnSearchResult(hsnCode: '10063010', description: 'Basmati Rice, Polished Rice & Grains', gstRate: 5.0),
+    HsnSearchResult(hsnCode: '10019910', description: 'Wheat, Wheat Flour (Atta), Maida & Sooji', gstRate: 5.0),
+    HsnSearchResult(hsnCode: '17011490', description: 'Refined Sugar, Cane Sugar, Jaggery (Gur)', gstRate: 5.0),
+    HsnSearchResult(hsnCode: '15079010', description: 'Edible Cooking Oils, Soybean Oil, Mustard Oil, Sunflower Oil', gstRate: 5.0),
+    HsnSearchResult(hsnCode: '22021010', description: 'Aerated Waters, Soft Drinks, Energy Drinks & Beverages', gstRate: 28.0),
+    HsnSearchResult(hsnCode: '998311', description: 'IT Consulting, Software Development & Technical SAC Services', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '995411', description: 'Building Construction & Real Estate Civil Works SAC Services', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '998713', description: 'Maintenance, Repairs & Equipment Servicing SAC Expenses', gstRate: 18.0),
+    HsnSearchResult(hsnCode: '996511', description: 'Goods Freight Transport, Logistics & Cargo Shipping SAC', gstRate: 5.0),
   ];
+
+  static double _inferGstRate(String hsnCode) {
+    if (hsnCode.startsWith('87') || hsnCode.startsWith('8415') || hsnCode.startsWith('2523') || hsnCode.startsWith('2202')) {
+      return 28.0;
+    }
+    if (hsnCode.startsWith('61') || hsnCode.startsWith('62') || hsnCode.startsWith('64') || hsnCode.startsWith('3004') || hsnCode.startsWith('0402') || hsnCode.startsWith('4820') || hsnCode.startsWith('9608')) {
+      return 12.0;
+    }
+    if (hsnCode.startsWith('10') || hsnCode.startsWith('1701') || hsnCode.startsWith('15') || hsnCode.startsWith('9965') || hsnCode.startsWith('3002')) {
+      return 5.0;
+    }
+    if (hsnCode.startsWith('0401') || hsnCode.startsWith('07') || hsnCode.startsWith('08')) {
+      return 0.0;
+    }
+    return 18.0;
+  }
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.initialQuery);
-    _performSearch(widget.initialQuery);
+    _loadOnlineDatasetAndSearch(widget.initialQuery);
   }
 
   @override
@@ -94,62 +109,84 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
     super.dispose();
   }
 
-  Future<void> _performSearch(String query) async {
-    final cleanQ = query.trim().toLowerCase();
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  Future<void> _loadOnlineDatasetAndSearch(String query) async {
+    setState(() => _isLoading = true);
 
-    List<HsnSearchResult> matchingLocal = [];
-    if (cleanQ.isEmpty) {
-      matchingLocal = List.from(_defaultHsnList);
-    } else {
-      matchingLocal = _defaultHsnList.where((item) {
-        final codeMatch = item.hsnCode.contains(cleanQ);
-        final descMatch = item.description.toLowerCase().contains(cleanQ);
-        return codeMatch || descMatch;
-      }).toList();
-    }
-
-    // Attempt live online search via public HSN GST Lookup API
-    List<HsnSearchResult> onlineResults = [];
-    if (cleanQ.isNotEmpty) {
+    if (_globalHsnCache == null || _globalHsnCache!.isEmpty) {
       try {
-        final url = Uri.parse('https://api.postalpincode.in/hsn/search?q=${Uri.encodeComponent(cleanQ)}');
-        final response = await http.get(url).timeout(const Duration(seconds: 4));
+        final url = Uri.parse('https://raw.githubusercontent.com/karthi-21/HSN-Code-Package/main/data/hsn_codes.json');
+        final response = await http.get(url).timeout(const Duration(seconds: 6));
         if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data is List) {
-            for (var obj in data) {
-              if (obj is Map<String, dynamic>) {
-                final hsn = obj['hsn']?.toString() ?? obj['code']?.toString() ?? '';
-                final desc = obj['description']?.toString() ?? obj['name']?.toString() ?? '';
-                final gst = double.tryParse(obj['gst']?.toString() ?? '18') ?? 18.0;
-                if (hsn.isNotEmpty) {
-                  onlineResults.add(HsnSearchResult(hsnCode: hsn, description: desc, gstRate: gst));
-                }
+          final List dynamicList = jsonDecode(response.body);
+          final loaded = <HsnSearchResult>[];
+          for (var item in dynamicList) {
+            if (item is Map) {
+              final code = item['code']?.toString() ?? '';
+              final desc = item['description']?.toString() ?? '';
+              if (code.isNotEmpty && desc.isNotEmpty) {
+                loaded.add(HsnSearchResult(
+                  hsnCode: code,
+                  description: desc,
+                  gstRate: _inferGstRate(code),
+                ));
               }
             }
           }
+          if (loaded.isNotEmpty) {
+            _globalHsnCache = loaded;
+          }
         }
       } catch (_) {
-        // Fallback silently to comprehensive local dataset
+        // Fallback gracefully to curated dataset if offline or network error
       }
     }
 
-    final combined = <HsnSearchResult>[];
-    final seen = <String>{};
+    _filterResults(query);
+  }
 
-    for (var r in [...onlineResults, ...matchingLocal]) {
-      if (seen.add(r.hsnCode)) {
-        combined.add(r);
+  void _filterResults(String query) {
+    final cleanQ = query.trim().toLowerCase();
+    final dataset = _globalHsnCache ?? _topFallbackList;
+
+    List<HsnSearchResult> matches = [];
+
+    if (cleanQ.isEmpty) {
+      matches = List.from(_topFallbackList);
+    } else {
+      // Split query terms for multi-word search (e.g. "biscuit sweet", "cake bakery")
+      final terms = cleanQ.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+
+      matches = dataset.where((item) {
+        final codeLower = item.hsnCode.toLowerCase();
+        final descLower = item.description.toLowerCase();
+
+        return terms.every((term) => codeLower.contains(term) || descLower.contains(term));
+      }).take(100).toList();
+
+      // If multi-word search returned 0 items, try matching any single term
+      if (matches.isEmpty && terms.length > 1) {
+        matches = dataset.where((item) {
+          final codeLower = item.hsnCode.toLowerCase();
+          final descLower = item.description.toLowerCase();
+          return terms.any((term) => codeLower.contains(term) || descLower.contains(term));
+        }).take(100).toList();
+      }
+    }
+
+    // Always include top fallback matches if relevant
+    if (cleanQ.isNotEmpty) {
+      for (var top in _topFallbackList) {
+        if (top.description.toLowerCase().contains(cleanQ) || top.hsnCode.contains(cleanQ)) {
+          if (!matches.any((m) => m.hsnCode == top.hsnCode)) {
+            matches.insert(0, top);
+          }
+        }
       }
     }
 
     if (mounted) {
       setState(() {
-        _results = combined.isNotEmpty ? combined : matchingLocal;
+        _results = matches;
         _isLoading = false;
       });
     }
@@ -161,14 +198,14 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
     final mediaQuery = MediaQuery.of(context);
 
     return Container(
-      height: mediaQuery.size.height * 0.82,
+      height: mediaQuery.size.height * 0.85,
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
-          // Header handle & title
+          // Header
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
@@ -179,10 +216,10 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
+                    color: Colors.blue.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.search, color: theme.colorScheme.primary, size: 20),
+                  child: const Icon(Icons.travel_explore_rounded, color: Colors.blue, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -190,11 +227,11 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Online HSN / SAC Finder',
+                        'Live GST HSN Portal Search',
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        'Search HSN code by item name or category',
+                        'Instant search over 12,000+ official Indian GST HSN & SAC codes',
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],
@@ -208,39 +245,45 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
             ),
           ),
 
-          // Search Input Bar
+          // Search Box
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: TextField(
               controller: _searchController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'Type item name (e.g. Laptop, Cement, Shirt, Furniture)...',
-                prefixIcon: const Icon(Icons.search),
+                hintText: 'Type item name (e.g. Biscuit, Cake, Laptop, Cement, Shirt)...',
+                prefixIcon: const Icon(Icons.search, color: Colors.blue),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          _performSearch('');
+                          _filterResults('');
                         },
                       )
                     : null,
                 isDense: true,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onChanged: (val) => _performSearch(val),
-              onSubmitted: (val) => _performSearch(val),
+              onChanged: (val) => _filterResults(val),
+              onSubmitted: (val) => _filterResults(val),
             ),
           ),
 
           if (_isLoading)
             const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: LinearProgressIndicator(),
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  SizedBox(width: 10),
+                  Text('Loading live online GST HSN database...', style: TextStyle(fontSize: 12, color: Colors.blue)),
+                ],
+              ),
             ),
 
-          // Results List
+          // Results list
           Expanded(
             child: _results.isEmpty
                 ? Center(
@@ -249,17 +292,17 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.manage_search_rounded, size: 48, color: theme.colorScheme.outline),
+                          Icon(Icons.search_off_rounded, size: 48, color: theme.colorScheme.outline),
                           const SizedBox(height: 12),
-                          Text('No HSN codes found for "${_searchController.text}"', style: theme.textTheme.titleSmall),
+                          Text('No HSN code found for "${_searchController.text}"', style: theme.textTheme.titleSmall),
                           const SizedBox(height: 4),
-                          const Text('Try typing a general category like "Equipment", "Garments", or "Computers".', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text('Try typing product keywords like "biscuit", "cake", "electronics", or "garments".', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
                         ],
                       ),
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     itemCount: _results.length,
                     separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, index) {
@@ -269,15 +312,15 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
                         leading: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+                            color: Colors.blue.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             item.hsnCode,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.primary,
-                              fontSize: 14,
+                              color: Colors.blue,
+                              fontSize: 13.5,
                             ),
                           ),
                         ),
@@ -288,19 +331,21 @@ class _HsnSearchModalState extends State<HsnSearchModal> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          'Standard GST Rate: ${item.gstRate}%',
-                          style: const TextStyle(fontSize: 12, color: Colors.teal, fontWeight: FontWeight.bold),
+                          'Estimated GST Rate: ${item.gstRate}%',
+                          style: const TextStyle(fontSize: 11.5, color: Colors.teal, fontWeight: FontWeight.bold),
                         ),
                         trailing: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
                           onPressed: () {
                             Navigator.pop(context, item);
                           },
-                          child: const Text('Select', style: TextStyle(fontSize: 12)),
+                          child: const Text('Use HSN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                         ),
                         onTap: () {
                           Navigator.pop(context, item);

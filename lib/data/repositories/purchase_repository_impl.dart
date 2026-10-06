@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:business_sahaj_erp/data/local/collections/purchase_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/purchase_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/party_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/transaction_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/sync_queue_collection.dart';
@@ -235,7 +236,29 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
         await isar.syncQueues.put(queueItem);
 
         // 6. Record Primary Purchase / Fixed Asset Purchase Transaction in transactions collection
-        final isFA = purchase.purchaseNumber?.toUpperCase().startsWith('FA-') == true;
+        final isFA = (purchase.purchaseNumber != null && purchase.purchaseNumber!.toUpperCase().contains('FA')) ||
+            items.any((i) => i.itemName != null && i.itemName!.toLowerCase().contains('asset'));
+
+        // Update FixedAssetItem stock quantity in Isar if this is a Purchase FA
+        try {
+          final allAssets = await isar.collection<FixedAssetItem>().filter().isDeletedEqualTo(false).findAll();
+          for (var pi in items) {
+            final matchAsset = allAssets.firstWhere(
+              (fa) => (fa.id == pi.itemId && pi.itemId != null && pi.itemId! > 0) ||
+                      (fa.uuid != null && fa.uuid == pi.item.value?.uuid) ||
+                      (fa.assetName != null && pi.itemName != null && fa.assetName!.trim().toLowerCase() == pi.itemName!.trim().toLowerCase()),
+              orElse: () => FixedAssetItem(),
+            );
+            if (matchAsset.id != Isar.autoIncrement && matchAsset.id != 0) {
+              matchAsset.quantity = (matchAsset.quantity ?? 0.0) + (pi.quantity ?? 1.0);
+              matchAsset.updatedAt = DateTime.now();
+              matchAsset.isSynced = false;
+              await isar.collection<FixedAssetItem>().put(matchAsset);
+            }
+          }
+        } catch (_) {}
+
+        final uniqueTs = '${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(99999)}';
 
         Transaction? existingBillTxn;
         if (!isNew && purchase.uuid != null) {
@@ -249,7 +272,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
         final billTxn = existingBillTxn ?? Transaction();
         billTxn.uuid ??= _generateUuid();
-        billTxn.transactionNumber ??= isFA ? 'FA-PUR-TXN-${DateTime.now().millisecondsSinceEpoch}' : 'PUR-TXN-${DateTime.now().millisecondsSinceEpoch}';
+        billTxn.transactionNumber ??= isFA ? 'FA-PUR-TXN-$uniqueTs' : 'PUR-TXN-$uniqueTs';
         billTxn.transactionType = isFA ? 'Purchase FA' : 'Purchase';
         billTxn.amount = purchase.grandTotal;
         billTxn.transactionDate = purchase.purchaseDate ?? DateTime.now();
@@ -303,7 +326,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
 
           final txn = existingTxn ?? Transaction();
           txn.uuid ??= _generateUuid();
-          txn.transactionNumber ??= isFA ? 'FA-PAY-${DateTime.now().millisecondsSinceEpoch}' : 'PAY-${DateTime.now().millisecondsSinceEpoch}';
+          txn.transactionNumber ??= isFA ? 'FA-PAY-$uniqueTs' : 'PAY-$uniqueTs';
           txn.transactionType = 'Payment';
           txn.amount = purchase.paidAmount;
           txn.transactionDate = purchase.purchaseDate ?? DateTime.now();
