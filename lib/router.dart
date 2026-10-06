@@ -78,6 +78,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
+      GoRoute(
+        path: '/purchase-fa',
+        name: 'purchase-fa',
+        builder: (context, state) => const AddEditPurchaseScreen(isFixedAsset: true),
+      ),
+      GoRoute(
+        path: '/sale-fa',
+        name: 'sale-fa',
+        builder: (context, state) => const AddEditInvoiceScreen(isFixedAsset: true),
+      ),
       ShellRoute(
         builder: (context, state, child) {
           return MainLayout(child: child);
@@ -160,18 +170,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               final create = state.uri.queryParameters['create'] == 'true';
               return ExpensesScreen(createImmediately: create);
             },
-          ),
-          GoRoute(
-            parentNavigatorKey: rootNavigatorKey,
-            path: '/purchase-fa',
-            name: 'purchase-fa',
-            builder: (context, state) => const AddEditPurchaseScreen(isFixedAsset: true),
-          ),
-          GoRoute(
-            parentNavigatorKey: rootNavigatorKey,
-            path: '/sale-fa',
-            name: 'sale-fa',
-            builder: (context, state) => const AddEditInvoiceScreen(isFixedAsset: true),
           ),
           GoRoute(
             path: '/reports',
