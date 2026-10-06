@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
-import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_fixed_asset_screen.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_fixed_asset_sheet.dart';
 
 class SearchableItemDropdown extends StatefulWidget {
   final List<Item> items;
@@ -52,12 +52,12 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
         List<Item> filtered = [];
         if (query.isEmpty) return const Iterable<Item>.empty();
 
-          filtered = widget.items.where((i) {
-            final name = i.itemName?.toLowerCase() ?? '';
-            final code = i.itemCode?.toLowerCase() ?? '';
-            final barcode = i.barcode?.toLowerCase() ?? '';
-            return name.contains(query) || code.contains(query) || barcode.contains(query);
-          }).take(30).toList();
+        filtered = widget.items.where((i) {
+          final name = i.itemName?.toLowerCase() ?? '';
+          final code = i.itemCode?.toLowerCase() ?? '';
+          final barcode = i.barcode?.toLowerCase() ?? '';
+          return name.contains(query) || code.contains(query) || barcode.contains(query);
+        }).take(30).toList();
         final createActionItem = Item()
           ..uuid = 'NEW_ACTION'
           ..itemName = '+ Create New "$query"';
@@ -66,18 +66,21 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
       },
       onSelected: (item) {
         if (item.uuid == 'NEW_ACTION') {
-                    
           final query = _controller.text.trim();
           FocusScope.of(context).unfocus();
           _controller.clear();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => widget.isFixedAsset ? AddEditFixedAssetScreen(
-              prefilledName: query.isNotEmpty ? query : null,
-            ) : AddEditItemScreen(
-              prefilledItem: query.isNotEmpty ? (Item()..itemName = query) : null,
-            )),
-          );
+          if (widget.isFixedAsset) {
+            AddEditFixedAssetSheet.show(context);
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddEditItemScreen(
+                  prefilledItem: query.isNotEmpty ? (Item()..itemName = query) : null,
+                ),
+              ),
+            );
+          }
           return;
         }
         widget.onSelected(item);
@@ -103,7 +106,7 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
               ),
-                            child: Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -119,14 +122,18 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
                         final query = _controller.text.trim();
                         FocusScope.of(context).unfocus();
                         _controller.clear();
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => widget.isFixedAsset ? AddEditFixedAssetScreen(
-                            prefilledName: query.isNotEmpty ? query : null,
-                          ) : AddEditItemScreen(
-                            prefilledItem: query.isNotEmpty ? (Item()..itemName = query) : null,
-                          )),
-                        );
+                        if (widget.isFixedAsset) {
+                          AddEditFixedAssetSheet.show(context);
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddEditItemScreen(
+                                prefilledItem: query.isNotEmpty ? (Item()..itemName = query) : null,
+                              ),
+                            ),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.add_circle, size: 18),
                       label: const Text('Add New', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -138,44 +145,29 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
                   ),
                   Flexible(
                     child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: options.length,
-                itemBuilder: (context, index) {
-                  final item = options.elementAt(index);
-                  if (item.uuid == 'NEW_ACTION') {
-                    return const SizedBox.shrink(); /*
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.12),
-                        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5))),
-                      ),
-                      child: ListTile(
-                        dense: true,
-                        leading: Icon(Icons.add_circle_outline, color: theme.colorScheme.primary, size: 18),
-                        title: Text(
-                          item.itemName ?? '+ Create New Product',
-                          style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.primary, fontSize: 12.5),
-                        ),
-                        onTap: () => onSelected(item),
-                      ),
-                    ); */
-                  }
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final item = options.elementAt(index);
+                        if (item.uuid == 'NEW_ACTION') {
+                          return const SizedBox.shrink();
+                        }
 
-                  final rate = item.sellRate ?? 0.0;
-                  final stock = item.currentStock ?? 0.0;
+                        final rate = item.sellRate ?? 0.0;
+                        final stock = item.currentStock ?? 0.0;
 
-                  return ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                    title: Text(item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
-                    subtitle: Text(
-                      'Code: ${item.itemCode ?? "N/A"} | Price: â‚¹${rate.toStringAsFixed(2)} | Stock: $stock',
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
-                    ),
-                    onTap: () => onSelected(item),
-                  );
-                },
+                        return ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                          title: Text(item.itemName ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5)),
+                          subtitle: Text(
+                            'Code: ${item.itemCode ?? "N/A"} | Price: ₹${rate.toStringAsFixed(2)} | Stock: $stock',
+                            style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
+                          ),
+                          onTap: () => onSelected(item),
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -212,4 +204,3 @@ class _SearchableItemDropdownState extends State<SearchableItemDropdown> {
     );
   }
 }
-

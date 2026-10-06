@@ -37,6 +37,7 @@ import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_colle
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/task_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 
 class DatabaseService {
   Isar? _isar;
@@ -130,6 +131,7 @@ class DatabaseService {
             MachinerySchema,
             MachineryCategorySchema,
             TaskSchema,
+            FixedAssetItemSchema,
           ],
           name: activeFirmId,
           directory: dirPath ?? '',
@@ -201,6 +203,7 @@ class DatabaseService {
               MachinerySchema,
               MachineryCategorySchema,
               TaskSchema,
+              FixedAssetItemSchema,
             ],
             name: activeFirmId,
             directory: dirPath ?? '',

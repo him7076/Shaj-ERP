@@ -24,6 +24,7 @@ import 'package:business_sahaj_erp/features/vault/presentation/providers/vault_p
 import 'package:business_sahaj_erp/core/widgets/modern_form_section.dart';
 import 'package:business_sahaj_erp/core/widgets/searchable_item_dropdown.dart';
 import 'package:business_sahaj_erp/core/widgets/sub_item_picker_modal.dart';
+import 'package:business_sahaj_erp/core/widgets/hsn_search_modal.dart';
 
 class AddEditItemScreen extends ConsumerStatefulWidget {
   final String? itemUuid;
@@ -2069,11 +2070,23 @@ class _AddEditItemScreenState extends ConsumerState<AddEditItemScreen> {
                       controller: controller,
                       focusNode: focusNode,
                       onEditingComplete: onEditingComplete,
-                      decoration: const InputDecoration(
-                        labelText: 'HSN / SAC Code (Auto Suggest)',
-                        
-                        prefixIcon: Icon(Icons.history_edu),
+                      decoration: InputDecoration(
+                        labelText: 'HSN / SAC Code',
+                        prefixIcon: const Icon(Icons.history_edu),
                         hintText: 'e.g. 8471, 6109, 1006',
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search, color: Colors.blue),
+                          tooltip: 'Search HSN Online',
+                          onPressed: () async {
+                            final res = await HsnSearchModal.show(context, initialQuery: _nameController.text.trim());
+                            if (res != null) {
+                              setState(() {
+                                _hsnController.text = res.hsnCode;
+                                _gstRate = res.gstRate;
+                              });
+                            }
+                          },
+                        ),
                       ),
                     );
                   },

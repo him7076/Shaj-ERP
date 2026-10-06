@@ -96,7 +96,7 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
   @override
   Future<void> savePurchase(Purchase purchase, List<PurchaseItem> items) async {
     try {
-      final isNew = purchase.id == Isar.autoIncrement;
+      final isNew = purchase.id == Isar.autoIncrement || purchase.id == 0;
       purchase.uuid ??= _generateUuid();
       if (purchase.purchaseNumber == null || purchase.purchaseNumber!.trim().isEmpty) {
         final isFA = purchase.purchaseNumber?.toUpperCase().startsWith('FA-') == true;
@@ -234,7 +234,54 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
           ..updatedAt = DateTime.now();
         await isar.syncQueues.put(queueItem);
 
-        // 6. Auto-create/update Payment Transaction if paidAmount > 0
+        // 6. Record Primary Purchase / Fixed Asset Purchase Transaction in transactions collection
+        final isFA = purchase.purchaseNumber?.toUpperCase().startsWith('FA-') == true;
+
+        Transaction? existingBillTxn;
+        if (!isNew && purchase.uuid != null) {
+          existingBillTxn = await isar.transactions
+              .filter()
+              .linkedBillUuidEqualTo(purchase.uuid!)
+              .and()
+              .group((q) => q.transactionTypeEqualTo('Purchase').or().transactionTypeEqualTo('Purchase FA'))
+              .findFirst();
+        }
+
+        final billTxn = existingBillTxn ?? Transaction();
+        billTxn.uuid ??= _generateUuid();
+        billTxn.transactionNumber ??= isFA ? 'FA-PUR-TXN-${DateTime.now().millisecondsSinceEpoch}' : 'PUR-TXN-${DateTime.now().millisecondsSinceEpoch}';
+        billTxn.transactionType = isFA ? 'Purchase FA' : 'Purchase';
+        billTxn.amount = purchase.grandTotal;
+        billTxn.transactionDate = purchase.purchaseDate ?? DateTime.now();
+        billTxn.partyUuid = party?.uuid ?? (purchase.partyId != null ? purchase.partyId.toString() : null);
+        billTxn.partyName = purchase.partyName;
+        billTxn.remarks = '${isFA ? "Fixed Asset Purchase" : "Purchase Bill"} #${purchase.purchaseNumber}';
+        billTxn.paymentMode = purchase.paymentMode ?? 'Credit';
+        billTxn.paymentStatus = purchase.paymentStatus ?? 'Unpaid';
+        billTxn.linkedBillUuid = purchase.uuid;
+        billTxn.linkedBillNumber = purchase.purchaseNumber;
+        billTxn.createdAt = billTxn.createdAt ?? DateTime.now();
+        billTxn.updatedAt = DateTime.now();
+        billTxn.isDeleted = false;
+        billTxn.isSynced = false;
+        billTxn.version = existingBillTxn == null ? 1 : existingBillTxn.version + 1;
+
+        if (!kIsWeb && party != null) {
+          try { billTxn.party.value = party; } catch (_) {}
+        }
+
+        final bId = await isar.transactions.put(billTxn);
+        final bQueue = SyncQueue()
+          ..uuid = _generateUuid()
+          ..entityType = 'Transaction'
+          ..entityId = bId
+          ..entityUuid = billTxn.uuid
+          ..operation = existingBillTxn == null ? 'Insert' : 'Update'
+          ..createdAt = DateTime.now()
+          ..updatedAt = DateTime.now();
+        await isar.syncQueues.put(bQueue);
+
+        // 7. Auto-create/update Payment Transaction if paidAmount > 0
         if (purchase.paidAmount != null && purchase.paidAmount! > 0) {
           String extPaymentMode = 'Cash';
           if (purchase.remarks != null) {
@@ -244,11 +291,14 @@ class PurchaseRepositoryImpl extends BaseIsarRepository<Purchase> implements Pur
             }
           }
           
-          final isFA = purchase.purchaseNumber?.toUpperCase().startsWith('FA-') == true;
-          
           Transaction? existingTxn;
           if (!isNew && purchase.uuid != null) {
-            existingTxn = await isar.transactions.filter().linkedBillUuidEqualTo(purchase.uuid!).findFirst();
+            existingTxn = await isar.transactions
+                .filter()
+                .linkedBillUuidEqualTo(purchase.uuid!)
+                .and()
+                .transactionTypeEqualTo('Payment')
+                .findFirst();
           }
 
           final txn = existingTxn ?? Transaction();

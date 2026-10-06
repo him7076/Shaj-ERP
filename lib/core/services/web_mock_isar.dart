@@ -32,6 +32,7 @@ import 'package:business_sahaj_erp/data/local/collections/whatsapp_mapping_colle
 import 'package:business_sahaj_erp/data/local/collections/expense_item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/machinery_category_collection.dart';
+import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 
 class WebMockIsar implements Isar {
   int? _parseInt(dynamic val) {
@@ -352,6 +353,7 @@ class WebMockIsar implements Isar {
     if (T == DeletedVoucher) return 'deletedVouchers';
     if (T == StockAdjustment) return 'stockAdjustments';
     if (T == WhatsAppMapping) return 'whatsAppMappings';
+    if (T == FixedAssetItem) return 'fixedAssetItems';
     return 'dynamics';
   }
 
@@ -406,6 +408,7 @@ class WebMockIsar implements Isar {
     if (name == 'deletedVouchers') return WebMockCollection<DeletedVoucher>('deletedVouchers', _db, this);
     if (name == 'stockAdjustments') return WebMockCollection<StockAdjustment>('stockAdjustments', _db, this);
     if (name == 'whatsAppMappings') return WebMockCollection<WhatsAppMapping>('whatsAppMappings', _db, this);
+    if (name == 'fixedAssetItems') return WebMockCollection<FixedAssetItem>('fixedAssetItems', _db, this);
 
     return WebMockCollection<dynamic>(name, _db, this);
   }

@@ -18,6 +18,8 @@ import 'package:business_sahaj_erp/features/items/presentation/providers/item_pr
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/item_detail_screen.dart';
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_item_sheet.dart';
+import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_fixed_asset_sheet.dart';
+import 'package:business_sahaj_erp/data/local/collections/fixed_asset_collection.dart';
 import 'package:business_sahaj_erp/presentation/providers/core_providers.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:business_sahaj_erp/core/services/logger_service.dart';
@@ -547,7 +549,9 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
 
           // Item Grid
           Expanded(
-            child: itemsAsync.when(
+            child: widget.lockedCategoryName == 'Fixed Assets'
+                ? _buildFixedAssetGrid(theme, filter, crossAxisCount, childAspectRatio)
+                : itemsAsync.when(
               data: (list) {
                 if (list.isEmpty) {
                   return Center(
@@ -639,16 +643,22 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         icon: const Icon(Icons.add),
-        label: const Text('Add Product'),
+        label: Text(widget.lockedCategoryName == 'Fixed Assets' ? 'Add Fixed Asset' : 'Add Product'),
+        backgroundColor: widget.lockedCategoryName == 'Fixed Assets' ? Colors.purple : null,
         onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddEditItemScreen(),
-            ),
-          );
-          ref.invalidate(filteredItemsProvider);
-      ref.invalidate(itemsListProvider);
+          if (widget.lockedCategoryName == 'Fixed Assets') {
+            await AddEditFixedAssetSheet.show(context);
+            ref.invalidate(fixedAssetListProvider);
+          } else {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AddEditItemScreen(),
+              ),
+            );
+            ref.invalidate(filteredItemsProvider);
+            ref.invalidate(itemsListProvider);
+          }
         },
       ),
     );
@@ -812,6 +822,137 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFixedAssetGrid(ThemeData theme, ItemSearchFilter filter, int crossAxisCount, double childAspectRatio) {
+    final fixedAssetsAsync = ref.watch(fixedAssetListProvider);
+    return fixedAssetsAsync.when(
+      data: (assets) {
+        final query = filter.query.trim().toLowerCase();
+        final filteredAssets = query.isEmpty
+            ? assets
+            : assets.where((a) {
+                final name = a.assetName?.toLowerCase() ?? '';
+                final code = a.assetCode?.toLowerCase() ?? '';
+                final serial = a.serialNumber?.toLowerCase() ?? '';
+                final hsn = a.hsnCode?.toLowerCase() ?? '';
+                return name.contains(query) || code.contains(query) || serial.contains(query) || hsn.contains(query);
+              }).toList();
+
+        if (filteredAssets.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.precision_manufacturing_outlined, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                const SizedBox(height: 12),
+                Text('No fixed assets found.', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Fixed Asset'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+                  onPressed: () async {
+                    await AddEditFixedAssetSheet.show(context);
+                    ref.invalidate(fixedAssetListProvider);
+                  },
+                ),
+              ],
+            ),
+          );
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemCount: filteredAssets.length,
+          itemBuilder: (context, index) {
+            final asset = filteredAssets[index];
+            return NeuCard(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: Colors.purple.withOpacity(0.3), width: 1.0),
+              ),
+              child: InkWell(
+                onTap: () async {
+                  await AddEditFixedAssetSheet.show(context, asset: asset);
+                  ref.invalidate(fixedAssetListProvider);
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.precision_manufacturing_rounded, size: 20, color: Colors.purple),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  asset.assetName ?? 'Unnamed Asset',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${asset.assetCode ?? "No Code"} | ${asset.assetType ?? "General"}',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            currencyFormat.format(asset.purchasePrice ?? 0.0),
+                            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w900, color: Colors.purple),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'Qty: ${asset.quantity ?? 1.0} ${asset.unit ?? "PCS"}',
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.purple),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error loading assets: $e', style: const TextStyle(color: Colors.red))),
     );
   }
 

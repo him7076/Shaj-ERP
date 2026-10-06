@@ -11,6 +11,7 @@ import 'package:business_sahaj_erp/core/services/logger_service.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:business_sahaj_erp/features/items/presentation/screens/add_edit_item_screen.dart';
+import 'package:business_sahaj_erp/core/widgets/hsn_search_modal.dart';
 
 class AddItemSheet extends ConsumerStatefulWidget {
   final String? initialName;
@@ -34,6 +35,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   late final TextEditingController _nameController;
   final TextEditingController _codeController = TextEditingController();
   final TextEditingController _sellRateController = TextEditingController();
+  final TextEditingController _hsnController = TextEditingController();
   
   final TextEditingController _tertiaryUnitController = TextEditingController();
   final TextEditingController _secToTerConversionController = TextEditingController();
@@ -70,6 +72,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
   void dispose() {
     _nameController.dispose();
     _codeController.dispose();
+    _hsnController.dispose();
     _sellRateController.dispose();
     _tertiaryUnitController.dispose();
     _secToTerConversionController.dispose();
@@ -91,6 +94,7 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
         ..sellRate = double.tryParse(_sellRateController.text.trim()) ?? 0.0
         ..gstApplicable = _selectedGstRate > 0
         ..gstRate = _selectedGstRate
+        ..hsnCode = _hsnController.text.trim()
         ..currentStock = 0.0
         ..reorderLevel = 0.0
         ..openingStock = 0.0
@@ -217,6 +221,36 @@ class _AddItemSheetState extends ConsumerState<AddItemSheet> {
                         prefixIcon: Icon(Icons.shopping_bag_outlined),
                       ),
                       validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // HSN Code Input Row
+              ResponsiveFormRow(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: TextFormField(
+                      controller: _hsnController,
+                      decoration: InputDecoration(
+                        labelText: 'HSN / SAC Code',
+                        prefixIcon: const Icon(Icons.tag),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.search, color: Colors.blue),
+                          tooltip: 'Search HSN Online',
+                          onPressed: () async {
+                            final res = await HsnSearchModal.show(context, initialQuery: _nameController.text.trim());
+                            if (res != null) {
+                              setState(() {
+                                _hsnController.text = res.hsnCode;
+                                _selectedGstRate = res.gstRate;
+                              });
+                            }
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ],
