@@ -4,7 +4,7 @@ import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:excel/excel.dart';
+import 'package:excel/excel.dart' hide Border;
 import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
@@ -165,7 +165,7 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               taxableAmount: ii.taxableAmount,
               subtotal: (ii.quantity ?? 1.0) * (ii.rate ?? 0.0),
               purchaseRate: fetchedItem.buyRate ?? 0.0,
-              isTaxInclusive: inv.inclusiveOfTax ?? false,
+              isTaxInclusive: false,
             ));
           }
         }
@@ -610,8 +610,8 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
       final rows1 = [
         ['Item Name', item.itemName ?? ''],
         ['Item Code', item.itemCode ?? ''],
-        ['Category', item.category.value?.name ?? ''],
-        ['Brand', item.brand.value?.name ?? ''],
+        ['Category', item.category.value?.categoryName ?? ''],
+        ['Brand', item.brand.value?.brandName ?? ''],
         ['HSN Code', item.hsnCode ?? ''],
         ['Barcode', item.barcode ?? ''],
         ['Primary Unit', item.primaryUnitName ?? item.unit.value?.shortName ?? ''],
@@ -620,18 +620,17 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
         ['Selling Price (Sell Rate)', (item.sellRate ?? 0.0).toStringAsFixed(2)],
         ['Purchase Price (Buy Rate)', (item.buyRate ?? 0.0).toStringAsFixed(2)],
         ['MRP', (item.mrp ?? 0.0).toStringAsFixed(2)],
-        ['Min Wholesale Qty', (item.wholesaleMinQty ?? 0.0).toString()],
+        ['Minimum Selling Price', (item.minimumSellingPrice ?? 0.0).toStringAsFixed(2)],
         ['Wholesale Rate', (item.wholesaleRate ?? 0.0).toStringAsFixed(2)],
         ['GST Applicable', item.gstApplicable ? 'Yes' : 'No'],
         ['GST Rate (%)', (item.gstRate ?? 0.0).toString()],
-        ['Inclusive of Tax', item.inclusiveOfTax ? 'Yes' : 'No'],
-        ['Tax Exemption', item.taxExemption ?? 'N/A'],
+        ['Cess Rate (%)', (item.cessRate ?? 0.0).toString()],
         ['Opening Stock', (item.openingStock ?? 0.0).toString()],
         ['Current Stock', (item.currentStock ?? 0.0).toString()],
-        ['Min Stock Level (Alert)', (item.minStockAlert ?? 0.0).toString()],
-        ['Max Stock Limit', (item.maxStockLimit ?? 0.0).toString()],
-        ['Storage Location', item.location ?? 'N/A'],
-        ['Description / Remarks', item.description ?? ''],
+        ['Minimum Stock Level', (item.minimumStock ?? 0.0).toString()],
+        ['Reorder Level', (item.reorderLevel ?? 0.0).toString()],
+        ['Dimensions', item.dimensions ?? 'N/A'],
+        ['Description / Remarks', item.description ?? item.notes ?? ''],
       ];
 
       for (var r in rows1) {
