@@ -925,7 +925,7 @@ if (_isPaidAmountAutoFill) {
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 Text(
-                  'â‚¹${_grandTotal.toStringAsFixed(2)}',
+                  '₹${_grandTotal.toStringAsFixed(2)}',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.primary,
@@ -1386,7 +1386,7 @@ if (_isPaidAmountAutoFill) {
             ),
           ),
           Text(
-            'â‚¹${val.toStringAsFixed(2)}',
+            '₹${val.toStringAsFixed(2)}',
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: (isBold || isPending) ? FontWeight.bold : FontWeight.normal,
               fontSize: (isBold || isPending) ? 15 : 13,

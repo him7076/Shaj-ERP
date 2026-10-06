@@ -4,6 +4,8 @@ import 'package:business_sahaj_erp/core/widgets/neu_card.dart';
 import 'package:business_sahaj_erp/presentation/providers/theme_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:excel/excel.dart';
+import 'package:business_sahaj_erp/core/utils/excel_download_helper.dart';
 import 'package:isar/isar.dart';
 import 'package:business_sahaj_erp/data/local/collections/item_collection.dart';
 import 'package:business_sahaj_erp/data/local/collections/invoice_collection.dart';
@@ -44,6 +46,13 @@ class _ItemTransaction {
   final String targetUuid;
   final String? paymentStatus;
   final StockAdjustment? rawAdjustment;
+  final String? hsnCode;
+  final double? gstRate;
+  final double? discount;
+  final double? taxableAmount;
+  final double? subtotal;
+  final double? purchaseRate;
+  final bool isTaxInclusive;
 
   _ItemTransaction({
     required this.type,
@@ -58,6 +67,13 @@ class _ItemTransaction {
     required this.targetUuid,
     this.paymentStatus,
     this.rawAdjustment,
+    this.hsnCode,
+    this.gstRate,
+    this.discount,
+    this.taxableAmount,
+    this.subtotal,
+    this.purchaseRate,
+    this.isTaxInclusive = false,
   });
 }
 
@@ -143,6 +159,13 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               totalAmount: ii.taxableAmount ?? (ii.quantity ?? 1.0) * (ii.rate ?? 0.0) - (ii.discount ?? 0.0),
               targetUuid: inv.uuid ?? inv.id.toString(),
               paymentStatus: inv.paymentStatus,
+              hsnCode: ii.hsnCode ?? fetchedItem.hsnCode,
+              gstRate: ii.gstRate ?? fetchedItem.gstRate,
+              discount: ii.discount ?? 0.0,
+              taxableAmount: ii.taxableAmount,
+              subtotal: (ii.quantity ?? 1.0) * (ii.rate ?? 0.0),
+              purchaseRate: fetchedItem.buyRate ?? 0.0,
+              isTaxInclusive: inv.inclusiveOfTax ?? false,
             ));
           }
         }
@@ -190,6 +213,12 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
               totalAmount: pi.taxableAmount ?? (pi.quantity ?? 1.0) * (pi.rate ?? 0.0) - (pi.discount ?? 0.0),
               targetUuid: pur.uuid ?? pur.id.toString(),
               paymentStatus: pur.paymentStatus,
+              hsnCode: pi.hsnCode ?? fetchedItem.hsnCode,
+              gstRate: pi.gstRate ?? fetchedItem.gstRate,
+              discount: pi.discount ?? 0.0,
+              taxableAmount: pi.taxableAmount,
+              subtotal: (pi.quantity ?? 1.0) * (pi.rate ?? 0.0),
+              purchaseRate: pi.rate ?? fetchedItem.buyRate ?? 0.0,
             ));
           }
         }
@@ -563,6 +592,116 @@ class _ItemDetailScreenState extends ConsumerState<ItemDetailScreen> {
     );
   }
 
+  Future<void> _exportItemToExcel() async {
+    if (_item == null) return;
+    try {
+      final excel = Excel.createExcel();
+
+      // Sheet 1: Item Details
+      final sheet1 = excel['Item Details'];
+      excel.setDefaultSheet('Item Details');
+
+      sheet1.appendRow([
+        TextCellValue('Field'),
+        TextCellValue('Value'),
+      ]);
+
+      final item = _item!;
+      final rows1 = [
+        ['Item Name', item.itemName ?? ''],
+        ['Item Code', item.itemCode ?? ''],
+        ['Category', item.category.value?.name ?? ''],
+        ['Brand', item.brand.value?.name ?? ''],
+        ['HSN Code', item.hsnCode ?? ''],
+        ['Barcode', item.barcode ?? ''],
+        ['Primary Unit', item.primaryUnitName ?? item.unit.value?.shortName ?? ''],
+        ['Secondary Unit', item.secondaryUnit ?? 'N/A'],
+        ['Conversion Factor', (item.conversionFactor ?? 1.0).toString()],
+        ['Selling Price (Sell Rate)', (item.sellRate ?? 0.0).toStringAsFixed(2)],
+        ['Purchase Price (Buy Rate)', (item.buyRate ?? 0.0).toStringAsFixed(2)],
+        ['MRP', (item.mrp ?? 0.0).toStringAsFixed(2)],
+        ['Min Wholesale Qty', (item.wholesaleMinQty ?? 0.0).toString()],
+        ['Wholesale Rate', (item.wholesaleRate ?? 0.0).toStringAsFixed(2)],
+        ['GST Applicable', item.gstApplicable ? 'Yes' : 'No'],
+        ['GST Rate (%)', (item.gstRate ?? 0.0).toString()],
+        ['Inclusive of Tax', item.inclusiveOfTax ? 'Yes' : 'No'],
+        ['Tax Exemption', item.taxExemption ?? 'N/A'],
+        ['Opening Stock', (item.openingStock ?? 0.0).toString()],
+        ['Current Stock', (item.currentStock ?? 0.0).toString()],
+        ['Min Stock Level (Alert)', (item.minStockAlert ?? 0.0).toString()],
+        ['Max Stock Limit', (item.maxStockLimit ?? 0.0).toString()],
+        ['Storage Location', item.location ?? 'N/A'],
+        ['Description / Remarks', item.description ?? ''],
+      ];
+
+      for (var r in rows1) {
+        sheet1.appendRow([TextCellValue(r[0]), TextCellValue(r[1])]);
+      }
+
+      // Sheet 2: Transactions
+      final sheet2 = excel['Transactions'];
+      sheet2.appendRow([
+        TextCellValue('Date'),
+        TextCellValue('Voucher Number'),
+        TextCellValue('Transaction Type'),
+        TextCellValue('Party Name'),
+        TextCellValue('HSN Code'),
+        TextCellValue('Qty'),
+        TextCellValue('Unit'),
+        TextCellValue('Rate Per Unit'),
+        TextCellValue('Tax Included'),
+        TextCellValue('Purchase Rate'),
+        TextCellValue('Discount'),
+        TextCellValue('GST Rate (%)'),
+        TextCellValue('Sub Total'),
+        TextCellValue('Taxable Amount'),
+        TextCellValue('Total Amount'),
+      ]);
+
+      final df = DateFormat('dd-MM-yyyy');
+      for (var tx in _itemTransactions) {
+        sheet2.appendRow([
+          TextCellValue(df.format(tx.date)),
+          TextCellValue(tx.voucherNumber),
+          TextCellValue(tx.type),
+          TextCellValue(tx.partyName),
+          TextCellValue(tx.hsnCode ?? item.hsnCode ?? ''),
+          DoubleCellValue(tx.quantity),
+          TextCellValue(tx.unit),
+          DoubleCellValue(tx.rate),
+          TextCellValue(tx.isTaxInclusive ? 'Yes' : 'No'),
+          DoubleCellValue(tx.purchaseRate ?? item.buyRate ?? 0.0),
+          DoubleCellValue(tx.discount ?? 0.0),
+          DoubleCellValue(tx.gstRate ?? item.gstRate ?? 0.0),
+          DoubleCellValue(tx.subtotal ?? (tx.quantity * tx.rate)),
+          DoubleCellValue(tx.taxableAmount ?? (tx.quantity * tx.rate - (tx.discount ?? 0.0))),
+          DoubleCellValue(tx.totalAmount),
+        ]);
+      }
+
+      final bytes = excel.encode();
+      if (bytes != null) {
+        final sanitizedName = (item.itemName ?? 'Item').replaceAll(RegExp(r'[^\w\s\-]'), '_');
+        final fileName = 'Item_Report_${sanitizedName}_${DateFormat("yyyyMMdd").format(DateTime.now())}.xlsx';
+        final resultPath = await ExcelDownloadHelper.downloadExcel(bytes, fileName);
+        if (mounted && resultPath != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Item Excel exported successfully: $fileName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to export item Excel: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
 final theme = Theme.of(context);
@@ -613,23 +752,56 @@ final theme = Theme.of(context);
           leading: (ModalRoute.of(context)?.canPop ?? false) ? const BackButton() : null, 
           title: Text(item.itemName ?? 'Product Details'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => AddEditItemScreen(itemUuid: item.uuid),
-                  ),
-                );
-                _loadItem();
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: 'Item Options',
+              onSelected: (val) async {
+                if (val == 'edit') {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddEditItemScreen(itemUuid: item.uuid),
+                    ),
+                  );
+                  _loadItem();
+                } else if (val == 'delete') {
+                  _deleteItem();
+                } else if (val == 'export_excel') {
+                  _exportItemToExcel();
+                }
               },
-              tooltip: 'Edit Product',
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              onPressed: _deleteItem,
-              tooltip: 'Delete Product',
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, color: Colors.blue, size: 18),
+                      SizedBox(width: 8),
+                      Text('Edit Product'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'export_excel',
+                  child: Row(
+                    children: [
+                      Icon(Icons.ios_share_rounded, color: Colors.purple, size: 18),
+                      SizedBox(width: 8),
+                      Text('Export to Excel'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Text('Delete Product', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
           bottom: const TabBar(

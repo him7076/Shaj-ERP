@@ -113,9 +113,20 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
-    } else if (txn.transactionType == 'Purchase') {
+    } else if (txn.transactionType == 'Purchase' || txn.transactionType == 'Purchase FA') {
       Navigator.of(context,  rootNavigator: true).push<bool>(
-        MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(purchaseUuid: txn.uuid)),
+        MaterialPageRoute(builder: (context) => AddEditPurchaseScreen(
+          purchaseUuid: txn.uuid,
+          isFixedAsset: txn.transactionType == 'Purchase FA',
+        )),
+      ).then((changed) {
+        if (changed == true) ref.invalidate(filteredTransactionsProvider);
+      });
+    } else if (txn.transactionType == 'Sales' || txn.transactionType == 'Sale FA' || txn.transactionType == 'Sales FA') {
+      Navigator.of(context,  rootNavigator: true).push<bool>(
+        MaterialPageRoute(builder: (context) => InvoiceDetailScreen(
+          invoiceUuid: txn.uuid ?? txn.id.toString(),
+        )),
       ).then((changed) {
         if (changed == true) ref.invalidate(filteredTransactionsProvider);
       });
@@ -553,6 +564,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             onPressed: () {
               setState(() {
                 _showSearch = !_showSearch;
+                if (!_showSearch) {
+                  ref.read(transactionSearchFilterProvider.notifier).update(
+                        (state) => state.copyWith(query: ''),
+                      );
+                }
               });
             },
           ),

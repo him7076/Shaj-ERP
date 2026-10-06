@@ -544,9 +544,6 @@ class _ItemsScreenState extends ConsumerState<ItemsScreen> {
           // Filter Panel (collapsible)
           if (_showFilters) _buildFilterPanel(theme, filter, categoriesAsync, brandsAsync),
 
-          // Horizontal Category Chip Quick Filters
-          _buildCategoryChipBar(theme, filter, categoriesAsync),
-
           // Item Grid
           Expanded(
             child: widget.lockedCategoryName == 'Fixed Assets'
